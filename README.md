@@ -48,7 +48,7 @@ pip install hyso
 
 git clone https://github.com/huseyin-dgn/hyso.git
 cd hyso
-pip install .
+pip install hyso
 
 ## Usage
 
@@ -67,7 +67,7 @@ train_loader, val_loader = get_loaders(
 )
 
 # ---------------- Model ----------------
-model = BCAMWithFit(input_channels=3, num_classes=10)
+model = EBO(input_channels=3, num_classes=10)
 
 # ---------------- Training ----------------
 model.fit(
