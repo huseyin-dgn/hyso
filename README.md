@@ -13,14 +13,14 @@ hyso/
 │ │ └─ bcam_fit.py # BCAMWithFit (fit + callbacks)
 │ │
 │ ├─ augmentation/
-│ │ └─ get_loaders.py # Data loader and augmentations
+│ │ └─ augmentation.py # Data loader and augmentations
 │ │
 │ ├─ callbacks/
 │ │ └─ callbacks.py # EarlyStopping, ModelCheckpoint, LRSchedulerCallback
 │ │
 │ └─ init.py
 │
-├─ setup.py # Installation script
+├─ setup.cfg # Installation script
 └─ README.md # Project documentation
 
 
