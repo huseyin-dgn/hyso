@@ -1,6 +1,6 @@
 """Executable regression examples, preserving every original Python block."""
-BLOCKS = ('from hyso.models.bcam_fit import BCAMWithFit\n'
- 'from hyso.augmentation.get_loaders import get_loaders\n'
+BLOCKS = ('from hyso.models import EBO , CEMO , ELO\n'
+ 'from hyso.augmentation import get_loaders\n'
  '\n'
  '# ---------------- Dataset ----------------\n'
  'train_loader, val_loader = get_loaders(\n'
