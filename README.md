@@ -54,8 +54,8 @@ pip install hyso
 ## Usage
 
 ```python
-from hyso.models.bcam_fit import BCAMWithFit
-from hyso.augmentation.get_loaders import get_loaders
+from hyso.models import EBO , CEMO , ELO
+from hyso.augmentation import get_loaders
 
 # ---------------- Dataset ----------------
 train_loader, val_loader = get_loaders(
