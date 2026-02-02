@@ -1,4 +1,4 @@
-# Hyso
+# -- Hyso -- 
 
 Hyso is a PyTorch-based deep learning library designed for **CNN + Bottleneck Residual + CBAM** architectures. It simplifies building, training, and evaluating image classification models with integrated callbacks and data augmentation.
 
