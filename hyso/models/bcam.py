@@ -14,6 +14,9 @@ from torchsummary import summary
 import numpy as np
 import hashlib
 import json
+import os
+import operator
+from pathlib import Path
 
 from ..checkpoint import save_training_checkpoint, load_training_checkpoint, TrainingCheckpointError
 
@@ -23,10 +26,131 @@ def _resume_type(obj):
     return type(obj).__module__ + "." + type(obj).__qualname__
 
 
+def _resume_transform_plan(transform):
+    """Only stateless torchvision v1 operations using the restored global RNG."""
+    from torchvision import transforms as T
+    from enum import Enum
+
+    if transform is None:
+        return None
+    fields = {
+        T.Compose: ("transforms",), T.ToTensor: (),
+        T.Resize: ("size", "interpolation", "max_size", "antialias"),
+        T.CenterCrop: ("size",), T.Normalize: ("mean", "std", "inplace"),
+        T.Grayscale: ("num_output_channels",),
+        T.RandomHorizontalFlip: ("p",), T.RandomVerticalFlip: ("p",),
+        T.RandomRotation: ("degrees", "interpolation", "expand", "center", "fill"),
+        T.ColorJitter: ("brightness", "contrast", "saturation", "hue"),
+        T.RandomResizedCrop: ("size", "scale", "ratio", "interpolation", "antialias"),
+    }
+    if type(transform) not in fields:
+        raise TrainingCheckpointError("unsupported custom/stateful transform: " + _resume_type(transform))
+    names = fields[type(transform)]
+    # Reject added state, instance overrides and registered hooks, even on allowed types.
+    base = vars(nn.Module()) if isinstance(transform, nn.Module) else {}
+    if (set(vars(transform)) != set(base) | set(names)
+            or any(vars(transform)[key] != value for key, value in base.items())):
+        raise TrainingCheckpointError("checkpoint transforms must have standard stateless configuration")
+
+    def plain(value):
+        if isinstance(value, Enum):
+            return value.value
+        if type(value) in (list, tuple):
+            return [plain(item) for item in value]
+        if value is None or type(value) in (str, bool, int, float):
+            return value
+        raise TrainingCheckpointError("unsupported transform configuration value")
+
+    if type(transform) is T.Compose and type(transform.transforms) not in (list, tuple):
+        raise TrainingCheckpointError("Compose transforms must be a fixed list or tuple")
+    config = ({"transforms": [_resume_transform_plan(item) for item in transform.transforms]}
+              if type(transform) is T.Compose else {name: plain(getattr(transform, name)) for name in names})
+    return {"type": _resume_type(transform), "config": config}
+
+
+def _resume_dataset_plan(dataset):
+    from torch.utils.data import TensorDataset, Subset
+    from torchvision.datasets import ImageFolder
+    from torchvision.datasets.folder import default_loader, pil_loader, IMG_EXTENSIONS
+    from torchvision import get_image_backend, __version__ as vision_version
+    from PIL import __version__ as pillow_version
+
+    if type(dataset) is TensorDataset:
+        tensors = []
+        for tensor in dataset.tensors:
+            if tensor.device.type != "cpu" or tensor.layout != torch.strided or tensor.requires_grad:
+                raise TrainingCheckpointError("checkpoint dataset tensors must be dense CPU tensors without gradients")
+            raw = tensor.detach().contiguous().reshape(-1).view(torch.uint8).numpy()
+            tensors.append({"shape": list(tensor.shape), "dtype": str(tensor.dtype),
+                            "sha256": hashlib.sha256(memoryview(raw)).hexdigest()})
+        return {"tensors": tensors}  # Preserve the original TensorDataset plan exactly.
+    if type(dataset) is Subset:
+        try:
+            indices = [operator.index(index) for index in dataset.indices]
+        except (TypeError, ValueError) as error:
+            raise TrainingCheckpointError("Subset indices must be integers") from error
+        if any(index < 0 or index >= len(dataset.dataset) for index in indices):
+            raise TrainingCheckpointError("Subset indices must be within the underlying dataset")
+        return {"dataset": {"type": _resume_type(dataset), "indices": indices,
+                            "base": _resume_dataset_plan(dataset.dataset)}}
+    if type(dataset) is not ImageFolder:
+        raise TrainingCheckpointError("checkpoint dataset must be TensorDataset, ImageFolder or Subset")
+    if (dataset.loader not in (default_loader, pil_loader) or get_image_backend() != "PIL"
+            or dataset.target_transform is not None or dataset.extensions != IMG_EXTENSIONS):
+        raise TrainingCheckpointError("ImageFolder checkpointing requires standard PIL loading and no target_transform")
+    classes = dataset.classes
+    mapping = dataset.class_to_idx
+    if (type(classes) is not list or any(type(name) is not str for name in classes)
+            or len(set(classes)) != len(classes)
+            or mapping != {name: index for index, name in enumerate(classes)}
+            or any(type(index) is not int for index in mapping.values())):
+        raise TrainingCheckpointError("ImageFolder classes/class_to_idx are inconsistent")
+    root = Path(dataset.root).resolve()
+    if not root.is_dir():
+        raise TrainingCheckpointError("ImageFolder dataset root is missing or moved: " + str(root))
+    try:
+        directories = [path for path in root.iterdir() if path.is_dir()]
+        if any(path.is_symlink() for path in directories):
+            raise TrainingCheckpointError("ImageFolder symlink directories are unsupported")
+        if any(path.name not in mapping for path in directories):
+            raise TrainingCheckpointError("ImageFolder class directory list changed")
+        # Scan names as well as saved samples: additions to an already constructed dataset must fail.
+        discovered = set()
+        for directory in directories:
+            for current, subdirs, files in os.walk(str(directory)):
+                if any(Path(current, name).is_symlink() for name in subdirs):
+                    raise TrainingCheckpointError("ImageFolder symlink directories are unsupported")
+                for name in files:
+                    if name.lower().endswith(IMG_EXTENSIONS):
+                        discovered.add(str(Path(current, name).absolute()))
+        manifest = []
+        for path, label in dataset.samples:
+            source = Path(path).absolute()
+            relative = source.relative_to(root)
+            if source.is_symlink() or label != mapping.get(relative.parts[0]) or type(label) is not int:
+                raise TrainingCheckpointError("ImageFolder sample path/label mapping is inconsistent")
+            stat = source.stat()
+            manifest.append([relative.as_posix(), label, stat.st_size, stat.st_mtime_ns])
+        if (discovered != {str(Path(path).absolute()) for path, _ in dataset.samples}
+                or dataset.targets != [label for _, label in dataset.samples]
+                or dataset.imgs != dataset.samples):
+            raise TrainingCheckpointError("ImageFolder image list/targets changed; reconstruct the dataset")
+    except (OSError, ValueError) as error:
+        raise TrainingCheckpointError("ImageFolder dataset path is missing, moved or inaccessible: " + str(root)) from error
+    # Hash plain metadata, never decoded images. This is not a content-integrity hash.
+    digest = hashlib.sha256(json.dumps(manifest, ensure_ascii=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+    return {"dataset": {"type": _resume_type(dataset), "root": root.as_posix(),
+                        "classes": classes, "class_to_idx": mapping, "samples": len(manifest),
+                        "manifest_sha256": digest, "transform": _resume_transform_plan(dataset.transform),
+                        "torchvision": vision_version, "pillow": pillow_version,
+                        "torch": str(torch.__version__), "default_dtype": str(torch.get_default_dtype()),
+                        "loader": "pil_loader" if dataset.loader is pil_loader else "default_loader"}}
+
+
 def _resume_loader_plan(loader):
     """Bounded epoch replay: no worker, sampler or dataset state is omitted."""
-    from torch.utils.data import DataLoader, TensorDataset, BatchSampler, RandomSampler, SequentialSampler, default_collate
-    if (type(loader) is not DataLoader or type(loader.dataset) is not TensorDataset
+    from torch.utils.data import DataLoader, BatchSampler, RandomSampler, SequentialSampler, default_collate
+    if (type(loader) is not DataLoader
             or loader.num_workers != 0 or loader.generator is not None
             or loader.batch_size is None or loader.collate_fn is not default_collate or loader.timeout != 0
             or type(loader.batch_sampler) is not BatchSampler
@@ -35,17 +159,12 @@ def _resume_loader_plan(loader):
             or getattr(loader.sampler, "replacement", False)
             or len(loader) == 0):
         raise TrainingCheckpointError(
-            "epoch checkpointing requires nonempty CPU DataLoader(TensorDataset), num_workers=0, "
+            "epoch checkpointing requires nonempty CPU DataLoader(TensorDataset/ImageFolder/Subset), num_workers=0, "
             "standard batch/samplers and no explicit generators")
-    tensors = []
-    for tensor in loader.dataset.tensors:
-        if tensor.device.type != "cpu" or tensor.layout != torch.strided or tensor.requires_grad:
-            raise TrainingCheckpointError("checkpoint dataset tensors must be dense CPU tensors without gradients")
-        raw = tensor.detach().contiguous().reshape(-1).view(torch.uint8).numpy()
-        tensors.append({"shape": list(tensor.shape), "dtype": str(tensor.dtype),
-                        "sha256": hashlib.sha256(memoryview(raw)).hexdigest()})
-    return {"batches": len(loader), "batch_size": loader.batch_size, "drop_last": loader.drop_last,
-            "sampler": _resume_type(loader.sampler), "sampler_samples": len(loader.sampler), "tensors": tensors}
+    plan = {"batches": len(loader), "batch_size": loader.batch_size, "drop_last": loader.drop_last,
+            "sampler": _resume_type(loader.sampler), "sampler_samples": len(loader.sampler)}
+    plan.update(_resume_dataset_plan(loader.dataset))
+    return plan
 
 
 def _resume_plan(model, optimizer, scheduler, train_loader, val_loader,
@@ -390,8 +509,10 @@ class EBO(nn.Module):
         use_amp: mixed precision when training on CUDA
         resume_from/save_last_to: opt-in full-state epoch checkpoints.
         epochs remains the total original budget, including completed epochs.
-        Checkpointing requires standard CPU TensorDataset loaders without workers,
-        explicit generators or custom callbacks; the original plan must match.
+        Checkpointing accepts TensorDataset, PIL ImageFolder and their Subsets with
+        standard loaders/samplers, num_workers=0 and bounded torchvision v1 transforms.
+        Explicit generators and custom callbacks are unsupported; the original plan
+        must match. Image identity uses paths/size/mtime, not image-content hashing.
         """
         if isinstance(accum_steps, bool) or not isinstance(accum_steps, int):
             raise TypeError("accum_steps must be a positive integer; bool is not accepted")
