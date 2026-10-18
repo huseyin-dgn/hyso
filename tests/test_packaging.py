@@ -17,6 +17,7 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
+    "hyso/checkpoint.py",
     "hyso/__init__.py", "hyso/models/__init__.py", "hyso/models/bcam.py",
     "hyso/models/WithSE.py", "hyso/models/fit.py",
     "hyso/augmentation/__init__.py", "hyso/augmentation/augmentation.py",
@@ -108,6 +109,7 @@ from hyso.models import EBO, ELO, CEMO, EMA, CNNSENormalWithFit
 from hyso.augmentation import build_transforms, get_loaders
 from hyso.callbacks.callbacks import EarlyStopping, ModelCheckpoint, LRSchedulerCallback
 for module, names in {
+    'hyso.checkpoint': ('save_training_checkpoint', 'load_training_checkpoint', 'TrainingCheckpointError'),
     'hyso.models.bcam': ('EBO', 'ELO'),
     'hyso.models.WithSE': ('CEMO', 'EMA'),
     'hyso.models.fit': ('CNNSENormalWithFit',),
