@@ -23,7 +23,7 @@ CANONICAL = {
 SIGNATURES = {
     "EBO.__init__": "(self, input_channels=3, num_classes=10, conv_channels=[32, 64, 128, 256], residual_per_block=2, p_drop=0.0, att_reduction=16, norm_type='auto', device=None, use_depthwise=False)",
     "EBO.callbacks": "(self, optimizer='Adam', optimizer_params=None, scheduler=None, scheduler_params=None, model_checkpoint=False, earlystop=None, lr=0.001, weight_decay=0.0001)",
-    "EBO.fit": "(self, train_loader, val_loader=None, epochs=10, lr=0.001, optimizer_name='adamw', weight_decay=0.0001, use_ema=False, use_amp=True, grad_clip=None, accum_steps=1, scheduler_name=None, scheduler_params=None, max_lr=None)",
+    "EBO.fit": "(self, train_loader, val_loader=None, epochs=10, lr=0.001, optimizer_name='adamw', weight_decay=0.0001, use_ema=False, use_amp=True, grad_clip=None, accum_steps=1, scheduler_name=None, scheduler_params=None, max_lr=None, *, resume_from=None, save_last_to=None)",
     "ELO.__init__": "(self, input_channels=3, num_classes=10, conv_channels=[64, 128, 256, 512], residual_per_block=2, p_drop=0.0, att_reduction=16, norm_type='auto', use_depthwise=False)",
     "ELO.forward": "(self, x)",
     "CEMO.__init__": "(self, input_channels: int = 3, num_classes: int = 10, conv_channels=[64, 128, 256], residuals_per_stage: int = 2, se_reduction: int = 8, p_drop: float = 0.1, dropout_fc: float = 0.3, use_ema: bool = False, ema_decay: float = 0.999, device: str = None)",
