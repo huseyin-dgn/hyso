@@ -144,6 +144,10 @@ def observe_cemo_flags(monkeypatch, constructor_flag, fit_flag):
         if instance is not model:
             shadow_forwards.append((instance.training, x.device.type))
         else:
+            if fit_flag and not parent_forwards:
+                assert hasattr(model, "ema") and model.ema.decay == 0.5
+                for key, tensor in model.ema.ema_model.state_dict().items():
+                    torch.testing.assert_close(tensor, before[key], rtol=0, atol=0)
             parent_forwards.append((instance.training, x.device.type))
         return original_forward(instance, x)
 
@@ -158,6 +162,9 @@ def observe_cemo_flags(monkeypatch, constructor_flag, fit_flag):
     if error is None:
         assert len(optimizer_trace.after) == 2
         assert sum(training for training, _ in parent_forwards) == 2
+        assert any(not torch.equal(parameter, before[name]) for name, parameter in model.named_parameters())
+        assert all(gradient is not None and torch.isfinite(gradient).all()
+                   for event in optimizer_trace.before for gradient in event["gradients"])
         assert all(torch.isfinite(torch.tensor(values)).all() for values in history.values())
     return SimpleNamespace(model=model, updates=updates, shadow_forwards=shadow_forwards,
                            parent_forwards=parent_forwards, optimizer=optimizer_trace,
@@ -182,26 +189,18 @@ def test_r14_current_cemo_ema_flag_matrix(monkeypatch, quiet_training, construct
     observation = observe_cemo_flags(monkeypatch, constructor_flag, fit_flag)
     assert observation.error is None
     model, updates, forwards = observation.model, observation.updates, observation.shadow_forwards
-    assert hasattr(model, "ema") is constructor_flag
-    assert len(updates) == (2 if constructor_flag else 0)
-    assert len(forwards) == (2 if constructor_flag else 0)
+    assert hasattr(model, "ema") is (constructor_flag or fit_flag)
+    assert model.use_ema is constructor_flag
+    assert len(updates) == (2 if fit_flag else 0)
+    assert len(forwards) == (2 if fit_flag else 0)
+    assert sum(not training for training, _ in observation.parent_forwards) == (0 if fit_flag else 2)
     assert all(not training and device == "cpu" for training, device in forwards)
 
 
-@pytest.mark.parametrize("constructor_flag,fit_flag", [
-    (False, False),
-    pytest.param(False, True, marks=pytest.mark.xfail(
-        strict=True, reason="R14: CEMO fit(use_ema=True) silently leaves EMA absent", raises=R14EnableIgnored)),
-    pytest.param(True, False, marks=pytest.mark.xfail(
-        strict=True, reason="R14: CEMO fit(use_ema=False) still updates and evaluates EMA", raises=R14DisableIgnored)),
-    (True, True),
-])
+@pytest.mark.parametrize("constructor_flag,fit_flag", [(False, False), (False, True), (True, False), (True, True)])
 def test_r14_cemo_fit_flag_controls_ema_use(monkeypatch, quiet_training, constructor_flag, fit_flag):
     observation = observe_cemo_flags(monkeypatch, constructor_flag, fit_flag)
-    if observation.error is not None:
-        assert not constructor_flag and fit_flag
-        require_early_ema_rejection(observation)
-        return
+    assert observation.error is None  # Enabling EMA must really work, not merely reject early.
     model, updates, forwards = observation.model, observation.updates, observation.shadow_forwards
     if not constructor_flag and fit_flag:
         expect_value(hasattr(model, "ema"), True, R14EnableIgnored, "R14: EMA activation request")
@@ -210,3 +209,52 @@ def test_r14_cemo_fit_flag_controls_ema_use(monkeypatch, quiet_training, constru
     failure = R14EnableIgnored if fit_flag else R14DisableIgnored
     expect_value(len(updates), 2 if fit_flag else 0, failure, "R14: EMA update usage")
     expect_value(len(forwards), 2 if fit_flag else 0, failure, "R14: EMA validation usage")
+    assert sum(not training for training, _ in observation.parent_forwards) == (0 if fit_flag else 2)
+
+
+def test_r14_consecutive_fit_flags_and_default_do_not_leak(monkeypatch, quiet_training):
+    model = tiny_cemo(use_ema=False)
+    model.optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
+    optimizer = model.optimizer
+    trace = observe_optimizer(optimizer)
+    real_update, real_forward = EMA.update, CEMO.forward
+    updates, forwards = [], []
+
+    def update(ema, source):
+        updates.append(len(trace.after))
+        return real_update(ema, source)
+
+    def forward(instance, inputs):
+        forwards.append((instance is model, instance.training))
+        return real_forward(instance, inputs)
+
+    monkeypatch.setattr(EMA, "update", update)
+    monkeypatch.setattr(CEMO, "forward", forward)
+    loader = synthetic_loader((2, 2))
+    keys, shadow = list(model.state_dict()), None
+    for call_index, flag in enumerate((True, False, True, None)):
+        enabled = flag is True
+        before = {name: parameter.clone() for name, parameter in model.named_parameters()}
+        shadow_before = None if shadow is None else {key: value.clone() for key, value in shadow.ema_model.state_dict().items()}
+        updates.clear()
+        forwards.clear()
+        options = {} if flag is None else {"use_ema": flag}  # Last call tests the unchanged False default.
+        history = model.fit(loader, val_loader=loader, epochs=1, **options)
+        assert model.optimizer is optimizer and len(trace.after) == 2 * (call_index + 1)
+        assert list(model.state_dict()) == keys and model.use_ema is False
+        assert any(not torch.equal(parameter, before[name]) for name, parameter in model.named_parameters())
+        assert all(len(values) == 1 and torch.isfinite(torch.tensor(values)).all() for values in history.values())
+        if shadow is None:
+            shadow = model.ema
+        assert model.ema is shadow and shadow.decay == 0.5
+        assert forwards.count((True, True)) == 2
+        assert forwards.count((True, False)) == (0 if enabled else 2)
+        assert forwards.count((False, False)) == (2 if enabled else 0)
+        assert len(forwards) == 4
+        assert updates == ([2 * call_index + 1, 2 * call_index + 2] if enabled else [])
+        if enabled:
+            for name, buffer in model.named_buffers():
+                torch.testing.assert_close(dict(shadow.ema_model.named_buffers())[name], buffer, rtol=0, atol=0)
+        else:
+            for key, value in shadow.ema_model.state_dict().items():
+                torch.testing.assert_close(value, shadow_before[key], rtol=0, atol=0)

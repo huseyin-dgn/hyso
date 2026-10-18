@@ -147,6 +147,7 @@ class CEMO(nn.Module):
         super().__init__()
         self.num_classes = num_classes
         self.use_ema = use_ema
+        self.ema_decay = ema_decay
         # set device but DO NOT move model here (we will ensure move in callbacks/fit)
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -260,17 +261,13 @@ class CEMO(nn.Module):
         except Exception:
             pass
 
-        # ensure EMA model is also on device if available
-        if use_ema and hasattr(self, "ema"):
+        # The fit flag controls this call; create EMA before the first forward.
+        if use_ema:
+            if not hasattr(self, "ema"):
+                self.ema = EMA(self, decay=self.ema_decay, device=self.device)
             try:
                 self.ema.to(self.device)
                 self.ema.ema_model.eval()
-            except Exception:
-                pass
-        elif hasattr(self, "ema"):
-            # even if not using EMA for this run, keep ema_model on device to avoid mismatches later
-            try:
-                self.ema.to(self.device)
             except Exception:
                 pass
 
@@ -302,8 +299,8 @@ class CEMO(nn.Module):
                 loss.backward()
                 self.optimizer.step()
 
-                # EMA update (if available)
-                if hasattr(self, "ema"):
+                # EMA use is local to this fit call, including existing shadows.
+                if use_ema and hasattr(self, "ema"):
                     try:
                         self.ema.update(self)
                     except Exception:
@@ -331,7 +328,7 @@ class CEMO(nn.Module):
                 with torch.no_grad():
                     for x, y in loop_val:
                         x, y = x.to(self.device), y.to(self.device)
-                        if hasattr(self, "ema"):
+                        if use_ema and hasattr(self, "ema"):
                             try:
                                 self.ema.to(self.device)
                                 self.ema.ema_model.eval()
