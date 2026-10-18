@@ -71,14 +71,36 @@ def test_cnns_constructor_smoke_cpu():
 
 
 def test_ebo_direct_call_current_characterization(cpu_input):
-    model = EBO(**tiny_cbam_config(), device="cpu").eval()
-    with pytest.raises(NotImplementedError, match='missing the required "forward"'):
-        model(cpu_input)
+    model = EBO(**tiny_cbam_config(), device="cpu").double().eval()
+    inputs = cpu_input.double().requires_grad_(True)
+    state_keys = list(model.state_dict())
+    events = []
+    handles = [
+        model.register_forward_pre_hook(lambda *args: events.append("wrapper-pre")),
+        model.model.register_forward_pre_hook(lambda *args: events.append("child-pre")),
+        model.model.register_forward_hook(lambda *args: events.append("child-post")),
+        model.register_forward_hook(lambda *args: events.append("wrapper-post")),
+    ]
+    try:
+        logits = model(inputs)
+    finally:
+        for handle in handles:
+            handle.remove()
+    assert events == ["wrapper-pre", "child-pre", "child-post", "wrapper-post"]
+    assert logits.shape == (2, 2) and torch.isfinite(logits).all()
+    assert logits.device == inputs.device and logits.dtype == inputs.dtype == torch.float64
+    with torch.no_grad():
+        torch.testing.assert_close(logits, model.model(inputs), rtol=0, atol=0)
+    logits.square().sum().backward()
+    gradients = [parameter.grad for parameter in model.parameters() if parameter.requires_grad]
+    assert gradients and all(gradient is not None and torch.isfinite(gradient).all() for gradient in gradients)
+    assert any(torch.count_nonzero(gradient).item() > 0 for gradient in gradients)
+    assert inputs.grad is not None and torch.isfinite(inputs.grad).all()
+    assert torch.count_nonzero(inputs.grad).item() > 0
+    assert list(model.state_dict()) == state_keys
+    assert all(key.startswith("model.") for key in state_keys)
 
 
-@pytest.mark.xfail(
-    strict=True, reason="R01: EBO forward is missing", raises=R01ForwardMissing,
-)
 def test_ebo_direct_call_expected_contract(cpu_input):
     model = EBO(**tiny_cbam_config(), device="cpu").eval()
     with torch.no_grad():

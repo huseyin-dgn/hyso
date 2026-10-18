@@ -47,7 +47,8 @@ def pytest_collection_finish(session):
     marked = json.loads(next(line.removeprefix("MARKER_JSON=")
                              for line in result.stdout.str().splitlines()
                              if line.startswith("MARKER_JSON=")))
-    assert marked
+    # R12 and R01 were the final production XFAILs; forbid reintroducing any.
+    assert marked == [], f"Unexpected production XFAIL markers: {marked}"
     for marker in marked:
         assert marker["strict"] is True
         assert re.match(r"R\d{2}:", marker["reason"])

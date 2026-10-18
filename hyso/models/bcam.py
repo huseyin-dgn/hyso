@@ -204,6 +204,9 @@ class EBO(nn.Module):
         self._callbacks = []
         self.optimizer = None
 
+    def forward(self, x):
+        return self.model(x)
+
     # -------------------------
     # Callbacks & Optimizer
     # -------------------------
@@ -276,7 +279,7 @@ class EBO(nn.Module):
         scheduler_name: 'onecycle' | 'steplr' | 'reduceonplateau' | 'cosine'
         max_lr: required for onecycle
         accum_steps: positive Python integer; bool is not accepted
-        use_amp: mixed precision if cuda available
+        use_amp: mixed precision when training on CUDA
         """
         if isinstance(accum_steps, bool) or not isinstance(accum_steps, int):
             raise TypeError("accum_steps must be a positive integer; bool is not accepted")
@@ -341,7 +344,7 @@ class EBO(nn.Module):
             print("✅ EMA is enabled for training.")
 
         # AMP setup
-        amp_available = use_amp and torch.cuda.is_available()
+        amp_available = use_amp and next(self.model.parameters()).device.type == "cuda"
         scaler = torch.cuda.amp.GradScaler(enabled=amp_available)
 
         # model summary
@@ -371,7 +374,7 @@ class EBO(nn.Module):
                 inputs = inputs.to(self.device)
                 targets = targets.to(self.device)
 
-                device_type = "cuda" if torch.cuda.is_available() else "cpu"
+                device_type = inputs.device.type
                 with torch.amp.autocast(device_type=device_type, enabled=amp_available):
                     outputs = self.model(inputs)
                     if self.num_classes == 1:
