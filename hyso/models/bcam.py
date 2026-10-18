@@ -275,9 +275,14 @@ class EBO(nn.Module):
         optimizer_name: 'adamw' | 'adam' | 'sgd'
         scheduler_name: 'onecycle' | 'steplr' | 'reduceonplateau' | 'cosine'
         max_lr: required for onecycle
-        accum_steps: gradient accumulation steps
+        accum_steps: positive Python integer; bool is not accepted
         use_amp: mixed precision if cuda available
         """
+        if isinstance(accum_steps, bool) or not isinstance(accum_steps, int):
+            raise TypeError("accum_steps must be a positive integer; bool is not accepted")
+        if accum_steps <= 0:
+            raise ValueError("accum_steps must be a positive integer")
+
         # device sync
         self.model.to(self.device)
 
@@ -300,7 +305,7 @@ class EBO(nn.Module):
             if sname == "onecycle":
                 if max_lr is None:
                     raise ValueError("max_lr must be provided for OneCycleLR")
-                steps_per_epoch = len(train_loader)
+                steps_per_epoch = (len(train_loader) + accum_steps - 1) // accum_steps
                 scheduler = optim.lr_scheduler.OneCycleLR(self.optimizer, max_lr=max_lr, steps_per_epoch=steps_per_epoch, epochs=epochs, **sp)
             elif sname == "steplr":
                 scheduler = optim.lr_scheduler.StepLR(self.optimizer, **(sp or {"step_size":5,"gamma":0.5}))
@@ -314,6 +319,11 @@ class EBO(nn.Module):
             self.lr_scheduler = LRSchedulerCallback(scheduler)
             if self.lr_scheduler not in self._callbacks:
                 self._callbacks.append(self.lr_scheduler)
+
+        # fit owns stepping for the latest scheduler configured by callbacks()
+        # or this fit call. Scheduler entries are not stepped in the callback loop.
+        scheduler_callback = getattr(self, "lr_scheduler", None)
+        scheduler = scheduler_callback.scheduler if scheduler_callback is not None else None
 
         # criterion
         criterion = nn.BCEWithLogitsLoss() if self.num_classes == 1 else nn.CrossEntropyLoss()
@@ -355,6 +365,8 @@ class EBO(nn.Module):
             total = 0
             loop = tqdm(train_loader, desc=f"Epoch [{epoch+1}/{epochs}] Train", leave=False)
             self.optimizer.zero_grad()
+            window_samples = 0
+            epoch_batches = len(train_loader)
             for step, (inputs, targets) in enumerate(loop):
                 inputs = inputs.to(self.device)
                 targets = targets.to(self.device)
@@ -377,22 +389,42 @@ class EBO(nn.Module):
                         preds = outputs.argmax(dim=1)
                         batch_correct = (preds == targets_proc).sum().item()
 
-                loss = loss / accum_steps
-                scaler.scale(loss).backward()
+                # Sum sample losses, then normalize once over the actual window.
+                # This also handles unequal microbatches and a partial tail.
+                batch_size = inputs.size(0)
+                window_samples += batch_size
+                scaler.scale(loss * batch_size).backward()
 
-                if (step + 1) % accum_steps == 0:
+                if (step + 1) % accum_steps == 0 or step + 1 == epoch_batches:
+                    scaler.unscale_(self.optimizer)
+                    for parameter in self.model.parameters():
+                        if parameter.grad is not None:
+                            parameter.grad.div_(window_samples)
                     if grad_clip is not None:
-                        scaler.unscale_(self.optimizer)
                         torch.nn.utils.clip_grad_norm_(self.model.parameters(), grad_clip)
-                    scaler.step(self.optimizer)
+                    optimizer_updates = []
+                    if isinstance(scheduler, optim.lr_scheduler.OneCycleLR):
+                        # GradScaler.step() may return None for both a real step
+                        # and a skipped step. Observe the optimizer itself.
+                        scale_before_step = scaler.get_scale()
+                        handle = self.optimizer.register_step_post_hook(
+                            lambda *args: optimizer_updates.append(True)
+                        )
+                        try:
+                            scaler.step(self.optimizer)
+                        finally:
+                            handle.remove()
+                    else:
+                        scaler.step(self.optimizer)
                     scaler.update()
                     self.optimizer.zero_grad()
+                    window_samples = 0
                     # per-step scheduler for OneCycle
-                    if scheduler is not None and isinstance(scheduler, optim.lr_scheduler.OneCycleLR):
-                        try:
-                            scheduler.step()
-                        except Exception:
-                            pass
+                    # Fused optimizers can delegate the overflow skip to their
+                    # kernel while still invoking step hooks. Scale backoff
+                    # distinguishes that case from an applied update.
+                    if optimizer_updates and scaler.get_scale() >= scale_before_step:
+                        scheduler_callback.step()
 
                 # EMA update
                 if use_ema:
@@ -401,8 +433,7 @@ class EBO(nn.Module):
                     except Exception:
                         pass
 
-                batch_size = inputs.size(0)
-                running_loss += loss.item() * accum_steps * batch_size
+                running_loss += loss.item() * batch_size
                 total += batch_size
                 correct += batch_correct
                 loop.set_postfix(loss=running_loss / total if total>0 else 0.0,
@@ -414,6 +445,7 @@ class EBO(nn.Module):
             history["train_acc"].append(train_acc)
 
             # VALIDATION
+            val_loss_final = None
             if val_loader:
                 self.model.eval()
                 val_loss = 0.0
@@ -464,18 +496,6 @@ class EBO(nn.Module):
                 history["val_loss"].append(val_loss_final)
                 history["val_acc"].append(val_acc)
 
-                # scheduler step for ReduceLROnPlateau
-                if scheduler is not None and isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
-                    try:
-                        scheduler.step(val_loss_final)
-                    except Exception:
-                        pass
-                elif scheduler is not None and not isinstance(scheduler, optim.lr_scheduler.OneCycleLR):
-                    try:
-                        scheduler.step()
-                    except Exception:
-                        pass
-
                 # print metrics + sklearn report
                 try:
                     all_preds_arr = np.array(all_preds).ravel().astype(int)
@@ -501,7 +521,17 @@ class EBO(nn.Module):
                 except Exception:
                     pass
 
-                # CALLBACKS (robust)
+            # Epoch schedulers have one owner, with or without validation.
+            if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
+                if val_loss_final is not None:
+                    if not np.isfinite(val_loss_final):
+                        raise ValueError("ReduceLROnPlateau requires a finite validation loss")
+                    scheduler_callback.step(val_loss_final)
+            elif scheduler is not None and not isinstance(scheduler, optim.lr_scheduler.OneCycleLR):
+                scheduler_callback.step()
+
+            if val_loader:
+                # Other callback handling is unchanged.
                 for cb in self._callbacks:
                     if isinstance(cb, EarlyStopping):
                         try:
@@ -525,14 +555,6 @@ class EBO(nn.Module):
                         except Exception:
                             try:
                                 cb.on_epoch_end(epoch, self.model, val_loss_final)
-                            except Exception:
-                                pass
-                    elif isinstance(cb, LRSchedulerCallback):
-                        try:
-                            cb.step(val_loss_final)
-                        except Exception:
-                            try:
-                                cb.step()
                             except Exception:
                                 pass
 
