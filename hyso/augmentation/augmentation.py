@@ -74,6 +74,19 @@ def build_transforms(img_size=(224,224), augment="basic", extra_ops=None, channe
 # ----------------------
 # Dataset loader
 # ----------------------
+def _validation_transform(img_size, channels):
+    # Validation deliberately excludes training augmentation and extra_ops.
+    ops = [transforms.Grayscale(num_output_channels=1)] if channels == 1 else []
+    size = (img_size, img_size) if isinstance(img_size, int) else img_size
+    ops.extend([transforms.Resize(size), transforms.ToTensor()])
+    if channels == 3:
+        ops.append(transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                        std=[0.229, 0.224, 0.225]))
+    else:
+        ops.append(transforms.Normalize(mean=[0.5], std=[0.5]))
+    return transforms.Compose(ops)
+
+
 def get_loaders(train_path, val_path=None, batch_size=32, img_size=(224,224), augment="basic", extra_ops=None, num_workers=0, channels=3):
     """
     train_path: training klasörü (class subfolders olmalı)
@@ -88,17 +101,34 @@ def get_loaders(train_path, val_path=None, batch_size=32, img_size=(224,224), au
 
     # ---- transform ----
     train_transform = build_transforms(img_size=img_size, augment=augment, extra_ops=extra_ops, channels=channels)
-    val_transform = build_transforms(img_size=img_size, augment="basic", channels=channels)  # artık channels geçiliyor
+    val_transform = _validation_transform(img_size, channels)
 
     # ---- dataset ----
     train_dataset = datasets.ImageFolder(train_path, transform=train_transform)
     if val_path:
         val_dataset = datasets.ImageFolder(val_path, transform=val_transform)
+        unknown = set(val_dataset.classes) - set(train_dataset.classes)
+        if unknown:
+            raise ValueError(f"Unknown validation classes: {sorted(unknown)}; "
+                             f"training classes: {train_dataset.classes}")
+        # ImageFolder assigns local indices. Rewrite both samples and metadata
+        # into the training vocabulary, including known validation subsets.
+        remap = {index: train_dataset.class_to_idx[name]
+                 for name, index in val_dataset.class_to_idx.items()}
+        val_dataset.samples = [(path, remap[target]) for path, target in val_dataset.samples]
+        val_dataset.imgs = val_dataset.samples
+        val_dataset.targets = [target for _, target in val_dataset.samples]
+        val_dataset.classes = list(train_dataset.classes)
+        val_dataset.class_to_idx = dict(train_dataset.class_to_idx)
     else:
         # split train dataset
-        val_size = int(0.2 * len(train_dataset))
+        if len(train_dataset) < 2:
+            raise ValueError("Validation split requires at least two samples for nonempty train and validation sets")
+        val_size = max(1, int(0.2 * len(train_dataset)))
         train_size = len(train_dataset) - val_size
         train_dataset, val_dataset = torch.utils.data.random_split(train_dataset, [train_size, val_size])
+        validation_source = datasets.ImageFolder(train_path, transform=val_transform)
+        val_dataset = torch.utils.data.Subset(validation_source, val_dataset.indices)
 
     # ---- loader ----
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)

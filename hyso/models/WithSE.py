@@ -41,6 +41,11 @@ class EMA:
             # align params by name/zip
             for ema_p, model_p in zip(self.ema_model.parameters(), model.parameters()):
                 ema_p.data.mul_(self.decay).add_(model_p.data, alpha=1 - self.decay)
+            # Buffers are live state, not averaged parameters. Copy by name,
+            # including integer and non-persistent registered buffers.
+            model_buffers = dict(model.named_buffers())
+            for name, ema_buffer in self.ema_model.named_buffers():
+                ema_buffer.copy_(model_buffers[name])
 
 # -------------------------
 # SEBlock
