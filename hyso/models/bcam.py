@@ -12,8 +12,115 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from torchsummary import summary
 import numpy as np
+import hashlib
+import json
+
+from ..checkpoint import save_training_checkpoint, load_training_checkpoint, TrainingCheckpointError
 
 __all__ = ["EBO", "ELO"]
+
+def _resume_type(obj):
+    return type(obj).__module__ + "." + type(obj).__qualname__
+
+
+def _resume_loader_plan(loader):
+    """Bounded epoch replay: no worker, sampler or dataset state is omitted."""
+    from torch.utils.data import DataLoader, TensorDataset, BatchSampler, RandomSampler, SequentialSampler, default_collate
+    if (type(loader) is not DataLoader or type(loader.dataset) is not TensorDataset
+            or loader.num_workers != 0 or loader.generator is not None
+            or loader.batch_size is None or loader.collate_fn is not default_collate or loader.timeout != 0
+            or type(loader.batch_sampler) is not BatchSampler
+            or type(loader.sampler) not in (RandomSampler, SequentialSampler)
+            or getattr(loader.sampler, "generator", None) is not None
+            or getattr(loader.sampler, "replacement", False)
+            or len(loader) == 0):
+        raise TrainingCheckpointError(
+            "epoch checkpointing requires nonempty CPU DataLoader(TensorDataset), num_workers=0, "
+            "standard batch/samplers and no explicit generators")
+    tensors = []
+    for tensor in loader.dataset.tensors:
+        if tensor.device.type != "cpu" or tensor.layout != torch.strided or tensor.requires_grad:
+            raise TrainingCheckpointError("checkpoint dataset tensors must be dense CPU tensors without gradients")
+        raw = tensor.detach().contiguous().reshape(-1).view(torch.uint8).numpy()
+        tensors.append({"shape": list(tensor.shape), "dtype": str(tensor.dtype),
+                        "sha256": hashlib.sha256(memoryview(raw)).hexdigest()})
+    return {"batches": len(loader), "batch_size": loader.batch_size, "drop_last": loader.drop_last,
+            "sampler": _resume_type(loader.sampler), "sampler_samples": len(loader.sampler), "tensors": tensors}
+
+
+def _resume_plan(model, optimizer, scheduler, train_loader, val_loader,
+                 epochs, accum_steps, use_ema, use_amp, amp_enabled, grad_clip):
+    if type(model) is not EBO or type(model.model) is not ELO:
+        raise TrainingCheckpointError("epoch checkpointing requires the standard EBO/ELO model")
+    if type(optimizer) not in (optim.Adam, optim.AdamW, optim.SGD):
+        raise TrainingCheckpointError("checkpointing supports standard Adam, AdamW or SGD optimizers")
+    if scheduler is None:
+        scheduler_config = None
+    elif type(scheduler) is optim.lr_scheduler.OneCycleLR:
+        dynamic = {"last_epoch", "_step_count", "_get_lr_called_within_step", "_last_lr"}
+        scheduler_config = {key: value for key, value in scheduler.state_dict().items() if key not in dynamic}
+    else:
+        fields = {
+            optim.lr_scheduler.StepLR: ("step_size", "gamma"),
+            optim.lr_scheduler.CosineAnnealingLR: ("T_max", "eta_min"),
+            optim.lr_scheduler.ReduceLROnPlateau:
+                ("mode", "factor", "patience", "threshold", "threshold_mode", "cooldown", "min_lrs", "eps"),
+        }
+        if type(scheduler) not in fields:
+            raise TrainingCheckpointError("custom schedulers are not supported for epoch checkpointing")
+        scheduler_config = {key: getattr(scheduler, key) for key in fields[type(scheduler)]}
+    if scheduler is not None and scheduler.last_epoch != 0:
+        raise TrainingCheckpointError("checkpoint setup requires a fresh scheduler; resume restores its saved counter")
+    groups = [{key: value for key, value in group.items() if key != "params"}
+              for group in optimizer.state_dict()["param_groups"]]
+    plan = {"version": 1, "epochs": epochs, "accum_steps": accum_steps, "grad_clip": grad_clip,
+            "use_ema": bool(use_ema), "use_amp": bool(use_amp), "amp_enabled": bool(amp_enabled),
+            "device_type": next(model.parameters()).device.type, "num_classes": model.num_classes,
+            "model": repr(model.model), "optimizer_type": _resume_type(optimizer), "optimizer_groups": groups,
+            "scheduler_type": _resume_type(scheduler) if scheduler is not None else None,
+            "scheduler_config": scheduler_config, "train_loader": _resume_loader_plan(train_loader),
+            "val_loader": _resume_loader_plan(val_loader) if val_loader is not None else None}
+    try:
+        # Stable plain metadata: tuple-valued optimizer options become lists.
+        return json.loads(json.dumps(plan, allow_nan=False))
+    except (TypeError, ValueError) as error:
+        raise TrainingCheckpointError("checkpoint training plan requires plain finite configuration values") from error
+
+
+def _validate_resume_progress(progress, plan):
+    if progress["metrics"] != {"ebo_fit": plan}:
+        raise TrainingCheckpointError("EBO training plan mismatch: keep total epochs, accumulation, "
+                                      "optimizer/scheduler, AMP/EMA and dataset/loader configuration unchanged")
+    completed = progress["completed_epochs"]
+    if not 0 <= completed <= plan["epochs"]:
+        raise TrainingCheckpointError("completed_epochs exceeds the total epoch budget")
+    if progress["scheduler"] is not None:
+        state = progress["scheduler"]["state_dict"]
+        config = {key: state[key] for key in plan["scheduler_config"]}
+        if json.loads(json.dumps(config, allow_nan=False)) != plan["scheduler_config"]:
+            raise TrainingCheckpointError("saved scheduler configuration/budget disagrees with the training plan")
+        if plan["scheduler_type"] == "torch.optim.lr_scheduler.OneCycleLR":
+            steps = (plan["train_loader"]["batches"] + plan["accum_steps"] - 1) // plan["accum_steps"]
+            if state["total_steps"] != steps * plan["epochs"]:
+                raise TrainingCheckpointError("OneCycle total_steps disagrees with the original epoch budget")
+            attempted = completed * steps
+            valid_count = 0 <= state["last_epoch"] <= attempted if plan["amp_enabled"] else state["last_epoch"] == attempted
+        else:
+            expected = (0 if plan["scheduler_type"] == "torch.optim.lr_scheduler.ReduceLROnPlateau"
+                        and plan["val_loader"] is None else completed)
+            valid_count = state["last_epoch"] == expected
+        if not valid_count:
+            raise TrainingCheckpointError("saved scheduler counter disagrees with completed_epochs")
+    history = progress["history"]
+    expected = {"train_loss", "train_acc", "val_loss", "val_acc"}
+    if type(history) is not dict or set(history) != expected:
+        raise TrainingCheckpointError("resume history must contain the four EBO metric lists")
+    for key in expected:
+        count = completed if key.startswith("train_") or plan["val_loader"] is not None else 0
+        if type(history[key]) is not list or len(history[key]) != count:
+            raise TrainingCheckpointError("resume history length disagrees with completed_epochs: " + key)
+        if any(type(value) not in (int, float) for value in history[key]):
+            raise TrainingCheckpointError("resume history values must be numeric: " + key)
 
 # -------------------------
 # CBAM Block
@@ -273,18 +380,30 @@ class EBO(nn.Module):
     def fit(self, train_loader, val_loader=None, epochs=10, lr=1e-3,
             optimizer_name="adamw", weight_decay=1e-4, use_ema=False,
             use_amp=True, grad_clip=None, accum_steps=1,
-            scheduler_name=None, scheduler_params=None, max_lr=None):
+            scheduler_name=None, scheduler_params=None, max_lr=None, *,
+            resume_from=None, save_last_to=None):
         """
         optimizer_name: 'adamw' | 'adam' | 'sgd'
         scheduler_name: 'onecycle' | 'steplr' | 'reduceonplateau' | 'cosine'
         max_lr: required for onecycle
         accum_steps: positive Python integer; bool is not accepted
         use_amp: mixed precision when training on CUDA
+        resume_from/save_last_to: opt-in full-state epoch checkpoints.
+        epochs remains the total original budget, including completed epochs.
+        Checkpointing requires standard CPU TensorDataset loaders without workers,
+        explicit generators or custom callbacks; the original plan must match.
         """
         if isinstance(accum_steps, bool) or not isinstance(accum_steps, int):
             raise TypeError("accum_steps must be a positive integer; bool is not accepted")
         if accum_steps <= 0:
             raise ValueError("accum_steps must be a positive integer")
+
+        checkpointing = resume_from is not None or save_last_to is not None
+        if checkpointing:
+            if type(epochs) is not int or epochs <= 0:
+                raise TrainingCheckpointError("checkpoint epochs must be a positive total epoch budget")
+            if any(type(callback) is not LRSchedulerCallback for callback in self._callbacks):
+                raise TrainingCheckpointError("stateful/custom callbacks are not supported for epoch checkpointing")
 
         # device sync
         self.model.to(self.device)
@@ -326,6 +445,8 @@ class EBO(nn.Module):
         # fit owns stepping for the latest scheduler configured by callbacks()
         # or this fit call. Scheduler entries are not stepped in the callback loop.
         scheduler_callback = getattr(self, "lr_scheduler", None)
+        if checkpointing and scheduler_callback is not None and type(scheduler_callback) is not LRSchedulerCallback:
+            raise TrainingCheckpointError("custom scheduler callbacks are not supported for epoch checkpointing")
         scheduler = scheduler_callback.scheduler if scheduler_callback is not None else None
 
         # criterion
@@ -347,20 +468,36 @@ class EBO(nn.Module):
         amp_available = use_amp and next(self.model.parameters()).device.type == "cuda"
         scaler = torch.cuda.amp.GradScaler(enabled=amp_available)
 
-        # model summary
-        sample = next(iter(train_loader))[0]
-        input_size = tuple(sample.shape[1:])
-        print("\n===== Model Summary =====")
-        try:
-            try:
-                summary(self.model, input_size)
-            except Exception:
-                print(self.model)
-        except:
-            print("Could not print detailed summary, using fallback")
-        print("=========================\n")
+        plan = (_resume_plan(self, self.optimizer, scheduler, train_loader, val_loader, epochs,
+                             accum_steps, use_ema, use_amp, amp_available, grad_clip)
+                if checkpointing else None)
 
-        for epoch in range(epochs):
+        # A resumed run must not consume a sample/RNG or touch BN for presentation.
+        if resume_from is None:
+            sample = next(iter(train_loader))[0]
+            input_size = tuple(sample.shape[1:])
+            print("\n===== Model Summary =====")
+            try:
+                try:
+                    summary(self.model, input_size)
+                except Exception:
+                    print(self.model)
+            except:
+                print("Could not print detailed summary, using fallback")
+            print("=========================\n")
+
+        # Restore RNG last, after component construction and before the next iterator.
+        start_epoch = 0
+        if resume_from is not None:
+            progress = load_training_checkpoint(
+                resume_from, self, optimizer=self.optimizer, scheduler=scheduler, scaler=scaler,
+                ema=self.ema if use_ema else None, map_location="cpu", restore_rng=True,
+                validate_metadata=lambda metadata: _validate_resume_progress(metadata, plan))
+            start_epoch = progress["completed_epochs"]
+            history = progress["history"]
+            self.model.train(val_loader is None)
+
+        for epoch in range(start_epoch, epochs):
             # TRAIN
             self.model.train()
             running_loss = 0.0
@@ -560,5 +697,11 @@ class EBO(nn.Module):
                                 cb.on_epoch_end(epoch, self.model, val_loss_final)
                             except Exception:
                                 pass
+
+            if save_last_to is not None:
+                save_training_checkpoint(
+                    save_last_to, self, optimizer=self.optimizer, scheduler=scheduler, scaler=scaler,
+                    ema=self.ema if use_ema else None, completed_epochs=epoch + 1,
+                    history=history, metrics={"ebo_fit": plan}, include_rng=True)
 
         return history

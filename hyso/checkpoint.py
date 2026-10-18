@@ -1,4 +1,4 @@
-"""Opt-in training-state serialization; fit loops and model-only files are unchanged.
+"""Opt-in training-state serialization, separate from legacy model-only files.
 
 Create the model, optimizer and scheduler before loading. Pass the scheduler
 itself (not LRSchedulerCallback). Only state_dict data and plain metadata are
@@ -245,11 +245,14 @@ def save_training_checkpoint(path, model, *, optimizer=None, scheduler=None,
 
 
 def load_training_checkpoint(path, model, *, optimizer=None, scheduler=None,
-                             scaler=None, ema=None, map_location="cpu", restore_rng=False):
+                             scaler=None, ema=None, map_location="cpu", restore_rng=False,
+                             validate_metadata=None):
     """Strictly restore caller-created components and return epoch/history/metrics.
 
     Presence, component types, model tensor schemas and optimizer parameter order
     must match. RNG restoration is opt-in. Never retries with unsafe pickle.
+    An optional caller validator receives epoch/history/metrics and the scheduler
+    record before any target/RNG mutation.
     """
     try:
         payload = torch.load(path, map_location=map_location, weights_only=True)
@@ -258,6 +261,9 @@ def load_training_checkpoint(path, model, *, optimizer=None, scheduler=None,
         raise TrainingCheckpointError("cannot read weights-only training checkpoint: " + str(error)) from error
     try:
         _validate(payload, model, optimizer, scheduler, scaler, ema, restore_rng)
+        if validate_metadata is not None:
+            validate_metadata(copy.deepcopy({key: payload[key] for key in
+                                             ("completed_epochs", "history", "metrics", "scheduler")}))
     except TrainingCheckpointError:
         raise
     except (TypeError, KeyError, AttributeError, ValueError) as error:
