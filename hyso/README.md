@@ -53,8 +53,8 @@ pip install .
 ## Usage
 
 ```python
-from hyso.models.bcam_fit import BCAMWithFit
-from hyso.augmentation.get_loaders import get_loaders
+from hyso.modelsimport EBO
+from hyso.augmentation import get_loaders
 
 # ---------------- Dataset ----------------
 train_loader, val_loader = get_loaders(
@@ -67,7 +67,7 @@ train_loader, val_loader = get_loaders(
 )
 
 # ---------------- Model ----------------
-model = BCAMWithFit(input_channels=3, num_classes=10)
+model = EBO(input_channels=3, num_classes=10)
 
 # ---------------- Training ----------------
 model.fit(

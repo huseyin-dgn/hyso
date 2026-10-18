@@ -1,4 +1,4 @@
-# Hyso
+# -- Hyso -- 
 
 Hyso is a PyTorch-based deep learning library designed for **CNN + Bottleneck Residual + CBAM** architectures. It simplifies building, training, and evaluating image classification models with integrated callbacks and data augmentation.
 
@@ -13,15 +13,16 @@ hyso/
 │ │ └─ bcam_fit.py # BCAMWithFit (fit + callbacks)
 │ │
 │ ├─ augmentation/
-│ │ └─ get_loaders.py # Data loader and augmentations
+│ │ └─ augmentation.py # Data loader and augmentations
 │ │
 │ ├─ callbacks/
 │ │ └─ callbacks.py # EarlyStopping, ModelCheckpoint, LRSchedulerCallback
 │ │
 │ └─ init.py
 │
-├─ setup.py # Installation script
+├─ setup.cfg # Installation script
 └─ README.md # Project documentation
+````
 
 
 ---
@@ -48,13 +49,13 @@ pip install hyso
 
 git clone https://github.com/huseyin-dgn/hyso.git
 cd hyso
-pip install .
+pip install hyso
 
 ## Usage
 
 ```python
-from hyso.models.bcam_fit import BCAMWithFit
-from hyso.augmentation.get_loaders import get_loaders
+from hyso.models import EBO , CEMO , ELO
+from hyso.augmentation import get_loaders
 
 # ---------------- Dataset ----------------
 train_loader, val_loader = get_loaders(
@@ -67,7 +68,7 @@ train_loader, val_loader = get_loaders(
 )
 
 # ---------------- Model ----------------
-model = BCAMWithFit(input_channels=3, num_classes=10)
+model = EBO(input_channels=3, num_classes=10)
 
 # ---------------- Training ----------------
 model.fit(
