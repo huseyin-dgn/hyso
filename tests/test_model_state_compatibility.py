@@ -3,9 +3,6 @@
 import pytest
 import torch
 
-from hyso.models import EBO
-
-
 def describe_state(model):
     parameters = dict(model.named_parameters())
     buffers = dict(model.named_buffers())
@@ -28,8 +25,8 @@ def describe_state(model):
 
 
 def inference_target(model):
-    # EBO has no wrapper forward (R01); use the explicitly documented child.
-    return model.model if isinstance(model, EBO) else model
+    # Exercise the public module call, including EBO's wrapper after R01.
+    return model
 
 
 def test_state_schema_matches_frozen_manifest(model_case, make_model):

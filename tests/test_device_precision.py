@@ -71,10 +71,9 @@ def simulated_cuda_selection(monkeypatch):
 
 def test_r12_current_cpu_model_requests_cuda_amp_on_simulated_signal(monkeypatch, quiet_training):
     requested = simulated_cuda_selection(monkeypatch)
-    assert requested == {"scaler_enabled": True, "device_type": "cuda", "enabled": True}
+    assert requested == {"scaler_enabled": False, "device_type": "cpu", "enabled": False}
 
 
-@pytest.mark.xfail(strict=True, reason="R12: simulated global CUDA availability overrides the explicit CPU AMP path", raises=R12CPUSelection)
 def test_r12_explicit_cpu_model_selects_cpu_amp_path(monkeypatch, quiet_training):
     requested = simulated_cuda_selection(monkeypatch)
     assert set(requested) == {"scaler_enabled", "device_type", "enabled"}
