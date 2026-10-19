@@ -17,6 +17,7 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
+    "hyso/benchmark/__init__.py", "hyso/benchmark/runner.py", "hyso/benchmark/result.py",
     "hyso/training/resume.py",
     "hyso/training/__init__.py", "hyso/training/trainer.py",
     "hyso/models/modular.py",
@@ -128,6 +129,7 @@ torch.set_num_threads(1)
 from hyso.models import EBO, ELO, CEMO, EMA, CNNSENormalWithFit
 from hyso.models.modular import ModularCNN
 from hyso.training import Trainer
+from hyso.benchmark import BenchmarkRunner, BenchmarkResult
 from hyso.augmentation import build_transforms, get_loaders
 from hyso.callbacks.callbacks import EarlyStopping, ModelCheckpoint, LRSchedulerCallback
 for module, names in {
@@ -139,6 +141,9 @@ for module, names in {
     'hyso.training': ('Trainer',),
     'hyso.training.trainer': ('Trainer',),
     'hyso.training.resume': ('prepare_save', 'save_last', 'restore_checkpoint'),
+    'hyso.benchmark': ('BenchmarkRunner', 'BenchmarkResult'),
+    'hyso.benchmark.runner': ('BenchmarkRunner',),
+    'hyso.benchmark.result': ('BenchmarkResult',),
     'hyso.models.WithSE': ('CEMO', 'EMA'),
     'hyso.models.fit': ('CNNSENormalWithFit',),
     'hyso.augmentation.augmentation': ('build_transforms', 'get_loaders'),
@@ -239,6 +244,29 @@ replay_result = replay_support['run_replay'](
     replay_support['CRITICAL'], pathlib.Path.cwd() / ('installed-replay-' + target.name))
 assert replay_result['epochs'] == 5 and replay_result['resumed_attempts'] == 4
 assert replay_result['exact_bytes'] and replay_result['sample_order_equal'] and replay_result['rng_equal']
+benchmark_rows = []
+for precision, dtype in [('fp32', torch.float32), ('fp64', torch.float64)]:
+    bench_model = torch.nn.Sequential(torch.nn.Conv2d(1, 2, 3, padding=1), torch.nn.BatchNorm2d(2),
+                                      torch.nn.Dropout(0.5), torch.nn.AdaptiveAvgPool2d(1)).to(dtype=dtype)
+    bench_model[1].eval()
+    bench_state = {name: value.clone() for name, value in bench_model.state_dict().items()}
+    bench_modes = [module.training for module in bench_model.modules()]
+    bench_rng = torch.get_rng_state().clone()
+    bench_result = BenchmarkRunner(bench_model, input_shape=(2, 1, 5, 7), precision=precision,
+                                   warmup_iterations=1, measure_iterations=2, repeats=2).run()
+    assert isinstance(bench_result, BenchmarkResult)
+    bench_data = bench_result.to_dict()
+    assert bench_data['schema_version'] == 1 and bench_data['benchmark_type'] == 'inference'
+    assert bench_data['stats']['pooled']['count'] == 4 and bench_data['stats']['pooled']['mean_ms'] > 0
+    assert all(len(row) == 2 and all(t > 0 for t in row) for row in bench_data['timing']['latency_samples_ms'])
+    assert bench_data['throughput']['method'] == 'derived_serial_service_rate'
+    assert bench_data['parameters']['total_parameters'] == sum(p.numel() for p in bench_model.parameters())
+    assert [module.training for module in bench_model.modules()] == bench_modes
+    assert all(torch.equal(value, bench_state[name]) for name, value in bench_model.state_dict().items())
+    assert torch.equal(torch.get_rng_state(), bench_rng)
+    assert BenchmarkResult(bench_data).to_dict() == bench_data
+    assert json.loads(json.dumps(bench_data, allow_nan=False)) == bench_data
+    benchmark_rows.append(bench_data)
 for name, module in list(sys.modules.items()):
     if name == 'hyso' or name.startswith('hyso.'):
         assert pathlib.Path(module.__file__).resolve().is_relative_to(target)
@@ -253,6 +281,9 @@ print(json.dumps({'source': hyso.__file__, 'version': importlib.metadata.version
                   'saved_epochs': saved['completed_epochs'],
                   'restored_updates': restored.update_count,
                   'replay': replay_result,
+                  'cpu_benchmarks': len(benchmark_rows),
+                  'benchmarks': benchmark_rows,
+                  'benchmark_source': importlib.import_module('hyso.benchmark.runner').__file__,
                   'cpu_models': 3, 'cuda_initialized': torch.cuda.is_initialized()}))
 """
 
@@ -276,4 +307,7 @@ def test_installed_distribution_import_and_cpu_forward(distributions, kind):
     assert observed["restored_updates"] == 4
     assert observed["replay"]["epochs"] == 5 and observed["replay"]["resumed_attempts"] == 4
     assert observed["replay"]["exact_bytes"] and observed["replay"]["rng_equal"]
+    assert observed["cpu_benchmarks"] == 2
+    assert Path(observed["benchmark_source"]).resolve().is_relative_to(target.resolve())
+    assert {row["configuration"]["precision"] for row in observed["benchmarks"]} == {"fp32", "fp64"}
     (work / (kind + "-smoke.json")).write_text(json.dumps(observed), encoding="utf-8")
