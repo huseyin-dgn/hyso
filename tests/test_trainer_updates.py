@@ -189,6 +189,16 @@ def test_unsupported_scheduler(kind):
     scheduler = (torch.optim.lr_scheduler.ReduceLROnPlateau(instance.optimizer) if kind == "plateau"
                  else torch.optim.lr_scheduler.ExponentialLR(instance.optimizer, gamma=.9) if kind == "custom"
                  else True)
+    if kind == "plateau":
+        supported = Trainer(instance.model, optimizer=instance.optimizer, loss_fn=instance.loss_fn, scheduler=scheduler)
+        with pytest.raises(ValueError, match="val_loader"):
+            supported.fit(batches(), epochs=2)
+        assert supported.update_count == 0
+        history = supported.fit(batches(), val_loader=batches(), epochs=2)
+        assert scheduler.last_epoch == 2
+        assert scheduler.best == min(history["val_loss"])
+        assert supported.update_count == 10
+        return
     with pytest.raises(TypeError if kind == "invalid_type" else NotImplementedError):
         Trainer(instance.model, optimizer=instance.optimizer, loss_fn=instance.loss_fn, scheduler=scheduler)
 

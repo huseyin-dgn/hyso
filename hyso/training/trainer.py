@@ -1,10 +1,15 @@
 """Classification updates, independent of model-specific fit APIs."""
 
 import math
+import copy
+import inspect
 from numbers import Real
 
 import torch
 from torch import nn
+
+from hyso.models.WithSE import EMA
+from hyso.callbacks.callbacks import EarlyStopping, ModelCheckpoint, LRSchedulerCallback
 
 
 class Trainer:
@@ -19,13 +24,18 @@ class Trainer:
 
     A Trainer owns one fit lifecycle. Repeating its completed epoch budget is
     a no-op; restarting or retrying a failed run requires a fresh Trainer.
-    Validation and M2-B3/B4 features are not implemented yet. Optimizers are
+    Validation evaluates the EMA shadow when enabled, otherwise the live model.
+    EarlyStopping uses that same target and optionally restores its best weights
+    after the final coherent epoch boundary. Checkpoint/resume is not implemented.
+    Callbacks are observers: callback(event, independent_plain_logs).
+    Optimizers are
     standard non-fused SGD/Adam/AdamW; schedulers are bare OneCycleLR, StepLR
     or CosineAnnealingLR instances. The Trainer owns their stepping.
     """
 
     def __init__(self, model, *, optimizer, loss_fn, device="cpu", task="multiclass",
-                 scheduler=None, amp=False, accum_steps=1, grad_clip=None):
+                 scheduler=None, amp=False, accum_steps=1, grad_clip=None,
+                 ema_decay=None, early_stopping=None, callbacks=()):
         if not isinstance(model, nn.Module):
             raise TypeError("model must be an nn.Module")
         if not isinstance(optimizer, torch.optim.Optimizer):
@@ -56,14 +66,118 @@ class Trainer:
         self.amp = amp
         self.accum_steps = accum_steps
         self.grad_clip = grad_clip
+        if ema_decay is not None:
+            if isinstance(ema_decay, bool) or not isinstance(ema_decay, Real):
+                raise TypeError("ema_decay must be a finite number in [0,1] or None")
+            if not math.isfinite(ema_decay) or not 0 <= ema_decay <= 1:
+                raise ValueError("ema_decay must be finite and in [0,1]")
+        if early_stopping is not None:
+            if type(early_stopping) is not EarlyStopping:
+                raise TypeError("early_stopping must be a standard EarlyStopping instance")
+            if type(early_stopping.patience) is not int or early_stopping.patience <= 0:
+                raise ValueError("EarlyStopping patience must be a positive Python int")
+            if isinstance(early_stopping.delta, bool) or not isinstance(early_stopping.delta, Real) or not math.isfinite(early_stopping.delta) or early_stopping.delta < 0:
+                raise ValueError("EarlyStopping delta must be finite and nonnegative")
+            if type(early_stopping.restore_best_weights) is not bool or type(early_stopping.verbose) is not bool:
+                raise TypeError("EarlyStopping restore_best_weights and verbose must be bool")
+        if not isinstance(callbacks, (tuple, list)):
+            raise TypeError("callbacks must be a tuple/list of observer callables")
+        for callback in callbacks:
+            if isinstance(callback, (EarlyStopping, ModelCheckpoint, LRSchedulerCallback)) or not callable(callback):
+                raise TypeError("callbacks must use callback(event, logs), not legacy training callbacks")
+            if inspect.iscoroutinefunction(callback) or inspect.iscoroutinefunction(getattr(callback, "__call__", None)):
+                raise TypeError("callbacks must be synchronous observers")
+            try:
+                inspect.signature(callback).bind("epoch_end", {})
+            except (ValueError, TypeError) as exc:
+                raise TypeError("callbacks must accept (event, logs)") from exc
+        self.callbacks = tuple(callbacks)
+        self.early_stopping = early_stopping
+        self.ema_decay = ema_decay
         self.history = {key: [] for key in ("train_loss", "train_acc", "val_loss", "val_acc")}
         self._epochs = None
         self.microbatch_count = 0
         self.attempt_count = 0
         self.update_count = 0
+        self.ema_update_count = 0
+        self._finalized = False
+        self._finished = False
         self._validate_setup()
         # This API exists in the minimum supported Torch 2.2.2 runtime.
         self.scaler = torch.cuda.amp.GradScaler(enabled=amp)
+        self.ema = None if ema_decay is None else EMA(model, decay=ema_decay, device=self.device)
+        if self.ema is not None:
+            self.ema.ema_model.eval()
+            self._validate_ema()
+
+    @property
+    def evaluation_model(self):
+        """Inference/best-weight target; EMA weights are never loaded into live model."""
+        return self.model if self.ema is None else self.ema.ema_model
+
+    def _validate_ema(self):
+        if self.ema is None:
+            return
+        for live, shadow in ((list(self.model.named_parameters()), list(self.ema.ema_model.named_parameters())),
+                             (list(self.model.named_buffers()), list(self.ema.ema_model.named_buffers()))):
+            if [name for name, _ in live] != [name for name, _ in shadow]:
+                raise ValueError("EMA parameter/buffer names and order must match live model")
+            for (name, source), (_, target) in zip(live, shadow):
+                if source.shape != target.shape or source.dtype != target.dtype or source.device != target.device:
+                    raise ValueError(f"EMA tensor schema/device mismatch: {name}")
+                if source is target or (source.numel() and source.data_ptr() == target.data_ptr()):
+                    raise ValueError(f"EMA tensors must be independent: {name}")
+        if any(p.requires_grad for p in self.ema.ema_model.parameters()):
+            raise ValueError("EMA shadow parameters must have gradients disabled")
+
+    def _emit(self, event, epoch):
+        logs = {key: (values[-1] if values else None) for key, values in self.history.items()}
+        logs.update(epoch=epoch, applied_updates=self.update_count, optimizer_attempts=self.attempt_count,
+                    ema_updates=self.ema_update_count,
+                    learning_rate=[float(group["lr"]) for group in self.optimizer.param_groups],
+                    early_stop=self.early_stopping.early_stop if self.early_stopping is not None else False)
+        for callback in self.callbacks:
+            callback(event, copy.deepcopy(logs))
+
+    @staticmethod
+    def _loader_length(loader, name):
+        try:
+            count = len(loader)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"{name} must be a finite, sized iterable") from exc
+        if count <= 0 or not callable(getattr(loader, "__iter__", None)):
+            raise ValueError(f"{name} must be nonempty and iterable")
+        return count
+
+    def _validate(self, loader):
+        """Pure metric phase with exact per-submodule mode restoration, even on error."""
+        count = self._loader_length(loader, "val_loader")
+        self._validate_ema()
+        target = self.evaluation_model
+        modes = [(module, module.training) for module in target.modules()]
+        try:
+            target.eval()
+            summed, correct, samples, seen = 0., 0, 0, 0
+            with torch.no_grad():
+                for batch in loader:
+                    seen += 1
+                    if seen > count:
+                        raise ValueError("val_loader yielded more batches than len()")
+                    inputs, labels, size = self._batch(batch)
+                    with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=self.amp):
+                        loss, batch_correct = self._loss_and_correct(target(inputs), labels, size)
+                    summed += loss.item() * size
+                    correct += batch_correct
+                    samples += size
+            if seen != count or not samples:
+                raise ValueError("val_loader yielded fewer batches than len() or no samples")
+            loss = summed / samples
+            if not math.isfinite(loss):
+                raise FloatingPointError("nonfinite validation loss encountered")
+            return loss, 100. * correct / samples
+        finally:
+            for module, training in modes:
+                module.training = training
 
     def _validate_setup(self):
         if type(self.amp) is not bool:
@@ -114,29 +228,46 @@ class Trainer:
                for group in self.optimizer.param_groups):
             raise NotImplementedError("fused/differentiable optimizers are unsupported")
         self._validate_scheduler()
+        if hasattr(self, "ema"):
+            self._validate_ema()
 
     def _validate_scheduler(self, *, fresh=False, total_steps=None):
         scheduler = self.scheduler
         if scheduler is None:
             return
         schedulers = torch.optim.lr_scheduler
-        if isinstance(scheduler, schedulers.ReduceLROnPlateau):
-            raise NotImplementedError("ReduceLROnPlateau requires validation in M2-B3")
-        if type(scheduler) not in (schedulers.OneCycleLR, schedulers.StepLR, schedulers.CosineAnnealingLR):
+        plateau = type(scheduler) is schedulers.ReduceLROnPlateau
+        if type(scheduler) not in (schedulers.OneCycleLR, schedulers.StepLR, schedulers.CosineAnnealingLR, schedulers.ReduceLROnPlateau):
             if not isinstance(scheduler, schedulers.LRScheduler):
                 raise TypeError("scheduler must be a supported bare PyTorch scheduler")
             raise NotImplementedError("custom scheduler is unsupported")
         if scheduler.optimizer is not self.optimizer:
             raise ValueError("scheduler must be bound to the Trainer optimizer")
-        if fresh and (scheduler.last_epoch != 0 or scheduler._step_count != 1):
+        if fresh and (scheduler.last_epoch != 0 or (not plateau and scheduler._step_count != 1)):
             raise ValueError("scheduler must have fresh state (last_epoch=0)")
-        lrs = scheduler.get_last_lr()
+        # Torch 2.2.2 Plateau has neither get_last_lr nor _last_lr before
+        # its first step. Its initial LR state is the optimizer group state.
+        lrs = getattr(scheduler, "_last_lr", [g["lr"] for g in self.optimizer.param_groups]) if plateau else scheduler.get_last_lr()
         if len(lrs) != len(self.optimizer.param_groups):
             raise ValueError("scheduler LR state does not match optimizer groups")
         for lr, group in zip(lrs, self.optimizer.param_groups):
             if not isinstance(lr, Real) or not math.isfinite(lr) or lr < 0 or group["lr"] != lr:
                 raise ValueError("scheduler LR state must be finite and match optimizer")
-        if type(scheduler) is schedulers.OneCycleLR:
+        if plateau:
+            if scheduler.mode != "min":
+                raise ValueError("Plateau must minimize validation loss (mode='min')")
+            if not isinstance(scheduler.factor, Real) or not math.isfinite(scheduler.factor) or not 0 <= scheduler.factor < 1:
+                raise ValueError("Plateau factor must be finite and in [0,1)")
+            for key in ("patience", "cooldown"):
+                if type(getattr(scheduler, key)) is not int or getattr(scheduler, key) < 0:
+                    raise ValueError(f"Plateau {key} must be a nonnegative int")
+            for key in ("threshold", "eps"):
+                value = getattr(scheduler, key)
+                if not isinstance(value, Real) or not math.isfinite(value) or value < 0:
+                    raise ValueError(f"Plateau {key} must be finite and nonnegative")
+            if fresh and (scheduler.best != math.inf or scheduler.num_bad_epochs != 0 or scheduler.cooldown_counter != 0):
+                raise ValueError("Plateau must have fresh state")
+        elif type(scheduler) is schedulers.OneCycleLR:
             if type(scheduler.total_steps) is not int or scheduler.total_steps <= 0:
                 raise ValueError("OneCycle total_steps must be a positive int")
             if total_steps is not None and scheduler.total_steps != total_steps:
@@ -201,6 +332,10 @@ class Trainer:
             self.scaler.update()
             if applied and self.scaler.get_scale() >= before:
                 self.update_count += 1
+                if self.ema is not None:
+                    self._validate_ema()
+                    self.ema.update(self.model)
+                    self.ema_update_count += 1
                 if type(self.scheduler) is torch.optim.lr_scheduler.OneCycleLR:
                     self.scheduler.step()
         finally:
@@ -261,29 +396,39 @@ class Trainer:
         return loss, correct
 
     def fit(self, train_loader, val_loader=None, *, epochs=5):
-        """Run one training budget; validation is unsupported until M2-B3."""
-        if val_loader is not None:
-            raise NotImplementedError("validation is unsupported until M2-B3")
+        """Run train→validation→scheduler→EarlyStopping→observer→finalization."""
         if type(epochs) is not int or epochs <= 0:
             raise ValueError("epochs must be a positive Python int")
         self._validate_setup()
-        try:
-            count = len(train_loader)
-        except (TypeError, ValueError) as exc:
-            raise ValueError("train_loader must be a finite, sized iterable") from exc
-        if count <= 0 or not callable(getattr(train_loader, "__iter__", None)):
-            raise ValueError("train_loader must be nonempty and iterable")
+        count = self._loader_length(train_loader, "train_loader")
+        if val_loader is not None:
+            self._loader_length(val_loader, "val_loader")
+        elif self.early_stopping is not None or type(self.scheduler) is torch.optim.lr_scheduler.ReduceLROnPlateau:
+            raise ValueError("EarlyStopping and ReduceLROnPlateau require val_loader")
+        if self._finalized:
+            raise RuntimeError("Trainer is terminal after best-weight finalization/early stop; create a fresh Trainer")
         if self._epochs is not None:
-            if self._epochs == epochs and len(self.history["train_loss"]) == epochs:
+            if self._finished and self._epochs == epochs and len(self.history["train_loss"]) == epochs:
                 return {key: list(values) for key, values in self.history.items()}
             raise RuntimeError("fit lifecycle already started; create a fresh Trainer")
         self._validate_scheduler(fresh=True,
                                  total_steps=epochs * ((count + self.accum_steps - 1) // self.accum_steps))
+        if self.early_stopping is not None:
+            es = self.early_stopping
+            if es.best_state is not None or es.best_loss != float("inf") or es.counter != 0 or es.early_stop:
+                raise ValueError("EarlyStopping must have fresh state; resume is not implemented")
         self._epochs = epochs
+        self._emit("train_begin", 0)
         # Enable autograd explicitly even if the caller has entered no_grad.
         with torch.enable_grad():
             for _ in range(epochs):
+                # Keep intentionally eval/frozen children of a training model.
+                modes = [(m, m.training) for m in self.model.modules()]
+                mixed = modes if self.model.training or any(flag for _, flag in modes[1:]) else []
                 self.model.train()
+                for module, training in mixed:
+                    if module is not self.model:
+                        module.training = training
                 total_loss, total_correct, total_samples = 0.0, 0, 0
                 window_samples = 0
                 self.optimizer.zero_grad()
@@ -309,11 +454,29 @@ class Trainer:
                 epoch_loss = total_loss / total_samples
                 if not math.isfinite(epoch_loss):
                     raise FloatingPointError("nonfinite epoch loss encountered")
+                val_loss, val_acc = (None, None) if val_loader is None else self._validate(val_loader)
                 if type(self.scheduler) in (torch.optim.lr_scheduler.StepLR,
                                            torch.optim.lr_scheduler.CosineAnnealingLR):
                     self.scheduler.step()
+                elif type(self.scheduler) is torch.optim.lr_scheduler.ReduceLROnPlateau:
+                    self.scheduler.step(val_loss)
+                if self.early_stopping is not None:
+                    self.early_stopping(val_loss, self.evaluation_model)
                 self.history["train_loss"].append(epoch_loss)
                 self.history["train_acc"].append(100.0 * total_correct / total_samples)
-                self.history["val_loss"].append(None)
-                self.history["val_acc"].append(None)
+                self.history["val_loss"].append(val_loss)
+                self.history["val_acc"].append(val_acc)
+                self._emit("epoch_end", len(self.history["train_loss"]))
+                # Coherent last-state boundary: B4 saves here, before any best
+                # restore. Observers do not own checkpoint/optimizer stepping.
+                if self.early_stopping is not None and self.early_stopping.early_stop:
+                    break
+        if self.early_stopping is not None:
+            es = self.early_stopping
+            if es.restore_best_weights:
+                self._finalized = True
+                es.restore_weights(self.evaluation_model)
+            self._finalized = self._finalized or es.early_stop
+        self._emit("train_end", len(self.history["train_loss"]))
+        self._finished = True
         return {key: list(values) for key, values in self.history.items()}
