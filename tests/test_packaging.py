@@ -17,6 +17,7 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
+    "hyso/models/modular.py",
     "hyso/models/attention.py",
     "hyso/models/blocks.py",
     "hyso/checkpoint.py",
@@ -123,6 +124,7 @@ sys.path.insert(0, str(target))
 import torch, hyso
 torch.set_num_threads(1)
 from hyso.models import EBO, ELO, CEMO, EMA, CNNSENormalWithFit
+from hyso.models.modular import ModularCNN
 from hyso.augmentation import build_transforms, get_loaders
 from hyso.callbacks.callbacks import EarlyStopping, ModelCheckpoint, LRSchedulerCallback
 for module, names in {
@@ -130,6 +132,7 @@ for module, names in {
     'hyso.models.bcam': ('EBO', 'ELO'),
     'hyso.models.blocks': ('ConvNormAct', 'ResidualBlock'),
     'hyso.models.attention': ('ECAAttention', 'CoordinateAttention'),
+    'hyso.models.modular': ('ModularCNN',),
     'hyso.models.WithSE': ('CEMO', 'EMA'),
     'hyso.models.fit': ('CNNSENormalWithFit',),
     'hyso.augmentation.augmentation': ('build_transforms', 'get_loaders'),
@@ -151,11 +154,19 @@ with torch.no_grad():
         output = model.eval()(x)
         assert output.shape == (2, 10) and output.device.type == 'cpu'
         assert torch.isfinite(output).all()
+    modular = ModularCNN(input_channels=1, num_classes=2, widths=(4, 6),
+                         repeats=(1, 1), strides=(1, 2), attention='coordinate').eval()
+    modular_input = torch.randn(2, 1, 15, 19)
+    assert modular.forward_features(modular_input).shape == (2, 6, 8, 10)
+    modular_output = modular(modular_input)
+    assert modular_output.shape == (2, 2) and torch.isfinite(modular_output).all()
 for name, module in list(sys.modules.items()):
     if name == 'hyso' or name.startswith('hyso.'):
         assert pathlib.Path(module.__file__).resolve().is_relative_to(target)
 assert not torch.cuda.is_initialized()
 print(json.dumps({'source': hyso.__file__, 'version': importlib.metadata.version('hyso'),
+                  'modular_source': importlib.import_module('hyso.models.modular').__file__,
+                  'modular_output_shape': list(modular_output.shape),
                   'cpu_models': 3, 'cuda_initialized': torch.cuda.is_initialized()}))
 """
 
