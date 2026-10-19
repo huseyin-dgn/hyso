@@ -8,12 +8,14 @@ HYSo0.2.0 ve [sabit roadmap v1.0](hyso-architecture-roadmap-v1.md) değişmez.
 [M2-C-A](../audit/m2-c-a-benchmark-engine-design.md) ve önceki milestone durumları
 geriye dönük değiştirilmez. M2-C-B1 CPU inference çekirdeğidir; M2-C-B2
 native CUDA event/FP16 autocast ve opt-in allocator memory probe ekler.
+M2-C-B3 explicit JSON/summary CSV/sample CSV ve koşul uyumluluğu raporu ekler;
+quality/regression/Pareto sistemi değildir.
 
 Durumlar: `planned`=henüz benchmark özelliği olarak uygulanmadı;
 `partial`=belirtilen alt kapsam var; `implemented`=bütün satırın doğrulanmış
 sözleşmesi var; `optional-hardware`=donanım bağımlı uygulama ayrıca onaylanmışsa
-kullanılacak durum. B2 sonunda P01/P08/P11 partial, P09 sınırları belirtilmiş
-native allocator sözleşmesiyle implemented, kalan31 satır planned'dır.
+kullanılacak durum. B3 sonunda P01/P08/P11/P29 partial, P09 sınırları belirtilmiş
+native allocator sözleşmesiyle implemented, kalan30 satır planned'dır.
 Donanım opsiyonelliği araç sütununda ayrıca belirtilir.
 
 ## Uygulama sırası
@@ -79,7 +81,7 @@ fazı, kurulmuş dependency veya gerçekleştirilmiş deney anlamına gelmez.
 | P26 | Accuracy / Precision / Recall / F1 | Model kalitesinin ayrı evaluation protokolü | %, oran, confusion matrix, averaging policy | Labeled veri, class mapping, predictions | Split/label/threshold/macro-micro tanımı | Ö6 | planned | Bilinen confusion-matrix reference; missing class/zero division policy; latency kalite kanıtı değildir |
 | P27 | Robustness Benchmark | Belirli perturbation/domain değişiminde kalite dayanıklılığı | metric drop/curve, corruption severity | Labeled robustness set/transforms | P26, perturbation/seed/severity protokolü | Ö6 | planned | Clean ve perturbed paired samples; reproducible order; accuracy değerlendirmesinden ayrı protocol |
 | P28 | Quantization / Precision Accuracy Drop | FP32→FP16/INT8 kalite farkı | yüzde puan ve göreli % değişim, baseline=0 durumu | Aynı labeled evaluation set; uygun backend/calibration data | P08/P26, aynı preprocessing/output semantics | Ö6 | planned | pp=100×(new-base) oran metrikleri için; relative%=100×(new-base)/base; base0 için null+reason, ikisi karıştırılmaz |
-| P29 | Accuracy–Speed–Memory Trade-off & Regression | Uyumlu sonuçlarda Pareto/regression değerlendirmesi | koşul eşliği raporu, curves, deltas | Ö2 versioned results, quality+memory metrics | P01/P09/P10/P26; uyumlu input/runtime/precision | Ö2 temeli, Ö6/Ö8 analiz | planned | Koşul uyuşmazlığı flag/red; raw repeats/uncertainty; karşılaştırılamayan modeller otomatik quality winner olmaz |
+| P29 | Accuracy–Speed–Memory Trade-off & Regression | B3 JSON/CSV ve timing/memory koşul eşliği temeli var; quality/Pareto/regression henüz yok | koşul eşliği raporu; curves/deltas sonraki kapsam | Ö2 schema1 export/comparison; quality metrics ileride | P01/P09/P10/P26; uyumlu input/runtime/precision | Ö2 temeli, Ö6/Ö8 analiz | partial | Compatible/incompatible/insufficient_metadata, raw samples korunumu; memory ayrı eligibility; accuracy/significance/ranking/regression iddiası yok |
 
 ## E. Gerçek dünya, edge ve deployment
 
@@ -106,3 +108,4 @@ açık kapsamı içinde uygulanır; bu belge bunları bugün kurulmuş saymaz.
 
 B1 kanıtı ve dosyalar: [CPU benchmark audit](../audit/m2-c-b1-cpu-benchmark.md).
 B2 kanıtı ve sınırlar: [CUDA benchmark audit](../audit/m2-c-b2-cuda-benchmark.md).
+B3 kanıtı ve sınırlar: [Export/comparison audit](../audit/m2-c-b3-benchmark-export-comparison.md).

@@ -1,8 +1,13 @@
-"""Immutable, finite, plain-data inference results. No file export in B1."""
+"""Immutable inference results, explicit exports and condition compatibility."""
+import csv
 from dataclasses import dataclass
+import io
 import json
 import math
+import os
+from pathlib import Path
 import statistics
+import tempfile
 
 
 def _plain(value, depth=0):
@@ -186,8 +191,8 @@ def _validate(data):
 class BenchmarkResult:
     """Schema-v1 result; internally an immutable JSON string, never a model/Tensor.
 
-    to_dict returns a new defensive copy. No JSON/CSV file export or model
-    comparison is implemented here. Constructing a result validates plain data,
+    to_dict returns a new defensive copy. Explicit exports never run inference.
+    Constructing a result validates plain data,
     protocol/sample consistency, statistics and the derived service rate.
     """
     __slots__ = ("_payload",)
@@ -200,3 +205,242 @@ class BenchmarkResult:
 
     def to_dict(self):
         return json.loads(self._payload)
+
+    def _export_data(self):
+        data = _plain(self.to_dict())
+        _validate(data)
+        return data
+
+    def to_json(self, path, *, overwrite=False):
+        """Write full schema-v1 UTF-8 JSON, sorted keys and lossless samples.
+
+        Existing destinations raise FileExistsError unless overwrite=True.
+        A completed sibling temporary file is atomically published; parents
+        must exist. I/O failures propagate and leave the result unchanged.
+        """
+        data = self._export_data()
+        _write_export(path, json.dumps(data, ensure_ascii=False, allow_nan=False, sort_keys=True, indent=2) + "\n", overwrite)
+
+    def to_csv(self, path, *, overwrite=False):
+        """Write one summary row; JSON remains the canonical complete record.
+
+        Null cells are empty; status/reason distinguish missing measurements.
+        Spreadsheet formula-like text is prefixed with an apostrophe. Column
+        order is fixed by _SUMMARY_COLUMNS; floats use Python round-trip text.
+        Destination/overwrite policy is identical to to_json.
+        """
+        data = self._export_data()
+        row = {column: _field(data, key) for column, key in _SUMMARY_COLUMNS}
+        row["input_shape"] = json.dumps(data["input"]["shape"], separators=(",", ":"))
+        _write_export(path, _csv_text(list(row), [row]), overwrite)
+
+    def to_samples_csv(self, path, *, overwrite=False):
+        """Write R*N measured samples in repeat/iteration order (zero based).
+
+        No warmup/preflight/memory samples are invented. Null/escaping and
+        destination policy match to_csv; no append or automatic directory creation.
+        """
+        data = self._export_data()
+        common = dict(schema_version=data["schema_version"], run_id=data["identity"]["run_id"],
+                      timing_method=data["timing"]["timing_method"], timing_scope=data["timing"]["timing_scope"],
+                      device=data["environment"]["device"], precision=data["configuration"]["precision"],
+                      batch_size=data["input"]["batch_size"])
+        rows = (dict(common, repeat_index=r, iteration_index=i, latency_ms=value)
+                for r, repeat in enumerate(data["timing"]["latency_samples_ms"]) for i, value in enumerate(repeat))
+        _write_export(path, _csv_text(_SAMPLE_COLUMNS, rows), overwrite)
+
+
+def _field(data, path):
+    for key in path.split("."):
+        if type(data) is not dict or key not in data:
+            return None
+        data = data[key]
+    return data
+
+
+_SUMMARY_COLUMNS = (
+    ("schema_version", "schema_version"), ("run_id", "identity.run_id"),
+    ("started_at_utc", "identity.started_at_utc"), ("finished_at_utc", "identity.finished_at_utc"),
+    ("model_name", "model.model_name"), ("model_class", "model.qualified_class"),
+    ("device", "environment.device"), ("precision", "configuration.precision"),
+    ("input_shape", "input.shape"), ("input_dtype", "input.dtype"), ("batch_size", "input.batch_size"),
+    ("warmup_iterations", "configuration.warmup_iterations"),
+    ("measure_iterations", "configuration.measure_iterations"), ("repeats", "configuration.repeats"),
+    ("timing_method", "timing.timing_method"), ("timing_scope", "timing.timing_scope"),
+    ("synchronization_policy", "timing.synchronization_policy"),
+    ("sample_count", "stats.pooled.count"), ("mean_ms", "stats.pooled.mean_ms"),
+    ("p50_ms", "stats.pooled.p50_ms"), ("p90_ms", "stats.pooled.p90_ms"), ("p95_ms", "stats.pooled.p95_ms"),
+    ("min_ms", "stats.pooled.min_ms"), ("max_ms", "stats.pooled.max_ms"),
+    ("std_ms", "stats.pooled.std_ms"), ("std_status", "stats.pooled.std_status"),
+    ("throughput_images_per_second", "throughput.images_per_sec"), ("throughput_method", "throughput.method"),
+    ("throughput_source_timing_method", "throughput.source_timing_method"),
+    ("parameters_total", "parameters.total_parameters"), ("parameters_trainable", "parameters.trainable_parameters"),
+    ("parameters_frozen", "parameters.frozen_parameters"), ("parameter_buffer_bytes", "parameters.parameter_buffer_bytes"),
+    ("cuda_memory_status", "cuda_memory.status"), ("cuda_memory_reason", "cuda_memory.reason"),
+    ("cuda_memory_scope", "cuda_memory.scope"), ("cuda_counter_reset_performed", "cuda_memory.counter_reset_performed"),
+) + tuple(("cuda_" + key, "cuda_memory." + key) for key in (
+    "baseline_allocated_bytes", "baseline_reserved_bytes", "previous_peak_allocated_bytes", "previous_peak_reserved_bytes",
+    "peak_allocated_bytes", "peak_reserved_bytes", "incremental_peak_bytes", "current_allocated_after_probe_bytes",
+    "current_reserved_after_probe_bytes", "current_allocated_after_output_release_bytes", "current_reserved_after_output_release_bytes"))
+
+_SAMPLE_COLUMNS = ("schema_version", "run_id", "repeat_index", "iteration_index", "latency_ms",
+                   "timing_method", "timing_scope", "device", "precision", "batch_size")
+
+
+def _csv_text(columns, rows):
+    def cell(value):
+        if type(value) is str and value.lstrip(" \t\r\n").startswith(("=", "+", "-", "@")):
+            return "'" + value
+        return value
+    stream = io.StringIO(newline="")
+    writer = csv.DictWriter(stream, fieldnames=columns, lineterminator="\n")
+    writer.writeheader()
+    for row in rows:
+        writer.writerow({key: cell(value) for key, value in row.items()})
+    return stream.getvalue()
+
+
+def _write_export(path, text, overwrite):
+    if type(overwrite) is not bool:
+        raise TypeError("overwrite must be bool")
+    if not isinstance(path, (str, os.PathLike)):
+        raise TypeError("destination must be a string or path-like object")
+    if isinstance(path, str) and not path:
+        raise ValueError("destination cannot be empty")
+    destination = Path(path)
+    if destination.is_symlink():
+        raise ValueError("symlink destinations are unsupported")
+    if destination.exists():
+        if not destination.is_file():
+            raise ValueError("destination must be a regular file")
+        if not overwrite:
+            raise FileExistsError(str(destination))
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", newline="", delete=False,
+                                         prefix=".hyso-export-", suffix=".tmp", dir=destination.parent) as handle:
+            temporary = Path(handle.name)
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        if overwrite:
+            os.replace(temporary, destination)
+        else:
+            # Atomic publication without a check-then-overwrite race. Same-dir
+            # hard links require filesystem support; unsupported I/O propagates.
+            os.link(temporary, destination)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
+_CONDITION_FIELDS = (
+    "schema_version", "benchmark_type", "configuration.protocol_version",
+    "configuration.precision", "configuration.autocast_enabled", "configuration.warmup_iterations",
+    "configuration.measure_iterations", "configuration.repeats", "configuration.preflight_forward_count",
+    "configuration.forced_model_mode", "configuration.inference_mode", "configuration.input_policy",
+    "timing.timing_method", "timing.timing_scope", "timing.synchronization_policy",
+    "throughput.method", "throughput.source_timing_method", "stats.quantile_method", "stats.std_ddof",
+    "input.shape", "input.batch_size", "input.dtype", "input.layout", "input.stride", "input.content_sha256",
+    "environment.device", "environment.python_version", "environment.torch_version", "environment.hyso_version",
+    "environment.operating_system", "environment.platform", "environment.cpu.machine", "environment.cpu.processor",
+    "environment.cpu.logical_cpu_count", "environment.cpu.threads", "environment.cpu.interop_threads",
+    "environment.backend.deterministic_algorithms", "environment.backend.deterministic_warn_only",
+    "environment.backend.float32_matmul_precision",
+)
+_CUDA_CONDITION_FIELDS = tuple("environment.cuda." + key for key in (
+    "name", "capability", "total_device_memory_bytes", "cuda_build", "cudnn_version",
+    "cudnn_benchmark", "cudnn_deterministic", "cudnn_allow_tf32", "matmul_allow_tf32", "allocator_backend"))
+
+
+def _conditions(left, right, fields):
+    compared, mismatched, missing = [], [], []
+    def unknown(key, value):
+        if value is None or value == "" or value == [] or (type(value) is str and value.strip().lower() in
+                ("unknown", "not_collected", "unavailable", "n/a")):
+            return True
+        name = key.rsplit(".", 1)[-1]
+        if name == "content_sha256":
+            return type(value) is not str or len(value) != 64 or any(c not in "0123456789abcdef" for c in value)
+        if name in ("autocast_enabled", "inference_mode", "deterministic_algorithms", "deterministic_warn_only",
+                    "mkldnn_enabled", "cudnn_benchmark", "cudnn_deterministic", "cudnn_allow_tf32",
+                    "matmul_allow_tf32", "counter_reset_performed"):
+            return type(value) is not bool
+        if name in ("schema_version", "protocol_version", "warmup_iterations", "measure_iterations", "repeats",
+                    "preflight_forward_count", "std_ddof", "batch_size", "logical_cpu_count", "threads",
+                    "interop_threads", "total_device_memory_bytes", "cudnn_version"):
+            return type(value) is not int or value < (0 if name == "warmup_iterations" else 1)
+        if name in ("shape", "stride", "capability"):
+            return type(value) is not list or any(type(x) is not int or x < 0 for x in value) or (name == "capability" and len(value) != 2)
+        return type(value) is not str or not value.strip()
+    for key in fields:
+        a, b = _field(left, key), _field(right, key)
+        compared.append(dict(field=key, left=a, right=b))
+        sides = [side for side, value in (("left", a), ("right", b)) if unknown(key, value)]
+        if sides:
+            missing.append(dict(field=key, sides=sides, reason="missing_unknown_or_invalid_metadata"))
+        elif json.dumps(a, sort_keys=True) != json.dumps(b, sort_keys=True):
+            mismatched.append(dict(field=key, left=a, right=b))
+    status = "incompatible" if mismatched else "insufficient_metadata" if missing else "compatible"
+    return dict(status=status, mismatched_fields=mismatched, missing_required_fields=missing, compared_fields=compared)
+
+
+def compare_results(a, b):
+    """Return a plain compatibility report for two exact BenchmarkResult objects.
+
+    Status describes timing conditions, never a winner or significance test.
+    Model architecture/config/weights and optional source provenance are variables,
+    not equality requirements. Memory eligibility is separate; unknown process
+    isolation yields insufficient_metadata for measured GPU memory. Optional
+    provenance.memory_isolation='exclusive_fresh_process' is a caller assertion,
+    never inferred or verified here. No model/runtime/CUDA calls or I/O occur.
+    """
+    if type(a) is not BenchmarkResult or type(b) is not BenchmarkResult:
+        raise TypeError("compare_results requires two BenchmarkResult objects")
+    left, right = a.to_dict(), b.to_dict()
+    cuda = [row["environment"]["device"].startswith("cuda:") for row in (left, right)]
+    fields = list(_CONDITION_FIELDS)
+    if all(cuda):
+        fields.extend(_CUDA_CONDITION_FIELDS)
+    elif not any(cuda):
+        fields.append("environment.backend.mkldnn_enabled")
+    timing = _conditions(left, right, fields)
+    warnings = [dict(code="measurement_variability", message="Matching recorded conditions do not prove significance, equal clocks/load/cache/thermals/power or model quality."),
+                dict(code="hardware_profile_identity", message="Recorded hardware/OS profiles do not uniquely identify a physical host/GPU; no unit UUID or driver/telemetry evidence is inferred.")]
+    if any(row["model"].get("source_sha256") is None for row in (left, right)):
+        warnings.append(dict(code="optional_source_hash_missing", message="Source hash is informational for model comparison; same-model regression needs an additional identity policy."))
+    memory = dict(status="not_applicable", mismatched_fields=[], missing_required_fields=[], compared_fields=[],
+                  absolute_peak_model_comparable=False, warnings=[], observations={"left": left["cuda_memory"], "right": right["cuda_memory"]})
+    statuses = [row["cuda_memory"]["status"] for row in (left, right)]
+    if any(cuda):
+        if not all(cuda) or statuses != ["measured", "measured"]:
+            memory["status"] = "not_comparable"
+            memory["warnings"].append(dict(code="memory_probe_unavailable", message="Both results must contain measured CUDA probes; timing eligibility is independent."))
+        else:
+            memory.update(_conditions(left, right, (
+                "environment.cuda.allocator_backend", "cuda_memory.scope", "cuda_memory.counter_reset_performed",
+                "provenance.memory_isolation")))
+            if timing["status"] != "compatible":
+                memory["status"] = "incompatible" if timing["status"] == "incompatible" else "insufficient_metadata"
+                memory["warnings"].append(dict(code="memory_conditions_unverified", message="Timing/hardware/runtime conditions must also be compatible."))
+            isolation = [_field(row, "provenance.memory_isolation") for row in (left, right)]
+            if isolation != ["exclusive_fresh_process", "exclusive_fresh_process"]:
+                if memory["status"] == "compatible":
+                    memory["status"] = "insufficient_metadata"
+                    memory["missing_required_fields"].append(dict(field="provenance.memory_isolation",
+                        sides=[side for side, value in zip(("left", "right"), isolation) if value != "exclusive_fresh_process"],
+                        reason="fresh_process_isolation_not_attested"))
+                memory["warnings"].append(dict(code="memory_isolation_unverified", message="B1/B2 do not attest fresh-process/caller exclusivity; supplied labels are caller assertions."))
+            for key in ("baseline_allocated_bytes", "baseline_reserved_bytes"):
+                if left["cuda_memory"][key] != right["cuda_memory"][key]:
+                    memory["warnings"].append(dict(code="memory_baseline_differs", field="cuda_memory." + key,
+                                                   left=left["cuda_memory"][key], right=right["cuda_memory"][key]))
+            memory["warnings"].append(dict(code="allocator_scope_only", message="Absolute process/device peaks and cached baselines are not model-only physical VRAM; no peak ranking is produced."))
+    # Payloads are already validated plain data and decoded defensively. Do not
+    # reapply result-depth limits after nesting informational data in a report.
+    return dict(comparison_schema_version=1, status=timing["status"],
+                       mismatched_fields=timing["mismatched_fields"], missing_required_fields=timing["missing_required_fields"],
+                       compared_fields=timing["compared_fields"], warnings=warnings, timing_comparability=timing,
+                       memory_comparability=memory,
+                       informational={side: dict(model=row["model"], parameters=row["parameters"], provenance=row["provenance"])
+                                      for side, row in (("left", left), ("right", right))})

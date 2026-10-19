@@ -129,7 +129,7 @@ torch.set_num_threads(1)
 from hyso.models import EBO, ELO, CEMO, EMA, CNNSENormalWithFit
 from hyso.models.modular import ModularCNN
 from hyso.training import Trainer
-from hyso.benchmark import BenchmarkRunner, BenchmarkResult
+from hyso.benchmark import BenchmarkRunner, BenchmarkResult, compare_results
 from hyso.augmentation import build_transforms, get_loaders
 from hyso.callbacks.callbacks import EarlyStopping, ModelCheckpoint, LRSchedulerCallback
 for module, names in {
@@ -141,9 +141,9 @@ for module, names in {
     'hyso.training': ('Trainer',),
     'hyso.training.trainer': ('Trainer',),
     'hyso.training.resume': ('prepare_save', 'save_last', 'restore_checkpoint'),
-    'hyso.benchmark': ('BenchmarkRunner', 'BenchmarkResult'),
+    'hyso.benchmark': ('BenchmarkRunner', 'BenchmarkResult', 'compare_results'),
     'hyso.benchmark.runner': ('BenchmarkRunner',),
-    'hyso.benchmark.result': ('BenchmarkResult',),
+    'hyso.benchmark.result': ('BenchmarkResult', 'compare_results'),
     'hyso.models.WithSE': ('CEMO', 'EMA'),
     'hyso.models.fit': ('CNNSENormalWithFit',),
     'hyso.augmentation.augmentation': ('build_transforms', 'get_loaders'),
@@ -266,7 +266,23 @@ for precision, dtype in [('fp32', torch.float32), ('fp64', torch.float64)]:
     assert torch.equal(torch.get_rng_state(), bench_rng)
     assert BenchmarkResult(bench_data).to_dict() == bench_data
     assert json.loads(json.dumps(bench_data, allow_nan=False)) == bench_data
+    import csv
+    export_prefix = pathlib.Path.cwd() / ('benchmark-' + target.name + '-' + precision)
+    json_path, summary_path, samples_path = [export_prefix.with_suffix(suffix) for suffix in ('.json', '.csv', '.samples.csv')]
+    bench_result.to_json(json_path)
+    bench_result.to_csv(summary_path)
+    bench_result.to_samples_csv(samples_path)
+    assert json.loads(json_path.read_text(encoding='utf-8')) == bench_data
+    with summary_path.open(encoding='utf-8', newline='') as handle:
+        summary_rows = list(csv.DictReader(handle))
+    with samples_path.open(encoding='utf-8', newline='') as handle:
+        sample_rows = list(csv.DictReader(handle))
+    assert len(summary_rows) == 1 and float(summary_rows[0]['mean_ms']) == bench_data['stats']['pooled']['mean_ms']
+    assert summary_rows[0]['cuda_memory_status'] == 'not_applicable' and summary_rows[0]['cuda_peak_allocated_bytes'] == ''
+    assert len(sample_rows) == 4 and [float(row['latency_ms']) for row in sample_rows] == sum(bench_data['timing']['latency_samples_ms'], [])
+    assert compare_results(bench_result, BenchmarkResult(bench_data))['status'] == 'compatible'
     benchmark_rows.append(bench_data)
+assert compare_results(BenchmarkResult(benchmark_rows[0]), BenchmarkResult(benchmark_rows[1]))['status'] == 'incompatible'
 for name, module in list(sys.modules.items()):
     if name == 'hyso' or name.startswith('hyso.'):
         assert pathlib.Path(module.__file__).resolve().is_relative_to(target)
@@ -282,6 +298,7 @@ print(json.dumps({'source': hyso.__file__, 'version': importlib.metadata.version
                   'restored_updates': restored.update_count,
                   'replay': replay_result,
                   'cpu_benchmarks': len(benchmark_rows),
+                  'benchmark_exports': 6, 'benchmark_comparisons': ['compatible', 'compatible', 'incompatible'],
                   'benchmarks': benchmark_rows,
                   'benchmark_source': importlib.import_module('hyso.benchmark.runner').__file__,
                   'cpu_models': 3, 'cuda_initialized': torch.cuda.is_initialized()}))
@@ -308,6 +325,7 @@ def test_installed_distribution_import_and_cpu_forward(distributions, kind):
     assert observed["replay"]["epochs"] == 5 and observed["replay"]["resumed_attempts"] == 4
     assert observed["replay"]["exact_bytes"] and observed["replay"]["rng_equal"]
     assert observed["cpu_benchmarks"] == 2
+    assert observed["benchmark_exports"] == 6 and observed["benchmark_comparisons"] == ['compatible', 'compatible', 'incompatible']
     assert Path(observed["benchmark_source"]).resolve().is_relative_to(target.resolve())
     assert {row["configuration"]["precision"] for row in observed["benchmarks"]} == {"fp32", "fp64"}
     (work / (kind + "-smoke.json")).write_text(json.dumps(observed), encoding="utf-8")
