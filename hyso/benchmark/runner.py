@@ -108,7 +108,12 @@ def _profile(model, dtype, device=torch.device("cpu")):
         for name, child in module._modules.items():
             if child is not None:
                 visit(child, path + "." + name if path else name, ancestors | {id(module)})
-    visit(model, "", set())
+    try:
+        visit(model, "", set())
+    finally:
+        # The recursive closure otherwise retains modules/tensors until cyclic GC,
+        # which can release stale CUDA allocations between probe baseline and reset.
+        visit = None
     return modules, entries
 
 
