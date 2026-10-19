@@ -331,14 +331,18 @@ def test_future_fit_options_are_not_silent(option):
         trainer().fit(loader(), **{option: "unused.pth"})
 
 
-def test_validation_rejected_before_training():
+def test_validation_runs_without_additional_optimizer_updates():
     instance = trainer()
     before = copy.deepcopy(instance.model.state_dict())
-    with pytest.raises(NotImplementedError, match="M2-B3"):
-        instance.fit(loader(), val_loader=loader())
-    assert instance.history["train_loss"] == []
-    for name, value in instance.model.state_dict().items():
-        assert torch.equal(value, before[name])
+    history = instance.fit(loader(), val_loader=loader(), epochs=1)
+    assert instance.update_count == instance.attempt_count == len(loader())
+    assert len(history["train_loss"]) == len(history["val_loss"]) == 1
+    with torch.no_grad():
+        data = loader().dataset.tensors
+        logits = instance.model(data[0])
+        assert history["val_loss"] == pytest.approx([nn.functional.cross_entropy(logits, data[1]).item()])
+        assert history["val_acc"] == [100 * (logits.argmax(1) == data[1]).sum().item() / len(data[1])]
+    assert any(not torch.equal(value, before[name]) for name, value in instance.model.state_dict().items())
 
 
 def test_nondefault_ignore_index_only_rejects_actual_masked_targets():

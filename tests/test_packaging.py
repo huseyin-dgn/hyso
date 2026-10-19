@@ -187,6 +187,25 @@ assert update_trainer.attempt_count == update_trainer.update_count == update_sch
 assert not torch.equal(update_before, linear.weight)
 assert all(p.grad is None for p in linear.parameters())
 assert update_history['val_loss'] == [None, None]
+# B3 uses the legacy algorithms through the installed generic lifecycle.
+early = EarlyStopping(patience=1, verbose=False, restore_best_weights=True)
+lifecycle_model = torch.nn.Linear(2, 2)
+with torch.no_grad():
+    lifecycle_model.weight.zero_()
+    lifecycle_model.bias.zero_()
+lifecycle_optimizer = torch.optim.SGD(lifecycle_model.parameters(), lr=0.3)
+plateau = torch.optim.lr_scheduler.ReduceLROnPlateau(lifecycle_optimizer, patience=0, factor=0.5)
+lifecycle_events = []
+lifecycle = Trainer(lifecycle_model, optimizer=lifecycle_optimizer, loss_fn=torch.nn.CrossEntropyLoss(),
+                    ema_decay=0.5, early_stopping=early, scheduler=plateau,
+                    callbacks=(lambda event, logs: lifecycle_events.append(event),))
+lifecycle_history = lifecycle.fit([(torch.zeros(2, 2), torch.ones(2, dtype=torch.long))],
+                                  [(torch.zeros(3, 2), torch.zeros(3, dtype=torch.long))], epochs=5)
+assert len(lifecycle_history['val_loss']) == 2 and early.early_stop
+assert lifecycle.update_count == lifecycle.ema_update_count == plateau.last_epoch == 2
+assert lifecycle_events == ['train_begin', 'epoch_end', 'epoch_end', 'train_end']
+assert all(torch.equal(value, early.best_state[name]) for name, value in lifecycle.evaluation_model.state_dict().items())
+assert not torch.equal(lifecycle.model.bias, lifecycle.evaluation_model.bias)
 for name, module in list(sys.modules.items()):
     if name == 'hyso' or name.startswith('hyso.'):
         assert pathlib.Path(module.__file__).resolve().is_relative_to(target)
@@ -197,6 +216,7 @@ print(json.dumps({'source': hyso.__file__, 'version': importlib.metadata.version
                   'trainer_source': importlib.import_module('hyso.training.trainer').__file__,
                   'trainer_history': history,
                   'trainer_updates': update_trainer.update_count,
+                  'lifecycle_epochs': len(lifecycle_history['val_loss']),
                   'cpu_models': 3, 'cuda_initialized': torch.cuda.is_initialized()}))
 """
 
@@ -215,4 +235,5 @@ def test_installed_distribution_import_and_cpu_forward(distributions, kind):
     assert Path(observed["trainer_source"]).resolve().is_relative_to(target.resolve())
     assert len(observed["trainer_history"]["train_loss"]) == 1
     assert observed["trainer_updates"] == 4
+    assert observed["lifecycle_epochs"] == 2
     (work / (kind + "-smoke.json")).write_text(json.dumps(observed), encoding="utf-8")
