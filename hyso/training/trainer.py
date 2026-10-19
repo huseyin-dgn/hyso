@@ -26,7 +26,9 @@ class Trainer:
     a no-op; restarting or retrying a failed run requires a fresh Trainer.
     Validation evaluates the EMA shadow when enabled, otherwise the live model.
     EarlyStopping uses that same target and optionally restores its best weights
-    after the final coherent epoch boundary. Checkpoint/resume is not implemented.
+    after the final coherent epoch boundary. Opt-in save_last_to writes a v1
+    checkpoint before that restore, for standard ModularCNN with a complete
+    model_config and bounded TensorDataset loaders. Trainer resume is not implemented.
     Callbacks are observers: callback(event, independent_plain_logs).
     Optimizers are
     standard non-fused SGD/Adam/AdamW; schedulers are bare OneCycleLR, StepLR
@@ -35,7 +37,7 @@ class Trainer:
 
     def __init__(self, model, *, optimizer, loss_fn, device="cpu", task="multiclass",
                  scheduler=None, amp=False, accum_steps=1, grad_clip=None,
-                 ema_decay=None, early_stopping=None, callbacks=()):
+                 ema_decay=None, early_stopping=None, callbacks=(), model_config=None):
         if not isinstance(model, nn.Module):
             raise TypeError("model must be an nn.Module")
         if not isinstance(optimizer, torch.optim.Optimizer):
@@ -66,6 +68,12 @@ class Trainer:
         self.amp = amp
         self.accum_steps = accum_steps
         self.grad_clip = grad_clip
+        if model_config is not None:
+            if type(model_config) is not dict:
+                raise TypeError("model_config must be a plain dictionary or None")
+            from .resume import _plain
+            model_config = _plain(model_config)
+        self.model_config = model_config
         if ema_decay is not None:
             if isinstance(ema_decay, bool) or not isinstance(ema_decay, Real):
                 raise TypeError("ema_decay must be a finite number in [0,1] or None")
@@ -395,8 +403,13 @@ class Trainer:
             raise FloatingPointError("nonfinite scalar loss encountered")
         return loss, correct
 
-    def fit(self, train_loader, val_loader=None, *, epochs=5):
-        """Run train→validation→scheduler→EarlyStopping→observer→finalization."""
+    def fit(self, train_loader, val_loader=None, *, epochs=5, save_last_to=None):
+        """Run train→validation→scheduler→ES→observer→optional last save→finalization.
+
+        Save requires callbacks=(), standard num_workers=0 TensorDataset loaders
+        and all seven ModularCNN constructor fields in model_config. It saves
+        continuing state before best restoration; it does not enable resume.
+        """
         if type(epochs) is not int or epochs <= 0:
             raise ValueError("epochs must be a positive Python int")
         self._validate_setup()
@@ -409,6 +422,8 @@ class Trainer:
             raise RuntimeError("Trainer is terminal after best-weight finalization/early stop; create a fresh Trainer")
         if self._epochs is not None:
             if self._finished and self._epochs == epochs and len(self.history["train_loss"]) == epochs:
+                if save_last_to is not None:
+                    raise RuntimeError("cannot write save_last_to after a completed fit; enable saving on the initial fit")
                 return {key: list(values) for key, values in self.history.items()}
             raise RuntimeError("fit lifecycle already started; create a fresh Trainer")
         self._validate_scheduler(fresh=True,
@@ -417,6 +432,10 @@ class Trainer:
             es = self.early_stopping
             if es.best_state is not None or es.best_loss != float("inf") or es.counter != 0 or es.early_stop:
                 raise ValueError("EarlyStopping must have fresh state; resume is not implemented")
+        save_plan = None
+        if save_last_to is not None:
+            from .resume import prepare_save, save_last
+            destination, save_plan = prepare_save(self, train_loader, val_loader, epochs, save_last_to)
         self._epochs = epochs
         self._emit("train_begin", 0)
         # Enable autograd explicitly even if the caller has entered no_grad.
@@ -467,8 +486,10 @@ class Trainer:
                 self.history["val_loss"].append(val_loss)
                 self.history["val_acc"].append(val_acc)
                 self._emit("epoch_end", len(self.history["train_loss"]))
-                # Coherent last-state boundary: B4 saves here, before any best
-                # restore. Observers do not own checkpoint/optimizer stepping.
+                # Coherent last-state boundary, before the stop decision and
+                # any best restore. The v1 serializer owns atomic replacement.
+                if save_plan is not None:
+                    save_last(self, destination, save_plan, train_loader, val_loader)
                 if self.early_stopping is not None and self.early_stopping.early_stop:
                     break
         if self.early_stopping is not None:

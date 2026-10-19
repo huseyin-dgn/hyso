@@ -17,6 +17,7 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
+    "hyso/training/resume.py",
     "hyso/training/__init__.py", "hyso/training/trainer.py",
     "hyso/models/modular.py",
     "hyso/models/attention.py",
@@ -137,6 +138,7 @@ for module, names in {
     'hyso.models.modular': ('ModularCNN',),
     'hyso.training': ('Trainer',),
     'hyso.training.trainer': ('Trainer',),
+    'hyso.training.resume': ('prepare_save', 'save_last'),
     'hyso.models.WithSE': ('CEMO', 'EMA'),
     'hyso.models.fit': ('CNNSENormalWithFit',),
     'hyso.augmentation.augmentation': ('build_transforms', 'get_loaders'),
@@ -206,6 +208,21 @@ assert lifecycle.update_count == lifecycle.ema_update_count == plateau.last_epoc
 assert lifecycle_events == ['train_begin', 'epoch_end', 'epoch_end', 'train_end']
 assert all(torch.equal(value, early.best_state[name]) for name, value in lifecycle.evaluation_model.state_dict().items())
 assert not torch.equal(lifecycle.model.bias, lifecycle.evaluation_model.bias)
+save_config = dict(input_channels=1, num_classes=2, widths=[3], repeats=[1], strides=[1], attention='eca', norm='batch')
+save_model = ModularCNN(**save_config)
+save_optimizer = torch.optim.AdamW(save_model.parameters(), lr=0.01)
+save_scheduler = torch.optim.lr_scheduler.StepLR(save_optimizer, step_size=1)
+save_trainer = Trainer(save_model, optimizer=save_optimizer, loss_fn=torch.nn.CrossEntropyLoss(),
+                       model_config=save_config, scheduler=save_scheduler, ema_decay=0.8, accum_steps=2)
+save_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(
+    torch.randn(5, 1, 5, 5), torch.tensor([0, 1, 1, 0, 1])), batch_size=2)
+save_path = pathlib.Path.cwd() / ('generic-last-' + target.name + '.pth')
+save_trainer.fit(save_loader, epochs=2, save_last_to=save_path)
+saved = torch.load(save_path, map_location='cpu', weights_only=True)
+assert saved['format_version'] == 1 and saved['completed_epochs'] == 2
+assert saved['metrics']['generic_trainer']['progress']['updates'] == 4
+assert saved['optimizer']['state_dict']['state'] and saved['ema'] is not None
+assert saved['rng_state'] is not None
 for name, module in list(sys.modules.items()):
     if name == 'hyso' or name.startswith('hyso.'):
         assert pathlib.Path(module.__file__).resolve().is_relative_to(target)
@@ -217,6 +234,7 @@ print(json.dumps({'source': hyso.__file__, 'version': importlib.metadata.version
                   'trainer_history': history,
                   'trainer_updates': update_trainer.update_count,
                   'lifecycle_epochs': len(lifecycle_history['val_loss']),
+                  'saved_epochs': saved['completed_epochs'],
                   'cpu_models': 3, 'cuda_initialized': torch.cuda.is_initialized()}))
 """
 
@@ -236,4 +254,5 @@ def test_installed_distribution_import_and_cpu_forward(distributions, kind):
     assert len(observed["trainer_history"]["train_loss"]) == 1
     assert observed["trainer_updates"] == 4
     assert observed["lifecycle_epochs"] == 2
+    assert observed["saved_epochs"] == 2
     (work / (kind + "-smoke.json")).write_text(json.dumps(observed), encoding="utf-8")
