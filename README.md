@@ -3,9 +3,10 @@
 HYSo is a published PyTorch library for image classification with residual CNNs,
 CBAM/SE attention, callbacks and augmentation.
 
-This README describes the **development branch**. PyPI provides 0.1.6;
-the full-state checkpoint/resume features below have not been released there.
-0.2.0 is a proposed, unapproved version; see the
+This README describes the **0.2.0 release candidate preparation** on the development
+branch. Local package metadata is 0.2.0; this version has not been published to
+PyPI, tagged or released. The published 0.1.6 package does not include the full-state
+checkpoint/resume features below. See the
 [release notes draft](docs/release-notes/0.2.0-draft.md).
 
 ## Installation
@@ -213,28 +214,43 @@ Full-state files use `format="hyso.training"`, `format_version=1`; loading uses
 
 ## Compatibility and verification
 
-Development metadata declares **Python>=3.8, Torch>=2.0, torchvision>=0.14**.
-Torch 1.x support has been removed relative to published 0.1.6's Torch>=1.13
-requirement. This support reduction must be considered when upgrading.
-Use a compatible Torch/torchvision pair; torchvision 0.14.x requires Torch 1.x
-and is not a usable pairing with this branch's Torch>=2.0 requirement.
+The 0.2.0 candidate metadata requires **Python>=3.10, Torch>=2.2.2 and
+torchvision>=0.17.2**. These are support minimums; they do not certify every
+combination above the lower bounds. Python 3.8/3.9 and Torch 1.x/2.0/2.1 users
+must upgrade their runtime for 0.2.0 or retain a suitable older HYSo version.
+Published 0.1.6 declares Python>=3.8 and Torch>=1.13.
+
+Use a compatible Torch/torchvision pair, including the CPU/CUDA binary channel:
+Torch 2.2.2 pairs with torchvision 0.17.2, and Torch 2.5.1 with torchvision 0.20.1.
+The separate lower bounds do not make arbitrary Torch/torchvision pairs compatible.
+For the older Torch 2.2.2 profile, the tested NumPy version is 1.26.4; use that
+constraint to reproduce it. Older binary extensions can have NumPy 2 ABI issues.
+HYSo does not impose a global NumPy<2 cap: the newer reference below uses NumPy 2.2.2.
 
 | Level | Environment / evidence |
 |---|---|
-| Runtime verified, CPU | Windows, Python 3.10.18, Torch 2.5.1+cu121, torchvision 0.20.1+cu121, NumPy 2.2.2, Pillow 12.0.0 |
-| Runtime verified, single GPU | Same runtime, RTX 3060 Laptop, capability 8.6, driver 591.74, CUDA build 12.1, FP16 AMP |
-| Metadata/API candidates only | Python 3.8, Torch 2.0.0/torchvision 0.15.1 or Torch 2.0.1/torchvision 0.15.2 |
+| Runtime verified, older CPU profile | Windows x64, Python 3.10.18, Torch 2.2.2+cpu, torchvision 0.17.2+cpu, NumPy 1.26.4; installed-wheel forward/checkpoint/resume |
+| Runtime verified, reference CPU | Windows, Python 3.10.18, Torch 2.5.1+cu121, torchvision 0.20.1+cu121, NumPy 2.2.2, Pillow 12.0.0 |
+| Previously verified, single GPU (P0.6-C1) | Reference runtime, RTX 3060 Laptop, capability 8.6, driver 591.74, CUDA build 12.1, FP16 AMP; final CUDA rerun planned for P0.6-E |
 
-Python 3.8 and Torch 2.0 **minimum runtime tests have not been run**. Python 3.8
-syntax checks and metadata compatibility are not runtime guarantees. A clean
-dependency installation has not been verified; existing-runtime target installs
-and resolver checks are narrower evidence. Other OS/version/GPU combinations
-and BF16 have not been verified.
+Python 3.8/Torch 2.0 runtime tests were not run; those versions are outside the
+0.2.0 support policy. Python 3.10.18 evidence does not verify every Python 3.10 patch
+or later minor release. P0.6-C verified a constrained offline clean dependency
+installation for the older CPU profile; candidate wheel target installs reuse
+those dependencies and are not new independent clean installs. Unconstrained online
+installation, other OS/version/GPU combinations and BF16 have not been verified.
+
+Full-state checkpoint format remains **v1**. OneCycleLR compatibility handles the
+trusted legacy annealing callable representation in Torch 2.2.2 and the plain
+strategy representation in Torch 2.5.1, without serializing callables or disabling
+`weights_only=True`. Unknown scheduler schemas are rejected; compatibility with
+every future Torch release is not claimed.
 
 Tests: `python -B -m pytest -c tests/pytest.ini -q` runs the CPU suite (fixtures hide
 CUDA). Run `tests/cuda_runtime_validation.py` and `tests/cuda_imagefolder_validation.py`
 directly in separate CUDA-visible processes to check actual GPU behavior.
-See [release readiness](docs/audit/p0.6-a-release-readiness.md) for evidence and limitations.
+See the [candidate preparation report](docs/audit/p0.6-d-release-candidate.md) and
+[support decision](docs/audit/p0.6-c2-minimum-support-decision.md) for evidence and limitations.
 
 ## Contributing and license
 
