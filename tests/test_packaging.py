@@ -17,6 +17,7 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
+    "hyso/experiments/__init__.py", "hyso/experiments/manager.py",
     "hyso/benchmark/__init__.py", "hyso/benchmark/runner.py", "hyso/benchmark/result.py",
     "hyso/training/resume.py",
     "hyso/training/__init__.py", "hyso/training/trainer.py",
@@ -54,6 +55,7 @@ def distributions(tmp_path_factory):
         shutil.copy2(ROOT / name, target)
     # Realistic unwanted content must stay out of both archives.
     for name in ("docs/audit/sentinel.md", "tests/test_sentinel.py",
+                 "hyso/experiments/experiments.sqlite3", "hyso/experiments/artifacts/sentinel.json",
                  "hyso/dist/old.whl", "hyso/models/weights.pth",
                  "hyso/models/__pycache__/sentinel.pyc"):
         target = stage / name
@@ -67,6 +69,8 @@ def distributions(tmp_path_factory):
 
 
 def test_canonical_packaging_configuration():
+    assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == MODULES
+    assert len(MODULES) == 21
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
     assert not (ROOT / "hyso/setup.cfg").exists()
@@ -104,7 +108,7 @@ def test_wheel_and_sdist_content_and_metadata(distributions):
         for name in ("README.md", "LICENSE", "pyproject.toml", "MANIFEST.in", *MODULES):
             assert archive.extractfile("hyso-0.2.0/" + name).read() == (ROOT / name).read_bytes()
     for name in wheel_names | names:
-        assert "sentinel" not in name and not name.endswith((".pth", ".pt", ".ckpt", ".pyc"))
+        assert "sentinel" not in name and not name.endswith((".pth", ".pt", ".ckpt", ".pyc", ".sqlite3", ".db"))
         assert not any(part in {"docs", "tests", "__pycache__", "dist", "build"} for part in Path(name).parts)
     for metadata in (wheel_meta, sdist_meta):
         assert metadata["Name"] == "hyso" and metadata["Version"] == "0.2.0"
@@ -130,6 +134,7 @@ from hyso.models import EBO, ELO, CEMO, EMA, CNNSENormalWithFit
 from hyso.models.modular import ModularCNN
 from hyso.training import Trainer
 from hyso.benchmark import BenchmarkRunner, BenchmarkResult, compare_results
+from hyso.experiments import ExperimentManager, ExperimentError
 from hyso.augmentation import build_transforms, get_loaders
 from hyso.callbacks.callbacks import EarlyStopping, ModelCheckpoint, LRSchedulerCallback
 for module, names in {
@@ -144,6 +149,8 @@ for module, names in {
     'hyso.benchmark': ('BenchmarkRunner', 'BenchmarkResult', 'compare_results'),
     'hyso.benchmark.runner': ('BenchmarkRunner',),
     'hyso.benchmark.result': ('BenchmarkResult', 'compare_results'),
+    'hyso.experiments': ('ExperimentManager', 'ExperimentError'),
+    'hyso.experiments.manager': ('ExperimentManager', 'ExperimentError'),
     'hyso.models.WithSE': ('CEMO', 'EMA'),
     'hyso.models.fit': ('CNNSENormalWithFit',),
     'hyso.augmentation.augmentation': ('build_transforms', 'get_loaders'),
@@ -283,6 +290,22 @@ for precision, dtype in [('fp32', torch.float32), ('fp64', torch.float64)]:
     assert compare_results(bench_result, BenchmarkResult(bench_data))['status'] == 'compatible'
     benchmark_rows.append(bench_data)
 assert compare_results(BenchmarkResult(benchmark_rows[0]), BenchmarkResult(benchmark_rows[1]))['status'] == 'incompatible'
+import sqlite3, tempfile
+tracking_root = pathlib.Path(tempfile.mkdtemp(prefix='hyso-installed-experiment-')) / 'runs'
+tracking_manager = ExperimentManager(tracking_root)
+tracking_experiment = tracking_manager.create_experiment('installed smoke')
+tracking_run = tracking_manager.create_run(tracking_experiment['id'], 'training', {'seed': 42})
+tracking_run.start()
+tracking_run.log_metric(name='train/loss', value=.42, unit='mean_loss', source='caller', epoch=1)
+assert tracking_run.read_metrics()[0]['value'] == .42
+tracking_run.finish()
+tracking_snapshot = tracking_run.to_dict()
+tracking_manager.close()
+tracking_reopened = ExperimentManager(tracking_root)
+assert tracking_reopened.get_run(tracking_run.id).to_dict() == tracking_snapshot
+assert tracking_snapshot['status'] == 'completed' and tracking_snapshot['metric_count'] == 1
+assert tracking_reopened._db.execute('PRAGMA user_version').fetchone()[0] == 1
+tracking_reopened.close()
 for name, module in list(sys.modules.items()):
     if name == 'hyso' or name.startswith('hyso.'):
         assert pathlib.Path(module.__file__).resolve().is_relative_to(target)
@@ -301,6 +324,9 @@ print(json.dumps({'source': hyso.__file__, 'version': importlib.metadata.version
                   'benchmark_exports': 6, 'benchmark_comparisons': ['compatible', 'compatible', 'incompatible'],
                   'benchmarks': benchmark_rows,
                   'benchmark_source': importlib.import_module('hyso.benchmark.runner').__file__,
+                  'experiment_source': importlib.import_module('hyso.experiments.manager').__file__,
+                  'sqlite_version': sqlite3.sqlite_version,
+                  'experiment_snapshot': tracking_snapshot,
                   'cpu_models': 3, 'cuda_initialized': torch.cuda.is_initialized()}))
 """
 
@@ -327,5 +353,8 @@ def test_installed_distribution_import_and_cpu_forward(distributions, kind):
     assert observed["cpu_benchmarks"] == 2
     assert observed["benchmark_exports"] == 6 and observed["benchmark_comparisons"] == ['compatible', 'compatible', 'incompatible']
     assert Path(observed["benchmark_source"]).resolve().is_relative_to(target.resolve())
+    assert Path(observed["experiment_source"]).resolve().is_relative_to(target.resolve())
+    assert observed["experiment_snapshot"]["status"] == "completed"
+    assert observed["experiment_snapshot"]["metric_count"] == 1
     assert {row["configuration"]["precision"] for row in observed["benchmarks"]} == {"fp32", "fp64"}
     (work / (kind + "-smoke.json")).write_text(json.dumps(observed), encoding="utf-8")
