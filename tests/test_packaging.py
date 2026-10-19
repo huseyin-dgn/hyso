@@ -17,6 +17,7 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
+    "hyso/models/attention.py",
     "hyso/models/blocks.py",
     "hyso/checkpoint.py",
     "hyso/__init__.py", "hyso/models/__init__.py", "hyso/models/bcam.py",
@@ -128,6 +129,7 @@ for module, names in {
     'hyso.checkpoint': ('save_training_checkpoint', 'load_training_checkpoint', 'TrainingCheckpointError'),
     'hyso.models.bcam': ('EBO', 'ELO'),
     'hyso.models.blocks': ('ConvNormAct', 'ResidualBlock'),
+    'hyso.models.attention': ('ECAAttention', 'CoordinateAttention'),
     'hyso.models.WithSE': ('CEMO', 'EMA'),
     'hyso.models.fit': ('CNNSENormalWithFit',),
     'hyso.augmentation.augmentation': ('build_transforms', 'get_loaders'),

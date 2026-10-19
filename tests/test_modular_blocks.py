@@ -194,3 +194,73 @@ def test_residual_invalid_configuration(options):
     args.update(options)
     with pytest.raises(ValueError):
         ResidualBlock(**args)
+
+
+@pytest.mark.parametrize("kind", ["eca", "coordinate"])
+@pytest.mark.parametrize("channels,stride", [(4, 1), (6, 1), (6, 2)])
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+def test_new_attention_residual_integration(kind, channels, stride, dtype):
+    from hyso.models.attention import ECAAttention, CoordinateAttention
+    cls = ECAAttention if kind == "eca" else CoordinateAttention
+    attention = cls(channels)
+    block = ResidualBlock(4, channels, stride=stride, attention=attention).to(dtype)
+    assert block.attention is attention
+    before = {n: p.detach().clone() for n, p in attention.named_parameters()}
+    parameter_ids = [(n, id(p)) for n, p in block.named_parameters()]
+    seen = {}
+    def record(name):
+        def hook(module, args, out):
+            seen[name] = out.shape
+        return hook
+    handles = [block.attention.register_forward_hook(record('attention')),
+               block.shortcut.register_forward_hook(record('shortcut'))]
+    x = torch.randn(2, 4, 9, 11, dtype=dtype, requires_grad=True)
+    optimizer = torch.optim.SGD(block.parameters(), lr=.05)
+    try:
+        out = block(x)
+    finally:
+        for handle in handles:
+            handle.remove()
+    assert seen['attention'] == seen['shortcut'] == out.shape
+    assert out.shape == (2, channels, 5 if stride == 2 else 9, 6 if stride == 2 else 11)
+    out.square().mean().backward()
+    assert_gradients(block, x)
+    optimizer.step()
+    assert any(not torch.equal(before[n], p) for n, p in attention.named_parameters())
+    assert parameter_ids == [(n, id(p)) for n, p in block.named_parameters()]
+    fresh = ResidualBlock(4, channels, stride=stride, attention=cls(channels)).to(dtype)
+    assert all(p is not q for p, q in zip(attention.parameters(), fresh.attention.parameters()))
+    loaded = fresh.load_state_dict(block.state_dict(), strict=True)
+    assert loaded.missing_keys == loaded.unexpected_keys == []
+    assert list(fresh.state_dict()) == list(block.state_dict())
+    for name, value in block.state_dict().items():
+        torch.testing.assert_close(fresh.state_dict()[name], value, rtol=0, atol=0)
+    block.eval(); fresh.eval()
+    with torch.no_grad():
+        torch.testing.assert_close(fresh(x), block(x), rtol=0, atol=0)
+
+
+@pytest.mark.parametrize("kind", ["eca", "coordinate"])
+def test_new_attention_channel_mismatch_and_type_boundary(kind):
+    from hyso.models.attention import ECAAttention, CoordinateAttention
+    cls = ECAAttention if kind == "eca" else CoordinateAttention
+    with pytest.raises(ValueError, match="channels.*out_channels"):
+        ResidualBlock(4, 6, attention=cls(4))
+    class CustomAttention(cls):
+        pass
+    with pytest.raises(TypeError, match="attention must"):
+        ResidualBlock(4, 4, attention=CustomAttention(4))
+
+
+@pytest.mark.parametrize("kind", ["eca", "coordinate"])
+def test_new_attention_shape_guard_and_explicit_sharing(kind):
+    from hyso.models.attention import ECAAttention, CoordinateAttention
+    cls = ECAAttention if kind == "eca" else CoordinateAttention
+    shared = cls(4)
+    first = ResidualBlock(4, 4, attention=shared)
+    second = ResidualBlock(4, 4, attention=shared)
+    assert first.attention is second.attention is shared
+    assert next(first.attention.parameters()) is next(second.attention.parameters())
+    shared.register_forward_hook(lambda module, args, output: output[:, :1])
+    with pytest.raises(ValueError, match="preserve.*shape"):
+        first(torch.randn(2, 4, 5, 7))
