@@ -138,7 +138,7 @@ for module, names in {
     'hyso.models.modular': ('ModularCNN',),
     'hyso.training': ('Trainer',),
     'hyso.training.trainer': ('Trainer',),
-    'hyso.training.resume': ('prepare_save', 'save_last'),
+    'hyso.training.resume': ('prepare_save', 'save_last', 'restore_checkpoint'),
     'hyso.models.WithSE': ('CEMO', 'EMA'),
     'hyso.models.fit': ('CNNSENormalWithFit',),
     'hyso.augmentation.augmentation': ('build_transforms', 'get_loaders'),
@@ -223,6 +223,16 @@ assert saved['format_version'] == 1 and saved['completed_epochs'] == 2
 assert saved['metrics']['generic_trainer']['progress']['updates'] == 4
 assert saved['optimizer']['state_dict']['state'] and saved['ema'] is not None
 assert saved['rng_state'] is not None
+restore_model = ModularCNN(**save_config)
+restore_optimizer = torch.optim.AdamW(restore_model.parameters(), lr=0.01)
+restore_scheduler = torch.optim.lr_scheduler.StepLR(restore_optimizer, step_size=1)
+restored = Trainer(restore_model, optimizer=restore_optimizer, loss_fn=torch.nn.CrossEntropyLoss(),
+                   model_config=save_config, scheduler=restore_scheduler, ema_decay=0.8, accum_steps=2)
+restored_history = restored.fit(save_loader, epochs=2, resume_from=save_path)
+assert restored_history == saved['history']
+assert restored.update_count == restored.attempt_count == 4 and restore_scheduler.last_epoch == 2
+assert all(torch.equal(tensor, saved['model']['state_dict'][name]) for name, tensor in restore_model.state_dict().items())
+assert all(torch.equal(tensor, saved['ema']['state_dict'][name]) for name, tensor in restored.evaluation_model.state_dict().items())
 for name, module in list(sys.modules.items()):
     if name == 'hyso' or name.startswith('hyso.'):
         assert pathlib.Path(module.__file__).resolve().is_relative_to(target)
@@ -235,6 +245,7 @@ print(json.dumps({'source': hyso.__file__, 'version': importlib.metadata.version
                   'trainer_updates': update_trainer.update_count,
                   'lifecycle_epochs': len(lifecycle_history['val_loss']),
                   'saved_epochs': saved['completed_epochs'],
+                  'restored_updates': restored.update_count,
                   'cpu_models': 3, 'cuda_initialized': torch.cuda.is_initialized()}))
 """
 
@@ -255,4 +266,5 @@ def test_installed_distribution_import_and_cpu_forward(distributions, kind):
     assert observed["trainer_updates"] == 4
     assert observed["lifecycle_epochs"] == 2
     assert observed["saved_epochs"] == 2
+    assert observed["restored_updates"] == 4
     (work / (kind + "-smoke.json")).write_text(json.dumps(observed), encoding="utf-8")
