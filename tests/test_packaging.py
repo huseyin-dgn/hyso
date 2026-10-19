@@ -339,6 +339,17 @@ tracking_b2 = ExperimentManager(tracking_root)
 assert tracking_b2.get_run(retry_id).to_dict()['status'] == 'completed'
 assert tracking_b2.get_artifact(owned['id'])['producer_run_id'] == artifact_run.id
 tracking_b2.close()
+# Execute the documented manual integration with installed production modules.
+import re
+manual = {}
+guide_path = pathlib.Path(sys.argv[3])
+for block in re.findall(r'```python\\n(.*?)```', guide_path.read_text(encoding='utf-8'), re.S):
+    exec(compile(block, str(guide_path), 'exec'), manual)
+manual_manager = ExperimentManager(manual['root'])
+assert manual_manager.get_run(manual['training_id']).to_dict()['status'] == 'completed'
+assert len(manual_manager.get_run(manual['training_id']).read_metrics()) == 8
+assert manual_manager.verify_artifact(manual['artifact_id'])['status'] == 'verified'
+manual_manager.close()
 for name, module in list(sys.modules.items()):
     if name == 'hyso' or name.startswith('hyso.'):
         assert pathlib.Path(module.__file__).resolve().is_relative_to(target)
@@ -360,7 +371,7 @@ print(json.dumps({'source': hyso.__file__, 'version': importlib.metadata.version
                   'experiment_source': importlib.import_module('hyso.experiments.manager').__file__,
                   'sqlite_version': sqlite3.sqlite_version,
                   'experiment_snapshot': tracking_snapshot,
-                  'cpu_models': 3, 'cuda_initialized': torch.cuda.is_initialized()}))
+                  'manual_integration': True, 'cpu_models': 3, 'cuda_initialized': torch.cuda.is_initialized()}))
 """
 
 
@@ -372,8 +383,9 @@ def test_installed_distribution_import_and_cpu_forward(distributions, kind):
     command(["-m", "pip", "--isolated", "--no-cache-dir", "install", "--no-index",
              "--no-deps", "--no-build-isolation", "--no-compile",
              "--target", str(target), str(artifact)], work)
-    observed = json.loads(command(["-c", SMOKE, str(target), str(ROOT / "tests/trainer_replay_support.py")], work).strip().splitlines()[-1])
+    observed = json.loads(command(["-c", SMOKE, str(target), str(ROOT / "tests/trainer_replay_support.py"), str(ROOT / "docs/guides/experiment-manager.md")], work).strip().splitlines()[-1])
     assert Path(observed["source"]).resolve().is_relative_to(target.resolve())
+    assert observed["manual_integration"] is True
     assert observed["cpu_models"] == 3 and observed["cuda_initialized"] is False
     assert Path(observed["trainer_source"]).resolve().is_relative_to(target.resolve())
     assert len(observed["trainer_history"]["train_loss"]) == 1
