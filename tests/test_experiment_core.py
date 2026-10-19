@@ -223,7 +223,15 @@ def test_b2_is_not_implemented(manager):
     for param in ("retry_of_run_id", "resume_artifact_id"):
         with pytest.raises(ExperimentError, match="unsupported_b2"):
             manager.create_run(exp["id"], "training", {}, **{param: uuid.uuid4().hex})
-    assert not any(hasattr(manager, name) for name in ("recover_interrupted", "migrate_store", "reconcile_storage", "link_artifact"))
+    # Preserve this B1 testcase identity and its schema1 feature boundary.
+    # B2 management methods now exist, but opening schema1 does not migrate it.
+    assert manager._db.execute("PRAGMA user_version").fetchone()[0] == 1
+    for action in (manager.reconcile_storage,
+                   lambda: manager.link_artifact(uuid.uuid4().hex, uuid.uuid4().hex)):
+        with pytest.raises(ExperimentError, match="unsupported_b2"):
+            action()
+    assert all(callable(getattr(manager, name)) for name in
+               ("recover_interrupted", "migrate_store", "reconcile_storage", "link_artifact"))
 
 
 def test_bounded_run_queries(manager):
