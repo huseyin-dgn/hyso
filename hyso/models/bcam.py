@@ -19,6 +19,7 @@ import operator
 from pathlib import Path
 
 from ..checkpoint import save_training_checkpoint, load_training_checkpoint, TrainingCheckpointError
+from ..checkpoint import _scheduler_state
 
 __all__ = ["EBO", "ELO"]
 
@@ -177,7 +178,7 @@ def _resume_plan(model, optimizer, scheduler, train_loader, val_loader,
         scheduler_config = None
     elif type(scheduler) is optim.lr_scheduler.OneCycleLR:
         dynamic = {"last_epoch", "_step_count", "_get_lr_called_within_step", "_last_lr"}
-        scheduler_config = {key: value for key, value in scheduler.state_dict().items() if key not in dynamic}
+        scheduler_config = {key: value for key, value in _scheduler_state(scheduler).items() if key not in dynamic}
     else:
         fields = {
             optim.lr_scheduler.StepLR: ("step_size", "gamma"),

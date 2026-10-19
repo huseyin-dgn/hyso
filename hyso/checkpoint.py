@@ -19,6 +19,10 @@ __all__ = ["save_training_checkpoint", "load_training_checkpoint", "TrainingChec
 FORMAT_VERSION = 1
 _FIELDS = {"format", "format_version", "model", "optimizer", "scheduler", "scaler",
            "ema", "completed_epochs", "history", "metrics", "rng_state"}
+_ONECYCLE_ANNEAL = {
+    "cos": torch.optim.lr_scheduler.OneCycleLR._annealing_cos,
+    "linear": torch.optim.lr_scheduler.OneCycleLR._annealing_linear,
+}
 
 
 class TrainingCheckpointError(ValueError):
@@ -52,10 +56,55 @@ def _safe(value, path="state"):
 def _component(obj, name):
     if not callable(getattr(obj, "state_dict", None)) or not callable(getattr(obj, "load_state_dict", None)):
         raise TrainingCheckpointError(name + ": provide an initialized state_dict component")
-    state = _safe(obj.state_dict(), name)
+    state = _scheduler_state(obj) if name == "scheduler" else _safe(obj.state_dict(), name)
     if not isinstance(state, dict):
         raise TrainingCheckpointError(name + ": state_dict must be a mapping")
     return {"type": _type_name(obj), "state_dict": state}
+
+
+def _check_onecycle_state(state):
+    """Known native OneCycle schemas, with a plain annealing strategy."""
+    fields = {"total_steps", "_schedule_phases", "_anneal_func_type", "cycle_momentum",
+              "base_lrs", "last_epoch", "verbose", "_step_count",
+              "_get_lr_called_within_step", "_last_lr"}
+    if state.get("cycle_momentum") is True:
+        fields.add("use_beta1")
+    if set(state) != fields:
+        raise TrainingCheckpointError("OneCycleLR: unsupported state fields")
+    strategy = state["_anneal_func_type"]
+    if type(strategy) is not str or strategy not in _ONECYCLE_ANNEAL:
+        raise TrainingCheckpointError("OneCycleLR: unknown annealing strategy")
+
+
+def _scheduler_state(scheduler):
+    state = scheduler.state_dict()
+    if isinstance(scheduler, torch.optim.lr_scheduler.OneCycleLR):
+        if type(scheduler) is not torch.optim.lr_scheduler.OneCycleLR:
+            raise TrainingCheckpointError("OneCycleLR: custom scheduler types are unsupported")
+        if "anneal_func" in state:
+            if "_anneal_func_type" in state:
+                raise TrainingCheckpointError("OneCycleLR: conflicting annealing representations")
+            strategy = next((name for name, function in _ONECYCLE_ANNEAL.items()
+                             if state["anneal_func"] is function), None)
+            if strategy is None:
+                raise TrainingCheckpointError("OneCycleLR: unsupported annealing callable")
+            # Replace at the same position; all other fields remain intact.
+            state = {("_anneal_func_type" if key == "anneal_func" else key):
+                     (strategy if key == "anneal_func" else value) for key, value in state.items()}
+        _check_onecycle_state(state)
+    return _safe(state, "scheduler")
+
+
+def _scheduler_load_state(scheduler, state):
+    if type(scheduler) is torch.optim.lr_scheduler.OneCycleLR:
+        _check_onecycle_state(state)
+        if "anneal_func" in scheduler.state_dict():
+            # A caller-created old scheduler needs its native function back.
+            # No callable ever comes from the checkpoint or an arbitrary name.
+            state = {("anneal_func" if key == "_anneal_func_type" else key):
+                     (_ONECYCLE_ANNEAL[value] if key == "_anneal_func_type" else value)
+                     for key, value in state.items()}
+    scheduler.load_state_dict(state)
 
 
 def _param_names(model, optimizer):
@@ -192,6 +241,8 @@ def _validate(payload, model, optimizer, scheduler, scaler, ema, restore_rng):
                             raise TrainingCheckpointError("optimizer: incompatible state tensor " + str(key))
         else:
             current = _component(target, name)["state_dict"]
+            if name == "scheduler" and type(target) is torch.optim.lr_scheduler.OneCycleLR:
+                _check_onecycle_state(saved["state_dict"])
             if set(current) != set(saved["state_dict"]):
                 raise TrainingCheckpointError(name + ": state_dict fields differ")
             for key, value in current.items():
@@ -278,7 +329,10 @@ def load_training_checkpoint(path, model, *, optimizer=None, scheduler=None,
     rng_before = _rng_state() if restore_rng else None
     try:
         for name, target in targets:
-            target.load_state_dict(payload[name]["state_dict"])
+            if name == "scheduler":
+                _scheduler_load_state(target, payload[name]["state_dict"])
+            else:
+                target.load_state_dict(payload[name]["state_dict"])
         if ema is not None:
             ema.decay = payload["ema"]["decay"]
         if restore_rng:
