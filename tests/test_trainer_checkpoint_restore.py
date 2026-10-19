@@ -13,6 +13,7 @@ from hyso.training import resume
 from hyso import checkpoint
 from hyso.models.modular import ModularCNN
 from hyso.callbacks.callbacks import EarlyStopping
+from trainer_replay_support import snapshot as replay_snapshot, equal as assert_replay_state
 
 
 def dataset():
@@ -204,11 +205,13 @@ def test_corrupt_metadata_rejected_before_runtime_apply(tmp_path, mutation):
     target, train, val = build(epochs=2)
     before = copy.deepcopy(target.model.state_dict())
     rng = checkpoint._rng_state()
+    runtime_before = replay_snapshot(target)
     with pytest.raises(ValueError):
         target.fit(train, val, epochs=2, resume_from=path)
     assert_state(target.model.state_dict(), before)
     assert_state(checkpoint._rng_state(), rng)
     assert target._epochs is None and target.update_count == 0
+    assert_replay_state(replay_snapshot(target), runtime_before)
 
 
 @pytest.mark.parametrize("mismatch", ["stride", "attention", "width", "norm", "optimizer", "groups", "epochs", "accum", "dataset", "batch", "sampler", "drop_last", "validation", "callbacks"])
@@ -234,10 +237,12 @@ def test_live_plan_mismatch_rejected_without_training(tmp_path, mismatch):
     elif mismatch == "validation": val = None
     elif mismatch == "callbacks": target.callbacks = (lambda *args: None,)
     before = copy.deepcopy(target.model.state_dict())
+    runtime_before = replay_snapshot(target)
     with pytest.raises(ValueError):
         target.fit(train, val, epochs=options["epochs"], resume_from=path)
     assert_state(target.model.state_dict(), before)
     assert target.attempt_count == 0
+    assert_replay_state(replay_snapshot(target), runtime_before)
 
 
 @pytest.mark.parametrize("unsafe", [False, True])
@@ -248,9 +253,11 @@ def test_corrupt_or_unsafe_checkpoint_is_never_unpickled_unsafely(tmp_path, unsa
     else:
         path.write_bytes(b"not a checkpoint")
     target, train, val = build()
+    runtime_before = replay_snapshot(target)
     with pytest.raises(ValueError, match="weights-only"):
         target.fit(train, val, epochs=5, resume_from=path)
     assert target.update_count == 0
+    assert_replay_state(replay_snapshot(target), runtime_before)
 
 
 @pytest.mark.parametrize("field", ["target", "counter", "best_loss", "best_state", "extra", "delta_type"])
@@ -269,9 +276,11 @@ def test_invalid_early_snapshot_metadata_is_staged_before_apply(tmp_path, field)
     else: state["extra"] = None
     torch.save(payload, path)
     target, train, val = build(epochs=2, early=EarlyStopping(patience=20, delta=.01, verbose=False, restore_best_weights=False))
+    runtime_before = replay_snapshot(target)
     with pytest.raises(ValueError):
         target.fit(train, val, epochs=2, resume_from=path)
     assert target.update_count == 0
+    assert_replay_state(replay_snapshot(target), runtime_before)
 
 
 @pytest.mark.parametrize("ema", [None, .8])
