@@ -17,6 +17,7 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
+    "hyso/training/__init__.py", "hyso/training/trainer.py",
     "hyso/models/modular.py",
     "hyso/models/attention.py",
     "hyso/models/blocks.py",
@@ -125,6 +126,7 @@ import torch, hyso
 torch.set_num_threads(1)
 from hyso.models import EBO, ELO, CEMO, EMA, CNNSENormalWithFit
 from hyso.models.modular import ModularCNN
+from hyso.training import Trainer
 from hyso.augmentation import build_transforms, get_loaders
 from hyso.callbacks.callbacks import EarlyStopping, ModelCheckpoint, LRSchedulerCallback
 for module, names in {
@@ -133,6 +135,8 @@ for module, names in {
     'hyso.models.blocks': ('ConvNormAct', 'ResidualBlock'),
     'hyso.models.attention': ('ECAAttention', 'CoordinateAttention'),
     'hyso.models.modular': ('ModularCNN',),
+    'hyso.training': ('Trainer',),
+    'hyso.training.trainer': ('Trainer',),
     'hyso.models.WithSE': ('CEMO', 'EMA'),
     'hyso.models.fit': ('CNNSENormalWithFit',),
     'hyso.augmentation.augmentation': ('build_transforms', 'get_loaders'),
@@ -160,6 +164,13 @@ with torch.no_grad():
     assert modular.forward_features(modular_input).shape == (2, 6, 8, 10)
     modular_output = modular(modular_input)
     assert modular_output.shape == (2, 2) and torch.isfinite(modular_output).all()
+optimizer = torch.optim.SGD(modular.parameters(), lr=0.01)
+before = modular.classifier.weight.detach().clone()
+history = Trainer(modular, optimizer=optimizer, loss_fn=torch.nn.CrossEntropyLoss()).fit(
+    [(modular_input, torch.tensor([0, 1]))], epochs=1)
+assert len(history['train_loss']) == 1 and history['val_loss'] == [None]
+assert torch.isfinite(torch.tensor(history['train_loss'])).all()
+assert not torch.equal(before, modular.classifier.weight)
 for name, module in list(sys.modules.items()):
     if name == 'hyso' or name.startswith('hyso.'):
         assert pathlib.Path(module.__file__).resolve().is_relative_to(target)
@@ -167,6 +178,8 @@ assert not torch.cuda.is_initialized()
 print(json.dumps({'source': hyso.__file__, 'version': importlib.metadata.version('hyso'),
                   'modular_source': importlib.import_module('hyso.models.modular').__file__,
                   'modular_output_shape': list(modular_output.shape),
+                  'trainer_source': importlib.import_module('hyso.training.trainer').__file__,
+                  'trainer_history': history,
                   'cpu_models': 3, 'cuda_initialized': torch.cuda.is_initialized()}))
 """
 
@@ -182,4 +195,6 @@ def test_installed_distribution_import_and_cpu_forward(distributions, kind):
     observed = json.loads(command(["-c", SMOKE, str(target)], work).strip().splitlines()[-1])
     assert Path(observed["source"]).resolve().is_relative_to(target.resolve())
     assert observed["cpu_models"] == 3 and observed["cuda_initialized"] is False
+    assert Path(observed["trainer_source"]).resolve().is_relative_to(target.resolve())
+    assert len(observed["trainer_history"]["train_loss"]) == 1
     (work / (kind + "-smoke.json")).write_text(json.dumps(observed), encoding="utf-8")
