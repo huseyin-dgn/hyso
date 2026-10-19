@@ -1,6 +1,8 @@
 """Native state/RNG preservation and unsupported-mutation failure boundaries."""
 import copy
+import gc
 import random
+import weakref
 
 import numpy as np
 import pytest
@@ -11,6 +13,37 @@ from hyso.benchmark import BenchmarkRunner
 from hyso.benchmark import runner as benchmark
 from hyso.benchmark.runner import StateMutationError
 from test_benchmark_cpu import network
+
+
+@pytest.mark.parametrize("operation", ["profile", "constructor", "run", "rejected_profile"])
+def test_released_model_and_tensors_do_not_require_cyclic_gc(operation):
+    def exercise():
+        model = network()
+        refs = [weakref.ref(model), *[weakref.ref(t) for t in model.parameters()],
+                *[weakref.ref(t) for t in model.buffers()]]
+        if operation == "rejected_profile":
+            # Reject a later child after earlier modules/tensors were traversed.
+            model[-1].train = lambda mode=True: None
+            with pytest.raises(ValueError, match="custom train"):
+                benchmark._profile(model, torch.float32)
+        elif operation == "profile":
+            benchmark._profile(model, torch.float32)
+        else:
+            runner = BenchmarkRunner(model, input_shape=(2, 1, 5, 7),
+                                     warmup_iterations=1, measure_iterations=2, repeats=1)
+            if operation == "run":
+                runner.run()
+        return refs
+
+    enabled = gc.isenabled()
+    gc.disable()
+    try:
+        refs = exercise()
+        assert all(ref() is None for ref in refs)
+    finally:
+        gc.collect()
+        if enabled:
+            gc.enable()
 
 
 def state(model):
