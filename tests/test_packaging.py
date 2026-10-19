@@ -233,6 +233,12 @@ assert restored_history == saved['history']
 assert restored.update_count == restored.attempt_count == 4 and restore_scheduler.last_epoch == 2
 assert all(torch.equal(tensor, saved['model']['state_dict'][name]) for name, tensor in restore_model.state_dict().items())
 assert all(torch.equal(tensor, saved['ema']['state_dict'][name]) for name, tensor in restored.evaluation_model.state_dict().items())
+import runpy
+replay_support = runpy.run_path(sys.argv[2])
+replay_result = replay_support['run_replay'](
+    replay_support['CRITICAL'], pathlib.Path.cwd() / ('installed-replay-' + target.name))
+assert replay_result['epochs'] == 5 and replay_result['resumed_attempts'] == 4
+assert replay_result['exact_bytes'] and replay_result['sample_order_equal'] and replay_result['rng_equal']
 for name, module in list(sys.modules.items()):
     if name == 'hyso' or name.startswith('hyso.'):
         assert pathlib.Path(module.__file__).resolve().is_relative_to(target)
@@ -246,6 +252,7 @@ print(json.dumps({'source': hyso.__file__, 'version': importlib.metadata.version
                   'lifecycle_epochs': len(lifecycle_history['val_loss']),
                   'saved_epochs': saved['completed_epochs'],
                   'restored_updates': restored.update_count,
+                  'replay': replay_result,
                   'cpu_models': 3, 'cuda_initialized': torch.cuda.is_initialized()}))
 """
 
@@ -258,7 +265,7 @@ def test_installed_distribution_import_and_cpu_forward(distributions, kind):
     command(["-m", "pip", "--isolated", "--no-cache-dir", "install", "--no-index",
              "--no-deps", "--no-build-isolation", "--no-compile",
              "--target", str(target), str(artifact)], work)
-    observed = json.loads(command(["-c", SMOKE, str(target)], work).strip().splitlines()[-1])
+    observed = json.loads(command(["-c", SMOKE, str(target), str(ROOT / "tests/trainer_replay_support.py")], work).strip().splitlines()[-1])
     assert Path(observed["source"]).resolve().is_relative_to(target.resolve())
     assert observed["cpu_models"] == 3 and observed["cuda_initialized"] is False
     assert Path(observed["trainer_source"]).resolve().is_relative_to(target.resolve())
@@ -267,4 +274,6 @@ def test_installed_distribution_import_and_cpu_forward(distributions, kind):
     assert observed["lifecycle_epochs"] == 2
     assert observed["saved_epochs"] == 2
     assert observed["restored_updates"] == 4
+    assert observed["replay"]["epochs"] == 5 and observed["replay"]["resumed_attempts"] == 4
+    assert observed["replay"]["exact_bytes"] and observed["replay"]["rng_equal"]
     (work / (kind + "-smoke.json")).write_text(json.dumps(observed), encoding="utf-8")
