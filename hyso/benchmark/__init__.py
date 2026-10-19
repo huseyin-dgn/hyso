@@ -1,4 +1,4 @@
-"""CPU inference benchmarking, independent of the training lifecycle."""
+"""CPU/CUDA inference benchmarking, independent of the training lifecycle."""
 
 from .result import BenchmarkResult
 from .runner import BenchmarkRunner

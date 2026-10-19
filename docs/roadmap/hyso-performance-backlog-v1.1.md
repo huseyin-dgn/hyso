@@ -6,14 +6,15 @@ Kullanıcı aşağıdaki **35 özelliğin gelecekte geliştirilmesini** açıkç
 Bu belge yeni performans kapsamını ve önceliklerini taşır; paket sürümü değildir.
 HYSo0.2.0 ve [sabit roadmap v1.0](hyso-architecture-roadmap-v1.md) değişmez.
 [M2-C-A](../audit/m2-c-a-benchmark-engine-design.md) ve önceki milestone durumları
-geriye dönük değiştirilmez. M2-C-B1 yalnız CPU inference çekirdeğidir.
+geriye dönük değiştirilmez. M2-C-B1 CPU inference çekirdeğidir; M2-C-B2
+native CUDA event/FP16 autocast ve opt-in allocator memory probe ekler.
 
 Durumlar: `planned`=henüz benchmark özelliği olarak uygulanmadı;
 `partial`=belirtilen alt kapsam var; `implemented`=bütün satırın doğrulanmış
 sözleşmesi var; `optional-hardware`=donanım bağımlı uygulama ayrıca onaylanmışsa
-kullanılacak durum. Bu sürümde bütün genişleme satırları planned kalır;
-yalnız P01/P08/P11'in B1 CPU alt kapsamı partial'dır. Henüz tam implemented
-satır yok. Donanım opsiyonelliği araç sütununda ayrıca belirtilir.
+kullanılacak durum. B2 sonunda P01/P08/P11 partial, P09 sınırları belirtilmiş
+native allocator sözleşmesiyle implemented, kalan31 satır planned'dır.
+Donanım opsiyonelliği araç sütununda ayrıca belirtilir.
 
 ## Uygulama sırası
 
@@ -35,20 +36,20 @@ fazı, kurulmuş dependency veya gerçekleştirilmiş deney anlamına gelmez.
 
 | ID | Tam isim | Türkçe açıklama | Birim/rapor | Donanım/veri/araç | Önkoşullar | Aşama | Durum | Doğrulanma kriteri |
 |---|---|---|---|---|---|---|---|---|
-| P01 | Inference Latency — P50/P95/P99 | Aynı resident batch için latency dağılımı; B1 CPU mean/p50/p90/p95/std var, P99 ve CUDA yok | ms, raw samples/quantiles | CPU monotonic clock; CUDA event B2 | Sabit shape/device/precision, warmup, repeat/sync scope | Ö1 | partial | B1 finite positive R×N; known samples linear quantiles; P99 ancak versioned protokol kararı ve yeterli örnekle |
+| P01 | Inference Latency — P50/P95/P99 | Aynı resident batch için CPU/CUDA mean/p50/p90/p95/std var; P99 henüz yok | ms, raw samples/quantiles | CPU monotonic clock; native CUDA event | Sabit shape/device/precision, warmup, repeat/sync scope | Ö1 | partial | B1/B2 finite positive R×N; known samples linear quantiles ve native event/sync; P99 ancak versioned protokol kararı ve yeterli örnekle |
 | P02 | Real Throughput / FPS | Uzun ölçüm penceresinde gerçekten tamamlanan örnekler; B1 derived rate bu özellik değildir | images/s veya frames/s; window süresi | CPU/CUDA, tamamlama/sync sayacı | Window başlangıç/sonu, pipeline/concurrency ve I/O scope'u sabit | Ö1 sonrası ayrı protokol, Ö3 | planned | Completed images/window seconds; native sync, pipeline tail flush ve bağımsız count reference |
 | P03 | End-to-End Latency | Capture/read→preprocess→transfer→inference→postprocess zincirinin gecikmesi | ms/frame, percentiles | Gerçek/sentetik veri akışı ve host clock | Stage boundary, queue/drop policy, ortak timestamp domain | Ö3/Ö7 | planned | Aynı örneğin uçtan uca izlenmesi; async completion dahil, device event ile host wall karıştırılmaz |
 | P04 | Preprocessing / Postprocessing Time | Resize/normalize/decode ve output dönüşümü sürelerini ayırma | ms/stage, breakdown | Tanımlı transforms/postprocessor, CPU/GPU | Gerçek veri, stage device/sync ve işlem listesi | Ö3 | planned | Stage count/order ve wall/event scope reference; toplamla overlap ilişkisi açıklanır |
 | P05 | Cold Start & Model Loading | Fresh process import/load/ilk inference maliyeti | ms veya s, ayrı cold/warm rapor | Yerel artifact, fresh subprocess | Artifact format/bytes, cache/page-cache koşulu ve init sınırı | Ö3 | planned | Gerçek fresh process; model load, context init ve ilk forward ayrı; disk cache durumu kaydedilir |
 | P06 | Batch Size Sweep | Sabit model/resolution/precision için batch ekseninde ölçüm | batch→latency/rate/memory tablosu | CPU/CUDA; Ö1 ölçümleri | Aynı timing method; batch başına warmup, order/provenance | Ö3 | planned | Her nokta bağımsız valid result; batch değişimi comparison etiketi ve başarısız noktalar görünür |
 | P07 | Resolution Sweep | Sabit batch/model için spatial resolution ekseninde ölçüm | H×W→latency/memory/quality | CPU/CUDA; geçerli model input'ları | Aspect ratio, preprocessing ve task tanımı | Ö3 | planned | Her shape gerçek forward, ayrı warmup ve sample sayısı; interpolate edilmiş sahte sonuç yok |
-| P08 | Precision Benchmark | B1 CPU FP32/FP64 inference; CUDA AMP, BF16/INT8 ve dönüşüm maliyetleri sonraki kapsam | precision→ms/bytes ve policy | CPU; uygun CUDA/quantization backend ileride | Master/input/output dtype ve autocast policy | Ö1/Ö3 | partial | B1 gerçek fp32/fp64; silent cast/fallback yok; diğer precision'lar gerçek destek/accuracy gate ister |
+| P08 | Precision Benchmark | CPU FP32/FP64 ve CUDA FP32/native AMP FP16 inference var; BF16/INT8, dönüşüm maliyeti ve accuracy-drop sonraki kapsam | precision→ms/bytes ve policy | CPU; native CUDA autocast, quantization backend ileride | Master/input/output dtype ve autocast policy | Ö1/Ö3 | partial | Gerçek CPU fp32/fp64 ve GPU fp32/amp_fp16; FP32 master/input korunur, silent cast/fallback yok; diğer precision ve accuracy ayrı gate ister |
 
 ## B. Donanım, bellek ve darboğaz analizi
 
 | ID | Tam isim | Türkçe açıklama | Birim/rapor | Donanım/veri/araç | Önkoşullar | Aşama | Durum | Doğrulanma kriteri |
 |---|---|---|---|---|---|---|---|---|
-| P09 | GPU Peak Memory | Hedef process/device allocator peak ve baseline farkı; total VRAM değildir | allocated/reserved byte, probe scope | CUDA allocator API | Model/input resident, sync, opt-in peak reset ve exclusivity | Ö1/B2 | planned | Native baseline/reset/probe order; peak>=baseline; allocator vs driver/other process ayrımı |
+| P09 | GPU Peak Memory | Hedef process/device native allocator baseline, önceki/mutlak peak, incremental peak ve output release sonrası değerler; total VRAM değildir | allocated/reserved byte, separate_single_forward scope | Native CUDA allocator API; RTX3060 üzerinde doğrulandı | Model/input resident, sync, opt-in geri alınamayan peak reset ve caller/process exclusivity | Ö1/B2 | implemented | Native baseline/reset/probe/output-release; peak>=baseline; disabled no-reset/null; prior peaks ve reset diagnostics; allocator vs driver/other process ayrımı |
 | P10 | CPU Peak RAM | Process CPU RSS/peak; Python heap'ten ayrı | byte/MiB ve sampling interval | OS-specific RSS backend veya ileride onaylı araç | Güvenilir platform adapter, baseline, sampling/peak tanımı | Ö4/Ö8 | planned | Native tensor allocation/free reference; tracemalloc'a toplam tensor/RSS adı verilmez |
 | P11 | Model Footprint | B1 unique logical parameter/buffer bytes ve alias notes; physical/storage/disk kapsamı yok | count, logical byte; ayrı disk artifact byte ileride | Tensor numel/element_size; disk için gerçek dosya | Dedup/alias convention ve artifact türü | Ö1/Ö3 | partial | Tied Parameter/cross-category/view testleri; numel×element_size; disk sayı ancak gerçekten yazılan artifact'tan |
 | P12 | FLOPs / MACs | İşlem sayımı; operator coverage ve convention zorunlu | FLOP/MAC count, coverage raporu | Gelecekte seçilecek trace/profiler adapter | Sabit input graph, desteklenen ops ve sayım tanımı | Ö4 | planned | Küçük analitik Conv/Linear reference; MAC ile FLOP farklı alanlar; unsupported ops görünür |
@@ -104,3 +105,4 @@ B1'e sessizce eklenmez. Yeni dependency/adapter/uzun-run ancak ilgili alt görev
 açık kapsamı içinde uygulanır; bu belge bunları bugün kurulmuş saymaz.
 
 B1 kanıtı ve dosyalar: [CPU benchmark audit](../audit/m2-c-b1-cpu-benchmark.md).
+B2 kanıtı ve sınırlar: [CUDA benchmark audit](../audit/m2-c-b2-cuda-benchmark.md).

@@ -87,12 +87,18 @@ def _validate(data):
     if (type(shape) is not list or len(shape) != 4 or any(type(n) is not int or n < 1 for n in shape)
             or type(inputs.get("batch_size")) is not int or inputs["batch_size"] != shape[0]):
         raise ValueError("invalid input/batch schema")
-    if (timing.get("timing_method") != "perf_counter_ns" or timing.get("timing_scope") != "synchronous_host_forward"
-            or config.get("precision") not in ("fp32", "fp64") or timing["synchronization_policy"] != "none"
-            or inputs["device"] != "cpu" or data["environment"]["device"] != "cpu"):
-        raise ValueError("unsupported B1 timing/precision schema")
-    expected_config = dict(preflight_forward_count=1, memory_probe_count=0, forced_model_mode="eval",
-                           inference_mode=True, autocast_enabled=False, protocol_version=1, input_policy="fixed_resident_input")
+    device = inputs["device"]
+    cuda = type(device) is str and device.startswith("cuda:") and device[5:].isdigit() and str(int(device[5:])) == device[5:]
+    method = "cuda_event_elapsed" if cuda else "perf_counter_ns"
+    if (timing.get("timing_method") != method
+            or timing.get("timing_scope") != ("serial_current_stream_forward" if cuda else "synchronous_host_forward")
+            or config.get("precision") not in (("fp32", "amp_fp16") if cuda else ("fp32", "fp64"))
+            or timing["synchronization_policy"] != ("repeat_device_drain_and_end_event_sync" if cuda else "none")
+            or (not cuda and device != "cpu") or data["environment"]["device"] != device):
+        raise ValueError("unsupported timing/precision/device schema")
+    measured_memory = cuda and data["cuda_memory"].get("status") == "measured"
+    expected_config = dict(preflight_forward_count=1, memory_probe_count=int(measured_memory), forced_model_mode="eval",
+                           inference_mode=True, autocast_enabled=config["precision"] == "amp_fp16", protocol_version=1, input_policy="fixed_resident_input")
     if any(type(config[k]) is not type(v) or config[k] != v for k, v in expected_config.items()):
         raise ValueError("invalid inference protocol configuration")
     if type(config["seed"]) is not int or not 0 <= config["seed"] <= 2**63-1:
@@ -107,12 +113,60 @@ def _validate(data):
     if json.dumps(data["stats"], sort_keys=True) != json.dumps(expected_stats, sort_keys=True):
         raise ValueError("statistics disagree with samples")
     expected_rate = dict(images_per_sec=_throughput(flat, shape[0]), method="derived_serial_service_rate",
-                         source_timing_method="perf_counter_ns", per_repeat_images_per_sec=[_throughput(row, shape[0]) for row in nested],
+                         source_timing_method=method, per_repeat_images_per_sec=[_throughput(row, shape[0]) for row in nested],
                          window_wall_images_per_sec=None, window_status="unsupported", window_reason="separate_protocol_deferred")
     if json.dumps(data["throughput"], sort_keys=True) != json.dumps(expected_rate, sort_keys=True):
         raise ValueError("throughput disagrees with samples")
-    if data["cuda_memory"] != {"status": "not_applicable", "value": None, "reason": "cpu_only_b1"}:
+    if not cuda and data["cuda_memory"] != {"status": "not_applicable", "value": None, "reason": "cpu_only_b1"}:
         raise ValueError("B1 has no CUDA memory measurement")
+    if cuda:
+        gpu = data["environment"]["cuda"]
+        if (type(gpu) is not dict or type(data["model"]["output"]) is not dict
+                or inputs["dtype"] != "torch.float32" or data["model"]["output"].get("device") != device
+                or gpu.get("status") != "available" or type(gpu.get("device_index")) is not int
+                or gpu["device_index"] != int(device[5:]) or type(gpu.get("stream_id")) is not int or gpu["stream_id"] < 0):
+            raise ValueError("invalid CUDA resident input/output/environment")
+        memory = data["cuda_memory"]
+        fields = {"baseline_allocated_bytes", "baseline_reserved_bytes", "previous_peak_allocated_bytes",
+                  "previous_peak_reserved_bytes", "peak_allocated_bytes", "peak_reserved_bytes", "incremental_peak_bytes",
+                  "current_allocated_after_probe_bytes", "current_reserved_after_probe_bytes",
+                  "current_allocated_after_output_release_bytes", "current_reserved_after_output_release_bytes"}
+        if (set(memory) != fields | {"status", "value", "reason", "scope", "counter_reset_performed"}
+                or memory["scope"] != "separate_single_forward" or type(memory["counter_reset_performed"]) is not bool
+                or memory["counter_reset_performed"] != measured_memory or timing["clock_resolution_ns"] is not None):
+            raise ValueError("invalid CUDA memory/timing protocol")
+        if measured_memory:
+            if any(type(memory[k]) is not int or memory[k] < 0 for k in fields):
+                raise ValueError("invalid CUDA allocator bytes")
+            if (type(memory["value"]) is not int or memory["value"] != memory["peak_allocated_bytes"]
+                    or memory["reason"] is not None
+                    or memory["incremental_peak_bytes"] != memory["peak_allocated_bytes"] - memory["baseline_allocated_bytes"]):
+                raise ValueError("incoherent CUDA peak accounting")
+            for allocated, reserved in (("baseline_allocated_bytes", "baseline_reserved_bytes"),
+                                        ("previous_peak_allocated_bytes", "previous_peak_reserved_bytes"),
+                                        ("peak_allocated_bytes", "peak_reserved_bytes"),
+                                        ("current_allocated_after_probe_bytes", "current_reserved_after_probe_bytes"),
+                                        ("current_allocated_after_output_release_bytes", "current_reserved_after_output_release_bytes")):
+                if memory[allocated] > memory[reserved]:
+                    raise ValueError("allocated bytes exceed reserved bytes")
+            if (memory["peak_allocated_bytes"] < max(memory["baseline_allocated_bytes"], memory["current_allocated_after_probe_bytes"])
+                    or memory["peak_reserved_bytes"] < max(memory["baseline_reserved_bytes"], memory["current_reserved_after_probe_bytes"])
+                    or memory["previous_peak_allocated_bytes"] < memory["baseline_allocated_bytes"]
+                    or memory["previous_peak_reserved_bytes"] < memory["baseline_reserved_bytes"]
+                    or memory["current_allocated_after_output_release_bytes"] > memory["peak_allocated_bytes"]
+                    or memory["current_reserved_after_output_release_bytes"] > memory["peak_reserved_bytes"]):
+                raise ValueError("peak bytes below observed bytes")
+            warnings = data["diagnostics"]["warnings"]
+            if type(warnings) is not list or any(type(w) is not dict for w in warnings):
+                raise ValueError("invalid CUDA peak reset diagnostics")
+            reset_warnings = [w for w in warnings if w.get("code") == "cuda_peak_reset"]
+            if not any(w.get("counter_reset_performed") is True and w.get("scope") == "separate_single_forward"
+                       and all(w.get(k) == memory[k] for k in ("previous_peak_allocated_bytes", "previous_peak_reserved_bytes"))
+                       and type(w.get("message")) is str for w in reset_warnings):
+                raise ValueError("CUDA peak reset requires explicit diagnostics with prior peaks")
+        elif (memory["status"] != "disabled" or memory["reason"] != "measure_cuda_memory_false"
+              or any(memory[k] is not None for k in fields | {"value"})):
+            raise ValueError("disabled CUDA memory values must be null")
     params = data["parameters"]
     for key in ("total_parameters", "trainable_parameters", "frozen_parameters", "parameter_bytes", "buffer_bytes", "parameter_buffer_bytes"):
         if type(params.get(key)) is not int or params[key] < 0:
