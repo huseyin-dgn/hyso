@@ -171,6 +171,22 @@ history = Trainer(modular, optimizer=optimizer, loss_fn=torch.nn.CrossEntropyLos
 assert len(history['train_loss']) == 1 and history['val_loss'] == [None]
 assert torch.isfinite(torch.tensor(history['train_loss'])).all()
 assert not torch.equal(before, modular.classifier.weight)
+# Exercise B2's public API using installed files, retaining the B1 smoke above.
+linear = torch.nn.Linear(2, 2).double()
+update_optimizer = torch.optim.AdamW(linear.parameters(), lr=0.01)
+update_scheduler = torch.optim.lr_scheduler.OneCycleLR(
+    update_optimizer, max_lr=0.03, total_steps=4, cycle_momentum=False)
+update_trainer = Trainer(linear, optimizer=update_optimizer,
+                         loss_fn=torch.nn.CrossEntropyLoss(), accum_steps=2,
+                         grad_clip=0.1, scheduler=update_scheduler, amp=False)
+update_x = torch.tensor([[1., 0.], [0., 1.], [-1., 1.], [1., 1.], [-1., 0.]], dtype=torch.float64)
+update_y = torch.tensor([0, 1, 1, 0, 1])
+update_before = linear.weight.detach().clone()
+update_history = update_trainer.fit(list(zip(update_x.split([2, 2, 1]), update_y.split([2, 2, 1]))), epochs=2)
+assert update_trainer.attempt_count == update_trainer.update_count == update_scheduler.last_epoch == 4
+assert not torch.equal(update_before, linear.weight)
+assert all(p.grad is None for p in linear.parameters())
+assert update_history['val_loss'] == [None, None]
 for name, module in list(sys.modules.items()):
     if name == 'hyso' or name.startswith('hyso.'):
         assert pathlib.Path(module.__file__).resolve().is_relative_to(target)
@@ -180,6 +196,7 @@ print(json.dumps({'source': hyso.__file__, 'version': importlib.metadata.version
                   'modular_output_shape': list(modular_output.shape),
                   'trainer_source': importlib.import_module('hyso.training.trainer').__file__,
                   'trainer_history': history,
+                  'trainer_updates': update_trainer.update_count,
                   'cpu_models': 3, 'cuda_initialized': torch.cuda.is_initialized()}))
 """
 
@@ -197,4 +214,5 @@ def test_installed_distribution_import_and_cpu_forward(distributions, kind):
     assert observed["cpu_models"] == 3 and observed["cuda_initialized"] is False
     assert Path(observed["trainer_source"]).resolve().is_relative_to(target.resolve())
     assert len(observed["trainer_history"]["train_loss"]) == 1
+    assert observed["trainer_updates"] == 4
     (work / (kind + "-smoke.json")).write_text(json.dumps(observed), encoding="utf-8")
