@@ -28,7 +28,8 @@ class Trainer:
     EarlyStopping uses that same target and optionally restores its best weights
     after the final coherent epoch boundary. Opt-in save_last_to writes a v1
     checkpoint before that restore, for standard ModularCNN with a complete
-    model_config and bounded TensorDataset loaders. Trainer resume is not implemented.
+    model_config and bounded TensorDataset loaders. resume_from restores that
+    same original epoch budget transactionally before opening a new iterator.
     Callbacks are observers: callback(event, independent_plain_logs).
     Optimizers are
     standard non-fused SGD/Adam/AdamW; schedulers are bare OneCycleLR, StepLR
@@ -403,12 +404,13 @@ class Trainer:
             raise FloatingPointError("nonfinite scalar loss encountered")
         return loss, correct
 
-    def fit(self, train_loader, val_loader=None, *, epochs=5, save_last_to=None):
+    def fit(self, train_loader, val_loader=None, *, epochs=5, save_last_to=None, resume_from=None):
         """Run train→validation→scheduler→ES→observer→optional last save→finalization.
 
         Save requires callbacks=(), standard num_workers=0 TensorDataset loaders
         and all seven ModularCNN constructor fields in model_config. It saves
-        continuing state before best restoration; it does not enable resume.
+        continuing state before best restoration. Resume requires the same plan
+        and total epochs; completed/terminal checkpoints do not train again.
         """
         if type(epochs) is not int or epochs <= 0:
             raise ValueError("epochs must be a positive Python int")
@@ -431,16 +433,29 @@ class Trainer:
         if self.early_stopping is not None:
             es = self.early_stopping
             if es.best_state is not None or es.best_loss != float("inf") or es.counter != 0 or es.early_stop:
-                raise ValueError("EarlyStopping must have fresh state; resume is not implemented")
+                raise ValueError("EarlyStopping must have fresh state before fit or checkpoint restore")
         save_plan = None
-        if save_last_to is not None:
+        start_epoch = 0
+        if resume_from is not None:
+            from .resume import prepare_save, save_last, restore_checkpoint
+            try:
+                destination, plan = prepare_save(self, train_loader, val_loader, epochs,
+                                                 save_last_to if save_last_to is not None else resume_from)
+            except TypeError as exc:
+                raise TypeError("resume_from: " + str(exc)) from exc
+            start_epoch = restore_checkpoint(self, resume_from, plan)
+            if self._finished:
+                return {key: list(values) for key, values in self.history.items()}
+            if save_last_to is not None:
+                save_plan = plan
+        elif save_last_to is not None:
             from .resume import prepare_save, save_last
             destination, save_plan = prepare_save(self, train_loader, val_loader, epochs, save_last_to)
         self._epochs = epochs
         self._emit("train_begin", 0)
         # Enable autograd explicitly even if the caller has entered no_grad.
         with torch.enable_grad():
-            for _ in range(epochs):
+            for _ in range(start_epoch, epochs):
                 # Keep intentionally eval/frozen children of a training model.
                 modes = [(m, m.training) for m in self.model.modules()]
                 mixed = modes if self.model.training or any(flag for _, flag in modes[1:]) else []
