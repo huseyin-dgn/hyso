@@ -67,36 +67,51 @@ def test_canonical_packaging_configuration():
     cfg = configparser.ConfigParser()
     cfg.read(ROOT / "setup.cfg", encoding="utf-8")
     assert cfg["metadata"]["name"] == "hyso"
-    assert cfg["metadata"]["version"] == "0.1.6"
-    assert cfg["options"]["python_requires"] == ">=3.8"
+    assert cfg["metadata"]["version"] == "0.2.0"
+    assert cfg["options"]["python_requires"] == ">=3.10"
     assert cfg["options.packages.find"]["where"] == "."
     for name in MODULES:
-        ast.parse((ROOT / name).read_text(encoding="utf-8-sig"), feature_version=(3, 8))
+        ast.parse((ROOT / name).read_text(encoding="utf-8-sig"), feature_version=(3, 10))
 
 
 def test_wheel_and_sdist_content_and_metadata(distributions):
     _, wheel, sdist = distributions
+    assert wheel.name == "hyso-0.2.0-py3-none-any.whl"
+    assert sdist.name == "hyso-0.2.0.tar.gz"
     with zipfile.ZipFile(wheel) as archive:
         wheel_names = set(archive.namelist())
-        wheel_meta = email.message_from_bytes(archive.read("hyso-0.1.6.dist-info/METADATA"))
+        wheel_meta = email.message_from_bytes(archive.read("hyso-0.2.0.dist-info/METADATA"))
         assert {name for name in wheel_names if name.endswith(".py")} == MODULES
-        assert archive.read("hyso-0.1.6.dist-info/top_level.txt").decode().split() == ["hyso"]
+        assert archive.read("hyso-0.2.0.dist-info/top_level.txt").decode().split() == ["hyso"]
+        license_names = [name for name in wheel_names if name.endswith("/LICENSE")]
+        assert len(license_names) == 1
+        assert archive.read(license_names[0]) == (ROOT / "LICENSE").read_bytes()
+        for name in MODULES:
+            assert archive.read(name) == (ROOT / name).read_bytes()
     with tarfile.open(sdist) as archive:
-        names = {name.removeprefix("hyso-0.1.6/") for name in archive.getnames()}
-        sdist_meta = email.message_from_bytes(archive.extractfile("hyso-0.1.6/PKG-INFO").read())
-        sdist_requires = archive.extractfile("hyso-0.1.6/hyso.egg-info/requires.txt").read().decode().splitlines()
+        names = {name.removeprefix("hyso-0.2.0/") for name in archive.getnames()}
+        sdist_meta = email.message_from_bytes(archive.extractfile("hyso-0.2.0/PKG-INFO").read())
+        sdist_requires = archive.extractfile("hyso-0.2.0/hyso.egg-info/requires.txt").read().decode().splitlines()
         assert {name for name in names if name.endswith(".py")} == MODULES
         assert set(CONFIG_FILES) <= names
+        # setuptools adds egg_info settings to the sdist's setup.cfg.
+        for name in ("README.md", "LICENSE", "pyproject.toml", "MANIFEST.in", *MODULES):
+            assert archive.extractfile("hyso-0.2.0/" + name).read() == (ROOT / name).read_bytes()
     for name in wheel_names | names:
         assert "sentinel" not in name and not name.endswith((".pth", ".pt", ".ckpt", ".pyc"))
         assert not any(part in {"docs", "tests", "__pycache__", "dist", "build"} for part in Path(name).parts)
     for metadata in (wheel_meta, sdist_meta):
-        assert metadata["Name"] == "hyso" and metadata["Version"] == "0.1.6"
-        assert metadata["Requires-Python"] == ">=3.8"
+        assert metadata["Name"] == "hyso" and metadata["Version"] == "0.2.0"
+        assert metadata["Requires-Python"] == ">=3.10"
+        description = metadata.get_payload(decode=True).decode("utf-8")
+        # Email metadata may use CRLF; compare every content line unchanged.
+        assert description.strip().splitlines() == (ROOT / "README.md").read_text(encoding="utf-8").strip().splitlines()
     requirements = [Requirement(value) for value in wheel_meta.get_all("Requires-Dist")]
     assert {str(Requirement(value)) for value in sdist_requires if value.strip()} == {str(item) for item in requirements}
     assert {item.name for item in requirements} == DEPENDENCIES
-    assert str(next(item.specifier for item in requirements if item.name == "torch")) == ">=2.0"
+    assert str(next(item.specifier for item in requirements if item.name == "torch")) == ">=2.2.2"
+    assert str(next(item.specifier for item in requirements if item.name == "torchvision")) == ">=0.17.2"
+    assert not next(item.specifier for item in requirements if item.name == "numpy")
 
 
 SMOKE = """
@@ -120,7 +135,7 @@ for module, names in {
     assert pathlib.Path(loaded.__file__).resolve().is_relative_to(target)
     assert all(hasattr(loaded, name) for name in names)
 assert pathlib.Path(hyso.__file__).resolve().is_relative_to(target)
-assert importlib.metadata.version('hyso') == '0.1.6'
+assert importlib.metadata.version('hyso') == '0.2.0'
 x = torch.randn(2, 3, 16, 16)
 models = [
     EBO(conv_channels=[4, 8], residual_per_block=1, device='cpu'),
