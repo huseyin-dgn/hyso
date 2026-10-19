@@ -5,6 +5,7 @@ from torch import nn
 
 from .bcam import CBAMBlock
 from .WithSE import SEBlock
+from .attention import ECAAttention, CoordinateAttention
 
 __all__ = ["ConvNormAct", "ResidualBlock"]
 
@@ -74,8 +75,8 @@ class ResidualBlock(nn.Module):
     used when channels change or either stride differs from 1. Spatial output
     is ceil(H/stride_h), ceil(W/stride_w) on both paths.
 
-    attention accepts None, nn.Identity, or an existing SEBlock/CBAMBlock with
-    out_channels channels. The exact supplied instance is registered, never
+    attention accepts None, nn.Identity, SEBlock, CBAMBlock, ECAAttention or
+    CoordinateAttention with out_channels channels. The supplied instance is registered, never
     copied or recreated in forward. Sharing that instance between blocks shares
     weights and is the caller's responsibility; use separate instances for
     independent attention. No stochastic depth or training API is included.
@@ -88,8 +89,11 @@ class ResidualBlock(nn.Module):
         _positive_int(out_channels, "out_channels")
         stride = _pair(stride, "stride")
         if attention is not None:
-            if type(attention) not in (nn.Identity, SEBlock, CBAMBlock):
-                raise TypeError("attention must be None, nn.Identity, SEBlock or CBAMBlock")
+            if type(attention) not in (nn.Identity, SEBlock, CBAMBlock, ECAAttention, CoordinateAttention):
+                raise TypeError("attention must be None, nn.Identity, SEBlock, CBAMBlock, "
+                                "ECAAttention or CoordinateAttention")
+            if type(attention) in (ECAAttention, CoordinateAttention) and attention.channels != out_channels:
+                raise ValueError("attention channels must match out_channels")
             if type(attention) in (SEBlock, CBAMBlock):
                 if (attention.fc1.in_features != out_channels
                         or attention.fc2.out_features != out_channels):
