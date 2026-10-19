@@ -306,6 +306,39 @@ assert tracking_reopened.get_run(tracking_run.id).to_dict() == tracking_snapshot
 assert tracking_snapshot['status'] == 'completed' and tracking_snapshot['metric_count'] == 1
 assert tracking_reopened._db.execute('PRAGMA user_version').fetchone()[0] == 1
 tracking_reopened.close()
+migration = ExperimentManager.migrate_store(tracking_root)
+assert migration['status'] == 'migrated'
+with sqlite3.connect(migration['backup']) as backup:
+    assert backup.execute('PRAGMA user_version').fetchone()[0] == 1
+tracking_b2 = ExperimentManager(tracking_root)
+assert tracking_b2.get_run(tracking_run.id).read_metrics()[0]['value'] == .42
+preserved = tracking_b2.get_run(tracking_run.id).to_dict()
+assert all(preserved[key] == value for key, value in tracking_snapshot.items())
+artifact_run = tracking_b2.create_run(tracking_experiment['id'], 'training', {'attempt': 1})
+artifact_run.start()
+artifact_source = tracking_root.parent / 'untrusted-checkpoint'
+artifact_source.write_bytes(b'arbitrary bytes: never deserialize')
+reference = artifact_run.add_artifact(artifact_source, retain_locator=True)
+owned = artifact_run.add_artifact(artifact_source, ownership='copy')
+assert tracking_b2.verify_artifact(reference['id'])['status'] == 'verified'
+assert tracking_b2.verify_artifact(owned['id'])['status'] == 'verified'
+assert (tracking_root / owned['managed_relative_path']).read_bytes() == artifact_source.read_bytes()
+recovered = tracking_b2.recover_interrupted(artifact_run.id, artifact_run.to_dict()['revision'], 'coordinated stopped writer')
+assert recovered['status'] == 'interrupted' and recovered['writer_session_id'] is None
+retry_run = tracking_b2.create_run(tracking_experiment['id'], 'training', {'attempt': 2},
+    retry_of_run_id=artifact_run.id, resume_artifact_id=owned['id'])
+assert retry_run.to_dict()['attempt_no'] == 2
+tracking_b2.link_artifact(retry_run.id, reference['id'], role='input')
+retry_run.start()
+retry_run.log_metric(name='loss',value=.2,unit='loss',source='caller',epoch=1)
+retry_run.finish()
+assert tracking_b2.reconcile_storage()['status'] == 'reconciled'
+retry_id = retry_run.id
+tracking_b2.close()
+tracking_b2 = ExperimentManager(tracking_root)
+assert tracking_b2.get_run(retry_id).to_dict()['status'] == 'completed'
+assert tracking_b2.get_artifact(owned['id'])['producer_run_id'] == artifact_run.id
+tracking_b2.close()
 for name, module in list(sys.modules.items()):
     if name == 'hyso' or name.startswith('hyso.'):
         assert pathlib.Path(module.__file__).resolve().is_relative_to(target)
