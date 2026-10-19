@@ -26,7 +26,8 @@ def test_result_is_immutable_defensive_plain_and_has_no_export_comparison(data):
     assert result.to_dict()["model"]["model_config"]["label"] == ["fixture"]
     with pytest.raises(FrozenInstanceError): result._payload = "mutated"
     assert json.loads(json.dumps(original, allow_nan=False)) == original
-    assert not hasattr(result, "model") and not hasattr(result, "to_json") and not hasattr(result, "compare_results")
+    assert not hasattr(result, "model") and not hasattr(result, "compare_results")
+    assert all(callable(getattr(result, method)) for method in ("to_json", "to_csv", "to_samples_csv"))
     def check(value):
         assert type(value) in (dict, list, str, bool, int, float, type(None))
         if type(value) is dict:
