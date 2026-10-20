@@ -17,6 +17,7 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
+    "hyso/performance/training.py",
     "hyso/performance/transfers.py", "hyso/performance/_transfer_worker.py",
     "hyso/performance/utilization.py", "hyso/performance/_telemetry.py",
     "hyso/performance/profiling.py", "hyso/performance/_profile_worker.py", "hyso/performance/_operation_models.py",
@@ -78,7 +79,7 @@ def distributions(tmp_path_factory):
 
 def test_canonical_packaging_configuration():
     assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == MODULES
-    assert len(MODULES) == 38
+    assert len(MODULES) == 39
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
     assert not (ROOT / "hyso/setup.cfg").exists()
@@ -436,6 +437,14 @@ except TransferError as error:
     assert error.diagnostics['status'] == 'unsupported' and error.diagnostics['process_terminated']
 else:
     raise AssertionError('CPU-only admission unexpectedly completed GPU transfer')
+from hyso.performance import TrainingTimingProtocol, TrainingPerformanceResult, measure_training
+timing_model = torch.nn.Linear(3, 2)
+timing_trainer = Trainer(timing_model, optimizer=torch.optim.SGD(timing_model.parameters(), lr=.01),
+                        loss_fn=torch.nn.CrossEntropyLoss(), accum_steps=2)
+timing_batches = list(zip(torch.ones(5, 3).split(2), torch.tensor([0, 1, 0, 1, 0]).split(2)))
+timing = measure_training(timing_trainer, timing_batches, epochs=2).to_dict()
+assert timing['actual_epochs'] == 2 and timing['counters']['after']['applied'] == 4
+assert [r['samples'] for r in timing['observations'] if r['kind'] == 'window'] == [4, 1, 4, 1]
 for name, module in list(sys.modules.items()):
     if name == 'hyso' or name.startswith('hyso.'):
         assert pathlib.Path(module.__file__).resolve().is_relative_to(target)
@@ -463,7 +472,7 @@ print(json.dumps({'source': hyso.__file__, 'version': importlib.metadata.version
                   'performance_guide': True, 'performance_samples': 1000, 'performance_images': 80,
                   'memory_guide': True, 'rss_backend': memory_manual['current'].to_dict()['raw_evidence']['observations'][0]['backend'],
                   'sweep_guide': True, 'sweep_precision_points': 4, 'pipeline_guide': True, 'pipeline_samples': 4, 'cold_trials': pipeline_manual['cold'].to_dict()['actual'],
-                  'manual_integration': True, 'cpu_models': 3, 'cuda_initialized': torch.cuda.is_initialized()}))
+                  'training_timing': True, 'manual_integration': True, 'cpu_models': 3, 'cuda_initialized': torch.cuda.is_initialized()}))
 """
 
 
@@ -478,6 +487,7 @@ def test_installed_distribution_import_and_cpu_forward(distributions, kind):
     observed = json.loads(command(["-c", SMOKE, str(target), str(ROOT / "tests/trainer_replay_support.py"), str(ROOT / "docs/guides/experiment-manager.md"), str(ROOT / "docs/guides/performance-inference.md"), str(ROOT / "docs/guides/performance-memory.md"), str(ROOT / "docs/guides/performance-pipeline.md"), str(ROOT / "docs/guides/performance-sweeps.md"), str(ROOT / "docs/guides/performance-max-batch.md"), str(ROOT / "docs/guides/performance-profiling.md"), str(ROOT / "docs/guides/performance-transfer-utilization.md")], work).strip().splitlines()[-1])
     assert Path(observed["source"]).resolve().is_relative_to(target.resolve())
     assert observed["manual_integration"] is True
+    assert observed["training_timing"] is True
     assert observed['performance_guide'] and observed['performance_samples'] == 1000 and observed['performance_images'] == 80
     assert observed['memory_guide'] and observed['rss_backend'].startswith('windows.' if os.name == 'nt' else 'linux.')
     assert observed['sweep_guide'] and observed['sweep_precision_points'] == 4

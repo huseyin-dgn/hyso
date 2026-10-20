@@ -147,7 +147,7 @@ fazı, kurulmuş dependency veya gerçekleştirilmiş deney anlamına gelmez.
 
 | ID | Tam isim | Türkçe açıklama | Birim/rapor | Donanım/veri/araç | Önkoşullar | Aşama | Durum | Doğrulanma kriteri |
 |---|---|---|---|---|---|---|---|---|
-| P19 | Epoch / Training Step Time | Inference'tan ayrı training-step/epoch latency | ms/step, s/epoch | Model, data, loss, optimizer, CPU/CUDA | Update/zero_grad/accumulation ve validation scope'u | Ö5 | planned | Gerçek training state/update; epoch toplamı ve excluded I/O açık; inference latency yeniden etiketlenmez |
+| P19 | Epoch / Training Step Time | measure_training ile gerçek Trainer epoch/microbatch/window/attempt timing | Host ms ve epoch s; CUDA selected-stream event ms ayrı | Native CPU FP32/FP64 ve doğrulanan CUDA FP32/AMP; bounded recorder | Existing Trainer lifecycle/counters; ayrı validation ve checkpoint I/O exclusion | Ö5 / M2-P-B9 P19 alt kapsam | implemented | Gerçek uneven sample ledger, applied/skip, exact state/RNG/history/replay, bounded events, export/EManager ve minimum/package gate; kernel attribution/P20 stages/P22 rates yok; B4 riski açık |
 | P20 | Forward / Backward / Optimizer Breakdown | Gradient step aşamalarının ayrı süreleri | ms/stage, full-step ratio | Native autograd/optimizer/scaler | P19; clipping/unscale/loss/zero_grad boundaries | Ö5 | planned | Gerçek backward/update; AMP skipped/applied ayrımı, profiler overhead ve stage overlap açıklanır |
 | P21 | DataLoader Bottleneck Analysis | Load/decode/transform/queue wait ile compute ayrımı | ms/batch wait, samples/s, timeline | Gerçek dataset, worker/pin settings | Worker RNG/epoch order/profiling adapter | Ö5 | planned | Worker ve ana süreç scope'ları ayrılır; bekleme ile CPU compute eşit sayılmaz |
 | P22 | Training Throughput | Gerçek training penceresinde tamamlanan örnek ve applied update hızı | samples/s, applied updates/s | Loss/data/optimizer/scaler | P19; accumulation ve overflow count | Ö5 | planned | Sample-weighted gerçek count/window; attempt ile applied update ayrı |
@@ -190,3 +190,37 @@ açık kapsamı içinde uygulanır; bu belge bunları bugün kurulmuş saymaz.
 B1 kanıtı ve dosyalar: [CPU benchmark audit](../audit/m2-c-b1-cpu-benchmark.md).
 B2 kanıtı ve sınırlar: [CUDA benchmark audit](../audit/m2-c-b2-cuda-benchmark.md).
 B3 kanıtı ve sınırlar: [Export/comparison audit](../audit/m2-c-b3-benchmark-export-comparison.md).
+
+## M2-P-B8 capability / B9 P19 güncellemesi — 2026-10-21
+
+P18 **planned / blocked**: mevcut Windows Torch `LIBKINETO_NOCUPTI` build'i,
+eşleşmiş FLOP/DRAM counter ve calibration kanıtı sağlamıyor; Roofline API yok.
+[B8 capability gate](../audit/m2-p-b8-roofline-capability-gate.md).
+P19 doğrulanan native CPU ve selected-stream CUDA event kapsamıyla implemented.
+Gerçek fit, ayrı train/validation/total epoch clocks, microbatch/window/attempt
+ledger, applied/skipped ownership, exact deterministic replay, checkpoint segments
+ve export/storage sınırları [B9 audit](../audit/m2-p-b9-training-timing.md) ve
+[rehber](../guides/performance-training-timing.md) içinde açıklanır.
+Güncel 35-feature sayım: **14 implemented, 5 partial, 16 planned**.
+P20–P25 durumları değişmedi; özellikle P20 stage breakdown ve P22 rates yoktur.
+M2-P-A'nın tam B9 kapsamı P19+P20+P22 olduğundan **B9 PARTIAL**; full B9 GO yoktur.
+B4 OPEN/UNRESOLVED, B6 kernel profiling ve B7 overlap/full-scope NO-GO geçmiş
+kapıları aynen korunur. Bu güncelleme stable release onayı değildir.
+
+## Post-Performance Developer Experience
+
+35 performans özelliği tamamlandıktan sonra kullanıcıya yönelik sade HYSo API'si
+geliştirilmesi gelecekteki tasarım hedefidir. Örnek **mevcut olmayan** kullanım:
+
+```python
+from hyso import Hyso
+
+app = Hyso(model="modular_cnn", device="auto")
+app.train(train_loader, epochs=10)
+app.benchmark()
+app.report("report.html")
+```
+
+`Hyso` facade API'si şu anda mevcut değildir ve bu görevde uygulanmadı.
+Mevcut Trainer/BenchmarkRunner/performance public API'leri korunacak.
+Bu not yeni performans özelliği eklemez; toplam özellik sayısı **35** kalır.
