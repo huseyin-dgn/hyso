@@ -27,10 +27,18 @@ B1'de P09 ve P03–P35'in diğer durumları değişmedi. Kanıt ve sınırlar:
 M2-P-B2 (2026-10-20): P10 **native Windows current-process RSS/HWM** ve P11
 **dense CPU logical bytes + gerçek artifact bytes/SHA** kapsamıyla implemented.
 Linux adapter'ı parser/protocol testlidir; native Linux/Torch doğrulaması yoktur,
-fully verified platform kapsamı Windows'tur. Güncel sayım:
+fully verified platform kapsamı Windows'tur. B2 sonrası sayım:
 **5 implemented, 2 partial, 28 planned**. Diğer P durumları değişmedi.
 [Memory/footprint audit](../audit/m2-p-b2-memory-footprint.md),
 [kullanım rehberi](../guides/performance-memory.md).
+
+M2-P-B3 (2026-10-20): P03/P04 **bounded blocking serial CPU/CUDA pipeline ve
+ayrı host/event stage clocks**, P05 **fresh interpreter CPU/CUDA cold phases**
+kapsamıyla implemented. Native doğrulama Windows/RTX3060 üzerinde; overlapped
+scheduling, kamera/drop policy ve cold OS page-cache garantisi kapsam dışıdır.
+Güncel sayım: **8 implemented, 2 partial, 25 planned**. Diğer statüler değişmedi.
+[Pipeline/cold-start audit](../audit/m2-p-b3-pipeline-cold-start.md),
+[kullanım rehberi](../guides/performance-pipeline.md).
 
 ## Uygulama sırası
 
@@ -54,9 +62,9 @@ fazı, kurulmuş dependency veya gerçekleştirilmiş deney anlamına gelmez.
 |---|---|---|---|---|---|---|---|---|
 | P01 | Inference Latency — P50/P95/P99 | Mevcut schema1 mean/p50/p90/p95/std korunur; hyso.performance.analyze_latency aynı raw R×N'den ayrı versioned P99 analizi üretir | ms/batch, raw samples/quantiles, tail status | CPU monotonic clock; native CUDA event kaynağı | Sabit shape/device/precision, warmup, repeat/sync scope; default n≥1000 ve (1−q)n≥10 | Ö1 / M2-P-B1 | implemented | Linear [1..1000] P99=990.01; n=999 null/insufficient_samples; no rerun/mutation; repeat/source provenance, gerçek CPU/CUDA sample ve installed minimum/package kanıtı; CI/independence iddiası yok |
 | P02 | Real Throughput / FPS | hyso.performance.measure_throughput: fixed resident NCHW tensor, continuous completion-window; mevcut derived rate değişmez; camera/display/E2E kapsam dışı | images/s; completed images / host wall seconds | CPU FP32/FP64; native CUDA FP32/AMP FP16, bounded event/output ring | Explicit batch-count veya duration admission; concurrency=1, queue depth, warmup/repeat, tail completion; finite-check/queue overhead scope'ta | Ö1 sonrası ayrı protokol / M2-P-B1 | implemented | Gerçek synchronous CPU ve CUDA terminal drain/non-default stream; count ledger, pending=0, tail paydada, bounded lifetime/no per-forward sync; state/RNG, export/artifact reopen ve installed minimum/package PASS; hidden cross-stream/device unsupported |
-| P03 | End-to-End Latency | Capture/read→preprocess→transfer→inference→postprocess zincirinin gecikmesi | ms/frame, percentiles | Gerçek/sentetik veri akışı ve host clock | Stage boundary, queue/drop policy, ortak timestamp domain | Ö3/Ö7 | planned | Aynı örneğin uçtan uca izlenmesi; async completion dahil, device event ile host wall karıştırılmaz |
-| P04 | Preprocessing / Postprocessing Time | Resize/normalize/decode ve output dönüşümü sürelerini ayırma | ms/stage, breakdown | Tanımlı transforms/postprocessor, CPU/GPU | Gerçek veri, stage device/sync ve işlem listesi | Ö3 | planned | Stage count/order ve wall/event scope reference; toplamla overlap ilişkisi açıklanır |
-| P05 | Cold Start & Model Loading | Fresh process import/load/ilk inference maliyeti | ms veya s, ayrı cold/warm rapor | Yerel artifact, fresh subprocess | Artifact format/bytes, cache/page-cache koşulu ve init sınırı | Ö3 | planned | Gerçek fresh process; model load, context init ve ilk forward ayrı; disk cache durumu kaydedilir |
+| P03 | End-to-End Latency | measure_pipeline: aynı ID'nin read-start→postprocess completion host wall süresi; optional delivery ayrı | ms/ID, P50/P95 ve eligible P99 | Synchronous CPU; native CUDA FP32/AMP FP16, terminal event | Bounded blocking queue, unique ID, warmup/repeat ve explicit stage/device | Ö3 / M2-P-B3 | implemented | Gerçek CPU/CUDA completion, queue wait/count/tail ve same-ID reference; dropped=0/pending=0 serial policy, stage sum E2E değildir; hidden streams/overlap/camera/drop unsupported; minimum installed/package PASS |
+| P04 | Preprocessing / Postprocessing Time | PipelineStage adapters; analyze_stages raw evidence'dan ayrı result üretir | ms/stage, host launch/completion ve CUDA event ayrı | Caller CPU transforms / selected-stream CUDA stages | Ordered boundaries, execution counts, explicit overhead/sync | Ö3 / M2-P-B3 | implemented | Gerçek resize/normalize/post transform, stage order/count/boundaries; native event/default/non-default stream ve terminal completion; model tekrar çalışmaz; host/event clocks toplanmaz |
+| P05 | Cold Start & Model Loading | measure_cold_start: her trial fresh interpreter; import/construction/load/prepare/first/warm ayrı | ms/phase, raw trial outcomes | Trusted importable recipe; SHA-verified weights_only state_dict | Parent receipt ve worker clock domain ayrı; page-cache unknown | Ö3 / M2-P-B3 | implemented | Gerçek fresh CPU/CUDA worker; FP32/AMP, safe artifact load, timeout/tree cleanup/crash/missing/corrupt/unsupported kanıtı; parent state ve process ownership; native Windows ve minimum Torch installed PASS, OS cache cold garantisi yok |
 | P06 | Batch Size Sweep | Sabit model/resolution/precision için batch ekseninde ölçüm | batch→latency/rate/memory tablosu | CPU/CUDA; Ö1 ölçümleri | Aynı timing method; batch başına warmup, order/provenance | Ö3 | planned | Her nokta bağımsız valid result; batch değişimi comparison etiketi ve başarısız noktalar görünür |
 | P07 | Resolution Sweep | Sabit batch/model için spatial resolution ekseninde ölçüm | H×W→latency/memory/quality | CPU/CUDA; geçerli model input'ları | Aspect ratio, preprocessing ve task tanımı | Ö3 | planned | Her shape gerçek forward, ayrı warmup ve sample sayısı; interpolate edilmiş sahte sonuç yok |
 | P08 | Precision Benchmark | CPU FP32/FP64 ve CUDA FP32/native AMP FP16 inference var; BF16/INT8, dönüşüm maliyeti ve accuracy-drop sonraki kapsam | precision→ms/bytes ve policy | CPU; native CUDA autocast, quantization backend ileride | Master/input/output dtype ve autocast policy | Ö1/Ö3 | partial | Gerçek CPU fp32/fp64 ve GPU fp32/amp_fp16; FP32 master/input korunur, silent cast/fallback yok; diğer precision ve accuracy ayrı gate ister |

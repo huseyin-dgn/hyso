@@ -53,7 +53,8 @@ def _validate(data, kind):
     import uuid
     uuid.UUID(data["result_id"])
     if data["feature_ids"] != {"latency_analysis": ["P01"], "throughput": ["P02"],
-                               "memory": ["P10"], "footprint": ["P11"]}[kind]:
+                               "memory": ["P10"], "footprint": ["P11"], "pipeline": ["P03"],
+                               "stage_timing": ["P04"], "cold_start": ["P05"]}[kind]:
         raise ValueError("invalid feature identity")
     if data["identity"].get("experiment_run_id") is not None:
         raise ValueError("associate experiment run externally; result identity is immutable")
@@ -63,6 +64,14 @@ def _validate(data, kind):
             raise ValueError("missing model/input/runtime provenance")
     if type(protocol["version"]) is not int or protocol["version"] != 1:
         raise ValueError("unsupported protocol version")
+    if kind in ('pipeline', 'stage_timing', 'cold_start'):
+        if kind == 'cold_start':
+            from .cold import _validate_cold
+            _validate_cold(data)
+        else:
+            from .pipeline import _validate_pipeline
+            _validate_pipeline(data, kind)
+        return
     if kind in ("memory", "footprint"):
         from .memory import _validate_memory, _validate_footprint
         (_validate_memory if kind == "memory" else _validate_footprint)(data)
@@ -188,7 +197,22 @@ class _Result:
         data = self.to_dict()
         common = dict(format=data["format"], schema_version=1, result_id=data["result_id"],
                       device=data["provenance"]["environment"]["device"], scope=data["protocol"]["scope"])
-        if self._kind in ("memory", "footprint"):
+        if self._kind in ('pipeline', 'stage_timing', 'cold_start'):
+            if self._kind == 'cold_start':
+                rows = [dict(common, trial_index=trial['trial_index'], worker_pid=trial['worker_pid'],
+                             trial_status=trial['status'], phase=name, **phase)
+                        for trial in data['raw_evidence']['trials']
+                        for name,phase in dict(startup_to_ready_receipt=trial['startup_to_ready_receipt'], **trial['phases']).items()]
+            elif self._kind == 'pipeline':
+                rows = [dict(common, **{k:v for k,v in sample.items() if k != 'stages'})
+                        for sample in data['raw_evidence']['samples']]
+            else:
+                rows = [dict(common, repeat_index=sample['repeat_index'], **stage)
+                        for sample in data['raw_evidence']['samples'] for stage in sample['stages']]
+                for row in rows:
+                    for key in ('input_boundary','output_boundary'):
+                        row[key]=json.dumps(row[key],sort_keys=True)
+        elif self._kind in ("memory", "footprint"):
             if self._kind == "memory" and data["raw_evidence"]["observations"]:
                 rows = [dict(common, status=data['measurements']['current_rss_bytes']['status'], reason=None,
                              unit='byte', **sample) for sample in data['raw_evidence']['observations']]
@@ -227,3 +251,21 @@ class MemoryResult(_Result):
 class FootprintResult(_Result):
     __slots__ = ()
     _kind = "footprint"
+
+
+@dataclass(frozen=True, init=False)
+class PipelineResult(_Result):
+    __slots__ = ()
+    _kind = 'pipeline'
+
+
+@dataclass(frozen=True, init=False)
+class StageTimingResult(_Result):
+    __slots__ = ()
+    _kind = 'stage_timing'
+
+
+@dataclass(frozen=True, init=False)
+class ColdStartResult(_Result):
+    __slots__ = ()
+    _kind = 'cold_start'
