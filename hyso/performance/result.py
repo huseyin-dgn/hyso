@@ -52,7 +52,8 @@ def _validate(data, kind):
         raise ValueError("unsupported performance format")
     import uuid
     uuid.UUID(data["result_id"])
-    if data["feature_ids"] != (["P01"] if kind == "latency_analysis" else ["P02"]):
+    if data["feature_ids"] != {"latency_analysis": ["P01"], "throughput": ["P02"],
+                               "memory": ["P10"], "footprint": ["P11"]}[kind]:
         raise ValueError("invalid feature identity")
     if data["identity"].get("experiment_run_id") is not None:
         raise ValueError("associate experiment run externally; result identity is immutable")
@@ -62,6 +63,10 @@ def _validate(data, kind):
             raise ValueError("missing model/input/runtime provenance")
     if type(protocol["version"]) is not int or protocol["version"] != 1:
         raise ValueError("unsupported protocol version")
+    if kind in ("memory", "footprint"):
+        from .memory import _validate_memory, _validate_footprint
+        (_validate_memory if kind == "memory" else _validate_footprint)(data)
+        return
     if kind == "latency_analysis":
         if protocol["id"] != "resident_tail" or protocol["method"] != "linear_(n-1)*q":
             raise ValueError("invalid latency protocol")
@@ -183,7 +188,13 @@ class _Result:
         data = self.to_dict()
         common = dict(format=data["format"], schema_version=1, result_id=data["result_id"],
                       device=data["provenance"]["environment"]["device"], scope=data["protocol"]["scope"])
-        if self._kind == "latency_analysis":
+        if self._kind in ("memory", "footprint"):
+            if self._kind == "memory" and data["raw_evidence"]["observations"]:
+                rows = [dict(common, status=data['measurements']['current_rss_bytes']['status'], reason=None,
+                             unit='byte', **sample) for sample in data['raw_evidence']['observations']]
+            else:
+                rows = [dict(common, metric=name, **metric) for name, metric in data['measurements'].items()]
+        elif self._kind == "latency_analysis":
             rows = [dict(common, source_result_id=data["identity"]["source_result_id"],
                          sample_count=data["actual"]["samples"], **metric) for metric in data["measurements"]]
         else:
@@ -204,3 +215,15 @@ class LatencyAnalysis(_Result):
 class ThroughputResult(_Result):
     __slots__ = ()
     _kind = "throughput"
+
+
+@dataclass(frozen=True, init=False)
+class MemoryResult(_Result):
+    __slots__ = ()
+    _kind = "memory"
+
+
+@dataclass(frozen=True, init=False)
+class FootprintResult(_Result):
+    __slots__ = ()
+    _kind = "footprint"
