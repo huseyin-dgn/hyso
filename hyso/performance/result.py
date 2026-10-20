@@ -58,7 +58,8 @@ def _validate(data, kind):
                                "sweep": data.get('feature_ids') if data.get('feature_ids') in (["P06"],["P07"],["P08"]) else None,
                                "precision": ["P08"], "capacity": ["P17"],
                                "operator_profile": ["P14"], "layer_profile": ["P13"],
-                               "operation_count": ["P12"]}[kind]:
+                               "operation_count": ["P12"], "transfer": ["P15"],
+                               "utilization": ["P16"]}[kind]:
         raise ValueError("invalid feature identity")
     if data["identity"].get("experiment_run_id") is not None:
         raise ValueError("associate experiment run externally; result identity is immutable")
@@ -68,6 +69,14 @@ def _validate(data, kind):
             raise ValueError("missing model/input/runtime provenance")
     if type(protocol["version"]) is not int or protocol["version"] != 1:
         raise ValueError("unsupported protocol version")
+    if kind == 'transfer':
+        from .transfers import _validate_transfer
+        _validate_transfer(data)
+        return
+    if kind == 'utilization':
+        from .utilization import _validate_utilization
+        _validate_utilization(data)
+        return
     if kind in ('operator_profile','layer_profile','operation_count'):
         from .profiling import _validate_profile
         _validate_profile(data,kind)
@@ -213,7 +222,13 @@ class _Result:
         data = self.to_dict()
         common = dict(format=data["format"], schema_version=1, result_id=data["result_id"],
                       device=data["provenance"]["environment"]["device"], scope=data["protocol"]["scope"])
-        if self._kind in ('operator_profile','layer_profile','operation_count'):
+        if self._kind in ('transfer','utilization'):
+            entries = (data['raw_evidence']['copies'] if self._kind=='transfer' else
+                       data['raw_evidence']['cpu_intervals'] + data['raw_evidence']['gpu_samples'])
+            rows = [dict(common, row_kind=self._kind, observation_index=i,
+                         payload=json.dumps(row, sort_keys=True)) for i,row in enumerate(entries)]
+            if not rows: rows=[dict(common,row_kind=self._kind,observation_index=None,payload='null')]
+        elif self._kind in ('operator_profile','layer_profile','operation_count'):
             entries=(data['measurements']['operators'] if self._kind=='operator_profile' else
                      data['measurements']['modules'] if self._kind=='layer_profile' else data['raw_evidence']['operations'])
             rows=[dict(common,row_kind=self._kind,observation_index=i,payload=json.dumps(row,sort_keys=True))
@@ -347,3 +362,15 @@ class LayerProfileResult(_Result):
 class OperationCountResult(_Result):
     __slots__ = ()
     _kind = 'operation_count'
+
+
+@dataclass(frozen=True, init=False)
+class TransferResult(_Result):
+    __slots__ = ()
+    _kind = 'transfer'
+
+
+@dataclass(frozen=True, init=False)
+class UtilizationResult(_Result):
+    __slots__ = ()
+    _kind = 'utilization'

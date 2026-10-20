@@ -17,6 +17,8 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
+    "hyso/performance/transfers.py", "hyso/performance/_transfer_worker.py",
+    "hyso/performance/utilization.py", "hyso/performance/_telemetry.py",
     "hyso/performance/profiling.py", "hyso/performance/_profile_worker.py", "hyso/performance/_operation_models.py",
     "hyso/performance/capacity.py", "hyso/performance/_batch_worker.py",
     "hyso/performance/sweeps.py",
@@ -76,7 +78,7 @@ def distributions(tmp_path_factory):
 
 def test_canonical_packaging_configuration():
     assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == MODULES
-    assert len(MODULES) == 34
+    assert len(MODULES) == 38
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
     assert not (ROOT / "hyso/setup.cfg").exists()
@@ -173,6 +175,10 @@ for module, names in {
     'hyso.performance.profiling': ('ProfilingProtocol', 'profile_operators', 'profile_layers', 'analyze_flops'),
     'hyso.performance._profile_worker': ('main',),
     'hyso.performance._operation_models': ('cost',),
+    'hyso.performance.transfers': ('TransferProtocol', 'measure_transfers', 'TransferError'),
+    'hyso.performance.utilization': ('UtilizationProtocol', 'measure_utilization'),
+    'hyso.performance._telemetry': ('cpu_observe', 'gpu_observe'),
+    'hyso.performance._transfer_worker': ('main',),
     'hyso.performance._batch_worker': ('main',),
     'hyso.performance.cold': ('ColdStartRecipe', 'ColdStartProtocol', 'measure_cold_start'),
     'hyso.performance._cold_worker': ('main',),
@@ -417,6 +423,19 @@ for block in re.findall(r'```python\\n(.*?)```', profiling_guide.read_text(encod
 assert profiling_manual['tiny']['total_flops_per_batch'] == 5320
 assert profiling_manual['count_data']['measurements']['status'] == 'partial'
 assert pathlib.Path(profiling_manual['operator_data']['provenance']['environment']['package_source']).resolve().is_relative_to(target)
+telemetry_manual = {}
+telemetry_guide = pathlib.Path(sys.argv[10])
+for block in re.findall(r'```python\\n(.*?)```', telemetry_guide.read_text(encoding='utf-8'), re.S):
+    exec(compile(block, str(telemetry_guide), 'exec'), telemetry_manual)
+assert telemetry_manual['utilization_data']['actual']['gpu_queries'] == 0
+assert pathlib.Path(telemetry_manual['utilization_data']['provenance']['environment']['package_source']).resolve().is_relative_to(target)
+from hyso.performance import TransferProtocol, TransferResult, TransferError, measure_transfers, UtilizationResult
+try:
+    measure_transfers(protocol=TransferProtocol(shape=(16,), warmup_iterations=0, measure_iterations=1, repeats=1))
+except TransferError as error:
+    assert error.diagnostics['status'] == 'unsupported' and error.diagnostics['process_terminated']
+else:
+    raise AssertionError('CPU-only admission unexpectedly completed GPU transfer')
 for name, module in list(sys.modules.items()):
     if name == 'hyso' or name.startswith('hyso.'):
         assert pathlib.Path(module.__file__).resolve().is_relative_to(target)
@@ -438,6 +457,7 @@ print(json.dumps({'source': hyso.__file__, 'version': importlib.metadata.version
                   'experiment_source': importlib.import_module('hyso.experiments.manager').__file__,
                   'sqlite_version': sqlite3.sqlite_version,
                   'experiment_snapshot': tracking_snapshot,
+                  'telemetry_guide': True, 'telemetry_cpu_samples': telemetry_manual['utilization_data']['actual']['cpu_samples'],
                   'profiling_guide': True, 'profiling_tiny_flops': 5320,
                   'capacity_guide': True, 'capacity_proven_max': 3,
                   'performance_guide': True, 'performance_samples': 1000, 'performance_images': 80,
@@ -455,7 +475,7 @@ def test_installed_distribution_import_and_cpu_forward(distributions, kind):
     command(["-m", "pip", "--isolated", "--no-cache-dir", "install", "--no-index",
              "--no-deps", "--no-build-isolation", "--no-compile",
              "--target", str(target), str(artifact)], work)
-    observed = json.loads(command(["-c", SMOKE, str(target), str(ROOT / "tests/trainer_replay_support.py"), str(ROOT / "docs/guides/experiment-manager.md"), str(ROOT / "docs/guides/performance-inference.md"), str(ROOT / "docs/guides/performance-memory.md"), str(ROOT / "docs/guides/performance-pipeline.md"), str(ROOT / "docs/guides/performance-sweeps.md"), str(ROOT / "docs/guides/performance-max-batch.md"), str(ROOT / "docs/guides/performance-profiling.md")], work).strip().splitlines()[-1])
+    observed = json.loads(command(["-c", SMOKE, str(target), str(ROOT / "tests/trainer_replay_support.py"), str(ROOT / "docs/guides/experiment-manager.md"), str(ROOT / "docs/guides/performance-inference.md"), str(ROOT / "docs/guides/performance-memory.md"), str(ROOT / "docs/guides/performance-pipeline.md"), str(ROOT / "docs/guides/performance-sweeps.md"), str(ROOT / "docs/guides/performance-max-batch.md"), str(ROOT / "docs/guides/performance-profiling.md"), str(ROOT / "docs/guides/performance-transfer-utilization.md")], work).strip().splitlines()[-1])
     assert Path(observed["source"]).resolve().is_relative_to(target.resolve())
     assert observed["manual_integration"] is True
     assert observed['performance_guide'] and observed['performance_samples'] == 1000 and observed['performance_images'] == 80
@@ -463,6 +483,7 @@ def test_installed_distribution_import_and_cpu_forward(distributions, kind):
     assert observed['sweep_guide'] and observed['sweep_precision_points'] == 4
     assert observed['capacity_guide'] and observed['capacity_proven_max'] == 3
     assert observed['profiling_guide'] and observed['profiling_tiny_flops'] == 5320
+    assert observed['telemetry_guide'] and observed['telemetry_cpu_samples'] >= 2
     assert observed['pipeline_guide'] and observed['pipeline_samples'] == 4 and observed['cold_trials']['measured'] == 1
     assert observed["cpu_models"] == 3 and observed["cuda_initialized"] is False
     assert Path(observed["trainer_source"]).resolve().is_relative_to(target.resolve())
