@@ -19,10 +19,18 @@ native allocator sözleşmesiyle implemented, kalan30 satır planned'dır.
 Donanım opsiyonelliği araç sütununda ayrıca belirtilir.
 
 M2-P-B1 (2026-10-20) sonrasında P01/P02 aşağıdaki doğrulanmış resident inference
-kapsamıyla implemented'dır. Güncel sayım: **3 implemented, 3 partial, 29 planned**.
-P09 ve P03–P35'in diğer durumları değişmez. Kanıt ve sınırlar:
+kapsamıyla implemented'dır. B1 sonrası sayım: **3 implemented, 3 partial, 29 planned**.
+B1'de P09 ve P03–P35'in diğer durumları değişmedi. Kanıt ve sınırlar:
 [P99/throughput audit](../audit/m2-p-b1-latency-throughput.md),
 [kullanım rehberi](../guides/performance-inference.md).
+
+M2-P-B2 (2026-10-20): P10 **native Windows current-process RSS/HWM** ve P11
+**dense CPU logical bytes + gerçek artifact bytes/SHA** kapsamıyla implemented.
+Linux adapter'ı parser/protocol testlidir; native Linux/Torch doğrulaması yoktur,
+fully verified platform kapsamı Windows'tur. Güncel sayım:
+**5 implemented, 2 partial, 28 planned**. Diğer P durumları değişmedi.
+[Memory/footprint audit](../audit/m2-p-b2-memory-footprint.md),
+[kullanım rehberi](../guides/performance-memory.md).
 
 ## Uygulama sırası
 
@@ -58,8 +66,8 @@ fazı, kurulmuş dependency veya gerçekleştirilmiş deney anlamına gelmez.
 | ID | Tam isim | Türkçe açıklama | Birim/rapor | Donanım/veri/araç | Önkoşullar | Aşama | Durum | Doğrulanma kriteri |
 |---|---|---|---|---|---|---|---|---|
 | P09 | GPU Peak Memory | Hedef process/device native allocator baseline, önceki/mutlak peak, incremental peak ve output release sonrası değerler; total VRAM değildir | allocated/reserved byte, separate_single_forward scope | Native CUDA allocator API; RTX3060 üzerinde doğrulandı | Model/input resident, sync, opt-in geri alınamayan peak reset ve caller/process exclusivity | Ö1/B2 | implemented | Native baseline/reset/probe/output-release; peak>=baseline; disabled no-reset/null; prior peaks ve reset diagnostics; allocator vs driver/other process ayrımı |
-| P10 | CPU Peak RAM | Process CPU RSS/peak; Python heap'ten ayrı | byte/MiB ve sampling interval | OS-specific RSS backend veya ileride onaylı araç | Güvenilir platform adapter, baseline, sampling/peak tanımı | Ö4/Ö8 | planned | Native tensor allocation/free reference; tracemalloc'a toplam tensor/RSS adı verilmez |
-| P11 | Model Footprint | B1 unique logical parameter/buffer bytes ve alias notes; physical/storage/disk kapsamı yok | count, logical byte; ayrı disk artifact byte ileride | Tensor numel/element_size; disk için gerçek dosya | Dedup/alias convention ve artifact türü | Ö1/Ö3 | partial | Tied Parameter/cross-category/view testleri; numel×element_size; disk sayı ancak gerçekten yazılan artifact'tan |
+| P10 | CPU Peak RAM | measure_memory: current-process baseline/current RSS, timestamped samples, sampled peak ve ayrı lifetime HWM; native Windows working set doğrulandı; Linux adapter native-unverified | byte, ns timestamps/query/gaps, interval/window seconds | Windows GetProcessMemoryInfo stdlib ctypes; Linux /proc/self/status parser/protocol testli, native Linux kanıtı yok | Caller-exclusive synchronous workload; sampled peak mutlak peak değil; lifetime HWM reset yok; thread/GIL/native-query overhead explicit | M2-P-B2 / Ö4/Ö8 | implemented | Gerçek Windows CPU tensor allocate/touch/release, bounded sample budget, sampler/process failure cleanup, ctypes cache-stability, immutable export/E reopen, minimum Torch2.2.2 installed/package PASS; unsupported null+reason, tracemalloc fallback yok |
+| P11 | Model Footprint | measure_footprint: mevcut unique logical parameter/buffer convention; tied/view/cross-category diagnostics; explicit state_dict veya opaque caller artifact için gerçek stat/SHA; physical memory unsupported | parameter/buffer elements ve object count, logical byte, serialized artifact byte/SHA/format | Ordinary dense CPU tensors, mixed dtype/int/bool buffers; stdlib streamed SHA/stat; Torch own state_dict serialization | No-clobber temporary/atomic publication; optional weights_only round-trip yalnız API'nin ürettiği dosyada; caller artifact format/model match unverified | M2-P-B2 / Ö1/Ö3 | implemented | Native Windows tied/view/mixed dtype/nonpersistent/shared-module tests; actual file stat/SHA, corrupt/mutation/failure cleanup; model/state/RNG, E association/reopen, minimum installed/package PASS; existing Benchmark logical result unchanged |
 | P12 | FLOPs / MACs | İşlem sayımı; operator coverage ve convention zorunlu | FLOP/MAC count, coverage raporu | Gelecekte seçilecek trace/profiler adapter | Sabit input graph, desteklenen ops ve sayım tanımı | Ö4 | planned | Küçük analitik Conv/Linear reference; MAC ile FLOP farklı alanlar; unsupported ops görünür |
 | P13 | Layer-wise Profiler | Modül bazlı süre/shape/memory breakdown | ms/module, çağrı ağacı | PyTorch profiler/measurement adapter | Hook overhead, shared module ve nesting politikası | Ö4 | planned | Ortak/tekrar çağrılar doğru; inclusive/exclusive süre ayrılır; profiler latency baseline'dan ayrı |
 | P14 | Operator / Kernel Profiler | Operator ve kernel execution breakdown | op/kernel süre, count, trace | PyTorch profiler; opsiyonel GPU profiler araçları | CUDA sync/trace, profiler overhead ve sürüm | Ö4 | planned | Gerçek trace/correlation; CPU launch süresi GPU kernel süresi sayılmaz; missing events açıklanır |
