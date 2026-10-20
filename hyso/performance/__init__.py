@@ -12,6 +12,9 @@ from .capacity import BatchSearchProtocol, find_max_batch_size
 from .result import CapacityResult
 from .profiling import ProfilingProtocol,ProfilingError,profile_operators,profile_layers,analyze_flops
 from .result import OperatorProfileResult,LayerProfileResult,OperationCountResult
+from .transfers import TransferProtocol, TransferError, measure_transfers
+from .utilization import UtilizationProtocol, measure_utilization
+from .result import TransferResult, UtilizationResult
 
 __all__ = ["TailPolicy", "ThroughputProtocol", "analyze_latency", "measure_throughput",
            "LatencyAnalysis", "ThroughputResult", "MemoryProtocol", "measure_memory", "measure_footprint",
@@ -21,4 +24,6 @@ __all__ = ["TailPolicy", "ThroughputProtocol", "analyze_latency", "measure_throu
            "SweepProtocol", "run_sweep", "SweepResult", "PrecisionResult",
            "BatchSearchProtocol", "find_max_batch_size", "CapacityResult",
            "ProfilingProtocol", "ProfilingError", "profile_operators", "profile_layers", "analyze_flops",
-           "OperatorProfileResult", "LayerProfileResult", "OperationCountResult"]
+           "OperatorProfileResult", "LayerProfileResult", "OperationCountResult",
+           "TransferProtocol", "TransferError", "measure_transfers", "TransferResult",
+           "UtilizationProtocol", "measure_utilization", "UtilizationResult"]

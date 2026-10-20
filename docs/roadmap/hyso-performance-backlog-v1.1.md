@@ -87,6 +87,20 @@ B4 reliability risk OPEN, root cause UNRESOLVED ve ayrı release gate korunur.
 
 ## Uygulama sırası
 
+M2-P-B7 (2026-10-20): P15 **partial**; Windows bounded fresh worker'da gerçek
+pageable/pinned, blocking/nonblocking H2D/D2H, exact logical bytes, ayrı host
+enqueue/CUDA event interval ve terminal equality doğrulandı. P14 gerçek copy/
+compute timeline sağlamadığı için overlap null/unsupported; saf PCIe peak veya
+kanıtlanmış async overlap iddiası yok. P16 **implemented within verified scope**:
+Windows process kernel/user ve ayrı system CPU counters; logical-core açık
+normalizasyon; kurulu read-only nvidia-smi/NVML ile physical-device busy,
+memory-controller busy ve VRAM timeline. Process GPU/Tensor Core counters ve
+kesin sensör pencere sınırı unsupported. Güncel toplam **13 implemented,
+5 partial, 17 planned**. B7 **PARTIAL / full-scope NO-GO**, yeni conditional
+acceptance ilan edilmedi. B4 OPEN/UNRESOLVED ve B6 partial sınırları korundu;
+B8'e geçilmedi. [B7 audit](../audit/m2-p-b7-transfer-utilization.md),
+[rehber](../guides/performance-transfer-utilization.md).
+
 | Öncelik/aşama | Kapsam ve kapı |
 |---|---|
 | Ö1 | Temel CPU/CUDA Benchmark: M2-C-B1 CPU; M2-C-B2 native event/AMP/memory |
@@ -124,8 +138,8 @@ fazı, kurulmuş dependency veya gerçekleştirilmiş deney anlamına gelmez.
 | P12 | FLOPs / MACs | analyze_flops: actual observed ATen shape/scalar logical models, unknown coverage explicit | MAC/FLOP batch/sample/per-forward, supported subtotal, unknown/null model total | Windows CPU FP32/FP64; native CUDA FP32/AMP observed inference | FMA1MAC=2FLOPs; bias/arithmetic/comparisons ayrı; actual paths/recipe only | Ö4 / M2-P-B6 | partial | Conv1d/2d grouped/depthwise, Linear/mm/matmul/bmm/default addmm, pool/add gerçek analytic references PASS; normalization/nonlinear/fused/custom cost unmodeled; hardware FLOP counter değil |
 | P13 | Layer-wise Profiler | profile_layers: worker-only canonical module/aliases + dynamic invocation tree | instrumented CPU inclusive/exclusive us, call count/shapes/ranking | Torch profiler module annotations; no caller hook mutation | Direct-child subtraction; existing worker hooks preserved; no per-layer sync | Ö4 / M2-P-B6 | partial | Nested/shared/repeated CPU calls ve exception cleanup PASS; CUDA layer activity null/unsupported; per-layer allocation ve uninstrumented perturbation ölçülmedi |
 | P14 | Operator / Kernel Profiler | profile_operators: actual CPU events + optional exported kernel activity | CPU self/total us/count/shapes, immutable result/trace SHA | Windows Torch2.5.1 CUDA legacy/CPU; minimum Torch2.2.2 CPU verified | Only actual cat=kernel trace qualifies; no legacy label as kernel; raw correlation unverified | Ö4 / M2-P-B6 | partial | CPU profiler PASS, real GPU forwards PASS; this build supported_activities=CPU, CUDA kernel count/time null/UNSUPPORTED; full NVIDIA coverage veya reliable attribution iddiası yok |
-| P15 | CPU–GPU Transfer Analysis | H2D/D2H ve overlap/PCIe etkileri | ms, byte/s, overlap timeline | CUDA; pageable/pinned host tensors | Transfer direction/size, pinning/nonblocking ve sync | Ö4 | planned | Gerçek copy completion; bandwidth numerator gerçek byte; overlap çift sayılmaz |
-| P16 | GPU / CPU Utilization | Zaman örneklemeli kullanım ve destek varsa compute-unit counters | %, sample timeline, available counters | Opsiyonel OS/NVML/profiler/hardware counter erişimi | Sample interval, counter tanımı/izinler | Ö4/Ö8 | planned | Query availability ve interval kaydı; GPU busy% Tensor Core utilization değildir; unsupported alan null |
+| P15 | CPU–GPU Transfer Analysis | measure_transfers: explicit owned dense contiguous cuda:0 buffers | logical byte, host enqueue ms, CUDA stream interval ms, completed byte/s | Windows guarded fresh worker; pageable/pinned ve blocking/nonblocking | Exact numel×element_size, preallocated buffers, warmup/repeat, terminal/equality; P14 overlap hard dependency korunur | Ö4 / M2-P-B7 | partial | Gerçek H2D/D2H FP32/uint8 completion/equality, installed/minimum/export PASS; host/event clocks ayrı; overlap null/unsupported, event interval CUPTI memcpy veya saf PCIe peak değildir |
+| P16 | GPU / CPU Utilization | measure_utilization: bounded OS/sensor timestamped samples | process kernel/user delta, single-core/machine %, ayrı system %, device GPU busy/controller busy/VRAM | Windows GetProcessTimes/GetSystemTimes; optional installed nvidia-smi/NVML read-only | Deadline/sample/query budget, raw times/gaps/reset/unavailable; workload label attribution değildir | Ö4/Ö8 / M2-P-B7 | implemented | Native CPU idle/load ve physical GPU idle/controlled-load samples, parsed UUID/PCI/driver, missing query/null ve installed/minimum/E SHA PASS; process GPU/Tensor Core counters unsupported; GPU busy occupancy'den türetilmez; Linux native scope doğrulanmadı |
 | P17 | Maximum Feasible Batch Size | Explicit finite ordered inference candidates; observed max ile exhaustive 1..cap proof ayrı | per-point actual batch/latency/memory/outcome, observed/proven-within-range | Windows fresh bounded CPU FP32/FP64 ve CUDA FP32/AMP FP16 worker | Hard private-commit/input budget, CUDA allocator fraction, total-worker timeout, stop policies; no monotonicity assumption | Ö3 / M2-P-B5 | implemented | Gerçek CPU/CUDA forward, controlled allocator OOM→fresh feasible worker, runtime-prepared timeout/PID cleanup; immutable export/E reopen/minimum Torch/package PASS; sparse list global max değildir; adaptive search/Linux/training scope dışı; B4 risk OPEN |
 | P18 | Arithmetic Intensity & Roofline Analysis | Gerçek compute/traffic verisiyle bounded teşhis; tahmini parametre bytes trafik sayılmaz | FLOP/byte, FLOP/s, GB/s, roofline grafiği | Opsiyonel doğrulanmış hardware counters/traffic ve compute ölçümü | P12/P14; aynı memory hierarchy, kalibre bandwidth/compute tavanı | Ö4 | planned | Güvenilir DRAM/cache traffic ve FLOP scope'ları eşleşmeli; sayaç yoksa yalnız tahmin etiketi, gerçek Roofline teşhisi yok |
 
