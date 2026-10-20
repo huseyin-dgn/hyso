@@ -452,10 +452,13 @@ class Trainer:
             from .resume import prepare_save, save_last
             destination, save_plan = prepare_save(self, train_loader, val_loader, epochs, save_last_to)
         self._epochs = epochs
+        recorder = getattr(self, "_timing_recorder", None)
         self._emit("train_begin", 0)
         # Enable autograd explicitly even if the caller has entered no_grad.
         with torch.enable_grad():
             for _ in range(start_epoch, epochs):
+                if recorder is not None:
+                    recorder.epoch_begin(_ + 1)
                 # Keep intentionally eval/frozen children of a training model.
                 modes = [(m, m.training) for m in self.model.modules()]
                 mixed = modes if self.model.training or any(flag for _, flag in modes[1:]) else []
@@ -471,14 +474,22 @@ class Trainer:
                     seen += 1
                     if seen > count:
                         raise ValueError("train_loader yielded more batches than len()")
+                    if recorder is not None:
+                        recorder.microbatch_begin(self.microbatch_count + 1, window_samples == 0)
                     inputs, targets, size = self._batch(batch)
                     with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=self.amp):
                         loss, correct = self._loss_and_correct(self.model(inputs), targets, size)
                     self.scaler.scale(loss * size).backward()
                     self.microbatch_count += 1
                     window_samples += size
+                    if recorder is not None:
+                        recorder.microbatch_end(size, inputs, targets)
                     if seen % self.accum_steps == 0 or seen == count:
+                        if recorder is not None:
+                            recorder.attempt_begin(self.attempt_count + 1, self.update_count)
                         self._update(window_samples)
+                        if recorder is not None:
+                            recorder.attempt_end(self.update_count, window_samples)
                         window_samples = 0
                     total_loss += loss.detach().item() * size
                     total_correct += correct
@@ -488,7 +499,11 @@ class Trainer:
                 epoch_loss = total_loss / total_samples
                 if not math.isfinite(epoch_loss):
                     raise FloatingPointError("nonfinite epoch loss encountered")
+                if recorder is not None:
+                    recorder.training_end(val_loader is not None)
                 val_loss, val_acc = (None, None) if val_loader is None else self._validate(val_loader)
+                if recorder is not None:
+                    recorder.validation_end(val_loader is not None)
                 if type(self.scheduler) in (torch.optim.lr_scheduler.StepLR,
                                            torch.optim.lr_scheduler.CosineAnnealingLR):
                     self.scheduler.step()
@@ -501,6 +516,8 @@ class Trainer:
                 self.history["val_loss"].append(val_loss)
                 self.history["val_acc"].append(val_acc)
                 self._emit("epoch_end", len(self.history["train_loss"]))
+                if recorder is not None:
+                    recorder.epoch_end()
                 # Coherent last-state boundary, before the stop decision and
                 # any best restore. The v1 serializer owns atomic replacement.
                 if save_plan is not None:
