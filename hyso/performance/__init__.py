@@ -6,9 +6,19 @@ from .result import PipelineResult, StageTimingResult, ColdStartResult
 from .pipeline import (PipelineSample, PipelineStage, PipelineProtocol, measure_pipeline,
                        analyze_stages, measure_stages)
 from .cold import ColdStartRecipe, ColdStartProtocol, measure_cold_start
+from .sweeps import SweepProtocol, run_sweep
+from .result import SweepResult, PrecisionResult
+from .capacity import BatchSearchProtocol, find_max_batch_size
+from .result import CapacityResult
+from .profiling import ProfilingProtocol,ProfilingError,profile_operators,profile_layers,analyze_flops
+from .result import OperatorProfileResult,LayerProfileResult,OperationCountResult
 
 __all__ = ["TailPolicy", "ThroughputProtocol", "analyze_latency", "measure_throughput",
            "LatencyAnalysis", "ThroughputResult", "MemoryProtocol", "measure_memory", "measure_footprint",
            "MemoryResult", "FootprintResult", "PipelineSample", "PipelineStage", "PipelineProtocol",
            "measure_pipeline", "analyze_stages", "measure_stages", "PipelineResult", "StageTimingResult",
-           "ColdStartRecipe", "ColdStartProtocol", "measure_cold_start", "ColdStartResult"]
+           "ColdStartRecipe", "ColdStartProtocol", "measure_cold_start", "ColdStartResult",
+           "SweepProtocol", "run_sweep", "SweepResult", "PrecisionResult",
+           "BatchSearchProtocol", "find_max_batch_size", "CapacityResult",
+           "ProfilingProtocol", "ProfilingError", "profile_operators", "profile_layers", "analyze_flops",
+           "OperatorProfileResult", "LayerProfileResult", "OperationCountResult"]

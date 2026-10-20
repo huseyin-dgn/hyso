@@ -17,6 +17,9 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
+    "hyso/performance/profiling.py", "hyso/performance/_profile_worker.py", "hyso/performance/_operation_models.py",
+    "hyso/performance/capacity.py", "hyso/performance/_batch_worker.py",
+    "hyso/performance/sweeps.py",
     "hyso/performance/pipeline.py", "hyso/performance/cold.py", "hyso/performance/_cold_worker.py",
     "hyso/performance/memory.py",
     "hyso/performance/__init__.py", "hyso/performance/inference.py", "hyso/performance/result.py",
@@ -73,7 +76,7 @@ def distributions(tmp_path_factory):
 
 def test_canonical_packaging_configuration():
     assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == MODULES
-    assert len(MODULES) == 28
+    assert len(MODULES) == 34
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
     assert not (ROOT / "hyso/setup.cfg").exists()
@@ -157,11 +160,20 @@ for module, names in {
     'hyso.experiments': ('ExperimentManager', 'ExperimentError'),
     'hyso.experiments.manager': ('ExperimentManager', 'ExperimentError'),
     'hyso.performance': ('TailPolicy', 'ThroughputProtocol', 'LatencyAnalysis', 'ThroughputResult',
-                         'analyze_latency', 'measure_throughput'),
+                         'analyze_latency', 'measure_throughput', 'BatchSearchProtocol', 'CapacityResult',
+                         'find_max_batch_size', 'ProfilingProtocol', 'ProfilingError', 'profile_operators',
+                         'profile_layers', 'analyze_flops', 'OperatorProfileResult', 'LayerProfileResult',
+                         'OperationCountResult'),
     'hyso.performance.inference': ('analyze_latency', 'measure_throughput'),
     'hyso.performance.result': ('LatencyAnalysis', 'ThroughputResult', 'MemoryResult', 'FootprintResult'),
     'hyso.performance.memory': ('MemoryProtocol', 'measure_memory', 'measure_footprint'),
     'hyso.performance.pipeline': ('PipelineSample', 'PipelineStage', 'PipelineProtocol', 'measure_pipeline', 'analyze_stages'),
+    'hyso.performance.sweeps': ('SweepProtocol', 'run_sweep'),
+    'hyso.performance.capacity': ('BatchSearchProtocol', 'find_max_batch_size'),
+    'hyso.performance.profiling': ('ProfilingProtocol', 'profile_operators', 'profile_layers', 'analyze_flops'),
+    'hyso.performance._profile_worker': ('main',),
+    'hyso.performance._operation_models': ('cost',),
+    'hyso.performance._batch_worker': ('main',),
     'hyso.performance.cold': ('ColdStartRecipe', 'ColdStartProtocol', 'measure_cold_start'),
     'hyso.performance._cold_worker': ('main',),
     'hyso.models.WithSE': ('CEMO', 'EMA'),
@@ -384,6 +396,27 @@ for block in re.findall(r'```python\\n(.*?)```', pipeline_guide.read_text(encodi
 assert pipeline_manual['pipeline'].to_dict()['actual']['completed'] == 4
 assert pipeline_manual['cold'].to_dict()['actual']['measured'] == 1
 assert all(row['provenance']['torch'] == str(torch.__version__) for row in pipeline_manual['cold'].to_dict()['raw_evidence']['trials'])
+sweep_manual = {}
+sweep_guide = pathlib.Path(sys.argv[7])
+for block in re.findall(r'```python\\n(.*?)```', sweep_guide.read_text(encoding='utf-8'), re.S):
+    exec(compile(block, str(sweep_guide), 'exec'), sweep_manual)
+assert sweep_manual['batches'].to_dict()['actual']['measured'] == 4
+assert sweep_manual['resolutions'].to_dict()['actual']['measured'] == 3
+assert sweep_manual['precisions'].to_dict()['actual']['measured'] == 4
+capacity_manual = {}
+capacity_guide = pathlib.Path(sys.argv[8])
+for block in re.findall(r'```python\\n(.*?)```', capacity_guide.read_text(encoding='utf-8'), re.S):
+    exec(compile(block, str(capacity_guide), 'exec'), capacity_manual)
+assert capacity_manual['capacity'].to_dict()['measurements']['maximum_proven_within_range'] == 3
+assert all(pathlib.Path(row['provenance']['package_source']).resolve().is_relative_to(target)
+           for row in capacity_manual['data']['raw_evidence']['candidates'])
+profiling_manual = {}
+profiling_guide = pathlib.Path(sys.argv[9])
+for block in re.findall(r'```python\\n(.*?)```', profiling_guide.read_text(encoding='utf-8'), re.S):
+    exec(compile(block, str(profiling_guide), 'exec'), profiling_manual)
+assert profiling_manual['tiny']['total_flops_per_batch'] == 5320
+assert profiling_manual['count_data']['measurements']['status'] == 'partial'
+assert pathlib.Path(profiling_manual['operator_data']['provenance']['environment']['package_source']).resolve().is_relative_to(target)
 for name, module in list(sys.modules.items()):
     if name == 'hyso' or name.startswith('hyso.'):
         assert pathlib.Path(module.__file__).resolve().is_relative_to(target)
@@ -405,9 +438,11 @@ print(json.dumps({'source': hyso.__file__, 'version': importlib.metadata.version
                   'experiment_source': importlib.import_module('hyso.experiments.manager').__file__,
                   'sqlite_version': sqlite3.sqlite_version,
                   'experiment_snapshot': tracking_snapshot,
+                  'profiling_guide': True, 'profiling_tiny_flops': 5320,
+                  'capacity_guide': True, 'capacity_proven_max': 3,
                   'performance_guide': True, 'performance_samples': 1000, 'performance_images': 80,
                   'memory_guide': True, 'rss_backend': memory_manual['current'].to_dict()['raw_evidence']['observations'][0]['backend'],
-                  'pipeline_guide': True, 'pipeline_samples': 4, 'cold_trials': pipeline_manual['cold'].to_dict()['actual'],
+                  'sweep_guide': True, 'sweep_precision_points': 4, 'pipeline_guide': True, 'pipeline_samples': 4, 'cold_trials': pipeline_manual['cold'].to_dict()['actual'],
                   'manual_integration': True, 'cpu_models': 3, 'cuda_initialized': torch.cuda.is_initialized()}))
 """
 
@@ -420,11 +455,14 @@ def test_installed_distribution_import_and_cpu_forward(distributions, kind):
     command(["-m", "pip", "--isolated", "--no-cache-dir", "install", "--no-index",
              "--no-deps", "--no-build-isolation", "--no-compile",
              "--target", str(target), str(artifact)], work)
-    observed = json.loads(command(["-c", SMOKE, str(target), str(ROOT / "tests/trainer_replay_support.py"), str(ROOT / "docs/guides/experiment-manager.md"), str(ROOT / "docs/guides/performance-inference.md"), str(ROOT / "docs/guides/performance-memory.md"), str(ROOT / "docs/guides/performance-pipeline.md")], work).strip().splitlines()[-1])
+    observed = json.loads(command(["-c", SMOKE, str(target), str(ROOT / "tests/trainer_replay_support.py"), str(ROOT / "docs/guides/experiment-manager.md"), str(ROOT / "docs/guides/performance-inference.md"), str(ROOT / "docs/guides/performance-memory.md"), str(ROOT / "docs/guides/performance-pipeline.md"), str(ROOT / "docs/guides/performance-sweeps.md"), str(ROOT / "docs/guides/performance-max-batch.md"), str(ROOT / "docs/guides/performance-profiling.md")], work).strip().splitlines()[-1])
     assert Path(observed["source"]).resolve().is_relative_to(target.resolve())
     assert observed["manual_integration"] is True
     assert observed['performance_guide'] and observed['performance_samples'] == 1000 and observed['performance_images'] == 80
     assert observed['memory_guide'] and observed['rss_backend'].startswith('windows.' if os.name == 'nt' else 'linux.')
+    assert observed['sweep_guide'] and observed['sweep_precision_points'] == 4
+    assert observed['capacity_guide'] and observed['capacity_proven_max'] == 3
+    assert observed['profiling_guide'] and observed['profiling_tiny_flops'] == 5320
     assert observed['pipeline_guide'] and observed['pipeline_samples'] == 4 and observed['cold_trials']['measured'] == 1
     assert observed["cpu_models"] == 3 and observed["cuda_initialized"] is False
     assert Path(observed["trainer_source"]).resolve().is_relative_to(target.resolve())
