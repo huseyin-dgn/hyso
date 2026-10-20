@@ -36,9 +36,54 @@ M2-P-B3 (2026-10-20): P03/P04 **bounded blocking serial CPU/CUDA pipeline ve
 ayrı host/event stage clocks**, P05 **fresh interpreter CPU/CUDA cold phases**
 kapsamıyla implemented. Native doğrulama Windows/RTX3060 üzerinde; overlapped
 scheduling, kamera/drop policy ve cold OS page-cache garantisi kapsam dışıdır.
-Güncel sayım: **8 implemented, 2 partial, 25 planned**. Diğer statüler değişmedi.
+B3 sonrası sayım: **8 implemented, 2 partial, 25 planned**. Diğer statüler değişmedi.
 [Pipeline/cold-start audit](../audit/m2-p-b3-pipeline-cold-start.md),
 [kullanım rehberi](../guides/performance-pipeline.md).
+
+M2-P-B4 (2026-10-20): P06/P07 explicit finite batch/resolution sweeps ve P08
+doğrulanan CPU FP32/FP64/BF16/dynamic-qint8 Linear (x86), CUDA FP32/AMP FP16/BF16
+profilleriyle implemented. Native CPU BF16 instruction acceleration veya genel
+INT8 graph desteği iddia edilmez; P28 accuracy ayrı kalır. Güncel sayım:
+**11 implemented, 1 partial, 23 planned**. **Birleşik B4 kalite kapısı geçmedi:**
+eski native trainer-replay süreci 0xc0000409 ile çöktü; B5'e geçiş kapalıdır.
+Feature statüleri kendi doğrulanmış sözleşmelerini gösterir, milestone GO değildir.
+[Sweep/precision final gate audit](../audit/m2-p-b4-sweeps-precision-final-gate.md),
+[kullanım rehberi](../guides/performance-sweeps.md).
+
+B4 koşullu kabul (2026-10-20): kullanıcı kök nedeni bilinmeyen native crash
+riskini açıkça kabul etti. Güncel development kararı **B4: CONDITIONAL GO —
+development continuation only**; yukarıdaki tarihsel strict NO-GO kanıtı geçerlidir.
+Yalnız geliştirmeye devam kapısı açıldı; crash çözülmüş veya public stable release
+onaylanmış değildir. **Risk OPEN / root cause UNRESOLVED.** Tekrarlayan native
+crash/regresyon/state corruption kapıyı durdurur; stable öncesi ayrı release gate
+zorunludur. [Koşullu kabul](../audit/m2-p-b4-conditional-acceptance.md).
+
+M2-P-B5 (2026-10-20): P17 **explicit finite ordered inference capacity search,
+Windows bounded fresh CPU/CUDA workers** kapsamında implemented. CPU FP32/FP64,
+CUDA FP32/AMP FP16, typed OOM/unknown crash ayrımı, stop policies ve sparse-list
+observed-max/exhaustive-range proof ayrımı doğrulandı; optional adaptive search,
+Linux guard, training ve physical/global maximum iddiası kapsam dışıdır.
+Güncel sayım **12 implemented, 1 partial, 22 planned**. Final hedefli CPU: 1595 PASS;
+installed wheel CUDA: 86 scenario PASS (B5'in 5'i dahil); Windows RAM: 3 scenario PASS.
+Minimum Torch 2.2.2+cpu ve 31 modül wheel/sdist byte-equality PASS. Bunlar tarihsel
+full CPU 2313/native 196 sonuçlarının otomatik tekrarı değildir. **B5: PASS within
+verified scope, B4 risk inherited.** Stable release onayı yoktur; B4 risk OPEN.
+B6 uygulanmadı. [P17 audit](../audit/m2-p-b5-max-feasible-batch.md),
+[kullanım rehberi](../guides/performance-max-batch.md).
+
+M2-P-B6 (2026-10-20): P12/P13/P14 **partial**. P12 gözlenen ATen için doğrulanmış
+Conv/Linear/mm/bmm/arithmetic/pool modelleri sunar; normalization/SiLU/sigmoid/
+softmax/custom maliyetleri unknown ve model total null kalabilir. P13 worker-only
+CPU invocation hierarchy/shared aliases/inclusive-exclusive timing doğrulandı;
+CUDA layer activity ve per-layer allocation ölçülmez. P14 gerçek CPU operator
+trace/self-total/count/shapes üretir; bu Windows/Torch build'inde gerçek CUDA
+kernel activity **UNSUPPORTED**, correlation doğrulanmadı. Legacy CPU etiketleri
+kernel sayılmaz. Güncel sayım **12 implemented, 4 partial, 19 planned**.
+B6'nın desteklenen CPU/analitik kapsamı kullanılabilir; GPU activity eksikliği
+nedeniyle tam B6 milestone **PARTIAL / full-scope NO-GO**. B7'ye geçilmedi.
+B4 reliability risk OPEN, root cause UNRESOLVED ve ayrı release gate korunur.
+[B6 audit](../audit/m2-p-b6-flops-layer-operator-profiling.md),
+[kullanım rehberi](../guides/performance-profiling.md).
 
 ## Uygulama sırası
 
@@ -65,9 +110,9 @@ fazı, kurulmuş dependency veya gerçekleştirilmiş deney anlamına gelmez.
 | P03 | End-to-End Latency | measure_pipeline: aynı ID'nin read-start→postprocess completion host wall süresi; optional delivery ayrı | ms/ID, P50/P95 ve eligible P99 | Synchronous CPU; native CUDA FP32/AMP FP16, terminal event | Bounded blocking queue, unique ID, warmup/repeat ve explicit stage/device | Ö3 / M2-P-B3 | implemented | Gerçek CPU/CUDA completion, queue wait/count/tail ve same-ID reference; dropped=0/pending=0 serial policy, stage sum E2E değildir; hidden streams/overlap/camera/drop unsupported; minimum installed/package PASS |
 | P04 | Preprocessing / Postprocessing Time | PipelineStage adapters; analyze_stages raw evidence'dan ayrı result üretir | ms/stage, host launch/completion ve CUDA event ayrı | Caller CPU transforms / selected-stream CUDA stages | Ordered boundaries, execution counts, explicit overhead/sync | Ö3 / M2-P-B3 | implemented | Gerçek resize/normalize/post transform, stage order/count/boundaries; native event/default/non-default stream ve terminal completion; model tekrar çalışmaz; host/event clocks toplanmaz |
 | P05 | Cold Start & Model Loading | measure_cold_start: her trial fresh interpreter; import/construction/load/prepare/first/warm ayrı | ms/phase, raw trial outcomes | Trusted importable recipe; SHA-verified weights_only state_dict | Parent receipt ve worker clock domain ayrı; page-cache unknown | Ö3 / M2-P-B3 | implemented | Gerçek fresh CPU/CUDA worker; FP32/AMP, safe artifact load, timeout/tree cleanup/crash/missing/corrupt/unsupported kanıtı; parent state ve process ownership; native Windows ve minimum Torch installed PASS, OS cache cold garantisi yok |
-| P06 | Batch Size Sweep | Sabit model/resolution/precision için batch ekseninde ölçüm | batch→latency/rate/memory tablosu | CPU/CUDA; Ö1 ölçümleri | Aynı timing method; batch başına warmup, order/provenance | Ö3 | planned | Her nokta bağımsız valid result; batch değişimi comparison etiketi ve başarısız noktalar görünür |
-| P07 | Resolution Sweep | Sabit batch/model için spatial resolution ekseninde ölçüm | H×W→latency/memory/quality | CPU/CUDA; geçerli model input'ları | Aspect ratio, preprocessing ve task tanımı | Ö3 | planned | Her shape gerçek forward, ayrı warmup ve sample sayısı; interpolate edilmiş sahte sonuç yok |
-| P08 | Precision Benchmark | CPU FP32/FP64 ve CUDA FP32/native AMP FP16 inference var; BF16/INT8, dönüşüm maliyeti ve accuracy-drop sonraki kapsam | precision→ms/bytes ve policy | CPU; native CUDA autocast, quantization backend ileride | Master/input/output dtype ve autocast policy | Ö1/Ö3 | partial | Gerçek CPU fp32/fp64 ve GPU fp32/amp_fp16; FP32 master/input korunur, silent cast/fallback yok; diğer precision ve accuracy ayrı gate ister |
+| P06 | Batch Size Sweep | run_sweep axis=batch: explicit noktalar, independent owned copies ve warmup | ms/batch, optional completion images/s ve P09 ref | Gerçek CPU/CUDA FP32/AMP, exact NCHW input factory | Immutable SweepResult, point/source/result IDs, continuation flag; OOM stop | Ö3 / M2-P-B4 | implemented | Batch 1/2/4/8 ve installed 1–32 gerçek forward; cardinality/W/N/R, failure/not_run, state/RNG/lifetime, export/E reopen/minimum/package kanıtı; cross-batch compatibility otomatik değil |
+| P07 | Resolution Sweep | Aynı sweep altyapısı; explicit H,W ve W/H aspect, fixed batch/model/precision | Shape→ms/rate; quality not measured | CPU/CUDA, exact shape factory ve gerçek model constraints | Her noktada bağımsız warmup; silent resize/interpolation yok | Ö3 / M2-P-B4 | implemented | Dikdörtgen 5×7/9×13 ve installed 320/416/640/640×384/960 noktaları; actual forward, invalid shape continuation/OOM stop, source hash ve export/minimum/native kanıtı |
+| P08 | Precision Benchmark | Isolated PrecisionResult: CPU FP32/FP64/BF16/dynamic INT8 Linear; CUDA FP32/AMP FP16/BF16 | ms/batch, completion images/s, ayrı copy/conversion ms | Native-verified CPU PyTorch eager/quantized x86 ve RTX3060 CUDA; diğer engine/platform doğrulanmış sayılmaz | Master/input/output/autocast dtype, recipe/calibration not_applicable, actual operator proof | Ö1/Ö3 / M2-P-B4 | implemented | BF16 actual output/capability, qint8 packed Linear ve quantized::linear_dynamic preflight, no fallback; source state/RNG, minimum Torch2.2.2 installed PASS; CPU acceleration/general INT8 graph ve P28 accuracy iddiası yok; genel B4 legacy replay gate başarısızlığı ayrı |
 
 ## B. Donanım, bellek ve darboğaz analizi
 
@@ -76,12 +121,12 @@ fazı, kurulmuş dependency veya gerçekleştirilmiş deney anlamına gelmez.
 | P09 | GPU Peak Memory | Hedef process/device native allocator baseline, önceki/mutlak peak, incremental peak ve output release sonrası değerler; total VRAM değildir | allocated/reserved byte, separate_single_forward scope | Native CUDA allocator API; RTX3060 üzerinde doğrulandı | Model/input resident, sync, opt-in geri alınamayan peak reset ve caller/process exclusivity | Ö1/B2 | implemented | Native baseline/reset/probe/output-release; peak>=baseline; disabled no-reset/null; prior peaks ve reset diagnostics; allocator vs driver/other process ayrımı |
 | P10 | CPU Peak RAM | measure_memory: current-process baseline/current RSS, timestamped samples, sampled peak ve ayrı lifetime HWM; native Windows working set doğrulandı; Linux adapter native-unverified | byte, ns timestamps/query/gaps, interval/window seconds | Windows GetProcessMemoryInfo stdlib ctypes; Linux /proc/self/status parser/protocol testli, native Linux kanıtı yok | Caller-exclusive synchronous workload; sampled peak mutlak peak değil; lifetime HWM reset yok; thread/GIL/native-query overhead explicit | M2-P-B2 / Ö4/Ö8 | implemented | Gerçek Windows CPU tensor allocate/touch/release, bounded sample budget, sampler/process failure cleanup, ctypes cache-stability, immutable export/E reopen, minimum Torch2.2.2 installed/package PASS; unsupported null+reason, tracemalloc fallback yok |
 | P11 | Model Footprint | measure_footprint: mevcut unique logical parameter/buffer convention; tied/view/cross-category diagnostics; explicit state_dict veya opaque caller artifact için gerçek stat/SHA; physical memory unsupported | parameter/buffer elements ve object count, logical byte, serialized artifact byte/SHA/format | Ordinary dense CPU tensors, mixed dtype/int/bool buffers; stdlib streamed SHA/stat; Torch own state_dict serialization | No-clobber temporary/atomic publication; optional weights_only round-trip yalnız API'nin ürettiği dosyada; caller artifact format/model match unverified | M2-P-B2 / Ö1/Ö3 | implemented | Native Windows tied/view/mixed dtype/nonpersistent/shared-module tests; actual file stat/SHA, corrupt/mutation/failure cleanup; model/state/RNG, E association/reopen, minimum installed/package PASS; existing Benchmark logical result unchanged |
-| P12 | FLOPs / MACs | İşlem sayımı; operator coverage ve convention zorunlu | FLOP/MAC count, coverage raporu | Gelecekte seçilecek trace/profiler adapter | Sabit input graph, desteklenen ops ve sayım tanımı | Ö4 | planned | Küçük analitik Conv/Linear reference; MAC ile FLOP farklı alanlar; unsupported ops görünür |
-| P13 | Layer-wise Profiler | Modül bazlı süre/shape/memory breakdown | ms/module, çağrı ağacı | PyTorch profiler/measurement adapter | Hook overhead, shared module ve nesting politikası | Ö4 | planned | Ortak/tekrar çağrılar doğru; inclusive/exclusive süre ayrılır; profiler latency baseline'dan ayrı |
-| P14 | Operator / Kernel Profiler | Operator ve kernel execution breakdown | op/kernel süre, count, trace | PyTorch profiler; opsiyonel GPU profiler araçları | CUDA sync/trace, profiler overhead ve sürüm | Ö4 | planned | Gerçek trace/correlation; CPU launch süresi GPU kernel süresi sayılmaz; missing events açıklanır |
+| P12 | FLOPs / MACs | analyze_flops: actual observed ATen shape/scalar logical models, unknown coverage explicit | MAC/FLOP batch/sample/per-forward, supported subtotal, unknown/null model total | Windows CPU FP32/FP64; native CUDA FP32/AMP observed inference | FMA1MAC=2FLOPs; bias/arithmetic/comparisons ayrı; actual paths/recipe only | Ö4 / M2-P-B6 | partial | Conv1d/2d grouped/depthwise, Linear/mm/matmul/bmm/default addmm, pool/add gerçek analytic references PASS; normalization/nonlinear/fused/custom cost unmodeled; hardware FLOP counter değil |
+| P13 | Layer-wise Profiler | profile_layers: worker-only canonical module/aliases + dynamic invocation tree | instrumented CPU inclusive/exclusive us, call count/shapes/ranking | Torch profiler module annotations; no caller hook mutation | Direct-child subtraction; existing worker hooks preserved; no per-layer sync | Ö4 / M2-P-B6 | partial | Nested/shared/repeated CPU calls ve exception cleanup PASS; CUDA layer activity null/unsupported; per-layer allocation ve uninstrumented perturbation ölçülmedi |
+| P14 | Operator / Kernel Profiler | profile_operators: actual CPU events + optional exported kernel activity | CPU self/total us/count/shapes, immutable result/trace SHA | Windows Torch2.5.1 CUDA legacy/CPU; minimum Torch2.2.2 CPU verified | Only actual cat=kernel trace qualifies; no legacy label as kernel; raw correlation unverified | Ö4 / M2-P-B6 | partial | CPU profiler PASS, real GPU forwards PASS; this build supported_activities=CPU, CUDA kernel count/time null/UNSUPPORTED; full NVIDIA coverage veya reliable attribution iddiası yok |
 | P15 | CPU–GPU Transfer Analysis | H2D/D2H ve overlap/PCIe etkileri | ms, byte/s, overlap timeline | CUDA; pageable/pinned host tensors | Transfer direction/size, pinning/nonblocking ve sync | Ö4 | planned | Gerçek copy completion; bandwidth numerator gerçek byte; overlap çift sayılmaz |
 | P16 | GPU / CPU Utilization | Zaman örneklemeli kullanım ve destek varsa compute-unit counters | %, sample timeline, available counters | Opsiyonel OS/NVML/profiler/hardware counter erişimi | Sample interval, counter tanımı/izinler | Ö4/Ö8 | planned | Query availability ve interval kaydı; GPU busy% Tensor Core utilization değildir; unsupported alan null |
-| P17 | Maximum Feasible Batch Size | Belirli input/mode/precision için bellekçe çalışabilir batch sınırı | max batch, failure/baseline raporu | CPU/CUDA, izole worker | OOM recovery/fresh process, arama limiti ve precision | Ö3 | planned | Geçen noktanın gerçek forward'u, sonraki fail/budget kanıtı; sonsuz arama veya device reset yok |
+| P17 | Maximum Feasible Batch Size | Explicit finite ordered inference candidates; observed max ile exhaustive 1..cap proof ayrı | per-point actual batch/latency/memory/outcome, observed/proven-within-range | Windows fresh bounded CPU FP32/FP64 ve CUDA FP32/AMP FP16 worker | Hard private-commit/input budget, CUDA allocator fraction, total-worker timeout, stop policies; no monotonicity assumption | Ö3 / M2-P-B5 | implemented | Gerçek CPU/CUDA forward, controlled allocator OOM→fresh feasible worker, runtime-prepared timeout/PID cleanup; immutable export/E reopen/minimum Torch/package PASS; sparse list global max değildir; adaptive search/Linux/training scope dışı; B4 risk OPEN |
 | P18 | Arithmetic Intensity & Roofline Analysis | Gerçek compute/traffic verisiyle bounded teşhis; tahmini parametre bytes trafik sayılmaz | FLOP/byte, FLOP/s, GB/s, roofline grafiği | Opsiyonel doğrulanmış hardware counters/traffic ve compute ölçümü | P12/P14; aynı memory hierarchy, kalibre bandwidth/compute tavanı | Ö4 | planned | Güvenilir DRAM/cache traffic ve FLOP scope'ları eşleşmeli; sayaç yoksa yalnız tahmin etiketi, gerçek Roofline teşhisi yok |
 
 ## C. Training Performance

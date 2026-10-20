@@ -54,7 +54,11 @@ def _validate(data, kind):
     uuid.UUID(data["result_id"])
     if data["feature_ids"] != {"latency_analysis": ["P01"], "throughput": ["P02"],
                                "memory": ["P10"], "footprint": ["P11"], "pipeline": ["P03"],
-                               "stage_timing": ["P04"], "cold_start": ["P05"]}[kind]:
+                               "stage_timing": ["P04"], "cold_start": ["P05"],
+                               "sweep": data.get('feature_ids') if data.get('feature_ids') in (["P06"],["P07"],["P08"]) else None,
+                               "precision": ["P08"], "capacity": ["P17"],
+                               "operator_profile": ["P14"], "layer_profile": ["P13"],
+                               "operation_count": ["P12"]}[kind]:
         raise ValueError("invalid feature identity")
     if data["identity"].get("experiment_run_id") is not None:
         raise ValueError("associate experiment run externally; result identity is immutable")
@@ -64,6 +68,18 @@ def _validate(data, kind):
             raise ValueError("missing model/input/runtime provenance")
     if type(protocol["version"]) is not int or protocol["version"] != 1:
         raise ValueError("unsupported protocol version")
+    if kind in ('operator_profile','layer_profile','operation_count'):
+        from .profiling import _validate_profile
+        _validate_profile(data,kind)
+        return
+    if kind == 'capacity':
+        from .capacity import _validate_capacity
+        _validate_capacity(data)
+        return
+    if kind in ('sweep','precision'):
+        from .sweeps import _validate_sweep
+        _validate_sweep(data,kind)
+        return
     if kind in ('pipeline', 'stage_timing', 'cold_start'):
         if kind == 'cold_start':
             from .cold import _validate_cold
@@ -197,7 +213,33 @@ class _Result:
         data = self.to_dict()
         common = dict(format=data["format"], schema_version=1, result_id=data["result_id"],
                       device=data["provenance"]["environment"]["device"], scope=data["protocol"]["scope"])
-        if self._kind in ('pipeline', 'stage_timing', 'cold_start'):
+        if self._kind in ('operator_profile','layer_profile','operation_count'):
+            entries=(data['measurements']['operators'] if self._kind=='operator_profile' else
+                     data['measurements']['modules'] if self._kind=='layer_profile' else data['raw_evidence']['operations'])
+            rows=[dict(common,row_kind=self._kind,observation_index=i,payload=json.dumps(row,sort_keys=True))
+                  for i,row in enumerate(entries)]
+            if not rows: rows=[dict(common,row_kind=self._kind,observation_index=None,payload='null')]
+        elif self._kind == 'capacity':
+            rows = [dict(common, **{k:v for k,v in row.items()
+                                   if k not in ('memory','sweep','provenance')},
+                         memory=json.dumps(row['memory'],sort_keys=True),
+                         provenance=json.dumps(row['provenance'],sort_keys=True))
+                    for row in data['raw_evidence']['candidates']]
+            for row in rows: row['shape']=json.dumps(row['shape'])
+        elif self._kind in ('sweep','precision'):
+            points=data['raw_evidence']['points'] if self._kind=='sweep' else [dict(
+                point_id=data['result_id'],observation_index=0,value=data['protocol']['precision'],
+                precision=data['protocol']['precision'],shape=data['provenance']['input']['shape'],
+                status='measured',reason=None,result_id=data['result_id'],result=data)]
+            rows=[]
+            for point in points:
+                metrics=point['result']['measurements'] if point['result'] is not None else None
+                rows.append(dict(common,point_id=point['point_id'],observation_index=point['observation_index'],
+                    value=json.dumps(point['value']),precision=point['precision'],shape=json.dumps(point['shape']),
+                    status=point['status'],reason=point['reason'],point_result_id=point['result_id'],
+                    latency_mean_ms=metrics['latency_mean_ms']['value'] if metrics else None,
+                    sustained_images_per_second=metrics['sustained_images_per_second']['value'] if metrics else None))
+        elif self._kind in ('pipeline', 'stage_timing', 'cold_start'):
             if self._kind == 'cold_start':
                 rows = [dict(common, trial_index=trial['trial_index'], worker_pid=trial['worker_pid'],
                              trial_status=trial['status'], phase=name, **phase)
@@ -269,3 +311,39 @@ class StageTimingResult(_Result):
 class ColdStartResult(_Result):
     __slots__ = ()
     _kind = 'cold_start'
+
+
+@dataclass(frozen=True, init=False)
+class SweepResult(_Result):
+    __slots__ = ()
+    _kind = 'sweep'
+
+
+@dataclass(frozen=True, init=False)
+class PrecisionResult(_Result):
+    __slots__ = ()
+    _kind = 'precision'
+
+
+@dataclass(frozen=True, init=False)
+class CapacityResult(_Result):
+    __slots__ = ()
+    _kind = 'capacity'
+
+
+@dataclass(frozen=True, init=False)
+class OperatorProfileResult(_Result):
+    __slots__ = ()
+    _kind = 'operator_profile'
+
+
+@dataclass(frozen=True, init=False)
+class LayerProfileResult(_Result):
+    __slots__ = ()
+    _kind = 'layer_profile'
+
+
+@dataclass(frozen=True, init=False)
+class OperationCountResult(_Result):
+    __slots__ = ()
+    _kind = 'operation_count'

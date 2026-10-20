@@ -1,0 +1,253 @@
+"""Isolated profiler capture and pure P12/P13 derivation from its plain evidence."""
+from dataclasses import asdict,dataclass
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import platform
+import subprocess
+import sys
+import tempfile
+import time
+
+from .cold import ColdStartRecipe,_terminate
+from .inference import _base
+from .result import (OperatorProfileResult,LayerProfileResult,OperationCountResult,
+                     _integer,_positive,_plain,_write_export)
+from ._operation_models import CONVENTION,summarize
+
+
+@dataclass(frozen=True)
+class ProfilingProtocol:
+    warmup_iterations:int=1
+    measure_iterations:int=3
+    timeout_seconds:float=60.
+    cpu_memory_limit_bytes:int=3*1024**3
+    input_limit_bytes:int=32*1024**2
+    cuda_memory_fraction:float=.1
+    max_events:int=20000
+    max_trace_bytes:int=16*1024**2
+
+    def __post_init__(self):
+        _integer(self.warmup_iterations);_integer(self.measure_iterations,1);_positive(self.timeout_seconds)
+        if self.warmup_iterations+self.measure_iterations>100 or self.timeout_seconds>600:
+            raise ValueError('bounded profile: at most100 forwards/600 seconds')
+        _integer(self.cpu_memory_limit_bytes,256*1024**2);_integer(self.input_limit_bytes,1)
+        _positive(self.cuda_memory_fraction)
+        if self.cuda_memory_fraction>1:raise ValueError('invalid allocator budget')
+        _integer(self.max_events,1);_integer(self.max_trace_bytes,1)
+        if self.max_events>100000 or self.max_trace_bytes>64*1024**2:raise ValueError('evidence budget too large')
+
+
+class ProfilingError(RuntimeError):
+    def __init__(self,diagnostics):
+        self.diagnostics=_plain(diagnostics)
+        super().__init__(json.dumps(self.diagnostics,sort_keys=True))
+
+
+def _hash(data):
+    return hashlib.sha256(json.dumps(data,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
+
+
+def profile_operators(recipe,*,protocol=ProfilingProtocol(),trace_path=None):
+    """Fresh Windows worker; no live caller model or hooks cross the boundary.
+
+    Owned model uses eval/inference mode. Torch profiler self/total CPU timings
+    are instrumented costs, not BenchmarkRunner latency. Only exported kernel
+    activities qualify as kernel evidence; legacy event.kernels is not used.
+    """
+    if type(recipe) is not ColdStartRecipe or type(protocol) is not ProfilingProtocol:
+        raise TypeError('expected ColdStartRecipe and ProfilingProtocol')
+    if trace_path is not None and Path(trace_path).exists():raise FileExistsError(trace_path)
+    receipt=dict(status='failed',reason=None,exit_code=None,worker_pid=None,launcher_pid=None,
+                 worker_phase=None,process_terminated=True,stderr_tail='',cleanup={})
+    start=time.perf_counter();worker=None
+    with tempfile.TemporaryDirectory(prefix='hyso-profile-') as directory:
+        root=Path(directory);request=root/'request.json';output=root/'result.json';trace=root/'trace.json';ready=root/'ready.json'
+        request.write_text(json.dumps(dict(recipe=recipe.to_dict(),protocol=asdict(protocol))),encoding='utf-8')
+        command=[sys.executable,'-I','-B',str(Path(__file__).with_name('_profile_worker.py')),
+                 str(request),str(output),str(trace),str(ready),str(Path(__file__).resolve().parents[2])]
+        with tempfile.TemporaryFile() as stdout,tempfile.TemporaryFile() as stderr:
+            try:
+                worker=subprocess.Popen(command,stdout=stdout,stderr=stderr,
+                    env=dict(os.environ,PYTHONDONTWRITEBYTECODE='1'),
+                    creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
+                receipt['launcher_pid']=worker.pid
+                try:worker.wait(timeout=protocol.timeout_seconds)
+                except subprocess.TimeoutExpired:
+                    receipt.update(status='timed_out',reason='owned worker timeout');_terminate(worker);worker.wait(timeout=10)
+                receipt['exit_code']=worker.returncode
+                if ready.exists():
+                    ready_data=json.loads(ready.read_text(encoding='utf-8'))
+                    receipt.update(worker_pid=ready_data['pid'],worker_phase=ready_data['phase'])
+                if receipt['status']!='timed_out':
+                    if worker.returncode!=0:receipt.update(status='crashed',reason='unexpected worker exit; not OOM classification')
+                    elif output.exists():
+                        if output.stat().st_size>protocol.max_trace_bytes*2:raise ValueError('result exceeds evidence budget')
+                        body=_plain(json.loads(output.read_text(encoding='utf-8')))
+                        if body['worker_pid']!=receipt['worker_pid']:raise ValueError('worker identity mismatch')
+                        receipt.update(status=body['status'],reason=body['reason'],cleanup=body['cleanup'])
+                    else:receipt['reason']='missing worker result'
+            finally:
+                if worker is not None:
+                    if worker.poll() is None:_terminate(worker)
+                    worker.wait(timeout=10);receipt['process_terminated']=worker.poll() is not None
+                stderr.seek(0,2);size=stderr.tell();stderr.seek(max(0,size-4096))
+                receipt['stderr_tail']=stderr.read().decode('utf-8',errors='replace')
+        receipt['execution_seconds']=time.perf_counter()-start
+        if receipt['status']!='completed':raise ProfilingError(receipt)
+        data=body['result'];data['raw_evidence']['worker']=receipt
+        meta=data['raw_evidence']['trace'];meta['path']=str(Path(trace_path).resolve()) if trace_path is not None else None
+        meta['retention']='published' if trace_path is not None else 'generated_not_retained'
+        result=OperatorProfileResult(data)
+        if trace_path is not None:
+            # read_text performs universal-newline conversion on Windows. Keep
+            # the original trace bytes (including CRLF) for the recorded SHA.
+            contents=trace.read_bytes().decode('utf-8')
+            if hashlib.sha256(trace.read_bytes()).hexdigest()!=meta['sha256']:raise ValueError('trace checksum mismatch')
+            _write_export(trace_path,contents,False)
+        return result
+
+
+def _source(source,protocol):
+    if type(source) is ColdStartRecipe:return profile_operators(source,protocol=protocol).to_dict()
+    if type(source) is not OperatorProfileResult:raise TypeError('expected recipe or OperatorProfileResult')
+    return OperatorProfileResult(source.to_dict()).to_dict()
+
+
+def _derived(kind,feature,source,raw,measurements):
+    data=_base(kind,feature,dict(id='derive_from_profile',version=1,scope='observed_profile_evidence',
+        configuration=source['protocol']['configuration'],recipe=source['protocol']['recipe'],
+        convention=CONVENTION if kind=='operation_count' else 'module_inclusive_minus_direct_module_children'),source['provenance'])
+    data['identity']['source_result_id']=source['result_id']
+    data.update(requested=source['requested'],actual=source['actual'],measurements=measurements,
+        raw_evidence=dict(source_result_id=source['result_id'],source_sha256=_hash(source),
+            trace=source['raw_evidence']['trace'],**raw))
+    data['diagnostics']['limitations']=list(source['diagnostics']['limitations'])
+    return data
+
+
+def analyze_flops(source,*,protocol=ProfilingProtocol()):
+    """Analytic observed-ATen operation models. No timing or hardware FLOP counter."""
+    s=_source(source,protocol);calls=s['raw_evidence']['aten_calls']
+    rows,m=summarize(calls,s['actual']['measured_forwards'],s['provenance']['input']['shape'][0])
+    return OperationCountResult(_derived('operation_count','P12',s,dict(aten_calls=calls,operations=rows),m))
+
+
+def _layer_metrics(inventory,invocations):
+    modules=[]
+    for item in inventory:
+        calls=[r for r in invocations if r['module_id']==item['module_id']]
+        def total(key):
+            return math.fsum(r[key] for r in calls) if calls and all(r[key] is not None for r in calls) else None
+        measured=bool(calls) and all(r['cpu_total_us'] is not None and r['cpu_exclusive_us'] is not None for r in calls)
+        modules.append(dict(item,invocation_count=len(calls),cpu_total_us=total('cpu_total_us'),
+            status='measured' if measured else 'not_executed' if not calls else 'partial',
+            reason=None if measured else 'no_observed_invocation' if not calls else 'invalid_or_missing_CPU_duration',
+            cpu_exclusive_us=total('cpu_exclusive_us'),cuda_activity_us=total('cuda_activity_us')))
+    ranking=[r['module_id'] for r in sorted((r for r in modules if r['cpu_exclusive_us'] is not None),
+                                          key=lambda r:r['cpu_exclusive_us'],reverse=True)]
+    return dict(status='measured' if all(r['cpu_total_us'] is not None for r in invocations) else 'partial',
+        reason=None if all(r['cpu_total_us'] is not None for r in invocations) else 'missing_or_invalid_module_cpu_event',
+        modules=modules,ranking=ranking,ranking_basis='cpu_exclusive_us_instrumented',unit='us',
+        cuda_layer_status='unsupported',cuda_layer_reason='no_verified_kernel_to_module_attribution')
+
+
+def profile_layers(source,*,protocol=ProfilingProtocol()):
+    """Module invocation tree from the same capture; shared calls remain distinct."""
+    s=_source(source,protocol);raw=s['raw_evidence']
+    return LayerProfileResult(_derived('layer_profile','P13',s,
+        dict(module_inventory=raw['module_inventory'],invocations=raw['invocations']),
+        _layer_metrics(raw['module_inventory'],raw['invocations'])))
+
+
+def _validate_profile(data,kind):
+    p=ProfilingProtocol(**data['protocol']['configuration'])
+    r=ColdStartRecipe(**data['protocol']['recipe']).to_dict();raw=data['raw_evidence']
+    expected=dict(measured_forwards=p.measure_iterations,warmup_forwards=p.warmup_iterations)
+    if data['actual']!=expected or data['requested']!=expected:raise ValueError('invalid profile forward ledger')
+    if kind=='operator_profile':
+        if data['protocol']['id']!='isolated_torch_profiler':raise ValueError('invalid profiler protocol')
+        if not raw['worker']['process_terminated'] or raw['worker']['exit_code']!=0:raise ValueError('worker did not finish normally')
+        if not all(raw['safety'].values()):raise ValueError('state/ownership safety not verified')
+        if len(raw['events'])>p.max_events or len(raw['aten_calls'])>p.max_events:raise ValueError('evidence budget exceeded')
+        if data['measurements']['operators']!=_operator_metrics(raw['events']):raise ValueError('operator aggregation mismatch')
+        overhead=data['measurements']['overhead']
+        _positive(overhead['collector_lifecycle_wall_ms'])
+        if len(overhead['instrumented_host_forward_windows_ms'])!=p.measure_iterations:raise ValueError('invalid host window ledger')
+        for v in overhead['instrumented_host_forward_windows_ms']:_positive(v)
+        if overhead['perturbation_ms'] is not None or overhead['perturbation_status']!='not_measured':raise ValueError('unmeasured perturbation cannot be numeric')
+        for event in raw['events']:
+            for key in ('cpu_total_us','self_cpu_us'):
+                v=event[key]
+                if v is not None and (type(v) not in (float,int) or v<0):raise ValueError('invalid CPU event duration')
+        if data['measurements']['cuda_kernels']!=raw['kernel_events']:raise ValueError('unverified kernel evidence')
+        cuda=_cuda_metrics(raw['kernel_events'],r['device']!='cpu')
+        if data['measurements']['cuda_activity']!=cuda:raise ValueError('invalid CUDA availability/timing claim')
+        status,reason=_profile_status(raw['events'],cuda)
+        if (data['measurements']['status'],data['measurements']['reason'])!=(status,reason):raise ValueError('invalid profile status')
+        inventory=raw['module_inventory'];invocations=raw['invocations']
+        mids={m['module_id'] for m in inventory}
+        if len(mids)!=len(inventory):raise ValueError('duplicate module identity')
+        if [v['invocation_id'] for v in invocations]!=list(range(len(invocations))):raise ValueError('invalid invocation IDs')
+        roots=0
+        for row in invocations:
+            if row['module_id'] not in mids or not 0<=row['measurement_index']<p.measure_iterations:raise ValueError('invalid module association')
+            if row['parent_invocation_id'] is None:roots+=1
+            elif not 0<=row['parent_invocation_id']<row['invocation_id']:raise ValueError('invalid call-tree parent')
+        if roots!=p.measure_iterations:raise ValueError('incomplete module forward ledger')
+        for i,c in enumerate(raw['aten_calls']):
+            if c['call_index']!=i or not 0<=c['measurement_index']<p.measure_iterations:raise ValueError('invalid dispatch association')
+        for row in raw['invocations']:
+            children=[x for x in raw['invocations'] if x['parent_invocation_id']==row['invocation_id']]
+            value=row['cpu_total_us']
+            exclusive=None if value is None or any(x['cpu_total_us'] is None for x in children) else value-sum(x['cpu_total_us'] for x in children)
+            if exclusive is not None and exclusive<0:exclusive=None
+            if row['cpu_exclusive_us']!=exclusive:raise ValueError('invalid module nesting accounting')
+        return
+    if data['protocol']['id']!='derive_from_profile':raise ValueError('invalid derived profile protocol')
+    if data['identity']['source_result_id']!=raw['source_result_id'] or len(raw['source_sha256'])!=64:
+        raise ValueError('missing source identity')
+    if kind=='operation_count':
+        rows,m=summarize(raw['aten_calls'],p.measure_iterations,r['input_shape'][0])
+        if raw['operations']!=rows or data['measurements']!=m or data['protocol']['convention']!=CONVENTION:
+            raise ValueError('invalid analytic operation-count claim')
+    elif data['measurements']!=_layer_metrics(raw['module_inventory'],raw['invocations']):raise ValueError('invalid module totals/ranking')
+
+
+def _cuda_metrics(kernels,requested):
+    for k in kernels:
+        if k['category']!='kernel' or k['phase']!='X' or type(k['name']) is not str or not k['name']:
+            raise ValueError('only actual exported kernel activities qualify')
+        if k['duration_us'] is not None and (type(k['duration_us']) not in (int,float) or not math.isfinite(k['duration_us']) or k['duration_us']<0):
+            raise ValueError('invalid kernel duration')
+    if not requested and kernels:raise ValueError('unrequested device activity')
+    status=('not_requested' if not requested else 'unsupported' if not kernels else
+            'measured' if all(k['duration_us'] is not None for k in kernels) else 'partial')
+    return dict(status=status,reason='no_exported_CUDA_kernel_activity' if status=='unsupported' else
+        'invalid_kernel_duration' if status=='partial' else None,
+        total_kernel_us=math.fsum(k['duration_us'] for k in kernels) if status=='measured' else None,
+        kernel_count=len(kernels) if kernels else None,
+        coverage='observed_exported_trace_only; not full GPU coverage',cpu_to_cuda_correlation='not_asserted')
+
+
+def _profile_status(events,cuda):
+    if any(e['cpu_total_us'] is None or e['self_cpu_us'] is None for e in events if e['device_type']=='CPU'):
+        return 'partial','invalid_or_missing_CPU_duration'
+    if cuda['status'] in ('unsupported','partial'):return 'partial','cuda_kernel_activity_unavailable_or_invalid'
+    return 'measured',None
+
+
+def _operator_metrics(events):
+    groups={}
+    for event in events:
+        if event['device_type']!='CPU' or event['scope']!=0:continue
+        group=groups.setdefault(event['name'],[]);group.append(event)
+    rows=[]
+    for name,events in groups.items():
+        def total(key):return math.fsum(e[key] for e in events) if all(e[key] is not None for e in events) else None
+        rows.append(dict(name=name,count=len(events),self_cpu_us=total('self_cpu_us'),cpu_total_us=total('cpu_total_us'),
+            shapes=[e['input_shapes'] for e in events],unit='us',scope='instrumented_CPU_operator_events',
+            status='measured' if all(e['self_cpu_us'] is not None and e['cpu_total_us'] is not None for e in events) else 'partial'))
+    return sorted(rows,key=lambda r:r['self_cpu_us'] if r['self_cpu_us'] is not None else -1,reverse=True)
