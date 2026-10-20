@@ -18,6 +18,12 @@ kullanılacak durum. B3 sonunda P01/P08/P11/P29 partial, P09 sınırları belirt
 native allocator sözleşmesiyle implemented, kalan30 satır planned'dır.
 Donanım opsiyonelliği araç sütununda ayrıca belirtilir.
 
+M2-P-B1 (2026-10-20) sonrasında P01/P02 aşağıdaki doğrulanmış resident inference
+kapsamıyla implemented'dır. Güncel sayım: **3 implemented, 3 partial, 29 planned**.
+P09 ve P03–P35'in diğer durumları değişmez. Kanıt ve sınırlar:
+[P99/throughput audit](../audit/m2-p-b1-latency-throughput.md),
+[kullanım rehberi](../guides/performance-inference.md).
+
 ## Uygulama sırası
 
 | Öncelik/aşama | Kapsam ve kapı |
@@ -38,8 +44,8 @@ fazı, kurulmuş dependency veya gerçekleştirilmiş deney anlamına gelmez.
 
 | ID | Tam isim | Türkçe açıklama | Birim/rapor | Donanım/veri/araç | Önkoşullar | Aşama | Durum | Doğrulanma kriteri |
 |---|---|---|---|---|---|---|---|---|
-| P01 | Inference Latency — P50/P95/P99 | Aynı resident batch için CPU/CUDA mean/p50/p90/p95/std var; P99 henüz yok | ms, raw samples/quantiles | CPU monotonic clock; native CUDA event | Sabit shape/device/precision, warmup, repeat/sync scope | Ö1 | partial | B1/B2 finite positive R×N; known samples linear quantiles ve native event/sync; P99 ancak versioned protokol kararı ve yeterli örnekle |
-| P02 | Real Throughput / FPS | Uzun ölçüm penceresinde gerçekten tamamlanan örnekler; B1 derived rate bu özellik değildir | images/s veya frames/s; window süresi | CPU/CUDA, tamamlama/sync sayacı | Window başlangıç/sonu, pipeline/concurrency ve I/O scope'u sabit | Ö1 sonrası ayrı protokol, Ö3 | planned | Completed images/window seconds; native sync, pipeline tail flush ve bağımsız count reference |
+| P01 | Inference Latency — P50/P95/P99 | Mevcut schema1 mean/p50/p90/p95/std korunur; hyso.performance.analyze_latency aynı raw R×N'den ayrı versioned P99 analizi üretir | ms/batch, raw samples/quantiles, tail status | CPU monotonic clock; native CUDA event kaynağı | Sabit shape/device/precision, warmup, repeat/sync scope; default n≥1000 ve (1−q)n≥10 | Ö1 / M2-P-B1 | implemented | Linear [1..1000] P99=990.01; n=999 null/insufficient_samples; no rerun/mutation; repeat/source provenance, gerçek CPU/CUDA sample ve installed minimum/package kanıtı; CI/independence iddiası yok |
+| P02 | Real Throughput / FPS | hyso.performance.measure_throughput: fixed resident NCHW tensor, continuous completion-window; mevcut derived rate değişmez; camera/display/E2E kapsam dışı | images/s; completed images / host wall seconds | CPU FP32/FP64; native CUDA FP32/AMP FP16, bounded event/output ring | Explicit batch-count veya duration admission; concurrency=1, queue depth, warmup/repeat, tail completion; finite-check/queue overhead scope'ta | Ö1 sonrası ayrı protokol / M2-P-B1 | implemented | Gerçek synchronous CPU ve CUDA terminal drain/non-default stream; count ledger, pending=0, tail paydada, bounded lifetime/no per-forward sync; state/RNG, export/artifact reopen ve installed minimum/package PASS; hidden cross-stream/device unsupported |
 | P03 | End-to-End Latency | Capture/read→preprocess→transfer→inference→postprocess zincirinin gecikmesi | ms/frame, percentiles | Gerçek/sentetik veri akışı ve host clock | Stage boundary, queue/drop policy, ortak timestamp domain | Ö3/Ö7 | planned | Aynı örneğin uçtan uca izlenmesi; async completion dahil, device event ile host wall karıştırılmaz |
 | P04 | Preprocessing / Postprocessing Time | Resize/normalize/decode ve output dönüşümü sürelerini ayırma | ms/stage, breakdown | Tanımlı transforms/postprocessor, CPU/GPU | Gerçek veri, stage device/sync ve işlem listesi | Ö3 | planned | Stage count/order ve wall/event scope reference; toplamla overlap ilişkisi açıklanır |
 | P05 | Cold Start & Model Loading | Fresh process import/load/ilk inference maliyeti | ms veya s, ayrı cold/warm rapor | Yerel artifact, fresh subprocess | Artifact format/bytes, cache/page-cache koşulu ve init sınırı | Ö3 | planned | Gerçek fresh process; model load, context init ve ilk forward ayrı; disk cache durumu kaydedilir |
