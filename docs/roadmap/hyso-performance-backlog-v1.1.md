@@ -149,7 +149,7 @@ fazı, kurulmuş dependency veya gerçekleştirilmiş deney anlamına gelmez.
 |---|---|---|---|---|---|---|---|---|
 | P19 | Epoch / Training Step Time | measure_training ile gerçek Trainer epoch/microbatch/window/attempt timing | Host ms ve epoch s; CUDA selected-stream event ms ayrı | Native CPU FP32/FP64 ve doğrulanan CUDA FP32/AMP; bounded recorder | Existing Trainer lifecycle/counters; ayrı validation ve checkpoint I/O exclusion | Ö5 / M2-P-B9 P19 alt kapsam | implemented | Gerçek uneven sample ledger, applied/skip, exact state/RNG/history/replay, bounded events, export/EManager ve minimum/package gate; kernel attribution/P20 stages/P22 rates yok; B4 riski açık |
 | P20 | Forward / Backward / Optimizer Breakdown | measure_training_detailed ile gerçek stage sınırları; ayrı additive TrainingStageResult | Host ms / selected-stream CUDA event ms ayrı; inclusive scopes | Native CPU SGD/Adam/AdamW ve doğrulanan CUDA FP32/AMP | P19 shared recorder; combined bounded records/events; native optimizer pre/post hooks | Ö5 / M2-P-B9 | implemented | Gerçek forward/loss/backward/unscale/normalization/clip/scaler/optimizer/EMA/scheduler/zero_grad; overflow execution null/not_executed, exact deterministic replay, immutable/export/EManager/minimum/package PASS; CUPTI/kernel attribution yok |
-| P21 | DataLoader Bottleneck Analysis | Load/decode/transform/queue wait ile compute ayrımı | ms/batch wait, samples/s, timeline | Gerçek dataset, worker/pin settings | Worker RNG/epoch order/profiling adapter | Ö5 | planned | Worker ve ana süreç scope'ları ayrılır; bekleme ile CPU compute eşit sayılmaz |
+| P21 | DataLoader Bottleneck Analysis | measure_training_with_loader ile gerçek main-process iterator init/next wait ve P20 source links | Host ms, delivery ns, sample/ID ledger, wait quantiles/fraction | Native Windows DataLoader0/spawn2 ve doğrulanan selected-stream CUDA; worker trace yok | P19/P20/P22 IDs ve immutable source association; bounded observation | Ö5 / M2-P-B10 P21 alt kapsam | partial | Exact state/order/RNG, gerçek ImageFolder/random augmentation, exception/timeout/ownership cleanup; worker service/queue/prefetch efficiency null/unsupported, isolated H2D ayrıca unsupported; P23/P25 yok |
 | P22 | Training Throughput | analyze_training_throughput ile doğrulanmış P19 raw ledger'dan saf epoch/segment analizi | samples/s, microbatches/s, attempts/s, applied updates/s | Native P19/P20 source evidence; ikinci fit yok | Training-only instrumented wall; validation hariç; gerçek uneven/skip ledger | Ö5 / M2-P-B9 | implemented | Ratio of sums, `[4,1]` tail, applied/attempt ayrımı, warmup labels, early stop/resume/completed checkpoint null, tamper/export/EManager/minimum/package PASS |
 | P23 | Training Memory Analysis | Params/gradients/optimizer/activation ve measured peak ayrımı | logical byte + process/allocator byte | Training state ve platform memory araçları | P09/P10/P19; gradient lifecycle | Ö5 | planned | Aynı training boundary'de native snapshot/probe; component logical toplam process RSS/VRAM diye sunulmaz |
 | P24 | Time to Target Accuracy | Tanımlı kalite eşiğine ilk ulaşma zamanı | s/epoch/update to threshold, censored runs | Labeled train/validation data, repeated seeds | P19/P26; metric/threshold/eval cadence | Ö5/Ö6 | planned | Aynı split/target; ulaşılamayan run censored; validation/clock scope'u ve run variance açık |
@@ -222,6 +222,26 @@ değildir. B4 OPEN/UNRESOLVED; B6 kernel profiling ve B7 overlap PARTIAL; P18
 planned/blocked kalır. P21/P23–P25 planned; facade geliştirilmedi.
 [Completion audit](../audit/m2-p-b9-completion-p20-p22.md),
 [breakdown/throughput rehberi](../guides/performance-training-breakdown-throughput.md).
+
+## M2-P-B10 / P21 — 2026-10-21
+
+P21 **partial**: gerçek main-process iterator initialization/next wait, delivery/
+sample/accumulation ledger, wait mean/P50/P95/P99 policy ve training-wall ratio;
+aynı fit'te optional P20 stage links ve P22 source association. Native Windows
+spawn2/prefetch/persistent workers, gerçek ImageFolder ve seeded Python/NumPy/
+Torch augmentation, state/RNG/content/order ve failure cleanup doğrulandı.
+Worker service/decode/transform trace yok; queue occupancy/prefetch efficiency ve
+izole H2D duration null/unsupported. Main wait worker service diye sunulmaz.
+Final yeni CPU78 PASS, mevcut regresyon1971 PASS, packaging4 PASS; source ve
+installed7 loader +20 CUDA senaryosu ayrı receipt'lerle doğrulandı, tekrarlar
+distinct sayısını artırmaz. Minimum Python3.10/Torch2.2.2+cpu installed guide/
+resume ve41 modül source/wheel/sdist/installed eşitliği PASS.
+**Güncel35-feature: 16 implemented /6 partial /13 planned.**
+**B10 PARTIAL / full-scope GO yok:** P21 worker trace eksik, P23/P25 planned.
+B9 verified GO ve P19/P20/P22 implemented; B4 OPEN/UNRESOLVED, B6 profiling
+PARTIAL, B7 overlap PARTIAL, P18 planned/blocked korunur. Stable release onayı yok.
+[P21 audit](../audit/m2-p-b10-loader-bottleneck.md),
+[DataLoader rehberi](../guides/performance-dataloader.md).
 
 ## Post-Performance Developer Experience (gelecek tasarım hedefi)
 

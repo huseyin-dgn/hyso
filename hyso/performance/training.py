@@ -384,6 +384,8 @@ def _measure_training(trainer, train_loader, val_loader=None, *, epochs=5, proto
     trainer._timing_recorder = recorder
     if hasattr(recorder, "stage_begin"):
         trainer._stage_recorder = recorder
+    if hasattr(recorder, "observe_loader"):
+        trainer._loader_recorder = recorder
     try:
         trainer.fit(train_loader, val_loader, epochs=epochs, save_last_to=save_last_to,
                     resume_from=resume_from)
@@ -391,6 +393,8 @@ def _measure_training(trainer, train_loader, val_loader=None, *, epochs=5, proto
         del trainer._timing_recorder
         if hasattr(trainer, "_stage_recorder"):
             del trainer._stage_recorder
+        if hasattr(trainer, "_loader_recorder"):
+            del trainer._loader_recorder
         recorder.close()
     # On resume the checkpoint supplies the baseline counters; derive it from
     # observed deltas, never manufacture timings for the checkpoint prefix.

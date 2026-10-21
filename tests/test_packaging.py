@@ -17,6 +17,7 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
+    "hyso/performance/dataloader.py",
     "hyso/performance/training_details.py",
     "hyso/performance/training.py",
     "hyso/performance/transfers.py", "hyso/performance/_transfer_worker.py",
@@ -80,7 +81,7 @@ def distributions(tmp_path_factory):
 
 def test_canonical_packaging_configuration():
     assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == MODULES
-    assert len(MODULES) == 40
+    assert len(MODULES) == 41
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
     assert not (ROOT / "hyso/setup.cfg").exists()
@@ -455,6 +456,15 @@ assert detailed.throughput.to_dict()['segment']['completed']['samples'] == 10
 assert sum(r['stage'] == 'optimizer_execution' and r['status'] == 'measured' for r in detailed.stages.to_dict()['observations']) == 4
 assert TrainingStageResult(detailed.stages.to_dict()).to_dict() == detailed.stages.to_dict()
 assert TrainingThroughputResult(detailed.throughput.to_dict()).to_dict() == analyze_training_throughput(detailed.timing).to_dict()
+from hyso.performance import measure_training_with_loader, DataLoaderAnalysisResult
+loader_model = torch.nn.Linear(3, 2)
+loader_trainer = Trainer(loader_model, optimizer=torch.optim.SGD(loader_model.parameters(), lr=.01),
+                         loss_fn=torch.nn.CrossEntropyLoss(), accum_steps=2)
+actual_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(torch.ones(5, 3), torch.tensor([0, 1, 0, 1, 0])), batch_size=2)
+loader_result = measure_training_with_loader(loader_trainer, actual_loader, epochs=1)
+assert loader_result.loader.to_dict()['summaries'][0]['samples'] == 5
+assert DataLoaderAnalysisResult(loader_result.loader.to_dict()).to_dict() == loader_result.loader.to_dict()
+assert loader_result.loader.to_dict()['worker_service']['value'] is None
 for name, module in list(sys.modules.items()):
     if name == 'hyso' or name.startswith('hyso.'):
         assert pathlib.Path(module.__file__).resolve().is_relative_to(target)
