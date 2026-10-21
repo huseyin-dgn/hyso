@@ -379,11 +379,17 @@ def measure_training_detailed(trainer, train_loader, val_loader=None, *, epochs=
         return recorder
     timing = _measure_training(trainer, train_loader, val_loader, epochs=epochs, protocol=protocol,
         save_last_to=save_last_to, resume_from=resume_from, recorder_factory=factory)
-    data = _base(timing, "training_stages", "P20", asdict(stage_protocol))
-    data["configuration"] = dict(grad_clip=trainer.grad_clip)
-    data["observations"] = captured[0].stages
+    stages = _stage_result(timing, captured[0], trainer.grad_clip)
+    return DetailedTrainingResult(timing, stages, analyze_training_throughput(timing))
+
+
+def _stage_result(timing, recorder, grad_clip):
+    """Build the unchanged P20 wire result from a completed shared recorder."""
+    data = _base(timing, "training_stages", "P20", asdict(recorder.stage_protocol))
+    data["configuration"] = dict(grad_clip=grad_clip)
+    data["observations"] = recorder.stages
     data["summary"] = _stage_summary(data["observations"])
     data["limitations"].extend(["optimizer execution spans public pre/post hooks, including hook dispatch overhead",
                                 "scaler_step_attempt includes optimizer_execution; no additive stage total or percentages",
                                 "unmeasured instrumentation overhead is unknown, not zero"])
-    return DetailedTrainingResult(timing, TrainingStageResult(data), analyze_training_throughput(timing))
+    return TrainingStageResult(data)

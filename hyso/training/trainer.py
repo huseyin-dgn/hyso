@@ -167,12 +167,15 @@ class Trainer:
         try:
             target.eval()
             summed, correct, samples, seen = 0., 0, 0, 0
+            loader_recorder = getattr(self, "_loader_recorder", None)
             with torch.no_grad():
-                for batch in loader:
+                for batch in (loader if loader_recorder is None else loader_recorder.observe_loader(loader, "validation")):
                     seen += 1
                     if seen > count:
                         raise ValueError("val_loader yielded more batches than len()")
                     inputs, labels, size = self._batch(batch)
+                    if loader_recorder is not None:
+                        loader_recorder.validation_batch(size)
                     with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=self.amp):
                         loss, batch_correct = self._loss_and_correct(target(inputs), labels, size)
                     summed += loss.item() * size
@@ -497,6 +500,7 @@ class Trainer:
         recorder = getattr(self, "_timing_recorder", None)
         stage = getattr(self, "_stage_recorder", None)
         self._emit("train_begin", 0)
+        loader_recorder = getattr(self, "_loader_recorder", None)
         # Enable autograd explicitly even if the caller has entered no_grad.
         with torch.enable_grad():
             for _ in range(start_epoch, epochs):
@@ -517,7 +521,7 @@ class Trainer:
                 if stage is not None:
                     stage.stage_end("zero_grad")
                 seen = 0
-                for batch in train_loader:
+                for batch in (train_loader if loader_recorder is None else loader_recorder.observe_loader(train_loader, "training")):
                     seen += 1
                     if seen > count:
                         raise ValueError("train_loader yielded more batches than len()")
