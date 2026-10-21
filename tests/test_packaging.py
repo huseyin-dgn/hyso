@@ -17,6 +17,7 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
+    "hyso/performance/gradients.py",
     "hyso/performance/training_memory.py",
     "hyso/performance/dataloader.py",
     "hyso/performance/training_details.py",
@@ -82,7 +83,7 @@ def distributions(tmp_path_factory):
 
 def test_canonical_packaging_configuration():
     assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == MODULES
-    assert len(MODULES) == 42
+    assert len(MODULES) == 43
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
     assert not (ROOT / "hyso/setup.cfg").exists()
@@ -475,6 +476,15 @@ assert TrainingMemoryResult(training_memory.to_dict()).to_dict() == training_mem
 assert training_memory.to_dict()['observations'][0]['logical']['summary']['optimizer']['logical_bytes'] == 0
 assert training_memory.to_dict()['observations'][-1]['logical']['summary']['optimizer']['logical_bytes'] > 0
 assert training_memory.to_dict()['activation']['value'] is None
+from hyso.performance import measure_gradient_diagnostics, GradientDiagnosticsResult
+gradient_model = torch.nn.Linear(3, 2)
+gradient_trainer = Trainer(gradient_model, optimizer=torch.optim.AdamW(gradient_model.parameters(), lr=.01),
+                          loss_fn=torch.nn.CrossEntropyLoss(), accum_steps=2, grad_clip=.1)
+gradient_result = measure_gradient_diagnostics(gradient_trainer, actual_loader, epochs=1)
+assert GradientDiagnosticsResult(gradient_result.to_dict()).to_dict() == gradient_result.to_dict()
+assert [r['samples'] for r in gradient_result.to_dict()['observations']] == [4, 1]
+assert gradient_result.to_dict()['summary']['applied'] == 2
+assert all(r['postclip']['summary']['global_l2']['value'] < .100001 for r in gradient_result.to_dict()['observations'])
 for name, module in list(sys.modules.items()):
     if name == 'hyso' or name.startswith('hyso.'):
         assert pathlib.Path(module.__file__).resolve().is_relative_to(target)
