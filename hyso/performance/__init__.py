@@ -20,6 +20,8 @@ from .training_details import (TrainingStageProtocol, TrainingStageResult, Train
                                DetailedTrainingResult, measure_training_detailed, analyze_training_throughput)
 from .dataloader import (DataLoaderAnalysisProtocol, DataLoaderAnalysisResult, LoaderTrainingResult,
                          measure_training_with_loader)
+from .training_memory import (TrainingMemoryProtocol, TrainingMemoryResult, TrainingMemoryError,
+                              measure_training_memory)
 
 __all__ = ["TailPolicy", "ThroughputProtocol", "analyze_latency", "measure_throughput",
            "LatencyAnalysis", "ThroughputResult", "MemoryProtocol", "measure_memory", "measure_footprint",
@@ -35,4 +37,5 @@ __all__ = ["TailPolicy", "ThroughputProtocol", "analyze_latency", "measure_throu
            "TrainingTimingProtocol", "TrainingPerformanceResult", "TrainingTimingError", "measure_training",
            "TrainingStageProtocol", "TrainingStageResult", "TrainingThroughputResult", "DetailedTrainingResult",
            "measure_training_detailed", "analyze_training_throughput", "DataLoaderAnalysisProtocol",
-           "DataLoaderAnalysisResult", "LoaderTrainingResult", "measure_training_with_loader"]
+           "DataLoaderAnalysisResult", "LoaderTrainingResult", "measure_training_with_loader",
+           "TrainingMemoryProtocol", "TrainingMemoryResult", "TrainingMemoryError", "measure_training_memory"]

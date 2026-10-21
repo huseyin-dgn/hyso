@@ -17,6 +17,7 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
+    "hyso/performance/training_memory.py",
     "hyso/performance/dataloader.py",
     "hyso/performance/training_details.py",
     "hyso/performance/training.py",
@@ -81,7 +82,7 @@ def distributions(tmp_path_factory):
 
 def test_canonical_packaging_configuration():
     assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == MODULES
-    assert len(MODULES) == 41
+    assert len(MODULES) == 42
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
     assert not (ROOT / "hyso/setup.cfg").exists()
@@ -465,6 +466,15 @@ loader_result = measure_training_with_loader(loader_trainer, actual_loader, epoc
 assert loader_result.loader.to_dict()['summaries'][0]['samples'] == 5
 assert DataLoaderAnalysisResult(loader_result.loader.to_dict()).to_dict() == loader_result.loader.to_dict()
 assert loader_result.loader.to_dict()['worker_service']['value'] is None
+from hyso.performance import measure_training_memory, TrainingMemoryResult
+memory_model = torch.nn.Linear(3, 2)
+memory_trainer = Trainer(memory_model, optimizer=torch.optim.AdamW(memory_model.parameters(), lr=.01),
+                         loss_fn=torch.nn.CrossEntropyLoss(), accum_steps=2)
+training_memory = measure_training_memory(memory_trainer, actual_loader, epochs=1)
+assert TrainingMemoryResult(training_memory.to_dict()).to_dict() == training_memory.to_dict()
+assert training_memory.to_dict()['observations'][0]['logical']['summary']['optimizer']['logical_bytes'] == 0
+assert training_memory.to_dict()['observations'][-1]['logical']['summary']['optimizer']['logical_bytes'] > 0
+assert training_memory.to_dict()['activation']['value'] is None
 for name, module in list(sys.modules.items()):
     if name == 'hyso' or name.startswith('hyso.'):
         assert pathlib.Path(module.__file__).resolve().is_relative_to(target)
