@@ -1,11 +1,14 @@
 """Safe OneCycle representation bridging and strict validation/rollback."""
 import copy
+import random
+import numpy as np
 import pytest
 import torch
 from hyso.checkpoint import (save_training_checkpoint, load_training_checkpoint,
                              TrainingCheckpointError, _scheduler_state)
 from test_training_checkpoint import assert_state
 from test_ebo_training_resume import presentation
+from trainer_replay_support import equal
 
 
 def components(optimizer='adamw', strategy='cos', legacy=False):
@@ -39,22 +42,50 @@ def test_onecycle_round_trip_and_next_step(tmp_path, optimizer, strategy, legacy
     model, opt, sched = components(optimizer, strategy, legacy)
     for _ in range(3): step(model, opt, sched)
     path = tmp_path/'cycle.pth'
-    save_training_checkpoint(path, model, optimizer=opt, scheduler=sched)
+    native_state = copy.deepcopy(sched.state_dict())
+    checkpoint_rng = (random.getstate(), np.random.get_state(), torch.get_rng_state())
+    save_training_checkpoint(path, model, optimizer=opt, scheduler=sched, include_rng=True)
+    assert_state(sched.state_dict(), native_state)  # Saving must not rewrite the live scheduler.
     raw = torch.load(path, weights_only=True)
     state = raw['scheduler']['state_dict']
     assert raw['format_version'] == 1
     assert state['_anneal_func_type'] == strategy and 'anneal_func' not in state
-    if not legacy:
-        assert_state(state, sched.state_dict())  # Existing 2.5.1 file representation unchanged.
+    if "anneal_func" in native_state:
+        assert native_state["anneal_func"] is getattr(type(sched), "_annealing_" + strategy)
+        assert list(state) == [("_anneal_func_type" if k == "anneal_func" else k) for k in native_state]
+        for key in native_state:
+            if key != "anneal_func":
+                assert_state(state[key], native_state[key])
+    else:
+        assert_state(state, native_state)  # Native canonical representation stays byte-exact.
+
+    def continue_training(m, o, s):
+        trace, updates = [], []
+        handle = o.register_step_post_hook(lambda *args: updates.append(True))
+        try:
+            for _ in range(7):
+                trace.append((s.last_epoch, [g["lr"] for g in o.param_groups],
+                              random.random(), float(np.random.random()), torch.rand(2)))
+                step(m, o, s)
+        finally:
+            handle.remove()
+        assert len(updates) == 7 and s.last_epoch == s.total_steps == 10
+        return trace, (random.getstate(), np.random.get_state(), torch.get_rng_state())
+
+    expected_trace, expected_rng = continue_training(model, opt, sched)
     target, target_opt, target_sched = components(optimizer, 'linear' if strategy == 'cos' else 'cos', not legacy)
-    load_training_checkpoint(path, target, optimizer=target_opt, scheduler=target_sched)
-    assert_state(target_opt.state_dict(), opt.state_dict())
-    assert_state(_scheduler_state(target_sched), _scheduler_state(sched))
-    step(model, opt, sched); step(target, target_opt, target_sched)
+    loaded = load_training_checkpoint(path, target, optimizer=target_opt, scheduler=target_sched, restore_rng=True)
+    assert loaded['rng_restored'] is True
+    equal((random.getstate(), np.random.get_state(), torch.get_rng_state()), checkpoint_rng)
+    assert target_sched.last_epoch == 3
+    assert_state(_scheduler_state(target_sched), state)
+    actual_trace, actual_rng = continue_training(target, target_opt, target_sched)
+    equal(actual_trace, expected_trace)  # Every LR, counter and RNG draw, not just the next step.
+    equal(actual_rng, expected_rng)
     assert_state(target.state_dict(), model.state_dict())
     assert_state(target_opt.state_dict(), opt.state_dict())  # LR and SGD momentum/Adam beta1 included.
     assert_state(_scheduler_state(target_sched), _scheduler_state(sched))
-    assert target_sched.last_epoch == 4 and target_sched.total_steps == 10
+    assert target_sched.last_epoch == 10 and target_sched.total_steps == 10
 
 
 @pytest.mark.parametrize('bad', ['unknown', 'integer', 'missing', 'conflicting', 'extra'])

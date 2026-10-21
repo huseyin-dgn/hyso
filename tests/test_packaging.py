@@ -17,6 +17,10 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
+    "hyso/performance/_saved_activation.py",
+    "hyso/performance/isolated_training_memory.py",
+    "hyso/performance/_training_process.py",
+    "hyso/performance/_training_memory_worker.py",
     "hyso/performance/gradients.py",
     "hyso/performance/training_memory.py",
     "hyso/performance/dataloader.py",
@@ -83,7 +87,7 @@ def distributions(tmp_path_factory):
 
 def test_canonical_packaging_configuration():
     assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == MODULES
-    assert len(MODULES) == 43
+    assert len(MODULES) == 47
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
     assert not (ROOT / "hyso/setup.cfg").exists()
@@ -476,6 +480,17 @@ assert TrainingMemoryResult(training_memory.to_dict()).to_dict() == training_mem
 assert training_memory.to_dict()['observations'][0]['logical']['summary']['optimizer']['logical_bytes'] == 0
 assert training_memory.to_dict()['observations'][-1]['logical']['summary']['optimizer']['logical_bytes'] > 0
 assert training_memory.to_dict()['activation']['value'] is None
+from hyso.performance import TrainingMemoryRecipe, IsolatedTrainingMemoryProtocol, IsolatedTrainingMemoryResult, measure_training_memory_isolated
+isolated_recipe = TrainingMemoryRecipe('training_memory_factories:tiny', factory_search_path=pathlib.Path(sys.argv[2]).parent,
+                                     seed=71, epochs=2, kwargs={'optimizer': 'adamw'})
+isolated = measure_training_memory_isolated(isolated_recipe, protocol=IsolatedTrainingMemoryProtocol(saved_activation_lifetime=True))
+isolated_data = isolated.to_dict()
+assert isolated_data['outcome'] == 'success', isolated_data
+assert pathlib.Path(isolated_data['measurement']['provenance']['package_source']).resolve().is_relative_to(target)
+assert isolated_data['measurement']['activation']['summary']['saved_tensors'] > 0
+assert isolated_data['measurement']['activation']['summary']['live_payloads_at_end'] == 0
+assert isolated_data['receipt']['job']['active_processes'] == 0
+assert IsolatedTrainingMemoryResult(isolated_data).to_dict() == isolated_data
 from hyso.performance import measure_gradient_diagnostics, GradientDiagnosticsResult
 gradient_model = torch.nn.Linear(3, 2)
 gradient_trainer = Trainer(gradient_model, optimizer=torch.optim.AdamW(gradient_model.parameters(), lr=.01),
@@ -512,7 +527,7 @@ print(json.dumps({'source': hyso.__file__, 'version': importlib.metadata.version
                   'performance_guide': True, 'performance_samples': 1000, 'performance_images': 80,
                   'memory_guide': True, 'rss_backend': memory_manual['current'].to_dict()['raw_evidence']['observations'][0]['backend'],
                   'sweep_guide': True, 'sweep_precision_points': 4, 'pipeline_guide': True, 'pipeline_samples': 4, 'cold_trials': pipeline_manual['cold'].to_dict()['actual'],
-                  'training_timing': True, 'manual_integration': True, 'cpu_models': 3, 'cuda_initialized': torch.cuda.is_initialized()}))
+                  'isolated_activation': True, 'training_timing': True, 'manual_integration': True, 'cpu_models': 3, 'cuda_initialized': torch.cuda.is_initialized()}))
 """
 
 
@@ -528,6 +543,7 @@ def test_installed_distribution_import_and_cpu_forward(distributions, kind):
     assert Path(observed["source"]).resolve().is_relative_to(target.resolve())
     assert observed["manual_integration"] is True
     assert observed["training_timing"] is True
+    assert observed['isolated_activation'] is True
     assert observed['performance_guide'] and observed['performance_samples'] == 1000 and observed['performance_images'] == 80
     assert observed['memory_guide'] and observed['rss_backend'].startswith('windows.' if os.name == 'nt' else 'linux.')
     assert observed['sweep_guide'] and observed['sweep_precision_points'] == 4

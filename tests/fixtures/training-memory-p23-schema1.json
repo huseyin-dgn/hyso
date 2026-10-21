@@ -1,0 +1,4908 @@
+{
+  "activation": {
+    "reason": "saved_tensor_lifetime_adapter_unvalidated",
+    "status": "unsupported",
+    "value": null
+  },
+  "cuda": {
+    "reason": "CPU training; CUDA not initialized by observer",
+    "status": "unsupported",
+    "value": null
+  },
+  "feature_ids": [
+    "P23"
+  ],
+  "format": "hyso.performance.training_memory",
+  "instrumentation": {
+    "boundary_query_ns": 2682600,
+    "hard_timeout": null,
+    "isolated": false,
+    "rss_query_ns": 285100,
+    "scope": "ready_before_fit_to_after_fit_including_optional_checkpoint_IO_and_finalization",
+    "source_timing_scope": "P19_epoch_training_and_separate_validation",
+    "stream_id": null,
+    "total_overhead_ns": null,
+    "workload_memory_budget": null
+  },
+  "limitations": [
+    "Logical tensor bytes and deduplicated full storage extents are not physical RAM/VRAM.",
+    "Frozen parameter bytes are a subset of parameter bytes; components may share storage.",
+    "RSS includes runtime, main-process loader, observer and other process activity; workers excluded.",
+    "Sampled RSS/allocator maxima may miss short transients; lifetime peaks include pre-fit history.",
+    "CUDA allocator counters exclude non-allocator/device-wide/other-process VRAM; no counter reset.",
+    "Boundary counters are host-query observations without per-boundary synchronization; P19 drains remain.",
+    "No activation hook, isolated worker, hard resource budget, leak attribution or window-peak claim.",
+    "Snapshots traverse registered model and native SGD/Adam/AdamW state; EMA/scaler/scheduler tensors excluded.",
+    "Instrumentation and GIL scheduling perturb wall time and process memory; total overhead unknown."
+  ],
+  "observations": [
+    {
+      "attempt_id": null,
+      "boundary": "ready",
+      "cuda": null,
+      "epoch_id": null,
+      "fields": {},
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "optimizer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 2
+          }
+        ],
+        "unique_storage_bytes": 32
+      },
+      "microbatch_id": null,
+      "query_end_ns": 25101006458900,
+      "query_start_ns": 25101006333900,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": null
+    },
+    {
+      "attempt_id": null,
+      "boundary": "epoch_ready",
+      "cuda": null,
+      "epoch_id": 1,
+      "fields": {},
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "optimizer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 2
+          }
+        ],
+        "unique_storage_bytes": 32
+      },
+      "microbatch_id": null,
+      "query_end_ns": 25101007828000,
+      "query_start_ns": 25101007522900,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": null
+    },
+    {
+      "attempt_id": null,
+      "boundary": "post_zero_grad",
+      "cuda": null,
+      "epoch_id": 1,
+      "fields": {},
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "optimizer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 2
+          }
+        ],
+        "unique_storage_bytes": 32
+      },
+      "microbatch_id": null,
+      "query_end_ns": 25101008321400,
+      "query_start_ns": 25101008257200,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": null
+    },
+    {
+      "attempt_id": null,
+      "boundary": "pre_microbatch",
+      "cuda": null,
+      "epoch_id": 1,
+      "fields": {},
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "optimizer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 2
+          }
+        ],
+        "unique_storage_bytes": 32
+      },
+      "microbatch_id": 1,
+      "query_end_ns": 25101009259100,
+      "query_start_ns": 25101009192200,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": 1
+    },
+    {
+      "attempt_id": null,
+      "boundary": "post_forward",
+      "cuda": null,
+      "epoch_id": 1,
+      "fields": {},
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "optimizer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 2
+          }
+        ],
+        "unique_storage_bytes": 32
+      },
+      "microbatch_id": 1,
+      "query_end_ns": 25101009837700,
+      "query_start_ns": 25101009773400,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": 1
+    },
+    {
+      "attempt_id": null,
+      "boundary": "post_backward",
+      "cuda": null,
+      "epoch_id": 1,
+      "fields": {},
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          },
+          "optimizer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "gradient",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight.grad"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 2
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 3,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 3
+          },
+          {
+            "component": "gradient",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias.grad"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 4,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 4
+          }
+        ],
+        "unique_storage_bytes": 64
+      },
+      "microbatch_id": 1,
+      "query_end_ns": 25101028931300,
+      "query_start_ns": 25101028770700,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": 1
+    },
+    {
+      "attempt_id": null,
+      "boundary": "pre_microbatch",
+      "cuda": null,
+      "epoch_id": 1,
+      "fields": {},
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          },
+          "optimizer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "gradient",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight.grad"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 2
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 3,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 3
+          },
+          {
+            "component": "gradient",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias.grad"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 4,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 4
+          }
+        ],
+        "unique_storage_bytes": 64
+      },
+      "microbatch_id": 2,
+      "query_end_ns": 25101029273100,
+      "query_start_ns": 25101029176800,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": 1
+    },
+    {
+      "attempt_id": null,
+      "boundary": "post_forward",
+      "cuda": null,
+      "epoch_id": 1,
+      "fields": {},
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          },
+          "optimizer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "gradient",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight.grad"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 2
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 3,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 3
+          },
+          {
+            "component": "gradient",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias.grad"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 4,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 4
+          }
+        ],
+        "unique_storage_bytes": 64
+      },
+      "microbatch_id": 2,
+      "query_end_ns": 25101029475400,
+      "query_start_ns": 25101029396000,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": 1
+    },
+    {
+      "attempt_id": null,
+      "boundary": "post_backward",
+      "cuda": null,
+      "epoch_id": 1,
+      "fields": {},
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          },
+          "optimizer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "gradient",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight.grad"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 2
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 3,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 3
+          },
+          {
+            "component": "gradient",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias.grad"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 4,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 4
+          }
+        ],
+        "unique_storage_bytes": 64
+      },
+      "microbatch_id": 2,
+      "query_end_ns": 25101029961100,
+      "query_start_ns": 25101029872100,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": 1
+    },
+    {
+      "attempt_id": 1,
+      "boundary": "pre_attempt",
+      "cuda": null,
+      "epoch_id": 1,
+      "fields": {},
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          },
+          "optimizer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "gradient",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight.grad"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 2
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 3,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 3
+          },
+          {
+            "component": "gradient",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias.grad"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 4,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 4
+          }
+        ],
+        "unique_storage_bytes": 64
+      },
+      "microbatch_id": null,
+      "query_end_ns": 25101030044200,
+      "query_start_ns": 25101029978000,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": 1
+    },
+    {
+      "attempt_id": 1,
+      "boundary": "post_scaler_step",
+      "cuda": null,
+      "epoch_id": 1,
+      "fields": {},
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          },
+          "optimizer": {
+            "elements": 18,
+            "logical_bytes": 72,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 6
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "gradient",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight.grad"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 2
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 3,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 3
+          },
+          {
+            "component": "gradient",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias.grad"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 4,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 4
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.0.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 5,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 5
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 6,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 6
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 7,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 7
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.1.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 8,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 8
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 9,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 9
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 10,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 10
+          }
+        ],
+        "unique_storage_bytes": 136
+      },
+      "microbatch_id": null,
+      "query_end_ns": 25101031454100,
+      "query_start_ns": 25101031292500,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": 1
+    },
+    {
+      "attempt_id": 1,
+      "boundary": "post_zero_grad",
+      "cuda": null,
+      "epoch_id": 1,
+      "fields": {},
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "optimizer": {
+            "elements": 18,
+            "logical_bytes": 72,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 6
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 2
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.0.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 3,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 3
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 4,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 4
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 5,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 5
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.1.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 6,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 6
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 7,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 7
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 8,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 8
+          }
+        ],
+        "unique_storage_bytes": 104
+      },
+      "microbatch_id": null,
+      "query_end_ns": 25101031656200,
+      "query_start_ns": 25101031537500,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": 1
+    },
+    {
+      "attempt_id": 1,
+      "boundary": "post_attempt",
+      "cuda": null,
+      "epoch_id": 1,
+      "fields": {
+        "applied": true,
+        "samples": 4,
+        "skipped": false
+      },
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "optimizer": {
+            "elements": 18,
+            "logical_bytes": 72,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 6
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 2
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.0.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 3,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 3
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 4,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 4
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 5,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 5
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.1.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 6,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 6
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 7,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 7
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 8,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 8
+          }
+        ],
+        "unique_storage_bytes": 104
+      },
+      "microbatch_id": null,
+      "query_end_ns": 25101031768100,
+      "query_start_ns": 25101031663500,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": 1
+    },
+    {
+      "attempt_id": null,
+      "boundary": "pre_microbatch",
+      "cuda": null,
+      "epoch_id": 1,
+      "fields": {},
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "optimizer": {
+            "elements": 18,
+            "logical_bytes": 72,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 6
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 2
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.0.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 3,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 3
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 4,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 4
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 5,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 5
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.1.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 6,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 6
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 7,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 7
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 8,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 8
+          }
+        ],
+        "unique_storage_bytes": 104
+      },
+      "microbatch_id": 3,
+      "query_end_ns": 25101032044700,
+      "query_start_ns": 25101031903900,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": 2
+    },
+    {
+      "attempt_id": null,
+      "boundary": "post_forward",
+      "cuda": null,
+      "epoch_id": 1,
+      "fields": {},
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "optimizer": {
+            "elements": 18,
+            "logical_bytes": 72,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 6
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 2
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.0.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 3,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 3
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 4,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 4
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 5,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 5
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.1.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 6,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 6
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 7,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 7
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 8,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 8
+          }
+        ],
+        "unique_storage_bytes": 104
+      },
+      "microbatch_id": 3,
+      "query_end_ns": 25101032404200,
+      "query_start_ns": 25101032271100,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": 2
+    },
+    {
+      "attempt_id": null,
+      "boundary": "post_backward",
+      "cuda": null,
+      "epoch_id": 1,
+      "fields": {},
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          },
+          "optimizer": {
+            "elements": 18,
+            "logical_bytes": 72,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 6
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "gradient",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight.grad"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 2
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 3,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 3
+          },
+          {
+            "component": "gradient",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias.grad"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 4,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 4
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.0.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 5,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 5
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 6,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 6
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 7,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 7
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.1.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 8,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 8
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 9,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 9
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 10,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 10
+          }
+        ],
+        "unique_storage_bytes": 136
+      },
+      "microbatch_id": 3,
+      "query_end_ns": 25101032889500,
+      "query_start_ns": 25101032729900,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": 2
+    },
+    {
+      "attempt_id": 2,
+      "boundary": "pre_attempt",
+      "cuda": null,
+      "epoch_id": 1,
+      "fields": {},
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          },
+          "optimizer": {
+            "elements": 18,
+            "logical_bytes": 72,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 6
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "gradient",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight.grad"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 2
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 3,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 3
+          },
+          {
+            "component": "gradient",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias.grad"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 4,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 4
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.0.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 5,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 5
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 6,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 6
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 7,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 7
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.1.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 8,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 8
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 9,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 9
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 10,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 10
+          }
+        ],
+        "unique_storage_bytes": 136
+      },
+      "microbatch_id": null,
+      "query_end_ns": 25101033033800,
+      "query_start_ns": 25101032902300,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": 2
+    },
+    {
+      "attempt_id": 2,
+      "boundary": "post_scaler_step",
+      "cuda": null,
+      "epoch_id": 1,
+      "fields": {},
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          },
+          "optimizer": {
+            "elements": 18,
+            "logical_bytes": 72,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 6
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "gradient",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight.grad"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 2
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 3,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 3
+          },
+          {
+            "component": "gradient",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias.grad"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 4,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 4
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.0.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 5,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 5
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 6,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 6
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 7,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 7
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.1.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 8,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 8
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 9,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 9
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 10,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 10
+          }
+        ],
+        "unique_storage_bytes": 136
+      },
+      "microbatch_id": null,
+      "query_end_ns": 25101033595400,
+      "query_start_ns": 25101033446800,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": 2
+    },
+    {
+      "attempt_id": 2,
+      "boundary": "post_zero_grad",
+      "cuda": null,
+      "epoch_id": 1,
+      "fields": {},
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "optimizer": {
+            "elements": 18,
+            "logical_bytes": 72,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 6
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 2
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.0.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 3,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 3
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 4,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 4
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 5,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 5
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.1.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 6,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 6
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 7,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 7
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 8,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 8
+          }
+        ],
+        "unique_storage_bytes": 104
+      },
+      "microbatch_id": null,
+      "query_end_ns": 25101033777700,
+      "query_start_ns": 25101033660500,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": 2
+    },
+    {
+      "attempt_id": 2,
+      "boundary": "post_attempt",
+      "cuda": null,
+      "epoch_id": 1,
+      "fields": {
+        "applied": true,
+        "samples": 1,
+        "skipped": false
+      },
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "optimizer": {
+            "elements": 18,
+            "logical_bytes": 72,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 6
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 2
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.0.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 3,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 3
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 4,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 4
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 5,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 5
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.1.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 6,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 6
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 7,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 7
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 8,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 8
+          }
+        ],
+        "unique_storage_bytes": 104
+      },
+      "microbatch_id": null,
+      "query_end_ns": 25101033891800,
+      "query_start_ns": 25101033783900,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": 2
+    },
+    {
+      "attempt_id": null,
+      "boundary": "epoch_end",
+      "cuda": null,
+      "epoch_id": 1,
+      "fields": {},
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "optimizer": {
+            "elements": 18,
+            "logical_bytes": 72,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 6
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 2
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.0.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 3,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 3
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 4,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 4
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 5,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 5
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.1.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 6,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 6
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 7,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 7
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 8,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 8
+          }
+        ],
+        "unique_storage_bytes": 104
+      },
+      "microbatch_id": null,
+      "query_end_ns": 25101034093400,
+      "query_start_ns": 25101033978500,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": null
+    },
+    {
+      "attempt_id": null,
+      "boundary": "segment_end",
+      "cuda": null,
+      "epoch_id": null,
+      "fields": {},
+      "logical": {
+        "convention": "distinct_tensor_object_per_component; views_count_logically; storage_ids_snapshot_local",
+        "optimizer_metadata": [],
+        "optimizer_supported": true,
+        "summary": {
+          "buffer": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "frozen_parameter": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "gradient": {
+            "elements": 0,
+            "logical_bytes": 0,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 0
+          },
+          "optimizer": {
+            "elements": 18,
+            "logical_bytes": 72,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 6
+          },
+          "parameter": {
+            "elements": 8,
+            "logical_bytes": 32,
+            "reason": null,
+            "status": "measured",
+            "tensor_count": 2
+          }
+        },
+        "tensors": [
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "weight"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 1,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 1
+          },
+          {
+            "component": "parameter",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "bias"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 2,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 2
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.0.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 3,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 3
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 4,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 4
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 6,
+            "frozen": false,
+            "logical_bytes": 24,
+            "names": [
+              "state.0.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2,
+              3
+            ],
+            "status": "measured",
+            "storage_bytes": 24,
+            "storage_id": 5,
+            "storage_offset": 0,
+            "stride": [
+              3,
+              1
+            ],
+            "tensor_id": 5
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 1,
+            "frozen": false,
+            "logical_bytes": 4,
+            "names": [
+              "state.1.step"
+            ],
+            "reason": null,
+            "shape": [],
+            "status": "measured",
+            "storage_bytes": 4,
+            "storage_id": 6,
+            "storage_offset": 0,
+            "stride": [],
+            "tensor_id": 6
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 7,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 7
+          },
+          {
+            "component": "optimizer",
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "element_size_bytes": 4,
+            "elements": 2,
+            "frozen": false,
+            "logical_bytes": 8,
+            "names": [
+              "state.1.exp_avg_sq"
+            ],
+            "reason": null,
+            "shape": [
+              2
+            ],
+            "status": "measured",
+            "storage_bytes": 8,
+            "storage_id": 8,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ],
+            "tensor_id": 8
+          }
+        ],
+        "unique_storage_bytes": 104
+      },
+      "microbatch_id": null,
+      "query_end_ns": 25101034333200,
+      "query_start_ns": 25101034206100,
+      "reason": null,
+      "scope": "registered_tensor_state_and_allocator_boundary",
+      "status": "measured",
+      "window_id": null
+    }
+  ],
+  "protocol": {
+    "device": "cpu",
+    "interval_seconds": 0.01,
+    "max_boundaries": 10000,
+    "max_samples": 10000,
+    "max_tensor_records": 100000,
+    "peak_reset_policy": "never",
+    "scope": "in_process_fit"
+  },
+  "reason": "activation_lifetime_and_isolated_window_peak_unavailable",
+  "rss": {
+    "gaps_ns": [
+      11807900,
+      13758300,
+      2232050
+    ],
+    "observations": [
+      {
+        "backend": "windows.GetProcessMemoryInfo.working_set",
+        "lifetime_hwm_bytes": 589312000,
+        "query_end_ns": 25101006626400,
+        "query_start_ns": 25101006463700,
+        "rss_bytes": 589312000,
+        "timestamp_ns": 25101006545050
+      },
+      {
+        "backend": "windows.GetProcessMemoryInfo.working_set",
+        "lifetime_hwm_bytes": 597258240,
+        "query_end_ns": 25101018386700,
+        "query_start_ns": 25101018319200,
+        "rss_bytes": 597258240,
+        "timestamp_ns": 25101018352950
+      },
+      {
+        "backend": "windows.GetProcessMemoryInfo.working_set",
+        "lifetime_hwm_bytes": 602619904,
+        "query_end_ns": 25101032131200,
+        "query_start_ns": 25101032091300,
+        "rss_bytes": 602619904,
+        "timestamp_ns": 25101032111250
+      },
+      {
+        "backend": "windows.GetProcessMemoryInfo.working_set",
+        "lifetime_hwm_bytes": 602767360,
+        "query_end_ns": 25101034350800,
+        "query_start_ns": 25101034335800,
+        "rss_bytes": 602767360,
+        "timestamp_ns": 25101034343300
+      }
+    ],
+    "reason": null,
+    "summary": {
+      "baseline_lifetime_hwm_bytes": {
+        "reason": null,
+        "status": "measured",
+        "unit": "byte",
+        "value": 589312000
+      },
+      "baseline_rss_bytes": {
+        "reason": null,
+        "status": "measured",
+        "unit": "byte",
+        "value": 589312000
+      },
+      "current_lifetime_hwm_bytes": {
+        "reason": null,
+        "status": "measured",
+        "unit": "byte",
+        "value": 602767360
+      },
+      "current_rss_bytes": {
+        "reason": null,
+        "status": "measured",
+        "unit": "byte",
+        "value": 602767360
+      },
+      "sampled_peak_rss_bytes": {
+        "reason": null,
+        "status": "measured",
+        "unit": "byte",
+        "value": 602767360
+      }
+    }
+  },
+  "schema_version": 1,
+  "sha256": "54c93eb59d481f12ddf18e9fbc9c0b0141f472aca112864edec9c631cc5443bf",
+  "source_p19": {
+    "actual_epochs": 1,
+    "counters": {
+      "after": {
+        "applied": 2,
+        "attempts": 2,
+        "ema_updates": 0,
+        "microbatches": 3
+      },
+      "before": {
+        "applied": 0,
+        "attempts": 0,
+        "ema_updates": 0,
+        "microbatches": 0
+      }
+    },
+    "epochs": [
+      {
+        "applied": 2,
+        "attempts": 2,
+        "end_ns": 25101034096500,
+        "epoch_id": 1,
+        "microbatches": 3,
+        "samples": 5,
+        "skipped": 0,
+        "start_ns": 25101007520100,
+        "total_s": 0.0265764,
+        "train_end_ns": 25101033963500,
+        "train_start_ns": 25101007520100,
+        "training_s": 0.0264434,
+        "validation_end_ns": null,
+        "validation_s": null,
+        "validation_start_ns": null,
+        "warmup": false,
+        "windows": 2
+      }
+    ],
+    "feature_ids": [
+      "P19"
+    ],
+    "format": "hyso.performance.training_timing",
+    "instrumentation": {
+      "device_clock": null,
+      "event_drains": 0,
+      "event_policy": "P19 bounded event pairs; memory boundary queries do not record events",
+      "host_clock": "perf_counter_ns",
+      "max_pending_event_pairs": 0,
+      "pending_event_pairs": 0,
+      "stream_id": null,
+      "validation_policy": "separate_completion_wall_included_in_total_epoch",
+      "warmup_policy": "label_real_epochs_no_extra_work"
+    },
+    "limitations": [
+      "instrumented wall time includes timer/event/drain overhead",
+      "P19 projection of P23 capture; no P20 stage timing result",
+      "hidden streams and concurrent process attribution unsupported",
+      "checkpoint I/O and fit finalization excluded; no cumulative resume timing"
+    ],
+    "observations": [
+      {
+        "cuda_event_ms": null,
+        "end_ns": 25101028941300,
+        "epoch_id": 1,
+        "host_ms": 19.7515,
+        "kind": "microbatch",
+        "microbatch_id": 1,
+        "samples": 2,
+        "start_ns": 25101009189800,
+        "window_id": 1
+      },
+      {
+        "cuda_event_ms": null,
+        "end_ns": 25101029965900,
+        "epoch_id": 1,
+        "host_ms": 0.7925,
+        "kind": "microbatch",
+        "microbatch_id": 2,
+        "samples": 2,
+        "start_ns": 25101029173400,
+        "window_id": 1
+      },
+      {
+        "applied": true,
+        "applied_update_id": 1,
+        "attempt_id": 1,
+        "cuda_event_ms": null,
+        "end_ns": 25101031773400,
+        "epoch_id": 1,
+        "host_ms": 1.7997,
+        "kind": "attempt",
+        "samples": 4,
+        "skipped": false,
+        "start_ns": 25101029973700,
+        "update_after": 1,
+        "update_before": 0,
+        "window_id": 1
+      },
+      {
+        "cuda_event_ms": null,
+        "end_ns": 25101031776300,
+        "epoch_id": 1,
+        "host_ms": 22.5909,
+        "kind": "window",
+        "samples": 4,
+        "start_ns": 25101009185400,
+        "window_id": 1
+      },
+      {
+        "cuda_event_ms": null,
+        "end_ns": 25101032893600,
+        "epoch_id": 1,
+        "host_ms": 0.9917,
+        "kind": "microbatch",
+        "microbatch_id": 3,
+        "samples": 1,
+        "start_ns": 25101031901900,
+        "window_id": 2
+      },
+      {
+        "applied": true,
+        "applied_update_id": 2,
+        "attempt_id": 2,
+        "cuda_event_ms": null,
+        "end_ns": 25101033907800,
+        "epoch_id": 1,
+        "host_ms": 1.0077,
+        "kind": "attempt",
+        "samples": 1,
+        "skipped": false,
+        "start_ns": 25101032900100,
+        "update_after": 2,
+        "update_before": 1,
+        "window_id": 2
+      },
+      {
+        "cuda_event_ms": null,
+        "end_ns": 25101033911000,
+        "epoch_id": 1,
+        "host_ms": 2.0119,
+        "kind": "window",
+        "samples": 1,
+        "start_ns": 25101031899100,
+        "window_id": 2
+      }
+    ],
+    "protocol": {
+      "event_buffer": 128,
+      "max_records": 100000,
+      "warmup_epochs": 0
+    },
+    "provenance": {
+      "input": {
+        "device": "cpu",
+        "dtype": "torch.float32",
+        "scope": "first_actual_microbatch; ledger records varying batch sizes",
+        "shape": [
+          2,
+          3
+        ],
+        "target_dtype": "torch.int64"
+      },
+      "model": {
+        "config": null,
+        "modules": [
+          {
+            "name": "",
+            "type": "torch.nn.modules.linear.Linear"
+          }
+        ],
+        "tensors": [
+          {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "name": "weight",
+            "shape": [
+              2,
+              3
+            ]
+          },
+          {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "name": "bias",
+            "shape": [
+              2
+            ]
+          }
+        ],
+        "type": "torch.nn.modules.linear.Linear"
+      },
+      "optimizer": {
+        "groups": [
+          {
+            "amsgrad": false,
+            "betas": [
+              0.9,
+              0.999
+            ],
+            "capturable": false,
+            "differentiable": false,
+            "eps": 1e-08,
+            "foreach": null,
+            "fused": null,
+            "lr": 0.01,
+            "maximize": false,
+            "weight_decay": 0
+          }
+        ],
+        "type": "torch.optim.adam.Adam"
+      },
+      "runtime": {
+        "cpu_threads": 1,
+        "cuda_build": "12.1",
+        "cudnn_benchmark": false,
+        "cudnn_deterministic": false,
+        "deterministic_algorithms": false,
+        "device": "cpu",
+        "platform": "Windows-10-10.0.26200-SP0",
+        "python": "3.10.18",
+        "torch": "2.5.1+cu121"
+      },
+      "training": {
+        "accum_steps": 2,
+        "amp": false,
+        "ema": false,
+        "loader_type": "torch.utils.data.dataloader.DataLoader",
+        "loss_type": "torch.nn.modules.loss.CrossEntropyLoss",
+        "scheduler": "builtins.NoneType",
+        "task": "multiclass",
+        "validation": false
+      }
+    },
+    "reason": null,
+    "requested_epochs": 1,
+    "schema_version": 1,
+    "segment_id": "9d5cfad1-13f6-4083-a955-582be815bb6a",
+    "status": "measured"
+  },
+  "source_segment_id": "9d5cfad1-13f6-4083-a955-582be815bb6a",
+  "source_sha256": "4ed7234d0620a00a613ce0b9572e0e4c668ce03af0507a7ae2b929663d0da68e",
+  "status": "partial",
+  "worker_rss": {
+    "reason": "worker_private_rss_not_observed",
+    "status": "unsupported",
+    "value": null
+  }
+}

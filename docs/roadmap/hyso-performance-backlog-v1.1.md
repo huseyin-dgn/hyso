@@ -151,7 +151,7 @@ fazı, kurulmuş dependency veya gerçekleştirilmiş deney anlamına gelmez.
 | P20 | Forward / Backward / Optimizer Breakdown | measure_training_detailed ile gerçek stage sınırları; ayrı additive TrainingStageResult | Host ms / selected-stream CUDA event ms ayrı; inclusive scopes | Native CPU SGD/Adam/AdamW ve doğrulanan CUDA FP32/AMP | P19 shared recorder; combined bounded records/events; native optimizer pre/post hooks | Ö5 / M2-P-B9 | implemented | Gerçek forward/loss/backward/unscale/normalization/clip/scaler/optimizer/EMA/scheduler/zero_grad; overflow execution null/not_executed, exact deterministic replay, immutable/export/EManager/minimum/package PASS; CUPTI/kernel attribution yok |
 | P21 | DataLoader Bottleneck Analysis | measure_training_with_loader ile gerçek main-process iterator init/next wait ve P20 source links | Host ms, delivery ns, sample/ID ledger, wait quantiles/fraction | Native Windows DataLoader0/spawn2 ve doğrulanan selected-stream CUDA; worker trace yok | P19/P20/P22 IDs ve immutable source association; bounded observation | Ö5 / M2-P-B10 P21 alt kapsam | partial | Exact state/order/RNG, gerçek ImageFolder/random augmentation, exception/timeout/ownership cleanup; worker service/queue/prefetch efficiency null/unsupported, isolated H2D ayrıca unsupported; P23/P25 yok |
 | P22 | Training Throughput | analyze_training_throughput ile doğrulanmış P19 raw ledger'dan saf epoch/segment analizi | samples/s, microbatches/s, attempts/s, applied updates/s | Native P19/P20 source evidence; ikinci fit yok | Training-only instrumented wall; validation hariç; gerçek uneven/skip ledger | Ö5 / M2-P-B9 | implemented | Ratio of sums, `[4,1]` tail, applied/attempt ayrımı, warmup labels, early stop/resume/completed checkpoint null, tamper/export/EManager/minimum/package PASS |
-| P23 | Training Memory Analysis | measure_training_memory: tek fit, registered params/buffers/grads/lazy optimizer state + native RSS/CUDA boundary counters | Logical byte, snapshot-local storage/alias evidence, RSS samples/HWM, allocator allocated/reserved/lifetime peaks | CPU FP32/FP64 ve native CUDA FP32/AMP; in-process exclusive observation | P09 reset değişmez; P19 source/IDs; bounded records/sampler; no reset/GC/cache mutation | Ö5 / M2-P-B10 P23 alt kapsam | partial | Exact state/RNG/replay, native overflow/lifetime/export/packaging/minimum kanıtları audit'te; activation lifetime ve isolated true window/incremental peak null/unsupported; hard workload budget/timeout yok |
+| P23 | Training Memory Analysis | Eski tek-fit memory API + additive trusted recipe/Windows Job worker; opt-in owned CUDA window peaks | Logical/storage/RSS/allocator evidence, real reset-domain peaks; experimental CPU saved-payload events | Legacy CPU/CUDA kapsamı korunur; R1 A29/B21 PASS; CUDA activation crash gate açık | P09/legacy never-reset korunur; parent state ownership; bounded process/log/result limits | Ö5 / M2-P-B10 P23 Completion R1 | partial | R1 NO-GO: C native worker 0xC0000409, B4 stop; CUDA saved-activation disabled; CPU activation PARTIAL; final source/installed/minimum/package gates pending; physical VRAM/storage-free lifetime unsupported |
 | P24 | Time to Target Accuracy | Tanımlı kalite eşiğine ilk ulaşma zamanı | s/epoch/update to threshold, censored runs | Labeled train/validation data, repeated seeds | P19/P26; metric/threshold/eval cadence | Ö5/Ö6 | planned | Aynı split/target; ulaşılamayan run censored; validation/clock scope'u ve run variance açık |
 | P25 | Gradient / AMP Diagnostics | measure_gradient_diagnostics ile tek gerçek fit: normalized preclip/ayrı postclip L2, finite/NaN/Inf, native scale ve execution/recovery ledger | Bounded FP64 norm, parameter coverage, scale before/after/change, applied/skipped IDs | Native dense packed real CPU/CUDA; SGD/Adam/AdamW + gerçek CUDA FP16 GradScaler | P19/P20 source hashes/IDs/native execution hooks; read-only opt-in reduction ve explicit overhead | Ö5 / M2-P-B10 P25 | implemented | Bilinen norm/mixed dtype/tail `[4,1]`, exact state/RNG/checkpoint, native Inf/NaN skip→recovery/scale growth/iki stream, export/Manager/minimum/package gate; sparse/gapped/complex/custom gradient null/unsupported; B10 full GO yok |
 
@@ -289,6 +289,26 @@ schema değişmedi. Evidence: [P25 audit](../audit/m2-p-b10-gradient-amp-diagnos
 eksikleri sürer. B4 native reliability OPEN/UNRESOLVED, B6/B7 PARTIAL ve P18
 planned/BLOCKED korunur. Stable release onayı yok; gelecekteki sade `Hyso` facade
 notu korunur, facade bu task'ta geliştirilmedi.
+
+## M2-P-B10 / P23 Completion R1 — 2026-10-21
+
+**P23 PARTIAL; R1 NO-GO; B10 PARTIAL.** A Windows isolated-worker gate29 PASS,
+B fixed-source native CUDA matrix21/21 PASS. CPU CSV `cuda=None` export yeniden
+PASS; raw Windows RSS/HWM tutarsızlığında değerler korunur, RSS özeti explicit
+unsupported olur. Parent allocator/RNG korunumu ve gerçek worker reset ownership
+kanıtı B kapsamındadır; eski in-process never-reset/schema1 sözleşmesi değişmez.
+
+C saved-activation diagnostic sırasında AdamW FP32 worker `0xC0000409` ile native
+crash üretti. B4 stop uygulandı; retry yapılmadı. CUDA activation admission disabled;
+CPU adapter experimental/PARTIAL. 2303 mevcut regresyon PASS sonucu C öncesi koşuya
+aittir. Final C/full regression, source/installed CUDA, minimum Torch2.2.2+cpu ve
+wheel/sdist byte-integrity gate'leri tamamlanmadı; başarılı ilan edilmez.
+
+[Completion audit](../audit/m2-p-b10-p23-isolation-activation.md) ve
+[isolated kullanım rehberi](../guides/performance-training-memory-isolated.md).
+Güncel sayım **17 implemented /7 partial /11 planned =35**; P25 implemented kalır.
+P21 worker-service trace PARTIAL olduğundan B10 full GO yok. B4 OPEN/UNRESOLVED,
+B6/B7 PARTIAL, P18 planned/BLOCKED ve facade gelecek hedefi korunur.
 
 ## Post-Performance Developer Experience (gelecek tasarım hedefi)
 

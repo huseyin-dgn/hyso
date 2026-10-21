@@ -204,10 +204,19 @@ def test_experiment_reopen(captured,tmp_path):
     path=tmp_path/'profile.json';captured.to_json(path)
     artifacts=[run.add_artifact(p,kind='performance_result',ownership='copy') for p in
         (path,Path(captured.to_dict()['raw_evidence']['trace']['path']))]
+    logged=[]
     for i,row in enumerate(captured.to_dict()['measurements']['operators']):
+        if row['self_cpu_us'] is None:
+            assert row['status']=='partial'
+            # The complete partial observation remains in the copied artifact.
+            # Unsupported timing is not a numeric metric or a zero duration.
+            continue
         run.log_metric(name='profile.cpu_self',value=row['self_cpu_us'],unit='us',step=i,
                        step_kind='observation',source='performance.operator_profile_v1')
+        logged.append((i,row['self_cpu_us']))
     rid=run.id;run.finish();m.close();m=ExperimentManager(root)
-    assert m.get_run(rid).read_metrics()
+    metrics=m.get_run(rid).read_metrics()
+    assert logged and [(r['axis_index'],r['value']) for r in metrics]==logged
+    assert all(r['axis_kind']=='observation' for r in metrics)
     assert all(m.verify_artifact(a['id'])['status']=='verified' for a in artifacts)
     m.close()

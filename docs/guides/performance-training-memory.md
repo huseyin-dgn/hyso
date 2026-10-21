@@ -1,5 +1,13 @@
 # P23 — Training memory observations
 
+2026-10-21 R1 update: additive isolated worker and opt-in allocator window peaks
+have separate native evidence. Experimental saved-activation CUDA execution hit
+`0xC0000409`; B4 stop applies and CUDA activation admission is disabled. P23 stays
+PARTIAL; final packaging/minimum/runtime gates are pending. The existing API and
+schema below retain their original scope. See the
+[isolated guide](performance-training-memory-isolated.md) and
+[R1 audit](../audit/m2-p-b10-p23-isolation-activation.md).
+
 `measure_training_memory` bir fresh standard `Trainer` üzerinde **bir gerçek fit**
 çalıştırır. Model, optimizer, history ve RNG normal eğitimdeki gibi ilerler.
 İkinci forward/probe/replay veya state restoration yapmaz. P23 **PARTIAL**:

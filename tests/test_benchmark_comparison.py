@@ -73,6 +73,10 @@ def test_cpu_condition_mismatch_reports_exact_field(path, value):
         set_field(data, path, not value)
     elif path == "environment.backend.float32_matmul_precision":
         set_field(data, path, "highest")
+    elif path == "environment.torch_version":
+        # Keep the real observation; choose a distinct comparison provenance.
+        value = value if value != data["environment"]["torch_version"] else "2.5.1+cu121"
+        assert value != data["environment"]["torch_version"]
     changed = copy.deepcopy(data)
     set_field(changed, path, value)
     report = compare_results(rebuild(data), rebuild(changed))

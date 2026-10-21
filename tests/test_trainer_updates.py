@@ -286,10 +286,22 @@ def test_optimizer_exception_removes_internal_hook_and_pending_gradients():
 
 
 @pytest.mark.parametrize("kind", ["fused", "custom"])
-def test_unsupported_optimizer_profile(kind):
+def test_unsupported_optimizer_profile(kind, record_property):
     model = nn.Linear(3, 2)
     class Custom(torch.optim.SGD):
         pass
+    if kind == "fused":
+        from torch.utils._foreach_utils import _get_fused_kernels_supported_devices
+        if "cpu" not in _get_fused_kernels_supported_devices():
+            with pytest.raises(RuntimeError, match=r"fused=True.*supported devices"):
+                torch.optim.Adam(model.parameters(), fused=True)
+            assert all(p.device.type == "cpu" and p.grad is None for p in model.parameters())
+            supported = torch.optim.Adam(model.parameters(), fused=False)
+            Trainer(model, optimizer=supported, loss_fn=nn.CrossEntropyLoss())
+            assert not supported.state
+            record_property("fused_CPU_boundary", "unsupported_native_optimizer_constructor")
+            return
+        record_property("fused_CPU_boundary", "unsupported_HYSo_admission")
     opt = torch.optim.Adam(model.parameters(), fused=True) if kind == "fused" else Custom(model.parameters(), lr=.1)
     with pytest.raises(NotImplementedError, match="fused"):
         Trainer(model, optimizer=opt, loss_fn=nn.CrossEntropyLoss())
