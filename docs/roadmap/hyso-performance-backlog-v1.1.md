@@ -153,7 +153,7 @@ fazı, kurulmuş dependency veya gerçekleştirilmiş deney anlamına gelmez.
 | P22 | Training Throughput | analyze_training_throughput ile doğrulanmış P19 raw ledger'dan saf epoch/segment analizi | samples/s, microbatches/s, attempts/s, applied updates/s | Native P19/P20 source evidence; ikinci fit yok | Training-only instrumented wall; validation hariç; gerçek uneven/skip ledger | Ö5 / M2-P-B9 | implemented | Ratio of sums, `[4,1]` tail, applied/attempt ayrımı, warmup labels, early stop/resume/completed checkpoint null, tamper/export/EManager/minimum/package PASS |
 | P23 | Training Memory Analysis | measure_training_memory: tek fit, registered params/buffers/grads/lazy optimizer state + native RSS/CUDA boundary counters | Logical byte, snapshot-local storage/alias evidence, RSS samples/HWM, allocator allocated/reserved/lifetime peaks | CPU FP32/FP64 ve native CUDA FP32/AMP; in-process exclusive observation | P09 reset değişmez; P19 source/IDs; bounded records/sampler; no reset/GC/cache mutation | Ö5 / M2-P-B10 P23 alt kapsam | partial | Exact state/RNG/replay, native overflow/lifetime/export/packaging/minimum kanıtları audit'te; activation lifetime ve isolated true window/incremental peak null/unsupported; hard workload budget/timeout yok |
 | P24 | Time to Target Accuracy | Tanımlı kalite eşiğine ilk ulaşma zamanı | s/epoch/update to threshold, censored runs | Labeled train/validation data, repeated seeds | P19/P26; metric/threshold/eval cadence | Ö5/Ö6 | planned | Aynı split/target; ulaşılamayan run censored; validation/clock scope'u ve run variance açık |
-| P25 | Gradient / AMP Diagnostics | Gradient norm/finite, scale growth/backoff ve applied ownership analizi | norm, scale, skip/update count | Native optimizer/GradScaler; uygun CUDA | P19/P20, güvenli gözlem ve overhead | Ö5 | planned | Gerçek overflow/recovery; hook/diagnostic zamanı ölçümle ayrılır; mevcut Trainer testleri benchmark uygulaması sayılmaz |
+| P25 | Gradient / AMP Diagnostics | measure_gradient_diagnostics ile tek gerçek fit: normalized preclip/ayrı postclip L2, finite/NaN/Inf, native scale ve execution/recovery ledger | Bounded FP64 norm, parameter coverage, scale before/after/change, applied/skipped IDs | Native dense packed real CPU/CUDA; SGD/Adam/AdamW + gerçek CUDA FP16 GradScaler | P19/P20 source hashes/IDs/native execution hooks; read-only opt-in reduction ve explicit overhead | Ö5 / M2-P-B10 P25 | implemented | Bilinen norm/mixed dtype/tail `[4,1]`, exact state/RNG/checkpoint, native Inf/NaN skip→recovery/scale growth/iki stream, export/Manager/minimum/package gate; sparse/gapped/complex/custom gradient null/unsupported; B10 full GO yok |
 
 ## D. Accuracy, Optimization ve Comparison
 
@@ -265,6 +265,30 @@ production factory worker sağlamaz. Native test supervisor izolasyonu productio
 eksikler nedeniyle partial, P25 planned. B4 OPEN/UNRESOLVED, B6/B7 PARTIAL,
 P18 planned/blocked ve ayrı stable-release gate korunur. Post-Performance Developer
 Experience / gelecek sade `Hyso` facade notu geçerlidir; facade geliştirilmedi.
+
+## M2-P-B10 / P25 — 2026-10-21
+
+P25 **implemented within verified dense/native scope**: additive diagnostics API,
+tek fresh-Trainer fit, gerçek unscaled/sample-normalized preclip norm ve ayrı
+optional postclip read. Bounded device-local FP64/max-scaled reduction; tam gradient
+CPU copy, gradient mutation, ikinci backward/step/scaler.update veya rollback yok.
+P19 segment/window/attempt ve P20 native optimizer execution evidence ile association
+doğrulanır. Scale değişimi execution proof değildir. Native Inf/NaN skip→recovery,
+growth, EMA/OneCycle ownership ve state/RNG eşliği doğrulanır.
+
+Sparse COO/CSR/diğer sparse, gapped/overlapping/complex/meta/custom Tensor için
+null/unsupported global norm; böyle gerçek run result'ı partial'dır. Non-AMP
+nonfinite mevcut Trainer failure'ını korur. CUDA scalar read sync/FP64 scratch ve
+instrumentation perturbation açık kaydedilir; toplam overhead unknown/null'dır.
+Mevcut Trainer, P19/P20/P21/P22/P23 serializer/public API ve checkpoint/Manager
+schema değişmedi. Evidence: [P25 audit](../audit/m2-p-b10-gradient-amp-diagnostics.md),
+[rehber](../guides/performance-gradient-amp.md).
+
+**Güncel 35-feature sayımı: 17 implemented /7 partial /11 planned =35.**
+**B10 PARTIAL / full-scope GO yok:** P21 worker trace ve P23 activation/isolated peak
+eksikleri sürer. B4 native reliability OPEN/UNRESOLVED, B6/B7 PARTIAL ve P18
+planned/BLOCKED korunur. Stable release onayı yok; gelecekteki sade `Hyso` facade
+notu korunur, facade bu task'ta geliştirilmedi.
 
 ## Post-Performance Developer Experience (gelecek tasarım hedefi)
 

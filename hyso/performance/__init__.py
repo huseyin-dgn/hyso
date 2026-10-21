@@ -22,6 +22,8 @@ from .dataloader import (DataLoaderAnalysisProtocol, DataLoaderAnalysisResult, L
                          measure_training_with_loader)
 from .training_memory import (TrainingMemoryProtocol, TrainingMemoryResult, TrainingMemoryError,
                               measure_training_memory)
+from .gradients import (GradientDiagnosticsProtocol, GradientDiagnosticsResult, GradientDiagnosticsError,
+                        measure_gradient_diagnostics)
 
 __all__ = ["TailPolicy", "ThroughputProtocol", "analyze_latency", "measure_throughput",
            "LatencyAnalysis", "ThroughputResult", "MemoryProtocol", "measure_memory", "measure_footprint",
@@ -38,4 +40,5 @@ __all__ = ["TailPolicy", "ThroughputProtocol", "analyze_latency", "measure_throu
            "TrainingStageProtocol", "TrainingStageResult", "TrainingThroughputResult", "DetailedTrainingResult",
            "measure_training_detailed", "analyze_training_throughput", "DataLoaderAnalysisProtocol",
            "DataLoaderAnalysisResult", "LoaderTrainingResult", "measure_training_with_loader",
-           "TrainingMemoryProtocol", "TrainingMemoryResult", "TrainingMemoryError", "measure_training_memory"]
+           "TrainingMemoryProtocol", "TrainingMemoryResult", "TrainingMemoryError", "measure_training_memory",
+           "GradientDiagnosticsProtocol", "GradientDiagnosticsResult", "GradientDiagnosticsError", "measure_gradient_diagnostics"]
