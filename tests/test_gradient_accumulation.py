@@ -136,8 +136,6 @@ def test_r09_windows_epochs_and_clipping_match_microbatch_reference(
 
 
 def test_r09_float64_oversized_window_matches_sample_weighted_reference(quiet_training):
-    # Lift identical FP32-initialized weights/data; do not combine microbatches
-    # into a large batch, which would change BatchNorm and dropout semantics.
     model, reference, trace, expected_trace, history = run_with_sample_weighted_reference(
         (3, 1, 2), 8, epochs=2, dtype=torch.float64,
     )

@@ -24,6 +24,8 @@ from .training_memory import (TrainingMemoryProtocol, TrainingMemoryResult, Trai
                               measure_training_memory)
 from .gradients import (GradientDiagnosticsProtocol, GradientDiagnosticsResult, GradientDiagnosticsError,
                         measure_gradient_diagnostics)
+from .isolated_training_memory import (TrainingMemoryRecipe,IsolatedTrainingMemoryProtocol,
+    IsolatedTrainingMemoryResult,measure_training_memory_isolated)
 
 __all__ = ["TailPolicy", "ThroughputProtocol", "analyze_latency", "measure_throughput",
            "LatencyAnalysis", "ThroughputResult", "MemoryProtocol", "measure_memory", "measure_footprint",
@@ -41,4 +43,5 @@ __all__ = ["TailPolicy", "ThroughputProtocol", "analyze_latency", "measure_throu
            "measure_training_detailed", "analyze_training_throughput", "DataLoaderAnalysisProtocol",
            "DataLoaderAnalysisResult", "LoaderTrainingResult", "measure_training_with_loader",
            "TrainingMemoryProtocol", "TrainingMemoryResult", "TrainingMemoryError", "measure_training_memory",
-           "GradientDiagnosticsProtocol", "GradientDiagnosticsResult", "GradientDiagnosticsError", "measure_gradient_diagnostics"]
+           "GradientDiagnosticsProtocol", "GradientDiagnosticsResult", "GradientDiagnosticsError", "measure_gradient_diagnostics",
+           "TrainingMemoryRecipe", "IsolatedTrainingMemoryProtocol", "IsolatedTrainingMemoryResult", "measure_training_memory_isolated"]

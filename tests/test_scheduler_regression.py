@@ -284,10 +284,25 @@ def test_r11_cpu_scaler_skip_preserves_optimizer_scheduler_pairing(
 
 
 @pytest.mark.parametrize("fused", [False, True])
-def test_r11_real_cpu_scaler_overflow_skips_even_delegated_fused_updates(monkeypatch, quiet_training, fused):
+def test_r11_real_cpu_scaler_overflow_skips_even_delegated_fused_updates(monkeypatch, quiet_training, fused, record_property):
     # Native CPU GradScaler and native SGD (including fused kernel): no CUDA
     # availability/autocast simulation. Inject one nonfinite backward gradient.
-    scaler = torch.amp.GradScaler("cpu", init_scale=128, growth_interval=1000)
+    scaler_type = getattr(torch.amp, "GradScaler", None)
+    if scaler_type is None:
+        # Minimum Torch has no native CPU scaler. Verify the actual HYSo boundary;
+        # do not replace native overflow with a simulated successful update.
+        from hyso.training import Trainer
+        model = torch.nn.Linear(3, 2)
+        optimizer = torch.optim.SGD(model.parameters(), lr=.05)
+        with pytest.raises(TypeError, match="CPU amp is unsupported"):
+            Trainer(model, optimizer=optimizer, loss_fn=torch.nn.CrossEntropyLoss(), amp=True)
+        disabled = torch.cuda.amp.GradScaler(enabled=False)
+        assert not disabled.is_enabled() and disabled.state_dict() == {}
+        assert not optimizer.state and all(p.grad is None for p in model.parameters())
+        record_property("cpu_native_overflow", "unsupported_no_native_CPU_GradScaler")
+        return
+    record_property("cpu_native_overflow", "native_CPU_GradScaler")
+    scaler = scaler_type("cpu", init_scale=128, growth_interval=1000)
     monkeypatch.setattr(torch.cuda.amp, "GradScaler", lambda **kwargs: scaler)
     model = tiny_ebo()
     model.optimizer = torch.optim.SGD(model.model.parameters(), lr=0.05, momentum=0, fused=fused)
