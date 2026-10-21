@@ -16,6 +16,8 @@ from .transfers import TransferProtocol, TransferError, measure_transfers
 from .utilization import UtilizationProtocol, measure_utilization
 from .result import TransferResult, UtilizationResult
 from .training import TrainingTimingProtocol, TrainingPerformanceResult, TrainingTimingError, measure_training
+from .training_details import (TrainingStageProtocol, TrainingStageResult, TrainingThroughputResult,
+                               DetailedTrainingResult, measure_training_detailed, analyze_training_throughput)
 
 __all__ = ["TailPolicy", "ThroughputProtocol", "analyze_latency", "measure_throughput",
            "LatencyAnalysis", "ThroughputResult", "MemoryProtocol", "measure_memory", "measure_footprint",
@@ -28,4 +30,6 @@ __all__ = ["TailPolicy", "ThroughputProtocol", "analyze_latency", "measure_throu
            "OperatorProfileResult", "LayerProfileResult", "OperationCountResult",
            "TransferProtocol", "TransferError", "measure_transfers", "TransferResult",
            "UtilizationProtocol", "measure_utilization", "UtilizationResult",
-           "TrainingTimingProtocol", "TrainingPerformanceResult", "TrainingTimingError", "measure_training"]
+           "TrainingTimingProtocol", "TrainingPerformanceResult", "TrainingTimingError", "measure_training",
+           "TrainingStageProtocol", "TrainingStageResult", "TrainingThroughputResult", "DetailedTrainingResult",
+           "measure_training_detailed", "analyze_training_throughput"]

@@ -148,9 +148,9 @@ fazı, kurulmuş dependency veya gerçekleştirilmiş deney anlamına gelmez.
 | ID | Tam isim | Türkçe açıklama | Birim/rapor | Donanım/veri/araç | Önkoşullar | Aşama | Durum | Doğrulanma kriteri |
 |---|---|---|---|---|---|---|---|---|
 | P19 | Epoch / Training Step Time | measure_training ile gerçek Trainer epoch/microbatch/window/attempt timing | Host ms ve epoch s; CUDA selected-stream event ms ayrı | Native CPU FP32/FP64 ve doğrulanan CUDA FP32/AMP; bounded recorder | Existing Trainer lifecycle/counters; ayrı validation ve checkpoint I/O exclusion | Ö5 / M2-P-B9 P19 alt kapsam | implemented | Gerçek uneven sample ledger, applied/skip, exact state/RNG/history/replay, bounded events, export/EManager ve minimum/package gate; kernel attribution/P20 stages/P22 rates yok; B4 riski açık |
-| P20 | Forward / Backward / Optimizer Breakdown | Gradient step aşamalarının ayrı süreleri | ms/stage, full-step ratio | Native autograd/optimizer/scaler | P19; clipping/unscale/loss/zero_grad boundaries | Ö5 | planned | Gerçek backward/update; AMP skipped/applied ayrımı, profiler overhead ve stage overlap açıklanır |
+| P20 | Forward / Backward / Optimizer Breakdown | measure_training_detailed ile gerçek stage sınırları; ayrı additive TrainingStageResult | Host ms / selected-stream CUDA event ms ayrı; inclusive scopes | Native CPU SGD/Adam/AdamW ve doğrulanan CUDA FP32/AMP | P19 shared recorder; combined bounded records/events; native optimizer pre/post hooks | Ö5 / M2-P-B9 | implemented | Gerçek forward/loss/backward/unscale/normalization/clip/scaler/optimizer/EMA/scheduler/zero_grad; overflow execution null/not_executed, exact deterministic replay, immutable/export/EManager/minimum/package PASS; CUPTI/kernel attribution yok |
 | P21 | DataLoader Bottleneck Analysis | Load/decode/transform/queue wait ile compute ayrımı | ms/batch wait, samples/s, timeline | Gerçek dataset, worker/pin settings | Worker RNG/epoch order/profiling adapter | Ö5 | planned | Worker ve ana süreç scope'ları ayrılır; bekleme ile CPU compute eşit sayılmaz |
-| P22 | Training Throughput | Gerçek training penceresinde tamamlanan örnek ve applied update hızı | samples/s, applied updates/s | Loss/data/optimizer/scaler | P19; accumulation ve overflow count | Ö5 | planned | Sample-weighted gerçek count/window; attempt ile applied update ayrı |
+| P22 | Training Throughput | analyze_training_throughput ile doğrulanmış P19 raw ledger'dan saf epoch/segment analizi | samples/s, microbatches/s, attempts/s, applied updates/s | Native P19/P20 source evidence; ikinci fit yok | Training-only instrumented wall; validation hariç; gerçek uneven/skip ledger | Ö5 / M2-P-B9 | implemented | Ratio of sums, `[4,1]` tail, applied/attempt ayrımı, warmup labels, early stop/resume/completed checkpoint null, tamper/export/EManager/minimum/package PASS |
 | P23 | Training Memory Analysis | Params/gradients/optimizer/activation ve measured peak ayrımı | logical byte + process/allocator byte | Training state ve platform memory araçları | P09/P10/P19; gradient lifecycle | Ö5 | planned | Aynı training boundary'de native snapshot/probe; component logical toplam process RSS/VRAM diye sunulmaz |
 | P24 | Time to Target Accuracy | Tanımlı kalite eşiğine ilk ulaşma zamanı | s/epoch/update to threshold, censored runs | Labeled train/validation data, repeated seeds | P19/P26; metric/threshold/eval cadence | Ö5/Ö6 | planned | Aynı split/target; ulaşılamayan run censored; validation/clock scope'u ve run variance açık |
 | P25 | Gradient / AMP Diagnostics | Gradient norm/finite, scale growth/backoff ve applied ownership analizi | norm, scale, skip/update count | Native optimizer/GradScaler; uygun CUDA | P19/P20, güvenli gözlem ve overhead | Ö5 | planned | Gerçek overflow/recovery; hook/diagnostic zamanı ölçümle ayrılır; mevcut Trainer testleri benchmark uygulaması sayılmaz |
@@ -207,7 +207,23 @@ M2-P-A'nın tam B9 kapsamı P19+P20+P22 olduğundan **B9 PARTIAL**; full B9 GO y
 B4 OPEN/UNRESOLVED, B6 kernel profiling ve B7 overlap/full-scope NO-GO geçmiş
 kapıları aynen korunur. Bu güncelleme stable release onayı değildir.
 
-## Post-Performance Developer Experience
+## M2-P-B9 completion — P20 + P22, 2026-10-21
+
+P20/P22 doğrulanan native CPU ve selected-stream CUDA kapsamıyla implemented.
+P19 schema1 ve public API korunur; tek detailed fit üç immutable result üretir,
+P22 ayrıca mevcut P19 evidence üzerinden saf analizdir. Final yeni CPU73 PASS,
+P19 dahil mevcut regresyon1898 PASS, packaging4 PASS; native detailed21 senaryo,
+P19 native20 ve mevcut deterministic replay10 ayrı kanıtlardır. Source/installed
+tekrarları distinct senaryo sayısını artırmaz. Minimum Python3.10/Torch2.2.2+cpu
+installed detailed/guide/resume ve40 modül archive equality doğrulandı.
+**Güncel35-feature sayım: 16 implemented /5 partial /14 planned.**
+**B9 full P19+P20+P22: GO within verified CPU/CUDA scope.** Stable release onayı
+değildir. B4 OPEN/UNRESOLVED; B6 kernel profiling ve B7 overlap PARTIAL; P18
+planned/blocked kalır. P21/P23–P25 planned; facade geliştirilmedi.
+[Completion audit](../audit/m2-p-b9-completion-p20-p22.md),
+[breakdown/throughput rehberi](../guides/performance-training-breakdown-throughput.md).
+
+## Post-Performance Developer Experience (gelecek tasarım hedefi)
 
 35 performans özelliği tamamlandıktan sonra kullanıcıya yönelik sade HYSo API'si
 geliştirilmesi gelecekteki tasarım hedefidir. Örnek **mevcut olmayan** kullanım:

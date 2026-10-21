@@ -314,9 +314,15 @@ class Trainer:
 
     def _update(self, samples):
         """One window: unscale, sample normalization, clip, native step/update."""
+        stage = getattr(self, "_stage_recorder", None)
         parameters = [p for group in self.optimizer.param_groups for p in group["params"]]
         try:
+            if stage is not None:
+                stage.stage_begin("unscale")
             self.scaler.unscale_(self.optimizer)
+            if stage is not None:
+                stage.stage_end("unscale")
+                stage.stage_begin("gradient_check_normalization")
             finite = True
             for parameter in parameters:
                 if parameter.grad is not None:
@@ -325,30 +331,66 @@ class Trainer:
                     parameter.grad.div_(samples)
             if not finite and not self.amp:
                 raise FloatingPointError("nonfinite gradient encountered before optimizer.step")
+            if stage is not None:
+                stage.stage_end("gradient_check_normalization")
             # On AMP overflow unscale_ has recorded found_inf. Let the native
             # scaler skip; clipping an inf gradient would only produce NaNs.
             if finite and self.grad_clip is not None:
+                if stage is not None:
+                    stage.stage_begin("gradient_clipping")
                 torch.nn.utils.clip_grad_norm_(parameters, self.grad_clip,
                                               error_if_nonfinite=True)
+                if stage is not None:
+                    stage.stage_end("gradient_clipping")
+            elif stage is not None:
+                stage.not_executed("gradient_clipping", "disabled_or_nonfinite_gradient")
             applied = []
             before = self.scaler.get_scale()
             handle = self.optimizer.register_step_post_hook(lambda *args: applied.append(True))
             try:
                 self.attempt_count += 1
+                if stage is not None:
+                    stage.stage_begin("scaler_step_attempt")
                 self.scaler.step(self.optimizer)
+                if stage is not None:
+                    stage.stage_end("scaler_step_attempt")
             finally:
                 handle.remove()
+                if stage is not None:
+                    stage.remove_optimizer_hooks()
+            if stage is not None:
+                stage.stage_begin("scaler_update")
             self.scaler.update()
+            if stage is not None:
+                stage.stage_end("scaler_update")
             if applied and self.scaler.get_scale() >= before:
                 self.update_count += 1
                 if self.ema is not None:
+                    if stage is not None:
+                        stage.stage_begin("ema_update")
                     self._validate_ema()
                     self.ema.update(self.model)
                     self.ema_update_count += 1
+                    if stage is not None:
+                        stage.stage_end("ema_update")
+                elif stage is not None:
+                    stage.not_executed("ema_update", "disabled")
                 if type(self.scheduler) is torch.optim.lr_scheduler.OneCycleLR:
+                    if stage is not None:
+                        stage.stage_begin("onecycle_scheduler")
                     self.scheduler.step()
+                    if stage is not None:
+                        stage.stage_end("onecycle_scheduler")
+                elif stage is not None:
+                    stage.not_executed("onecycle_scheduler", "not_onecycle")
+            elif stage is not None:
+                stage.not_executed("ema_update", "optimizer_update_skipped")
+                stage.not_executed("onecycle_scheduler", "optimizer_update_skipped")
         finally:
-            self.optimizer.zero_grad()
+            if stage is None:
+                self.optimizer.zero_grad()
+            else:
+                stage.zero_grad(self.optimizer)
 
     def _batch(self, batch):
         if not isinstance(batch, (tuple, list)) or len(batch) != 2:
@@ -453,6 +495,7 @@ class Trainer:
             destination, save_plan = prepare_save(self, train_loader, val_loader, epochs, save_last_to)
         self._epochs = epochs
         recorder = getattr(self, "_timing_recorder", None)
+        stage = getattr(self, "_stage_recorder", None)
         self._emit("train_begin", 0)
         # Enable autograd explicitly even if the caller has entered no_grad.
         with torch.enable_grad():
@@ -468,7 +511,11 @@ class Trainer:
                         module.training = training
                 total_loss, total_correct, total_samples = 0.0, 0, 0
                 window_samples = 0
+                if stage is not None:
+                    stage.stage_begin("zero_grad")
                 self.optimizer.zero_grad()
+                if stage is not None:
+                    stage.stage_end("zero_grad")
                 seen = 0
                 for batch in train_loader:
                     seen += 1
@@ -476,10 +523,27 @@ class Trainer:
                         raise ValueError("train_loader yielded more batches than len()")
                     if recorder is not None:
                         recorder.microbatch_begin(self.microbatch_count + 1, window_samples == 0)
+                    if stage is not None:
+                        stage.stage_begin("input_preparation")
                     inputs, targets, size = self._batch(batch)
+                    if stage is not None:
+                        stage.stage_end("input_preparation")
                     with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=self.amp):
-                        loss, correct = self._loss_and_correct(self.model(inputs), targets, size)
+                        if stage is None:
+                            loss, correct = self._loss_and_correct(self.model(inputs), targets, size)
+                        else:
+                            stage.stage_begin("forward")
+                            logits = self.model(inputs)
+                            stage.stage_end("forward")
+                            stage.stage_begin("loss_metrics")
+                            loss, correct = self._loss_and_correct(logits, targets, size)
+                            del logits
+                            stage.stage_end("loss_metrics")
+                    if stage is not None:
+                        stage.stage_begin("backward")
                     self.scaler.scale(loss * size).backward()
+                    if stage is not None:
+                        stage.stage_end("backward")
                     self.microbatch_count += 1
                     window_samples += size
                     if recorder is not None:
@@ -504,11 +568,20 @@ class Trainer:
                 val_loss, val_acc = (None, None) if val_loader is None else self._validate(val_loader)
                 if recorder is not None:
                     recorder.validation_end(val_loader is not None)
+                epoch_scheduler = type(self.scheduler) in (torch.optim.lr_scheduler.StepLR,
+                    torch.optim.lr_scheduler.CosineAnnealingLR, torch.optim.lr_scheduler.ReduceLROnPlateau)
+                if stage is not None:
+                    if epoch_scheduler:
+                        stage.stage_begin("epoch_scheduler")
+                    else:
+                        stage.not_executed("epoch_scheduler", "no_epoch_scheduler")
                 if type(self.scheduler) in (torch.optim.lr_scheduler.StepLR,
                                            torch.optim.lr_scheduler.CosineAnnealingLR):
                     self.scheduler.step()
                 elif type(self.scheduler) is torch.optim.lr_scheduler.ReduceLROnPlateau:
                     self.scheduler.step(val_loss)
+                if stage is not None and epoch_scheduler:
+                    stage.stage_end("epoch_scheduler")
                 if self.early_stopping is not None:
                     self.early_stopping(val_loss, self.evaluation_model)
                 self.history["train_loss"].append(epoch_loss)

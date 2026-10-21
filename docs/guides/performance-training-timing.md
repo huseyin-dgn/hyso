@@ -1,5 +1,10 @@
 # Training timing — P19
 
+P20 stage breakdown ve P22 saf throughput analizi ayrı additive API'lerle
+sunulur: [breakdown/throughput rehberi](performance-training-breakdown-throughput.md).
+`measure_training` ve geçmiş P19 schema1 sözleşmesi korunur; tek fit'te üç result
+için `measure_training_detailed`, mevcut P19 evidence için `analyze_training_throughput`.
+
 `hyso.performance.measure_training` caller-owned, fresh bir `Trainer` üzerinde
 gerçek `fit` çağrısını bir kez çalıştırır ve `TrainingPerformanceResult` döndürür.
 History aynı Trainer'da kalır. Model, optimizer ve RNG gerçek eğitimin yaptığı
