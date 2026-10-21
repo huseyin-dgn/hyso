@@ -344,6 +344,13 @@ def measure_training(trainer, train_loader, val_loader=None, *, epochs=5, protoc
     subsequent; tracking errors never trigger a rerun. Checkpoint I/O, restore,
     train_begin/train_end callbacks and best-weight finalization are excluded.
     """
+    return _measure_training(trainer, train_loader, val_loader, epochs=epochs, protocol=protocol,
+                             save_last_to=save_last_to, resume_from=resume_from)
+
+
+def _measure_training(trainer, train_loader, val_loader=None, *, epochs=5, protocol=None,
+                      save_last_to=None, resume_from=None, recorder_factory=_Recorder):
+    """Shared one-fit engine; the public P19 default never installs stage hooks."""
     from hyso.training import Trainer
     if type(trainer) is not Trainer:
         raise TypeError("measure_training requires the standard Trainer")
@@ -372,14 +379,18 @@ def measure_training(trainer, train_loader, val_loader=None, *, epochs=5, protoc
                                     validation=val_loader is not None, loader_type=_type(train_loader)))
     from hyso.training.resume import _plain as _configuration
     provenance = _plain(_configuration(provenance))
-    recorder = _Recorder(trainer, protocol)
+    recorder = recorder_factory(trainer, protocol)
     before = _counters(trainer)
     trainer._timing_recorder = recorder
+    if hasattr(recorder, "stage_begin"):
+        trainer._stage_recorder = recorder
     try:
         trainer.fit(train_loader, val_loader, epochs=epochs, save_last_to=save_last_to,
                     resume_from=resume_from)
     finally:
         del trainer._timing_recorder
+        if hasattr(trainer, "_stage_recorder"):
+            del trainer._stage_recorder
         recorder.close()
     # On resume the checkpoint supplies the baseline counters; derive it from
     # observed deltas, never manufacture timings for the checkpoint prefix.
@@ -406,4 +417,7 @@ def measure_training(trainer, train_loader, val_loader=None, *, epochs=5, protoc
                     pending_event_pairs=len(recorder.pending), warmup_policy="label_real_epochs_no_extra_work",
                     validation_policy="separate_completion_wall_included_in_total_epoch",
                     event_policy="bounded_closed_pairs_plus_at_most_three_open_pairs; chunk_and_epoch_drain"))
+    if hasattr(recorder, "stage_begin"):
+        data["limitations"][1] = "P19 projection of detailed capture; P20 stages are a separate associated result"
+        data["instrumentation"]["event_policy"] = "shared_P19_P20_closed_pairs_plus_at_most_four_open_scopes; chunk_epoch_and_scheduler_drain"
     return TrainingPerformanceResult(data)
