@@ -151,7 +151,7 @@ fazı, kurulmuş dependency veya gerçekleştirilmiş deney anlamına gelmez.
 | P20 | Forward / Backward / Optimizer Breakdown | measure_training_detailed ile gerçek stage sınırları; ayrı additive TrainingStageResult | Host ms / selected-stream CUDA event ms ayrı; inclusive scopes | Native CPU SGD/Adam/AdamW ve doğrulanan CUDA FP32/AMP | P19 shared recorder; combined bounded records/events; native optimizer pre/post hooks | Ö5 / M2-P-B9 | implemented | Gerçek forward/loss/backward/unscale/normalization/clip/scaler/optimizer/EMA/scheduler/zero_grad; overflow execution null/not_executed, exact deterministic replay, immutable/export/EManager/minimum/package PASS; CUPTI/kernel attribution yok |
 | P21 | DataLoader Bottleneck Analysis | measure_training_with_loader ile gerçek main-process iterator init/next wait ve P20 source links | Host ms, delivery ns, sample/ID ledger, wait quantiles/fraction | Native Windows DataLoader0/spawn2 ve doğrulanan selected-stream CUDA; worker trace yok | P19/P20/P22 IDs ve immutable source association; bounded observation | Ö5 / M2-P-B10 P21 alt kapsam | partial | Exact state/order/RNG, gerçek ImageFolder/random augmentation, exception/timeout/ownership cleanup; worker service/queue/prefetch efficiency null/unsupported, isolated H2D ayrıca unsupported; P23/P25 yok |
 | P22 | Training Throughput | analyze_training_throughput ile doğrulanmış P19 raw ledger'dan saf epoch/segment analizi | samples/s, microbatches/s, attempts/s, applied updates/s | Native P19/P20 source evidence; ikinci fit yok | Training-only instrumented wall; validation hariç; gerçek uneven/skip ledger | Ö5 / M2-P-B9 | implemented | Ratio of sums, `[4,1]` tail, applied/attempt ayrımı, warmup labels, early stop/resume/completed checkpoint null, tamper/export/EManager/minimum/package PASS |
-| P23 | Training Memory Analysis | Params/gradients/optimizer/activation ve measured peak ayrımı | logical byte + process/allocator byte | Training state ve platform memory araçları | P09/P10/P19; gradient lifecycle | Ö5 | planned | Aynı training boundary'de native snapshot/probe; component logical toplam process RSS/VRAM diye sunulmaz |
+| P23 | Training Memory Analysis | measure_training_memory: tek fit, registered params/buffers/grads/lazy optimizer state + native RSS/CUDA boundary counters | Logical byte, snapshot-local storage/alias evidence, RSS samples/HWM, allocator allocated/reserved/lifetime peaks | CPU FP32/FP64 ve native CUDA FP32/AMP; in-process exclusive observation | P09 reset değişmez; P19 source/IDs; bounded records/sampler; no reset/GC/cache mutation | Ö5 / M2-P-B10 P23 alt kapsam | partial | Exact state/RNG/replay, native overflow/lifetime/export/packaging/minimum kanıtları audit'te; activation lifetime ve isolated true window/incremental peak null/unsupported; hard workload budget/timeout yok |
 | P24 | Time to Target Accuracy | Tanımlı kalite eşiğine ilk ulaşma zamanı | s/epoch/update to threshold, censored runs | Labeled train/validation data, repeated seeds | P19/P26; metric/threshold/eval cadence | Ö5/Ö6 | planned | Aynı split/target; ulaşılamayan run censored; validation/clock scope'u ve run variance açık |
 | P25 | Gradient / AMP Diagnostics | Gradient norm/finite, scale growth/backoff ve applied ownership analizi | norm, scale, skip/update count | Native optimizer/GradScaler; uygun CUDA | P19/P20, güvenli gözlem ve overhead | Ö5 | planned | Gerçek overflow/recovery; hook/diagnostic zamanı ölçümle ayrılır; mevcut Trainer testleri benchmark uygulaması sayılmaz |
 
@@ -242,6 +242,29 @@ B9 verified GO ve P19/P20/P22 implemented; B4 OPEN/UNRESOLVED, B6 profiling
 PARTIAL, B7 overlap PARTIAL, P18 planned/blocked korunur. Stable release onayı yok.
 [P21 audit](../audit/m2-p-b10-loader-bottleneck.md),
 [DataLoader rehberi](../guides/performance-dataloader.md).
+
+## M2-P-B10 / P23 — 2026-10-21
+
+P23 **partial**: additive `TrainingMemoryProtocol`, `TrainingMemoryResult`,
+`TrainingMemoryError`, `measure_training_memory`; bir gerçek fresh-Trainer fit.
+Registered parameter/frozen/buffer/gradient, gerçek lazy SGD/Adam/AdamW state,
+snapshot-local tied/view/storage evidence; ayrı P10 native RSS sampling ve CUDA
+allocated/reserved/lifetime peak observations. Logical byte fiziksel RAM/VRAM
+değildir. P09 inference peak-reset ownership ve P19/P20/P21/P22 API/schema korunur.
+Default ve tek destekli policy never-reset; global GC/cache mutation yoktur.
+
+Activation lifetime, worker-private RSS ve izole true window/incremental CUDA peak
+**null/unsupported**. In-process API hard workload memory budget/timeout veya
+production factory worker sağlamaz. Native test supervisor izolasyonu production
+özelliği sayılmaz. Evidence ve acceptance sınırları
+[P23 audit](../audit/m2-p-b10-training-memory.md) ve
+[rehber](../guides/performance-training-memory.md) içindedir.
+
+**Güncel 35-feature sayımı: 16 implemented /7 partial /12 planned =35.**
+**B10 PARTIAL / full-scope GO yok:** P21 worker service trace partial, P23 yukarıdaki
+eksikler nedeniyle partial, P25 planned. B4 OPEN/UNRESOLVED, B6/B7 PARTIAL,
+P18 planned/blocked ve ayrı stable-release gate korunur. Post-Performance Developer
+Experience / gelecek sade `Hyso` facade notu geçerlidir; facade geliştirilmedi.
 
 ## Post-Performance Developer Experience (gelecek tasarım hedefi)
 
