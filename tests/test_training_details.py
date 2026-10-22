@@ -56,6 +56,61 @@ def test_real_triple_equivalence_and_stages(opt,epochs,validation):
     assert all(r['host_ms'] is None and r['cuda_event_ms'] is None for r in d['observations'] if r['status']=='not_executed')
 
 
+@pytest.mark.parametrize('opt',[torch.optim.SGD,torch.optim.Adam,torch.optim.AdamW])
+@pytest.mark.parametrize('observer',['P19','P20','P25'])
+def test_injected_cpu_skip_uses_actual_execution_ledger(monkeypatch,opt,observer):
+    from hyso.performance import measure_gradient_diagnostics
+    t=make(opt,epochs=1,clip=None)
+    assert not t.amp and not t.scaler.is_enabled()
+    native_step=t.scaler.step; calls=[]; executions=[]
+    def skip_first(*args,**kwargs):
+        # CPU protocol fault injection, NOT native AMP overflow. Real Trainer
+        # counters/history are never fabricated; the second step is native.
+        calls.append(True)
+        if len(calls)>1: return native_step(*args,**kwargs)
+    monkeypatch.setattr(t.scaler,'step',skip_first)
+    handle=t.optimizer.register_step_post_hook(lambda *args:executions.append(True))
+    pre=set(t.optimizer._optimizer_step_pre_hooks); post=set(t.optimizer._optimizer_step_post_hooks)
+    try:
+        measure={'P19':measure_training,'P20':measure_training_detailed,'P25':measure_gradient_diagnostics}[observer]
+        with patch.object(t,'fit',wraps=t.fit) as fit:
+            result=measure(t,batches(),epochs=1)
+        assert fit.call_count==1 and len(calls)==2 and len(executions)==1
+        assert (t.microbatch_count,t.attempt_count,t.update_count,t.ema_update_count)==(3,2,1,1)
+        assert t.scheduler.last_epoch==1 and len(t.history['train_loss'])==1
+        assert set(t.optimizer._optimizer_step_pre_hooks)==pre
+        assert set(t.optimizer._optimizer_step_post_hooks)==post
+        assert not hasattr(t,'_timing_recorder') and not hasattr(t,'_stage_recorder')
+        if observer=='P19':
+            timing=result.to_dict(); stages=None
+        elif observer=='P20':
+            timing=result.timing.to_dict(); stages=result.stages.to_dict()
+        else:
+            diagnostics=result.to_dict(); timing=diagnostics['source_p19']; stages=diagnostics['source_p20']
+            assert diagnostics['summary']['recovered_after_skip_attempt_ids']==[2]
+            assert diagnostics['observations'][0]['overflow_evidence']=='unknown'
+            assert all(r['scale_before']==r['scale_after']==1. for r in diagnostics['observations'])
+            assert diagnostics['instrumentation']['total_overhead_ns'] is None
+            assert diagnostics['instrumentation']['cuda_host_scalar_sync'] is False
+            assert diagnostics['instrumentation']['scalar_reads']>0
+        attempts=[r for r in timing['observations'] if r['kind']=='attempt']
+        assert [r['samples'] for r in attempts]==[4,1]
+        assert [r['applied'] for r in attempts]==[False,True]
+        assert [r['skipped'] for r in attempts]==[True,False]
+        assert [r['applied_update_id'] for r in attempts]==[None,1]
+        assert timing['instrumentation']['device_clock'] is None
+        assert any('instrumented' in text for text in timing['limitations'])
+        if stages is not None:
+            for name in ('optimizer_execution','ema_update','onecycle_scheduler'):
+                rows=[r for r in stages['observations'] if r['stage']==name]
+                assert [r['status'] for r in rows]==['not_executed','measured']
+                assert rows[0]['host_ms'] is None and rows[0]['cuda_event_ms'] is None and rows[0]['reason']
+            assert all(r['aggregation']=='inclusive_per_stage_no_cross_stage_sum' for r in stages['summary'])
+    finally:
+        handle.remove()
+    assert not torch.cuda.is_initialized()
+
+
 @pytest.mark.parametrize('case',CASES)
 def test_detailed_replay_matrix(case):
     outputs=[]

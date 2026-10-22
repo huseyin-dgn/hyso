@@ -52,7 +52,7 @@ def _cpu_intervals(samples,cores,interval_ns):
             else:
                 row.update(kernel_delta_ns=kernel,user_delta_ns=user,single_core_percent=100*(kernel+user)/wall,
                     machine_capacity_percent=100*(kernel+user)/wall/cores,status='measured',reason=None)
-            if cores<=64 and a.get('system_status')=='measured' and b.get('system_status')=='measured':
+            if wall>0 and cores<=64 and a.get('system_status')=='measured' and b.get('system_status')=='measured':
                 idle=b['system_idle_ns']-a['system_idle_ns']; k=b['system_kernel_ns']-a['system_kernel_ns']
                 u=b['system_user_ns']-a['system_user_ns']; total=k+u
                 if min(idle,k,u)>=0 and total>0 and idle<=total:
@@ -156,6 +156,7 @@ def _validate_utilization(data):
                 if field.endswith(('_percent','_bytes')) and v is not None:
                     if type(v) not in (float,int) or not math.isfinite(v) or v<0 or (field.endswith('_percent') and v>100):
                         raise ValueError('invalid sensor numeric value')
+            _telemetry._validate_gpu_memory(row['values'])
     if actual['cpu_samples']!=len(cpu) or actual['gpu_queries']!=len(gpu): raise ValueError('sample count mismatch')
     _integer(actual['start_ns']); _integer(actual['end_ns'])
     if actual['end_ns']<actual['start_ns'] or actual['elapsed_seconds']!=(actual['end_ns']-actual['start_ns'])/1e9:

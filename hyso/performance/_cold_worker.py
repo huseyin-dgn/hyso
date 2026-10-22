@@ -74,6 +74,10 @@ def main():
             torch.cuda.init()
             device=torch.device('cuda',torch.cuda.current_device() if requested_index is None else requested_index)
             torch.cuda.set_device(device)
+            fraction=request.get('cuda_memory_fraction')
+            if fraction is not None:
+                if not 0 < fraction <= .15: raise ValueError('invalid forensic allocator budget')
+                torch.cuda.set_per_process_memory_fraction(fraction,device)
         else: device=torch.device('cpu')
         model=model.to(device=device,dtype=dtype).eval(); inputs=inputs.to(device)
         _profile(model,dtype,device)
@@ -83,6 +87,7 @@ def main():
             stream_id=int(torch.cuda.current_stream(device).cuda_stream) if device.type=='cuda' else None,
             package_source=importlib.import_module('hyso.performance').__file__,
             cuda_initialized=torch.cuda.is_initialized(),load_policy='weights_only_cpu_verified_sha',
+            cuda_allocator_fraction=request.get('cuda_memory_fraction'),
             input_shape=list(inputs.shape),input_dtype=str(inputs.dtype),model_dtype=str(dtype))
         finish()
         def inference():

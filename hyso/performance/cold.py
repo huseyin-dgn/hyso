@@ -7,7 +7,6 @@ import platform
 import subprocess
 import sys
 import tempfile
-import threading
 import time
 
 import torch
@@ -16,6 +15,11 @@ from .inference import ThroughputProtocol, _base
 from .result import ColdStartResult, _plain, _positive, _integer
 
 PHASES=('module_import','model_construction','artifact_load','runtime_prepare','first_inference','warmup','warm_reference')
+
+# Private, scoped transport supplied by the sealed forensic runner. The public
+# protocol/result and actual worker measurement code remain the same.
+from contextvars import ContextVar
+_owned_worker_launcher = ContextVar('hyso_owned_worker_launcher', default=None)
 
 
 @dataclass(frozen=True,init=False)
@@ -62,44 +66,89 @@ def _missing(reason,status='not_observed'):
                 status=status,reason=reason,device=None,backend=None,included_operations=[])
 
 
-def _terminate(worker):
+def _terminate(worker, *, timeout=None):
     if worker.poll() is not None: return
     if os.name=='nt':
         # Windows venv redirectors may own a different real Python PID. Kill
         # this still-live launcher and its owned tree, not just the redirector.
         executable=Path(os.environ.get('SystemRoot','C:/Windows'))/'System32/taskkill.exe'
         killed=subprocess.run([str(executable),'/PID',str(worker.pid),'/T','/F'],capture_output=True,
-                              creationflags=subprocess.CREATE_NO_WINDOW)
+                              creationflags=subprocess.CREATE_NO_WINDOW,timeout=timeout)
         if killed.returncode and worker.poll() is None:
             raise RuntimeError('failed to terminate owned cold-worker process tree')
     else:
         worker.kill()
 
 
+def _read_available(pipe):
+    """Read one bounded ready/log chunk without waiting for EOF or a newline."""
+    if os.name=='nt':
+        import ctypes
+        import msvcrt
+        from ctypes import wintypes
+        peek=ctypes.WinDLL('kernel32',use_last_error=True).PeekNamedPipe
+        peek.argtypes=[wintypes.HANDLE,ctypes.c_void_p,wintypes.DWORD,
+                       ctypes.c_void_p,ctypes.POINTER(wintypes.DWORD),ctypes.c_void_p]
+        peek.restype=wintypes.BOOL
+        available=wintypes.DWORD()
+        if not peek(msvcrt.get_osfhandle(pipe.fileno()),None,0,None,ctypes.byref(available),None):
+            error=ctypes.get_last_error()
+            if error in (109,232): return b''  # broken/disconnected owned pipe
+            raise OSError(error,'PeekNamedPipe failed')
+        if not available.value: return None
+        return os.read(pipe.fileno(),min(available.value,65536))
+    import select
+    return os.read(pipe.fileno(),65536) if select.select([pipe],[],[],0)[0] else None
+
+
 def _trial(recipe,plan,index,root):
+    launcher = _owned_worker_launcher.get()
+    if launcher is not None:
+        return launcher('cold', recipe, plan, index, root)
     request=root/('recipe-'+str(index)+'.json'); output=root/('trial-'+str(index)+'.json')
     request.write_text(json.dumps(dict(recipe=recipe,protocol=asdict(plan)),allow_nan=False),encoding='utf-8')
     package_root=Path(__file__).resolve().parents[2]
     command=[sys.executable,'-I','-B',str(Path(__file__).with_name('_cold_worker.py')),str(request),str(output),str(package_root)]
-    ready=[]; worker=None; reader=None; status=None; timed_out=False
+    ready=[]; worker=None; status=None; timed_out=False
     start=time.perf_counter_ns()
+    deadline=time.monotonic()+plan.timeout_seconds
     # stderr is bounded on readout, not kept in RAM while a trusted factory runs.
     with tempfile.TemporaryFile(mode='w+b') as stderr:
         try:
             worker=subprocess.Popen(command,stdout=subprocess.PIPE,stderr=stderr,env=dict(os.environ,PYTHONDONTWRITEBYTECODE='1'))
-            def read_ready():
-                for line in iter(lambda:worker.stdout.readline(65537),b''):
-                    if line.startswith(b'@@HYSO_READY ') and not ready:
-                        try: ready.append((time.perf_counter_ns(),json.loads(line[13:])))
-                        except (ValueError,UnicodeDecodeError): pass
-            reader=threading.Thread(target=read_ready,name='hyso-cold-ready',daemon=True); reader.start()
-            try: worker.wait(timeout=plan.timeout_seconds)
-            except subprocess.TimeoutExpired:
-                timed_out=True; _terminate(worker); worker.wait()
-            reader.join()
+            pending=b''; discard=False
+            while True:
+                chunk=_read_available(worker.stdout)
+                if chunk:
+                    lines=(pending+chunk).split(b'\n'); pending=lines.pop()
+                    for line in lines:
+                        if not discard and len(line)<=65536 and line.startswith(b'@@HYSO_READY ') and not ready:
+                            try: ready.append((time.perf_counter_ns(),json.loads(line[13:])))
+                            except (ValueError,UnicodeDecodeError): pass
+                        discard=False
+                    if len(pending)>65536:
+                        pending=b''; discard=True
+                if worker.poll() is not None: break
+                remaining=deadline-time.monotonic()
+                if remaining<=0:
+                    timed_out=True; break
+                try: worker.wait(timeout=min(.01,remaining))
+                except subprocess.TimeoutExpired: pass
+        finally:
+            if worker is not None:
+                # One shared, finite cleanup budget; never publish successful
+                # termination if tree kill or launcher reap cannot complete.
+                cleanup_deadline=time.monotonic()+10.
+                try:
+                    if worker.poll() is None:
+                        _terminate(worker,timeout=max(0.,cleanup_deadline-time.monotonic()))
+                    worker.wait(timeout=max(0.,cleanup_deadline-time.monotonic()))
+                finally:
+                    if worker.stdout is not None: worker.stdout.close()
+        if worker is not None:
             end=time.perf_counter_ns()
             status='timed_out' if timed_out else 'crashed' if worker.returncode not in (0,1) else 'failed'
-            if not timed_out and output.is_file():
+            if not timed_out and worker.returncode in (0,1) and output.is_file():
                 body=_plain(json.loads(output.read_text(encoding='utf-8')))
                 if not ready or body['worker_pid']!=ready[0][1]['pid']: raise ValueError('worker ready/output identity mismatch')
                 status=body['status']
@@ -118,12 +167,6 @@ def _trial(recipe,plan,index,root):
                 launcher_pid=worker.pid,termination_policy='windows_owned_process_tree' if os.name=='nt' else 'owned_process_kill',
                 startup_to_ready_receipt=startup,stderr_tail=stderr.read().decode('utf-8',errors='replace'))
             return body
-        finally:
-            if worker is not None:
-                if worker.poll() is None: _terminate(worker)
-                worker.wait()
-                if reader is not None and reader.ident is not None: reader.join()
-                if worker.stdout is not None: worker.stdout.close()
 
 
 def measure_cold_start(recipe,*,protocol=ColdStartProtocol()):

@@ -1,5 +1,10 @@
 """CPU doubles prove protocol wiring only, never native CUDA performance."""
 from contextlib import contextmanager, nullcontext
+from dataclasses import replace
+import json
+from pathlib import Path
+import sys
+from time import perf_counter_ns as _host_clock
 from types import SimpleNamespace
 
 import pytest
@@ -107,7 +112,7 @@ def protocol(monkeypatch):
     return calls, state, selected
 
 
-def run_double(protocol, *, memory=False, fail_at=None, precision="fp32"):
+def run_double(protocol, *, memory=False, fail_at=None, precision="fp32", error=None):
     calls, state, selected = protocol
     class Model(nn.Module):
         def __init__(self):
@@ -119,7 +124,7 @@ def run_double(protocol, *, memory=False, fail_at=None, precision="fp32"):
             assert state["device"] == 0 and state["stream"] is selected
             assert not self.training and torch.is_inference_mode_enabled()
             if self.count == fail_at:
-                raise LookupError("forward failure")
+                raise LookupError("forward failure") if error is None else error
             return x + 1
     model = Model()
     runner = BenchmarkRunner(model, device="cuda:0", input_shape=(2, 1, 3, 3), precision=precision,
@@ -169,6 +174,102 @@ def test_exception_cleanup_and_lock_reuse(protocol, fail_at):
     assert calls[-3:] == ["restore_selected_rng", "restore_stream", "restore_device"]
     assert state["device"] == 7 and state["stream"] == "caller" and model.training
     runner.run()
+
+
+@pytest.mark.parametrize("error_type", [torch.cuda.OutOfMemoryError, RuntimeError, LookupError])
+def test_memory_probe_failure_identity_and_cleanup(protocol, error_type):
+    error = error_type("injected probe failure, not physical OOM")
+    runner, model = run_double(protocol, memory=True, fail_at=10, error=error)
+    rng = torch.get_rng_state().clone()
+    expected = torch.cuda.OutOfMemoryError if error_type is torch.cuda.OutOfMemoryError else RuntimeError
+    with pytest.raises(expected, match="cannot be restored") as caught:
+        runner.run()
+    assert caught.value.__cause__ is error
+    assert model.count == 10 and protocol[0].count("reset") == 1
+    assert protocol[0][-3:] == ["restore_selected_rng", "restore_stream", "restore_device"]
+    assert protocol[1]["device"] == 7 and protocol[1]["stream"] == "caller" and model.training
+    assert torch.equal(torch.get_rng_state(), rng)
+    assert not implementation._RUN_LOCK.locked()
+    # The injected failure is one-shot; cleanup leaves the lock reusable.
+    runner.run()
+
+
+@pytest.mark.parametrize("axis,points", [
+    ("batch", [1, 2]), ("resolution", [(5, 7), (9, 13)]),
+    ("precision", ["fp32", "fp64"]),
+])
+@pytest.mark.parametrize("continuation", [False, True])
+@pytest.mark.parametrize("oom", [False, True])
+def test_probe_failure_sweep_admission(protocol, monkeypatch, axis, points, continuation, oom):
+    from hyso.performance import sweeps
+    error = (torch.cuda.OutOfMemoryError if oom else RuntimeError)("injected probe failure")
+    runner, _ = run_double(protocol, memory=True, fail_at=10, error=error)
+    # The first point exercises the actual BenchmarkRunner/probe with CUDA
+    # protocol doubles. Any admitted next point executes only real CPU tensors.
+    monkeypatch.setattr(implementation.time, "perf_counter_ns", _host_clock)
+    original_point = sweeps._point
+    admitted = []
+    def point(model, factory, shape, precision, plan, device, stream):
+        admitted.append(list(shape))
+        if len(admitted) == 1:
+            return runner.run()
+        return original_point(model, factory, shape, precision,
+                              replace(plan, measure_cuda_memory=False), device, stream)
+    monkeypatch.setattr(sweeps, "_point", point)
+    model = nn.Conv2d(1, 2, 1)
+    model.weight.grad = torch.ones_like(model.weight)
+    weight, gradient = model.weight.detach().clone(), model.weight.grad
+    rng = torch.get_rng_state().clone()
+    result = sweeps.run_sweep(model, lambda s, d, v: torch.ones(s, dtype=d, device=v),
+        axis=axis, points=points, protocol=sweeps.SweepProtocol(measure_cuda_memory=True,
+            warmup_iterations=0, measure_iterations=1, repeats=1, continue_on_error=continuation))
+    rows = result.to_dict()["raw_evidence"]["points"]
+    continues = continuation and not oom
+    assert [r["status"] for r in rows] == ["failed", "measured" if continues else "not_run"]
+    assert len(admitted) == (2 if continues else 1)
+    assert rows[0]["reason"].startswith("out_of_memory:" if oom else "RuntimeError:")
+    assert rows[0]["result"] is None
+    if not continues:
+        assert rows[1]["result"] is None and rows[1]["measurement_refs"] == []
+    assert model.training and torch.equal(model.weight, weight)
+    assert model.weight.grad is gradient and torch.equal(gradient, torch.ones_like(gradient))
+    assert torch.equal(torch.get_rng_state(), rng)
+    assert not implementation._RUN_LOCK.locked() and not sweeps._SWEEP_LOCK.locked()
+    assert protocol[1]["device"] == 7 and protocol[1]["stream"] == "caller"
+
+
+@pytest.mark.parametrize("oom", [False, True])
+def test_batch_worker_probe_oom_vs_unknown(protocol, monkeypatch, tmp_path, oom):
+    from hyso.performance import _batch_worker, sweeps
+    from hyso.performance.capacity import _classification
+    from hyso.performance import ColdStartRecipe
+    error = (torch.cuda.OutOfMemoryError if oom else RuntimeError)("CUDA out of memory: injected")
+    runner, _ = run_double(protocol, memory=True, fail_at=10, error=error)
+    monkeypatch.setattr(implementation.time, "perf_counter_ns", _host_clock)
+    def point(*args):
+        return runner.run()
+    monkeypatch.setattr(sweeps, "_point", point)
+    closed = []
+    monkeypatch.setattr(_batch_worker, "_memory_guard",
+                        lambda limit: (SimpleNamespace(CloseHandle=closed.append), "owned-test-job"))
+    # Execute the actual worker exception/publication/close path inline. OS Job
+    # admission is doubled here; existing owned-worker tests cover real Jobs.
+    recipe = ColdStartRecipe("torch.nn:Identity").to_dict()
+    request, output, ready = [tmp_path / name for name in ("request.json", "result.json", "ready.json")]
+    request.write_text(json.dumps(dict(recipe=recipe, batch=1, protocol=dict(
+        cpu_memory_limit_bytes=3*1024**3, input_limit_bytes=1024**2,
+        warmup_iterations=0, measure_iterations=1, repeats=1, cuda_memory_fraction=.1))), encoding="utf-8")
+    monkeypatch.setattr(sys, "argv", ["worker", str(request), str(output), str(ready), str(Path(__file__).resolve().parents[1])])
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    _batch_worker.main()
+    row = json.loads(output.read_text(encoding="utf-8"))
+    assert row["status"] == ("infeasible_oom" if oom else "failed")
+    assert _classification(row["status"]) == ("infeasible" if oom else "unknown")
+    assert row["forward_completed"] is False and row["sweep"] is None
+    assert "cannot be restored" in row["reason"]
+    assert closed == ["owned-test-job"] and not implementation._RUN_LOCK.locked()
+    assert json.loads(ready.read_text(encoding="utf-8"))["runtime_ready"] is True
+    assert not torch.cuda.is_initialized()
 
 
 @pytest.mark.parametrize("elapsed", [0, -1, float("nan"), float("inf"), True])
