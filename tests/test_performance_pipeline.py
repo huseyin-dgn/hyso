@@ -3,9 +3,11 @@ from dataclasses import FrozenInstanceError
 import csv
 import gc
 import hashlib
+import io
 import json
 import os
 import random
+from types import SimpleNamespace
 from pathlib import Path
 import re
 import threading
@@ -272,6 +274,163 @@ def test_recipe_defensive_copy_and_cold_launch_failure_cleanup(monkeypatch,tmp_p
     with pytest.raises(OSError,match='launch failure'):
         measure_cold_start(recipe,protocol=ColdStartProtocol(trials=1))
     assert not [t for t in threading.enumerate() if t.name=='hyso-cold-ready']
+
+
+@pytest.fixture
+def cold_worker_protocol(monkeypatch):
+    """Virtual launcher/clock; no process, CUDA context or real timeout wait."""
+    from hyso.performance import cold
+    original_read=cold._read_available
+    state=SimpleNamespace(now=0.,mode='measured',modes=[],workers=[],waits=[],kills=[],
+                          kill_seconds=0.,forward_entered=False)
+    class Worker:
+        def __init__(self,command,**kwargs):
+            if state.modes: state.mode=state.modes.pop(0)
+            self.pid=12000+len(state.workers); self.returncode=None
+            self.stdout=io.BytesIO(); self.chunks=[]
+            if state.mode!='startup_timeout':
+                self.chunks=[b'@@HYSO_READY '+json.dumps(dict(pid=self.pid)).encode()+b'\n']
+            if state.mode in ('crashed','crash_after_publish'): self.returncode=9
+            if state.mode in ('measured','failed','crash_after_publish'):
+                body=dict(worker_pid=self.pid,status='failed' if state.mode=='failed' else 'measured',
+                    phases={name:cold._missing('controlled_failure') for name in cold.PHASES},
+                    provenance={'device':'cpu'},first_output=None,warm_samples_ms=[1.],artifact=None,
+                    error='LookupError: controlled failure' if state.mode=='failed' else None)
+                if body['status']=='measured':
+                    for i,phase in enumerate(body['phases'].values()):
+                        phase.update(start_ns=2*i+1,end_ns=2*i+2,elapsed_ms=.000001,
+                                     status='measured',reason=None)
+                Path(command[5]).write_text(json.dumps(body),encoding='utf-8')
+            state.workers.append(self)
+        def poll(self): return self.returncode
+        def wait(self,timeout=None):
+            assert timeout is not None and timeout>=0
+            state.waits.append(timeout)
+            if self.returncode is not None: return self.returncode
+            if state.mode in ('startup_timeout','forward_timeout','reap_timeout','kill_timeout'):
+                state.forward_entered=state.mode=='forward_timeout'
+                state.now+=timeout
+                raise cold.subprocess.TimeoutExpired('controlled worker',timeout)
+            self.returncode=1 if state.mode=='failed' else 0
+            state.now+=min(timeout,.001)
+            return self.returncode
+    def terminate(worker,*,timeout=None):
+        assert timeout is not None and timeout>=0
+        state.kills.append((worker.pid,timeout))
+        if state.mode=='kill_timeout':
+            state.now+=timeout
+            raise cold.subprocess.TimeoutExpired('controlled taskkill',timeout)
+        state.now+=state.kill_seconds
+        if state.mode!='reap_timeout': worker.returncode=1
+    monkeypatch.setattr(cold.time,'monotonic',lambda:state.now)
+    # Windows platform discovery can itself invoke subprocess; keep this
+    # metadata outside the fake worker protocol.
+    monkeypatch.setattr(cold.platform,'platform',lambda:'P05 protocol double')
+    monkeypatch.setattr(cold.subprocess,'Popen',Worker)
+    monkeypatch.setattr(cold,'_read_available',lambda pipe:next(
+        (w.chunks.pop(0) for w in state.workers if w.stdout is pipe and w.chunks),b''))
+    monkeypatch.setattr(cold,'_terminate',terminate)
+    return cold,state,original_read
+
+
+@pytest.mark.parametrize('mode,expected',[
+    ('measured','measured'),('failed','failed'),('startup_timeout','timed_out'),
+    ('forward_timeout','timed_out'),('crashed','crashed'),('crash_after_publish','crashed'),
+])
+def test_cold_protocol_outcomes_and_cleanup(cold_worker_protocol,tmp_path,mode,expected):
+    cold,state,_=cold_worker_protocol; state.mode=mode
+    result=measure_cold_start(ColdStartRecipe('torch.nn:Identity'),
+        protocol=ColdStartProtocol(trials=1,timeout_seconds=.03,warm_samples=1))
+    data=result.to_dict(); row=data['raw_evidence']['trials'][0]
+    assert row['status']==expected and row['process_terminated']
+    assert all(w.stdout.closed for w in state.workers)
+    assert data['actual']['measured']==int(expected=='measured')
+    assert (data['measurements']['first_inference_mean_ms']['value'] is None)==(expected!='measured')
+    if expected=='timed_out':
+        assert len(state.kills)==1 and row['error']=='timed_out'
+        assert all(p['elapsed_ms'] is None for p in row['phases'].values())
+        assert (row['worker_pid'] is None)==(mode=='startup_timeout')
+        assert state.forward_entered==(mode=='forward_timeout')
+    if expected=='crashed': assert row['exit_code']==9 and row['error']=='crashed'
+    if expected=='failed': assert row['error']=='LookupError: controlled failure'
+    assert not [t for t in threading.enumerate() if t.name=='hyso-cold-ready']
+
+
+@pytest.mark.parametrize('mode',['failed','startup_timeout','crashed'])
+def test_cold_multiple_trials_preserve_existing_failure_policy(cold_worker_protocol,mode):
+    _,state,_=cold_worker_protocol; state.mode=mode
+    data=measure_cold_start(ColdStartRecipe('torch.nn:Identity'),protocol=ColdStartProtocol(
+        trials=2,timeout_seconds=.03,warm_samples=1)).to_dict()
+    assert len(state.workers)==data['actual']['trials']==2
+    assert [r['trial_index'] for r in data['raw_evidence']['trials']]==[0,1]
+    assert data['actual']['measured']==0
+    assert data['measurements']['first_inference_mean_ms']['value'] is None
+
+
+@pytest.mark.parametrize('failure',['failed','startup_timeout','crashed'])
+def test_cold_partial_result_keeps_only_successful_latency(cold_worker_protocol,failure):
+    _,state,_=cold_worker_protocol; state.modes=[failure,'measured']
+    data=measure_cold_start(ColdStartRecipe('torch.nn:Identity'),protocol=ColdStartProtocol(
+        trials=2,timeout_seconds=.03,warm_samples=1)).to_dict()
+    assert data['actual']['measured']==1 and data['actual']['trials']==2
+    assert [r['status'] for r in data['raw_evidence']['trials']]==[
+        'timed_out' if failure=='startup_timeout' else failure,'measured']
+    assert data['measurements']['first_inference_mean_ms']['value']==.000001
+
+
+@pytest.mark.parametrize('mode',['reap_timeout','kill_timeout'])
+def test_cold_cleanup_uses_shared_deadline(cold_worker_protocol,mode):
+    cold,state,_=cold_worker_protocol
+    state.mode=mode; state.kill_seconds=6.
+    with pytest.raises(cold.subprocess.TimeoutExpired):
+        measure_cold_start(ColdStartRecipe('torch.nn:Identity'),
+            protocol=ColdStartProtocol(trials=2,timeout_seconds=.03))
+    assert len(state.workers)==1  # cleanup failure is not a successful trial
+    assert state.kills[0][1]==pytest.approx(10.)
+    if mode=='reap_timeout': assert state.waits[-1]==pytest.approx(4.)
+    assert state.now==pytest.approx(10.03) and state.workers[0].stdout.closed
+
+
+def test_cold_exited_worker_does_not_wait_for_descendant_pipe(cold_worker_protocol,monkeypatch):
+    cold,state,original_read=cold_worker_protocol
+    read_fd,write_fd=os.pipe(); pipe=os.fdopen(read_fd,'rb')
+    launch=cold.subprocess.Popen
+    def popen(*args,**kwargs):
+        worker=launch(*args,**kwargs); worker.stdout.close(); worker.stdout=pipe
+        os.write(write_fd,worker.chunks.pop(0))
+        return worker
+    monkeypatch.setattr(cold.subprocess,'Popen',popen)
+    monkeypatch.setattr(cold,'_read_available',original_read)
+    try:
+        # The writer stays open, modelling a descendant retaining inherited
+        # stdout. This checks nonblocking pipe handling, not descendant killing.
+        assert original_read(pipe) is None
+        data=measure_cold_start(ColdStartRecipe('torch.nn:Identity'),
+            protocol=ColdStartProtocol(trials=1,warm_samples=1)).to_dict()
+        assert data['actual']['measured']==1 and pipe.closed
+    finally:
+        os.close(write_fd)
+        if not pipe.closed: pipe.close()
+
+
+@pytest.mark.parametrize('timeout',[False,True])
+def test_cold_tree_termination_bounds_owned_taskkill(monkeypatch,timeout):
+    from hyso.performance import cold
+    worker=SimpleNamespace(pid=23456,poll=lambda:None)
+    def run(command,**kwargs):
+        assert command[1:]==['/PID','23456','/T','/F']
+        assert kwargs['timeout']==3.
+        if timeout: raise cold.subprocess.TimeoutExpired(command,3.)
+        return SimpleNamespace(returncode=0)
+    if os.name=='nt':
+        monkeypatch.setattr(cold.subprocess,'run',run)
+        if timeout:
+            with pytest.raises(cold.subprocess.TimeoutExpired): cold._terminate(worker,timeout=3.)
+        else: cold._terminate(worker,timeout=3.)
+    else:
+        calls=[]; worker.kill=lambda:calls.append(True)
+        cold._terminate(worker,timeout=3.)
+        assert calls==[True]
 
 
 def test_measure_stages_convenience_and_no_pipeline_window_io(monkeypatch):

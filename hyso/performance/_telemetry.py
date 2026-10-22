@@ -51,15 +51,25 @@ def _number(text, scale=1, percent=False):
     return value
 
 
+def _validate_gpu_memory(values):
+    total=values['memory_total_bytes']
+    if total is not None:
+        for field in ('memory_used_bytes','memory_free_bytes'):
+            if values[field] is not None and values[field]>total:
+                raise ValueError(field+' exceeds physical GPU memory total')
+
+
 def parse_gpu_csv(text):
     rows=list(csv.reader(text.strip().splitlines(),skipinitialspace=True))
     if len(rows)!=1 or len(rows[0])!=10: raise ValueError('NVIDIA query must contain exactly one device/10 fields')
     uuid,pci,name,driver,busy,controller,used,free,total,stamp=[s.strip() for s in rows[0]]
     if not uuid.startswith('GPU-') or not pci or not name: raise ValueError('missing physical GPU identity')
-    return dict(uuid=uuid,pci_bus_id=pci,name=name,driver=driver,gpu_busy_percent=_number(busy,percent=True),
+    values=dict(uuid=uuid,pci_bus_id=pci,name=name,driver=driver,gpu_busy_percent=_number(busy,percent=True),
         memory_controller_busy_percent=_number(controller,percent=True),
         memory_used_bytes=_number(used,1024**2),memory_free_bytes=_number(free,1024**2),
         memory_total_bytes=_number(total,1024**2),sensor_wall_timestamp=stamp)
+    _validate_gpu_memory(values)
+    return values
 
 
 def gpu_observe(selector,timeout):

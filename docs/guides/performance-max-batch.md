@@ -57,6 +57,11 @@ resource rejection, timeout veya unexpected exit her iki politikada admission'ı
 durdurur; kalanlar `not_run/unknown` olur. Adaptive/binary/exponential otomatik
 aday üretimi bu sürümde uygulanmaz; powers-of-two listesi kullanıcı verebilir.
 Monotonluk varsayılmaz. Timeout process startup/import dâhil toplam wall süresidir.
+Worker beklemesinden sonra owned tree termination ve launcher reap ortak ek
+10 saniyelik cleanup bütçesi kullanır. Cleanup tamamlanamazsa exception yayılır;
+başarılı termination/maximum yayımlanmaz ve sonraki aday başlamaz. Job, input ve
+allocator sınırları değişmez. Bu Python deadline'ları OS-level outer watchdog
+değildir; process creation ve filesystem çağrıları bunlarla kesilemez.
 
 `maximum_observed_feasible_batch` yalnız tamamlanmış forward'lardan türetilir.
 `maximum_proven_within_range`, ancak 1..maximum_batch bütün integer noktaları

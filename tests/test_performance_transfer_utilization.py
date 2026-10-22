@@ -85,6 +85,41 @@ def test_multiple_physical_devices_not_aggregated():
     with pytest.raises(ValueError):_telemetry.parse_gpu_csv(row+'\n'+row)
 
 
+@pytest.mark.parametrize('used,free',[(7,0),(0,7)])
+def test_sensor_impossible_memory_is_unavailable(monkeypatch,used,free):
+    monkeypatch.setattr(_telemetry.shutil,'which',lambda name:'mock-nvidia-smi')
+    text=f'GPU-test, 0000:01:00.0, MOCK, 1, 10, 2, {used}, {free}, 6, stamp'
+    monkeypatch.setattr(_telemetry.subprocess,'run',lambda *a,**kw:
+                        subprocess.CompletedProcess([],0,text,''))
+    row=_telemetry.gpu_observe('0',.1)
+    assert row['status']=='unavailable' and row['values'] is None
+    assert 'total' in row['reason']
+
+
+@pytest.mark.parametrize('end',[0,-1])
+def test_invalid_host_interval_cannot_claim_system_busy(end):
+    a=counter(0); b=counter(end,1,1)
+    a.update(system_status='measured',system_idle_ns=0,system_kernel_ns=0,system_user_ns=0)
+    b.update(system_status='measured',system_idle_ns=1,system_kernel_ns=2,system_user_ns=2)
+    row=_cpu_intervals([a,b],4,100)[0]
+    assert row['status']=='invalid'
+    assert row['system_busy_percent'] is None and row['system_status']=='unsupported'
+
+
+def test_impossible_memory_rejected_even_with_recomputed_metrics(utilization):
+    from hyso.performance.utilization import _utilization_metrics
+    data=utilization.to_dict(); config=data['protocol']['configuration']; config['gpu']=True
+    cpu=data['raw_evidence']['cpu_samples'][0]
+    values=_telemetry.parse_gpu_csv('GPU-test, x, MOCK, 1, 10, 2, 2, 3, 6, stamp')
+    values['memory_free_bytes']=7*1024**2
+    data['raw_evidence']['gpu_samples']=[dict(query_start_ns=cpu['query_start_ns'],
+        query_end_ns=cpu['query_end_ns'],status='measured',reason=None,values=values)]
+    data['actual']['gpu_queries']=1
+    data['measurements']=_utilization_metrics(data['raw_evidence']['cpu_samples'],
+        data['raw_evidence']['gpu_samples'],data['raw_evidence']['logical_cores'],UtilizationProtocol(**config))
+    with pytest.raises(ValueError,match='total'): UtilizationResult(data)
+
+
 @pytest.fixture(scope='module')
 def utilization():
     return measure_utilization(protocol=UtilizationProtocol(duration_seconds=.12,interval_seconds=.02))

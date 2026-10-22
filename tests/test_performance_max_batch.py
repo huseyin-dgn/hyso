@@ -132,6 +132,51 @@ def test_parent_state_rng_and_lifetime():
         assert_dead(row['worker_pid']);assert_dead(row['launcher_pid'])
 
 
+@pytest.mark.parametrize('failure',['none','tree_timeout','reap_timeout'])
+def test_candidate_timeout_has_one_shared_cleanup_budget(monkeypatch,failure):
+    from hyso.performance import capacity
+    clock=[0.]; workers=[]; waits=[]; kills=[]; streams=[]
+    class Worker:
+        def __init__(self,*args,**kwargs):
+            self.pid=23001; self.returncode=None; workers.append(self)
+            streams.extend((kwargs['stdout'],kwargs['stderr']))
+        def poll(self): return self.returncode
+        def wait(self,timeout=None):
+            assert timeout is not None and timeout>=0
+            waits.append(timeout)
+            if self.returncode is not None: return self.returncode
+            clock[0]+=timeout
+            raise capacity.subprocess.TimeoutExpired('mock owned worker',timeout)
+    def terminate(worker,*,timeout=None):
+        # No real process is killed: this verifies the actual parent admission,
+        # cleanup and publication paths under a deterministic virtual clock.
+        assert worker is workers[0] and timeout is not None
+        kills.append(timeout)
+        if failure=='tree_timeout':
+            clock[0]+=timeout
+            raise capacity.subprocess.TimeoutExpired('mock taskkill',timeout)
+        clock[0]+=6.
+        if failure!='reap_timeout': worker.returncode=1
+    monkeypatch.setattr(capacity.subprocess,'Popen',Worker)
+    monkeypatch.setattr(capacity,'_terminate',terminate)
+    monkeypatch.setattr(capacity.time,'monotonic',lambda:clock[0])
+    p=BatchSearchProtocol(candidates=(1,2),maximum_batch=2,cpu_memory_limit_bytes=3*1024**3,
+        input_limit_bytes=1024**2,timeout_seconds=.03,warmup_iterations=0,measure_iterations=1)
+    if failure=='none':
+        data=find_max_batch_size(recipe(),protocol=p).to_dict()
+        rows=data['raw_evidence']['candidates']
+        assert [r['status'] for r in rows]==['timed_out','not_run']
+        assert rows[0]['classification']=='unknown' and rows[0]['process_terminated']
+        assert data['measurements']['maximum_observed_feasible_batch'] is None
+    else:
+        with pytest.raises(capacity.subprocess.TimeoutExpired):
+            find_max_batch_size(recipe(),protocol=p)
+    assert len(workers)==len(kills)==1 and kills[0]==pytest.approx(10.)
+    if failure=='reap_timeout': assert waits[-1]==pytest.approx(4.)
+    assert all(s.closed for s in streams)
+    assert clock[0]<=10.03+1e-9
+
+
 def test_frozen_plain_export_validation(observed,tmp_path):
     with pytest.raises((FrozenInstanceError,AttributeError)): observed._payload='bad'
     d=observed.to_dict();d['measurements']['maximum_observed_feasible_batch']=999

@@ -131,6 +131,22 @@ creation/breakaway factory davranışı destek dışıdır. Timeout/crash/unsupp
 failed trials explicit outcome, unobserved phases null'dır; failed trial başarılı
 first-inference average'a girmez. OS page-cache coldluğu unknown_not_flushed'dır.
 
+`trials` istenen bağımsız trial sayısıdır: bir trial failed/unsupported/timeout/
+crashed olduğunda kalan trial'lar mevcut sözleşmeye göre yine başlatılır. Public
+crash-stop seçeneği yoktur; crash-sensitive tek deneme için `trials=1` kullanılır.
+Cleanup hatası ise exception olarak yayılır ve sonraki trial başlatılmaz.
+
+Worker timeout launch öncesinden itibaren izlenir; stdout pipe en fazla 10ms
+bekleme aralıklarıyla, EOF/newline beklenmeden bounded chunk'larla okunur. Ready
+receipt ölçümü parent polling/scheduling maliyetini içerir; bu değişiklik startup
+receipt zamanlamasını etkileyebilir. Worker beklemesinden sonra tree termination
+ve launcher reap ortak, ek 10 saniyelik cleanup bütçesi kullanır. Cleanup süresi
+parent total'a dahildir; deadline aşımı başarılı termination kaydı üretmez.
+Bu bir OS-level outer watchdog değildir: process creation ve filesystem çağrıları
+bu Python timeout'uyla kesilemez. Root çıktıktan sonra yaşayan hidden/breakaway
+descendant'ların öldürüldüğü garanti edilmez; inherited stdout'un açık kalması
+artık parent'ı kilitlemez. POSIX yolunda yalnız owned process kill uygulanır.
+
 ## Mevcut Experiment Manager ile ölçüm sonrası kayıt
 
 ```python

@@ -294,6 +294,8 @@ def _cuda_memory_probe(device, forward, validate):
     except BaseException as error:
         if isinstance(error, StateMutationError):
             raise StateMutationError(str(error) + "; CUDA memory probe reset process/device peak counters irreversibly") from error
+        if isinstance(error, torch.cuda.OutOfMemoryError):
+            raise torch.cuda.OutOfMemoryError(str(error) + "; CUDA memory probe failed; process/device peak counters were reset and cannot be restored") from error
         raise RuntimeError("CUDA memory probe failed; process/device peak counters were reset and cannot be restored") from error
     data["incremental_peak_bytes"] = data["peak_allocated_bytes"] - data["baseline_allocated_bytes"]
     data["value"] = data["peak_allocated_bytes"]

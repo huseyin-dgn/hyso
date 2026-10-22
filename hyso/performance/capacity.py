@@ -64,6 +64,10 @@ def _row(batch,recipe):
 
 
 def _candidate(recipe,plan,batch,root):
+    from .cold import _owned_worker_launcher
+    launcher = _owned_worker_launcher.get()
+    if launcher is not None:
+        return launcher('capacity', recipe, plan, batch, root)
     row=_row(batch,recipe)
     item=root/str(batch);item.mkdir()
     request=item/'request.json';output=item/'result.json';ready=item/'ready.json'
@@ -75,13 +79,20 @@ def _candidate(recipe,plan,batch,root):
     # Files avoid unbounded in-memory stdout/stderr capture and pipe deadlocks.
     with tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
         try:
-            worker=subprocess.Popen(command,stdout=stdout,stderr=stderr,
-                env=dict(os.environ,PYTHONDONTWRITEBYTECODE='1'),
-                creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
-            row['launcher_pid']=worker.pid
-            try: worker.wait(timeout=plan.timeout_seconds)
-            except subprocess.TimeoutExpired:
-                timed_out=True;_terminate(worker);worker.wait(timeout=10)
+            try:
+                worker=subprocess.Popen(command,stdout=stdout,stderr=stderr,
+                    env=dict(os.environ,PYTHONDONTWRITEBYTECODE='1'),
+                    creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
+                row['launcher_pid']=worker.pid
+                try: worker.wait(timeout=plan.timeout_seconds)
+                except subprocess.TimeoutExpired: timed_out=True
+            finally:
+                if worker is not None:
+                    cleanup_deadline=time.monotonic()+10.
+                    if worker.poll() is None:
+                        _terminate(worker,timeout=max(0.,cleanup_deadline-time.monotonic()))
+                    worker.wait(timeout=max(0.,cleanup_deadline-time.monotonic()))
+                    row['process_terminated']=worker.poll() is not None
             row.update(exit_code=worker.returncode,execution_seconds=time.perf_counter()-start)
             if ready.is_file():
                 receipt=json.loads(ready.read_text(encoding='utf-8'))
@@ -98,9 +109,6 @@ def _candidate(recipe,plan,batch,root):
                 row.update(body)
             else: row.update(status='failed',reason='missing worker result')
         finally:
-            if worker is not None:
-                if worker.poll() is None: _terminate(worker)
-                worker.wait(timeout=10);row['process_terminated']=worker.poll() is not None
             stderr.seek(0,2);size=stderr.tell();stderr.seek(max(0,size-4096))
             row['stderr_tail']=stderr.read().decode('utf-8',errors='replace')
     row['classification']=_classification(row['status'])

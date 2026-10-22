@@ -115,6 +115,10 @@ subprocess'tir. UUID/PCI/name/driver ve native tool path saklanır. Selector,
 NVIDIA physical enumeration/UUID/PCI kimliğidir; CUDA_VISIBLE_DEVICES index'i
 olarak yorumlanmaz. Tek query'de birden fazla GPU satırı reddedilir.
 CLI format değişirse parse hatası unavailable olur; sıfır değer uydurulmaz.
+Total memory mevcutsa used/free alanlarının her biri onu aşamaz; tutarsız sorgu
+unavailable/null olur. Used+free=total eşitliği varsayılmaz. Aynı kontrol result
+validation'da da uygulanır. Pozitif olmayan host counter aralığından process veya
+system CPU yüzdesi yayımlanmaz; eksik/geçersiz interval sıfır kullanım değildir.
 
 GPU busy: sensörün penceresinde en az bir kernel çalıştığı süre yüzdesi.
 Memory-controller busy: device memory read/write aktif zaman yüzdesi.

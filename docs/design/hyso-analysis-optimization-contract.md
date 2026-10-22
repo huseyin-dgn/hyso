@@ -253,6 +253,203 @@ platform/installed/minimum/package doğrulaması yeni kaynağa göre ayrıca ger
 |P34 planned|Multi-device orchestration/comparison yok|Gerçek farklı cihazlarda eşleşen runs|P01/P08/P26/P29; her cihaz/backend erişimi|Per-device native run, explicit precision/runtime differences|Plan immutable per-device refs + comparison|Cihaz seçimi için adil kanıt|
 |P35 planned|Deployment provider adapter yok|Node-level fallback tespiti|Gelecek ONNX Runtime graph/session trace ve node mapping|Gerçek node execution provider proof; provider listesi yetmez|Plan deployment trace/result artifact|Beklenmeyen CPU/provider fallback'ini görür|
 
+### 7.1. Güncel kabul matrisi — CUDA ve Windows/CPU — 2026-10-22
+
+Güncel 17 implemented özellik için son dar kapsamlı native kanıt aşağıdadır.
+Yukarıdaki implementation durumları değişmez. Execution 1 kaynağı:
+[Execution 1 audit ve ham ölçümler](../audit/native-cuda-execution-1-p01-p02-p09-p16-20261022.md).
+Önceki auditler değiştirilmedi. Execution 1'de P02 yalnız derived service rate
+nedeniyle PARTIAL kaldı. Sonraki ayrı yetkili tek `conv2d_fp32_p02_completion`
+execution gerçek bounded completion-window API'siyle başarılı oldu; aşağıdaki
+P02 kaydı bu yeni sonucu taşır. Retry/baseline/karşılaştırma yapılmadı.
+
+| ID | Güncel native kalite sonucu | Kanıt / açık sınır |
+|---|---|---|
+| P01 | PASS, dar scope | 3 CUDA event sample; mean 0.161557337 ms; P99 null/insufficient_samples |
+| P02 | PASS, tek bounded window scope | 5 completed batch / 10 image; 0.0166102 s gerçek wall-clock; 602.0397105393072 images/s; pending0, group3, terminal drain1; warmup ölçüm dışında |
+| P03 | PASS, dar serial pipeline scope | 3 measured + 1 warmup frame; ID eşleşmesi; E2E raw 1.2436/2.6465/2.5686 ms, mean 2.1529 ms; read-start→post-completion host wall |
+| P04 | PASS, aynı P03 execution | Preprocess host mean 0.0409 ms; postprocess host mean 0.098866667 ms, CUDA event mean 0.067168001 ms; clock domain'leri ayrı |
+| P05 | PASS, tek fresh FP32 interpreter | Import 6459.0377 ms; model construction 19.1007 ms; hashli artifact load 2.4305 ms; runtime prepare 179.6437 ms; first inference 320.2875 ms; warm samples 0.1436/0.1387 ms; OS page-cache cold garantisi yok |
+| P06 | PASS, iki batch noktası | Batch1/2: latency mean 0.147264004/0.141263999 ms/batch; gerçek completion throughput 288.811445/6268.937415 images/s |
+| P07 | PASS, iki resolution noktası | Batch2, H×W 7×9/9×11: latency mean 0.136191994/0.163952000 ms/batch; throughput 571.706257/6595.580961 images/s; exact shape, resize yok |
+| P08 | PASS, FP32/AMP FP16 profili | FP32/AMP FP16: latency mean 0.146384001/0.182592005 ms/batch; throughput 465.784264/4734.474868 images/s; çıktı float32/float16, pytorch_eager; P28 accuracy ölçülmedi |
+| P09 | PASS, dar scope | Owned allocator baseline 2048 B, peak 3584 B, release sonrası 2048 B; fiziksel VRAM değildir |
+| P10 | PASS, mevcut B2 Windows native kanıtı | GetProcessMemoryInfo RSS baseline588197888 B, sampled peak655634432 B; lifetime HWM588283904→655634432 B; 6 observation/0.0273762 s; mutlak/model-only peak değil, Linux native doğrulanmadı |
+| P11 | PASS, mevcut B2 dense CPU/artifact kanıtı | Parameter48 B + buffer24 B = logical union72 B; state_dict2820 B, SHA yeniden doğrulandı; tied/shared object dedup testi PASS, distinct views ayrı sayılır; physical memory unsupported |
+| P16 | PASS, dar scope | İki read-only physical-device NVML sample; GPU busy 39/13%; worker attribution yok |
+| P17 | PASS, yalnız explicit candidate scope | Batch1/2 ayrı fresh CUDA worker'da feasible; latency mean 0.201952003/0.100559998 ms/batch, her noktada2 measured event sample; observed maximum2, global/proven maximum null; throughput disabled/not_requested |
+| P19 | PASS, tek FP32 training scope | Epoch training 0.2719047 s, total 0.2719245 s; 5 sample, 3 microbatch, 2 window/attempt/applied update, skipped0 |
+| P20 | PASS, aynı P19 execution | Forward/backward/optimizer host toplamları 43.0251/24.6650/33.3581 ms; ayrı selected-stream CUDA event kayıtları; stage toplamları epoch yerine kullanılmaz |
+| P22 | PASS, gerçek P19 ledger türetimi | 5/0.2719047 = 18.388795780 samples/s; 2/0.2719047 = 7.355518312 applied updates/s; ikinci fit yok |
+| P25 | PASS, FP32 dense norm/clipping; AMP kapsam dışı | L2 pre→post: 0.348718226→0.099999707 ve 1.522389875→0.099999942; threshold0.1, 26 gradient element, iki gerçek applied update; AMP/overflow/skip recovery ölçülmedi |
+
+P10/P11 son kabulü mevcut [B2 native Windows/CPU kanıtını](../audit/m2-p-b2-memory-footprint.md)
+yeniden kullanır; yeni test/workload0, CUDA0, production değişikliği0. Güncel
+memory.py SHA256 `cbc831a6a8fa8db6121c107a0bdb077d04bfa39c1b85885476a2f62e99f5995a`
+B2 final installed source ile byte-identical; inference.py de aynı. Footprint
+bağımlılıkları _counts/_descriptor/_bits/_type AST-identical. Ortak result schema'da
+diğer feature branch'leri eklenmiştir; B2 ham sonuçları güncel MemoryResult ve
+FootprintResult validator'larıyla Torch import edilmeden doğrulandı.
+P10 source result `47276b5b-cae9-4aef-a393-c200caac6cb0`: perf_counter_ns query
+start/end/midpoint ve5 actual gap, interval0.002s, held64MiB ordinary CPU tensor,
+release weakref=True; lifetime HWM reset=False. Başarılı worker exit0; failure
+worker exit0/expected exception, sampler_threads0; controlled crash exit7 ve
+başarılı result yok. Tüm üç worker terminated; pointer cache23→23.
+P11 source result `90711438-484a-4e28-be5f-ded2f32224ed`: gerçek artifact2820 B,
+SHA256 `3c461bcc170f76254663564083b77e27ef43cb091102476d7776e10c113f9df5`,
+weights_only roundtrip_verified. Ayrı installed final2 sonuçları da güncel schema,
+artifact stat/SHA ve cleanup bakımından doğrulandı. Tied/view/cross-category
+testinin mevcut byte'ları B2 commit e17a6d2 ile aynı; final JUnit83 memory testinde
+PASS: parameter64 B, buffer54 B, object-union94 B. Aynı object dedup edilir;
+farklı view object'leri storage paylaşsa da logical olarak ayrı sayılır.
+Ham kanıtlar `C:/Users/hdgn5/AppData/Local/Temp/hyso-m2pb2-20261020/`
+altında `native-windows-cachefix-touch.json`, `native-windows-cachefix.json`,
+`installed-windows-final2-touch.json`, `targeted-final2.xml` ve artifact dosyalarıdır.
+Bu son kontrolün kaydı:
+`C:/Users/hdgn5/AppData/Local/Temp/hyso-p10-p11-acceptance-20261022/acceptance-verification.json`.
+17 implemented feature için kayıtlı dar kapsamların tümü PASS:15 CUDA +2 Windows/CPU.
+Önceki15 CUDA sonucu tekrarlanmadı. Bu tam precision/platform acceptance veya release
+GO değildir: P25 AMP ve Linux native gibi ölçülmeyen kapsamlar açık kalır.
+B4/P23/B10 ve eski R1 release NO-GO kapanmadı; güncel tüm source değişikliklerini
+kapsayan final wheel/sdist/installed/minimum release gate bu kabulden çıkarılamaz.
+
+P19/P20/P22/P25 kanıtı: tek `linear_fp32_p19_p20_p22_p25_training` execution,
+run ID `be71ecb2-b397-4365-ad3f-a3d6412e0e0d`, public P19 segment ID
+`1e96848e-ebd0-4c78-8a19-158e44277e59`; P20/P22/P25 aynı source segment ve
+aynı P19 payload/hash üzerinden doğrulandı. Public formatlar sırasıyla
+`training_timing`, `training_stages`, `training_throughput`, `gradient_diagnostics`;
+tam result kimlik/hash kayıtları ve ham ölçümler:
+`C:/Users/hdgn5/AppData/Local/Temp/hyso-training-native-20261022/metrics.json`,
+`training-candidate/native-execution-1/result.json`, `postflight.json`.
+Gerçek Trainer + AdamW, Linear(3,4)/Dropout(0.2)/Linear(4,2), seed71,
+batch2/2/1, accum2, lr0.01, grad_clip0.1, amp=False, epoch1; retry/baseline0.
+Model/optimizer ve Python/NumPy/Torch CPU/CUDA RNG öncesi/sonrası bounded
+state/hash kanıtı ölçülen fit dışında kaydedildi; rollback veya ikinci fit yok.
+P19 host microbatch süreleri 117.7554/8.7820/8.4390 ms, optimizer attempt
+süreleri 125.6789/10.2167 ms; P20 CUDA forward 39.057407/0.317440/3.608576 ms,
+backward 13.880448/7.223136/3.476192 ms, optimizer 32.874687/0.419040 ms.
+Host clock perf_counter_ns, CUDA event selected default stream0; event drains17,
+pending0, warmup0, validation yok. P25 norm query senkronizasyonu ve overhead'i
+P19/P20 ölçümlerini etkiler; stage scope'ları inclusive, çapraz stage toplam yok.
+CUDA initialization gerçek model/backward/optimizer/event sonuçlarıyla doğrulandı.
+Controller/parent/worker exit0, crash/OOM/timeout yok; child/outer active0,
+altı owned/controller PID exited/absent. Source51/runtime26 hash, Job exact
+membership/readback, process4GiB, child8GiB/4, outer12GiB/8, worker60s/outer90s,
+allocator0.15, kill-on-close ve bounded logs/artifacts doğrulandı.
+GPU context unavailable warning-only; ölçüm güvenilirliği `unqualified`, kontrollü
+karşılaştırma yok. P23 activation hooks kapalı; B4 hâlâ OPEN/UNRESOLVED.
+
+P05/P17 sonraki native kabulü: public `measure_cold_start` ve
+`find_max_batch_size`, private scoped launcher üzerinden aynı forensic supervisor'a
+bağlandı; public imza/result schema değişmedi, ölçüm worker'ları yeniden yazılmadı.
+Bu sealed native yolda fresh interpreter'lar `-I -S -B` ile inherited owned Jobs
+içinde başlar; ayrıca nested Job assignment receipt, exact membership ve hard-limit
+readback tamamlanır. Torch importundan önce full source/runtime seal, request SHA,
+controller/parent/worker zinciri, token ve canlı parent process handle üzerinden
+PID + creation-time doğrulanır. PID numarasıyla kill/reopen kullanılmaz.
+Kill-on-close, bounded stdout/stderr/result ve owned-Job cleanup korunur.
+12 hedefli stdlib/offline test geçti: pre-import ret, parent creation identity,
+request/runtime mismatch, missing receipt/limit, timeout/crash/simulated OOM,
+orphan cleanup, public failure schema ve mevcut scenario contract uyumu.
+
+P05 run `783be515-4547-4a8b-b683-7d652bd01503`, public ColdStartResult
+`ee019edc-e445-48c0-a944-83d53e72d25f`; manifest SHA256
+`19a30f0fc1fa5f693f0cc5b1fb66f8ec6c43884e00e74825ec193128cb487e71`.
+Tek fresh worker; CPU Conv2d state_dict SHA256 doğrulanarak weights_only CPU load,
+sonra CUDA:0 FP32 preparation. Module import ve model construction sonunda CUDA
+initialized=False, runtime preparation sonunda True. İlk forward1, warmup1,
+warm reference2, toplam4 forward. Tüm fazlar gerçek worker perf_counter_ns
+completion wall süreleridir; startup receipt ayrıca guard/pipe/reader overhead içerir.
+Warm reference toplam0.4815 ms; ayrı warm inference samples0.1436/0.1387 ms.
+OS page cache ve GPU driver state cold değildir/garanti edilmez.
+
+P17 run `50f2ca0b-789a-4aed-a6cf-8e821af636a3`, public CapacityResult
+`130f5f98-f31a-48ac-a070-7fc93300d7e7`; manifest SHA256
+`a44fe0d497fef4c62fbcd1ff85e037033c8092dee41fbb51db08f1cb67288dac`.
+Batch1/2 iki ayrı fresh worker'da
+gerçek shape1×1×7×9 / 2×1×7×9, FP32 pytorch_eager, CUDA default stream0.
+Her adayda public latency protokolü warmup1 + measured2; CUDA allocator probe
+ayrı single forward'dur ve latency sample sayısına eklenmez. Probe peak3072/3584 B,
+release sonrası allocated2048 B; fiziksel VRAM veya P10/P11 acceptance değildir.
+İki aday feasible, OOM/unsupported0; search_bound4, explicit_points_only,
+range_exhaustive=False, maximum_observed_feasible_batch2,
+maximum_proven_within_range=null. OOM sınırı/global maksimum ölçülmedi;
+throughput null/disabled/not_requested olarak korundu.
+
+Her özellikte ayrı manifest/seal/marker, bir üst düzey native execution; toplam2,
+retry0/baseline0. P05 nested40s, P17 her candidate20s; worker60s/outer90s,
+process4GiB, child8GiB/4, outer12GiB/8, CUDA allocator0.15. Controller/parent/worker
+ve üç nested workload worker exit0; crash/OOM/timeout yok. Outer/child/nested
+active-process0 ve her run'da kaydedilmiş10 owned/controller PID exited/absent.
+Her run'da source51/runtime26 hash önce/sonra doğrulandı. GPU telemetry unavailable
+warning-only, measurement reliability unqualified; kontrollü karşılaştırma yok.
+P23 activation hooks kapalı; B4 OPEN/UNRESOLVED. Önceki audit/marker'lar değişmedi.
+Ham public sonuçlar, phase/candidate/provenance ve güvenlik kanıtları:
+`C:/Users/hdgn5/AppData/Local/Temp/hyso-p05-p17-native-20261022/p05-metrics.json`,
+aynı dizinde `p17-metrics.json`, `p05-postflight.json`, `p17-postflight.json`,
+`p05-candidate/native-execution-1/result.json`,
+`p17-candidate/native-execution-1/result.json` ve `preservation-final.json`.
+
+Execution 1'de GPU paylaşımı, unknown PID, WDDM N/A ve import sırasında eskiyen capture yalnızca
+warning/unqualified metadata üretti. Source/runtime, Job ownership/readback,
+60/90s deadline, bounded artifacts ve active-process=0 cleanup doğrulandı.
+Controller/parent/worker exit0; OOM/crash/timeout yok. **B4 OPEN/UNRESOLVED**;
+bu tablo 17/17 native acceptance veya release GO değildir.
+
+P02'nin yeni tek execution kanıtı:
+`C:/Users/hdgn5/AppData/Local/Temp/hyso-p02-native-execution-20261022/execution-result.json`.
+Sealed run ID `39c35fb7-b570-4777-a6c0-7fa050a5d2e3`;
+public result ID `6e706916-8546-4f3c-b144-131fe2aaf3bb`.
+Ledger: admitted5=completed5+pending0, image10=2×5, ID0–4,
+max pending2, backpressure sync1, terminal drain1; conservation PASS.
+Clock `perf_counter_ns`, scope `resident_forward_completion_wall`, default stream0,
+synchronization `bounded_group_completion_and_terminal_event`; warmup1 hariç.
+Controller/parent/worker exit0; OOM/crash/timeout yok; outer/child active0 ve
+tüm owned PID'ler exited/absent. Source51/runtime26 hash doğrulandı.
+GPU context toplanmadığı için unavailable warning'leri ve `unqualified` ölçüm
+güvenilirliği korunur; bu kısa tek pencere kontrollü karşılaştırma veya sürdürülen
+throughput iddiası değildir. Diğer özelliklerin kanıt kapsamı genişletilmedi.
+
+P03/P04 yeni kanıtı: tek `measure_pipeline` çağrısı ve onun sonucuna uygulanan
+`analyze_stages`; ikinci pipeline veya baseline yok. Kaynak:
+`C:/Users/hdgn5/AppData/Local/Temp/hyso-validation-completion-20261022/result-summary.json`
+ve aynı dizindeki `metrics.json` / `pipeline-candidate/native-execution-1/result.json`.
+Run ID `fc21f1a4-2a80-4c32-9942-a812fc5b1c25`; manifest SHA256
+`b6d93e2e52d23ac2da4ded87a9f3e4b891365a3d31deeae15b466b6f65c70235`.
+Measured frame ID'leri `frame-1, frame-2, frame-3`; warmup `frame-0`;
+source/delivered sırası aynı, pending0/dropped0, forward count4.
+P03 `perf_counter_ns` E2E scope'u kaynak okuma, bounded queue beklemesi,
+declared stages ve instrumentation/terminal completion içerir; delivery hariçtir.
+P04 CPU preprocessing için yalnız host süresi, CUDA postprocessing için ayrı
+host elapsed ve `end_event_sync` selected-stream event süresi verir. Stage
+süreleri toplanarak E2E üretilmedi. Üç örnekte P99 null/insufficient_samples.
+Controller/parent/worker exit0; OOM/crash/timeout yok; outer/child active0 ve tüm
+owned PID'ler exited/absent; source51/runtime26 doğrulandı. GPU context unavailable
+warning'leri nedeniyle quality `unqualified`; exclusivity veya karşılaştırma yok.
+Bu P03/P04 kabulü sırasında P05/P17 nested-worker admission eksikleri nedeniyle
+BLOCKED idi; diğer yeni runner bağlantıları o aşamada yalnız offline READY idi.
+Sonraki P05/P17 native kabulü aşağıda ayrıca kaydedilmiştir.
+
+P06/P07/P08 için sonraki yetkili kabul: her senaryo ayrı run ID/manifest/seal,
+worker, execution marker ve cleanup ile bir kez çalıştı; toplam3 execution,
+retry0 ve ek baseline0. Her noktanın latency geçişinde2 gerçek CUDA event sample;
+ayrı completion geçişinde3 completed batch, pending0, terminal drain1 kaydı var.
+Completion image sayıları P06 batch1/2 için3/6, P07 ve P08 noktalarında6'dır.
+Latency seçili default stream'de end-event sync ile ms/batch ölçülür; throughput
+gerçek `perf_counter_ns` completion window süresinden images/s hesaplanır.
+Her geçişte1 warmup ve1 untimed preflight vardır; bunlar measured count'a katılmaz.
+Bu iki geçiş aynı forward olarak sunulmaz. Public raw schema'lar, point/result ID
+bağları, precision/backend, requested/actual shape ve sample sayıları korunur.
+Üç run'da crash/OOM/timeout yok; controller/parent/worker exit0, outer/child active0
+ve owned PID'ler exited/absent; source51/runtime26 hash doğrulandı. Warning-only
+GPU context unavailable ve quality `unqualified` kaydı korunur. Kısa pencerelerin
+oranları speedup karşılaştırması, global optimum veya P28 accuracy kanıtı değildir.
+Ham kanıt ve her noktanın ayrı ledger/provenance kaydı:
+`C:/Users/hdgn5/AppData/Local/Temp/hyso-p06-p07-p08-native-20261022/P06-result.json`,
+aynı dizinde `P07-result.json`, `P08-result.json` ve `summary.json`.
+Bu sonuçlar yalnız seçilen iki batch, iki çözünürlük ve iki precision profilini
+kapsar; diğer senaryolar çalıştırılmadı ve B4 OPEN/UNRESOLVED kaldı.
+
 ## 8. Uygulanabilir geliştirme sırası ve küçük kapılar
 
 1. **Öncelikli recovery: B4/P23.** Bu görevin ayrı forensic v3 preflight'ı CPU/
