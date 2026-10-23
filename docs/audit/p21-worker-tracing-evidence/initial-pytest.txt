@@ -1,0 +1,146 @@
+.....................F.FFFFFF                                            [100%]
+================================== FAILURES ===================================
+_______________ test_native_windows_spawn_acceptance[training] ________________
+tests\test_worker_tracing.py:109: in test_native_windows_spawn_acceptance
+    folder=tmp_path_factory.mktemp('p21-native')
+tests\test_worker_tracing.py:99: in execute
+    assert recorder.dropped_events==2
+E   AssertionError: {"argv": ["C:\\Users\\hdgn5\\.conda\\envs\\torch_gpu\\python.exe", "-B", "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\tests\\p21_worker_acceptance.py", "--output", "C:\\Windows\\Temp\\pytest-of-hdgn5\\pytest-0\\p21-native0\\training.json", "--admit", "C:\\Windows\\Temp\\pytest-of-hdgn5\\pytest-0\\p21-native0\\training.admit", "--case", "training"], "timeout_s": 90.0, "process_limit": 8, "process_commit_bytes": 4294967296, "job_commit_bytes": 12884901888, "kill_on_job_close": true, "timed_out": false, "exit_code": 1, "launcher_pid": 21424, "elapsed_s": 41.95399999999995}
+E     C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\hyso\training\trainer.py:116: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+E       self.scaler = torch.cuda.amp.GradScaler(enabled=amp)
+E     Traceback (most recent call last):
+E       File "C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\tests\p21_worker_acceptance.py", line 216, in <module>
+E         main()
+E       File "C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\tests\p21_worker_acceptance.py", line 209, in main
+E         data = run(args.case)
+E       File "C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\tests\p21_worker_acceptance.py", line 152, in run
+E         trainer.fit(current, epochs=2)
+E       File "C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\tests\p21_worker_acceptance.py", line 146, in counted
+E         return native(*a, **kw)
+E       File "C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\hyso\training\trainer.py", line 524, in fit
+E         for batch in (train_loader if loader_recorder is None else loader_recorder.observe_loader(train_loader, "training")):
+E       File "C:\Users\hdgn5\.conda\envs\torch_gpu\Lib\site-packages\torch\utils\data\dataloader.py", line 701, in __next__
+E         data = self._next_data()
+E       File "C:\Users\hdgn5\.conda\envs\torch_gpu\Lib\site-packages\torch\utils\data\dataloader.py", line 1448, in _next_data
+E         idx, data = self._get_data()
+E       File "C:\Users\hdgn5\.conda\envs\torch_gpu\Lib\site-packages\torch\utils\data\dataloader.py", line 1397, in _get_data
+E         raise RuntimeError(
+E     RuntimeError: DataLoader timed out after 15 seconds
+E     
+E     
+E   assert 1 == 0
+E    +  where 1 = CompletedProcess(args=['C:\\Users\\hdgn5\\.conda\\envs\\torch_gpu\\python.exe', 'C:\\Users\\hdgn5\\OneDrive\\Belgeler\...close": true, "timed_out": false, "exit_code": 1, "launcher_pid": 21424, "elapsed_s": 41.95399999999995}\n', stderr='').returncode
+_______________ test_native_windows_spawn_acceptance[overflow] ________________
+tests\test_worker_tracing.py:109: in test_native_windows_spawn_acceptance
+    folder=tmp_path_factory.mktemp('p21-native')
+tests\test_worker_tracing.py:99: in execute
+    assert recorder.dropped_events==2
+E   AssertionError: {"argv": ["C:\\Users\\hdgn5\\.conda\\envs\\torch_gpu\\python.exe", "-B", "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\tests\\p21_worker_acceptance.py", "--output", "C:\\Windows\\Temp\\pytest-of-hdgn5\\pytest-0\\p21-native0\\overflow.json", "--admit", "C:\\Windows\\Temp\\pytest-of-hdgn5\\pytest-0\\p21-native0\\overflow.admit", "--case", "overflow"], "timeout_s": 90.0, "process_limit": 8, "process_commit_bytes": 4294967296, "job_commit_bytes": 12884901888, "kill_on_job_close": true, "timed_out": false, "exit_code": 1, "launcher_pid": 22776, "elapsed_s": 0.25}
+E       File "C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\tests\p21_worker_acceptance.py", line 1
+E         ﻿"""Isolated native P21 acceptance cases, admitted by the Windows Job supervisor."""
+E          ^
+E     SyntaxError: invalid character '�' (U+00BB)
+E     
+E     
+E   assert 1 == 0
+E    +  where 1 = CompletedProcess(args=['C:\\Users\\hdgn5\\.conda\\envs\\torch_gpu\\python.exe', 'C:\\Users\\hdgn5\\OneDrive\\Belgeler\..."kill_on_job_close": true, "timed_out": false, "exit_code": 1, "launcher_pid": 22776, "elapsed_s": 0.25}\n', stderr='').returncode
+_______________ test_native_windows_spawn_acceptance[exception] _______________
+tests\test_worker_tracing.py:109: in test_native_windows_spawn_acceptance
+    folder=tmp_path_factory.mktemp('p21-native')
+tests\test_worker_tracing.py:99: in execute
+    assert recorder.dropped_events==2
+E   AssertionError: {"argv": ["C:\\Users\\hdgn5\\.conda\\envs\\torch_gpu\\python.exe", "-B", "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\tests\\p21_worker_acceptance.py", "--output", "C:\\Windows\\Temp\\pytest-of-hdgn5\\pytest-0\\p21-native0\\exception.json", "--admit", "C:\\Windows\\Temp\\pytest-of-hdgn5\\pytest-0\\p21-native0\\exception.admit", "--case", "exception"], "timeout_s": 90.0, "process_limit": 8, "process_commit_bytes": 4294967296, "job_commit_bytes": 12884901888, "kill_on_job_close": true, "timed_out": false, "exit_code": 1, "launcher_pid": 4068, "elapsed_s": 0.21899999999982356}
+E       File "C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\tests\p21_worker_acceptance.py", line 1
+E         ﻿"""Isolated native P21 acceptance cases, admitted by the Windows Job supervisor."""
+E          ^
+E     SyntaxError: invalid character '�' (U+00BB)
+E     
+E     
+E   assert 1 == 0
+E    +  where 1 = CompletedProcess(args=['C:\\Users\\hdgn5\\.conda\\envs\\torch_gpu\\python.exe', 'C:\\Users\\hdgn5\\OneDrive\\Belgeler\...lose": true, "timed_out": false, "exit_code": 1, "launcher_pid": 4068, "elapsed_s": 0.21899999999982356}\n', stderr='').returncode
+_________________ test_native_windows_spawn_acceptance[crash] _________________
+tests\test_worker_tracing.py:109: in test_native_windows_spawn_acceptance
+    folder=tmp_path_factory.mktemp('p21-native')
+tests\test_worker_tracing.py:99: in execute
+    assert recorder.dropped_events==2
+E   AssertionError: {"argv": ["C:\\Users\\hdgn5\\.conda\\envs\\torch_gpu\\python.exe", "-B", "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\tests\\p21_worker_acceptance.py", "--output", "C:\\Windows\\Temp\\pytest-of-hdgn5\\pytest-0\\p21-native0\\crash.json", "--admit", "C:\\Windows\\Temp\\pytest-of-hdgn5\\pytest-0\\p21-native0\\crash.admit", "--case", "crash"], "timeout_s": 90.0, "process_limit": 8, "process_commit_bytes": 4294967296, "job_commit_bytes": 12884901888, "kill_on_job_close": true, "timed_out": false, "exit_code": 1, "launcher_pid": 25464, "elapsed_s": 0.21900000000005093}
+E       File "C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\tests\p21_worker_acceptance.py", line 1
+E         ﻿"""Isolated native P21 acceptance cases, admitted by the Windows Job supervisor."""
+E          ^
+E     SyntaxError: invalid character '�' (U+00BB)
+E     
+E     
+E   assert 1 == 0
+E    +  where 1 = CompletedProcess(args=['C:\\Users\\hdgn5\\.conda\\envs\\torch_gpu\\python.exe', 'C:\\Users\\hdgn5\\OneDrive\\Belgeler\...ose": true, "timed_out": false, "exit_code": 1, "launcher_pid": 25464, "elapsed_s": 0.21900000000005093}\n', stderr='').returncode
+______________ test_native_windows_spawn_acceptance[lock_crash] _______________
+tests\test_worker_tracing.py:109: in test_native_windows_spawn_acceptance
+    folder=tmp_path_factory.mktemp('p21-native')
+tests\test_worker_tracing.py:99: in execute
+    assert recorder.dropped_events==2
+E   AssertionError: {"argv": ["C:\\Users\\hdgn5\\.conda\\envs\\torch_gpu\\python.exe", "-B", "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\tests\\p21_worker_acceptance.py", "--output", "C:\\Windows\\Temp\\pytest-of-hdgn5\\pytest-0\\p21-native0\\lock_crash.json", "--admit", "C:\\Windows\\Temp\\pytest-of-hdgn5\\pytest-0\\p21-native0\\lock_crash.admit", "--case", "lock_crash"], "timeout_s": 90.0, "process_limit": 8, "process_commit_bytes": 4294967296, "job_commit_bytes": 12884901888, "kill_on_job_close": true, "timed_out": false, "exit_code": 1, "launcher_pid": 24628, "elapsed_s": 0.2339999999999236}
+E       File "C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\tests\p21_worker_acceptance.py", line 1
+E         ﻿"""Isolated native P21 acceptance cases, admitted by the Windows Job supervisor."""
+E          ^
+E     SyntaxError: invalid character '�' (U+00BB)
+E     
+E     
+E   assert 1 == 0
+E    +  where 1 = CompletedProcess(args=['C:\\Users\\hdgn5\\.conda\\envs\\torch_gpu\\python.exe', 'C:\\Users\\hdgn5\\OneDrive\\Belgeler\...lose": true, "timed_out": false, "exit_code": 1, "launcher_pid": 24628, "elapsed_s": 0.2339999999999236}\n', stderr='').returncode
+___________ test_native_windows_spawn_acceptance[shutdown_timeout] ____________
+tests\test_worker_tracing.py:109: in test_native_windows_spawn_acceptance
+    folder=tmp_path_factory.mktemp('p21-native')
+tests\test_worker_tracing.py:99: in execute
+    assert recorder.dropped_events==2
+E   AssertionError: {"argv": ["C:\\Users\\hdgn5\\.conda\\envs\\torch_gpu\\python.exe", "-B", "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\tests\\p21_worker_acceptance.py", "--output", "C:\\Windows\\Temp\\pytest-of-hdgn5\\pytest-0\\p21-native0\\shutdown_timeout.json", "--admit", "C:\\Windows\\Temp\\pytest-of-hdgn5\\pytest-0\\p21-native0\\shutdown_timeout.admit", "--case", "shutdown_timeout"], "timeout_s": 90.0, "process_limit": 8, "process_commit_bytes": 4294967296, "job_commit_bytes": 12884901888, "kill_on_job_close": true, "timed_out": false, "exit_code": 1, "launcher_pid": 25988, "elapsed_s": 0.2660000000000764}
+E       File "C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\tests\p21_worker_acceptance.py", line 1
+E         ﻿"""Isolated native P21 acceptance cases, admitted by the Windows Job supervisor."""
+E          ^
+E     SyntaxError: invalid character '�' (U+00BB)
+E     
+E     
+E   assert 1 == 0
+E    +  where 1 = CompletedProcess(args=['C:\\Users\\hdgn5\\.conda\\envs\\torch_gpu\\python.exe', 'C:\\Users\\hdgn5\\OneDrive\\Belgeler\...lose": true, "timed_out": false, "exit_code": 1, "launcher_pid": 25988, "elapsed_s": 0.2660000000000764}\n', stderr='').returncode
+_____________ test_artifact_roundtrip_immutability_and_no_clobber _____________
+tests\test_worker_tracing.py:113: in test_artifact_roundtrip_immutability_and_no_clobber
+    output=folder/(case+'.json')
+tests\test_worker_tracing.py:99: in execute
+    assert recorder.dropped_events==2
+E   AssertionError: Traceback (most recent call last):
+E       File "C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\tests\p21_native_supervisor.py", line 78, in <module>
+E         if __name__=='__main__':main()
+E       File "C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\tests\p21_native_supervisor.py", line 44, in main
+E         admit=output.with_suffix('.admit');assert not admit.exists(),'use a fresh output name'
+E     AssertionError: use a fresh output name
+E     C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\hyso\training\trainer.py:116: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+E       self.scaler = torch.cuda.amp.GradScaler(enabled=amp)
+E     Traceback (most recent call last):
+E       File "C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\tests\p21_worker_acceptance.py", line 216, in <module>
+E         main()
+E       File "C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\tests\p21_worker_acceptance.py", line 209, in main
+E         data = run(args.case)
+E       File "C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\tests\p21_worker_acceptance.py", line 152, in run
+E         trainer.fit(current, epochs=2)
+E       File "C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\tests\p21_worker_acceptance.py", line 146, in counted
+E         return native(*a, **kw)
+E       File "C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\hyso\training\trainer.py", line 524, in fit
+E         for batch in (train_loader if loader_recorder is None else loader_recorder.observe_loader(train_loader, "training")):
+E       File "C:\Users\hdgn5\.conda\envs\torch_gpu\Lib\site-packages\torch\utils\data\dataloader.py", line 701, in __next__
+E         data = self._next_data()
+E       File "C:\Users\hdgn5\.conda\envs\torch_gpu\Lib\site-packages\torch\utils\data\dataloader.py", line 1448, in _next_data
+E         idx, data = self._get_data()
+E       File "C:\Users\hdgn5\.conda\envs\torch_gpu\Lib\site-packages\torch\utils\data\dataloader.py", line 1397, in _get_data
+E         raise RuntimeError(
+E     RuntimeError: DataLoader timed out after 15 seconds
+E     
+E     
+E   assert 1 == 0
+E    +  where 1 = CompletedProcess(args=['C:\\Users\\hdgn5\\.conda\\envs\\torch_gpu\\python.exe', 'C:\\Users\\hdgn5\\OneDrive\\Belgeler\...h_suffix(\'.admit\');assert not admit.exists(),\'use a fresh output name\'\nAssertionError: use a fresh output name\n').returncode
+=========================== short test summary info ===========================
+FAILED tests\test_worker_tracing.py::test_native_windows_spawn_acceptance[training]
+FAILED tests\test_worker_tracing.py::test_native_windows_spawn_acceptance[overflow]
+FAILED tests\test_worker_tracing.py::test_native_windows_spawn_acceptance[exception]
+FAILED tests\test_worker_tracing.py::test_native_windows_spawn_acceptance[crash]
+FAILED tests\test_worker_tracing.py::test_native_windows_spawn_acceptance[lock_crash]
+FAILED tests\test_worker_tracing.py::test_native_windows_spawn_acceptance[shutdown_timeout]
+FAILED tests\test_worker_tracing.py::test_artifact_roundtrip_immutability_and_no_clobber
+7 failed, 22 passed in 117.30s (0:01:57)

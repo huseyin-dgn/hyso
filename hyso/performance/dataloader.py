@@ -1,6 +1,7 @@
-"""P21 main-process iterator evidence; worker service clocks are unsupported.
+"""P21 main-process iterator evidence with an optional explicit task adapter.
 
-No loader reconstruction, worker IPC, dataset wrapping, or worker ownership.
+Ordinary DataLoaders have no reconstruction, IPC, wrapping or worker ownership.
+WorkerTaskDataLoader explicitly collects a separate versioned task companion.
 The observer drops its iterator references; PyTorch retains normal teardown and
 persistent-worker ownership. No retrospective inference of wait from P19 clocks.
 """
@@ -45,6 +46,9 @@ class _ObservedIterator:
             owner.reserve_loader()
             start = time.perf_counter_ns()
             try:
+                from ._loader_task_trace import WorkerTaskDataLoader
+                if type(self.loader) is WorkerTaskDataLoader:
+                    self.loader.begin_trace_epoch(owner.epoch["epoch_id"], self.phase)
                 self.iterator = iter(self.loader)
                 end = time.perf_counter_ns()
                 owner.loader_row("iterator_init", self.phase, start, end, None)
@@ -73,6 +77,9 @@ class _ObservedIterator:
             end = time.perf_counter_ns()
             self.batch_index += 1
             row = owner.loader_row("batch", self.phase, start, end, self.batch_index)
+            from ._loader_task_trace import WorkerTaskDataLoader
+            if type(self.loader) is WorkerTaskDataLoader:
+                self.loader.bind_trace_delivery(row)
             owner.waiting[self.phase] = row
             return batch
         except BaseException:
@@ -156,7 +163,8 @@ class _LoaderStageRecorder(_LoaderMixin, _StageRecorder):
 def _configuration(loader):
     if loader is None:
         return None
-    if type(loader) is not DataLoader:
+    from ._loader_task_trace import WorkerTaskDataLoader
+    if type(loader) not in (DataLoader, WorkerTaskDataLoader):
         raise TypeError("P21 requires a standard existing torch DataLoader")
     context = loader.multiprocessing_context
     return dict(type=_type(loader), dataset_type=_type(loader.dataset), sampler_type=_type(loader.sampler),
@@ -375,10 +383,11 @@ class LoaderTrainingResult:
 def measure_training_with_loader(trainer, train_loader, val_loader=None, *, epochs=5,
         protocol=None, loader_protocol=None, stages=True, stage_protocol=None,
         save_last_to=None, resume_from=None):
-    """One actual fit; main wait observed, optional P20, P22 derived, no worker trace.
+    """One actual fit; main wait observed, optional P20, P22 derived.
 
     DataLoader configuration/ownership stays caller-owned. No strict multiworker
     checkpoint/resume support is added. Worker service/queue metrics stay null.
+    Explicit WorkerTaskDataLoader receipts can be analyzed as a v2 companion.
     """
     loader_protocol = DataLoaderAnalysisProtocol() if loader_protocol is None else loader_protocol
     if type(loader_protocol) is not DataLoaderAnalysisProtocol or type(stages) is not bool:
@@ -389,6 +398,14 @@ def measure_training_with_loader(trainer, train_loader, val_loader=None, *, epoc
     if type(stage_protocol) is not TrainingStageProtocol:
         raise TypeError("stage_protocol must be TrainingStageProtocol")
     configs = dict(training=_configuration(train_loader), validation=_configuration(val_loader))
+    from ._loader_task_trace import WorkerTaskDataLoader, clock_info, ADAPTER, SOURCE_HASH
+    if type(val_loader) is WorkerTaskDataLoader:
+        raise ValueError("validation task tracing is currently unsupported")
+    if type(train_loader) is WorkerTaskDataLoader:
+        if save_last_to is not None or resume_from is not None:
+            raise ValueError("task tracing checkpoint/resume is currently unsupported")
+        import uuid
+        train_loader.begin_trace_run(uuid.uuid4().hex)
     captured = []
     def factory(t, p):
         recorder = (_LoaderStageRecorder(t, p, loader_protocol, stage_protocol) if stages else
@@ -413,4 +430,9 @@ def measure_training_with_loader(trainer, train_loader, val_loader=None, *, epoc
                      "instrumented scopes include observer overhead; stage intervals must not be summed",
                      "no strict multiworker resume or hidden-stream/kernel attribution"],
         **{name: dict(value=None, status="unsupported", reason="no_verified_worker_or_queue_trace") for name in ("worker_service", "queue_occupancy", "prefetch_efficiency")})
-    return LoaderTrainingResult(timing, DataLoaderAnalysisResult(data), stage_result, analyze_training_throughput(timing))
+    result = LoaderTrainingResult(timing, DataLoaderAnalysisResult(data), stage_result, analyze_training_throughput(timing))
+    if type(train_loader) is WorkerTaskDataLoader:
+        train_loader.trace_source = dict(source_p21_sha256=_hash(data),
+            source_segment_id=data["source_segment_id"], execution_id=train_loader.execution_id,
+            adapter=ADAPTER, adapter_source_sha256=SOURCE_HASH, parent_clock=clock_info())
+    return result

@@ -12,6 +12,28 @@ import math
 STAGES = ("decode", "transform", "dataset_fetch")
 
 
+def validate_timing_event(event):
+    """Return False for malformed or incomplete worker-local evidence."""
+    if type(event) is not dict:
+        return False
+    start, end, duration = (event.get(k) for k in ("start_ns", "end_ns", "duration_ns"))
+    ms = event.get("duration_ms")
+    return (
+        type(event.get("trace_id")) is str and bool(event["trace_id"])
+        and type(event.get("sample_id")) is str
+        and type(event.get("worker_id")) is int and event["worker_id"] >= 0
+        and type(event.get("worker_pid")) is int and event["worker_pid"] > 0
+        and type(event.get("stage")) is str and event["stage"] in STAGES
+        and all(type(v) is int for v in (start, end, duration))
+        and start >= 0 and end >= start and end <= 2**63 - 1 and duration == end - start
+        and type(ms) in (int, float) and 0 <= ms <= (2**63 - 1) / 1e6 and math.isfinite(ms)
+        and math.isclose(ms, duration / 1e6, rel_tol=1e-9, abs_tol=1e-9)
+        and event.get("outcome") == "completed"
+        and event.get("clock") == "perf_counter_ns"
+        and event.get("clock_scope") == "worker_local"
+    )
+
+
 def validate_worker_trace(
     events,
     expected_sample_ids,
