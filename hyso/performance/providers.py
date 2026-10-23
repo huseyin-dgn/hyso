@@ -3,6 +3,15 @@
 Requires optional onnxruntime and onnx in the worker/validation environment.
 Disabled optimization, unique names and matching optimized/source node definitions
 are required for source-node attribution. Fusion is conservatively unknown.
+
+Compatibility semantics (RuntimeResult schema1): ``fallback_detected`` and the
+same-named analysis status mean *unexpected observed provider execution*, based
+on the caller's explicit node expectations. They do not establish an execution
+failure, retry, session-creation fallback, or accelerated-provider-to-CPU
+transition. A CPU event where Azure was expected is an expectation mismatch.
+``session_fallback`` describes configuration differences only; static assignment
+remains unknown. These legacy field names are retained so existing serialized
+results can still be reopened without rehashing or a schema migration.
 """
 import base64
 from dataclasses import dataclass, asdict
@@ -38,7 +47,10 @@ def profile_execution_providers(recipe, directory, *, providers, expected, optim
 
     expected maps unique source node names to provider names. '*' is an explicit
     default. A nonmatching observed provider is evidence, even if that requested
-    provider was unavailable; it is never proof of CUDA execution.
+    provider was unavailable; it is never proof of CUDA execution. In schema1,
+    ``fallback_detected=True`` means only unexpected_provider_execution. Runtime
+    failure/retry and session-creation fallback are not observed by this adapter;
+    ``disable_fallback`` prevents automatic run-error session recreation.
     """
     if type(recipe) is not WorkloadRecipe or type(protocol) is not ProviderProtocol:
         raise TypeError('typed recipe and protocol required')

@@ -54,6 +54,9 @@ def compare_devices(recipe, devices, directory, *, protocol=DeviceProtocol()):
 
     Energy and quality remain null: this adapter has no labeled evaluation or
     sufficiently sampled power interval. It never estimates these from latency.
+    Evidence includes the explicit physical GPU UUID and local recipe paths for
+    identity validation. Keep raw evidence private; a shared summary should omit
+    those fields without being presented as the original verifiable artifact.
     """
     if type(recipe) is not WorkloadRecipe or type(protocol) is not DeviceProtocol:
         raise TypeError('typed recipe and protocol required')

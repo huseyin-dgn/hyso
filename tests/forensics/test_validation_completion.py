@@ -15,6 +15,7 @@ from unittest.mock import Mock, MagicMock, patch
 
 from test_p02_runner_extension import public_schema, make_root, ROOT
 import gpu_scenario_runner as runner
+from offline_test_isolation import offline_test
 
 
 @contextmanager
@@ -227,6 +228,7 @@ class PreparedValidationTests(unittest.TestCase):
         self.assertIn(runner.COLD_SCENARIO,runner.SCENARIOS)
         self.assertIn(runner.CAPACITY_SCENARIO,runner.SCENARIOS)
 
+    @offline_test
     def test_pipeline_approval_absent_or_wrong_scenario_cannot_launch(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);manifest,seal=make_root(root)

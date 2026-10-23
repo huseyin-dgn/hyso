@@ -17,6 +17,16 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
+    "hyso/evaluation.py", "hyso/quality.py",
+    "hyso/performance/_loader_dataset_trace.py", "hyso/performance/_loader_event_channel.py",
+    "hyso/performance/_loader_stage_trace.py", "hyso/performance/_loader_task_trace.py",
+    "hyso/performance/_loader_trace_groups.py", "hyso/performance/_loader_trace_validation.py",
+    "hyso/performance/_loader_worker_lifecycle.py", "hyso/performance/_loader_worker_trace.py",
+    "hyso/performance/_runtime_worker.py", "hyso/performance/devices.py",
+    "hyso/performance/energy.py", "hyso/performance/memory_trend.py",
+    "hyso/performance/providers.py", "hyso/performance/runtime_result.py",
+    "hyso/performance/stability.py", "hyso/performance/streaming.py",
+    "hyso/performance/worker_task_result.py", "hyso/performance/worker_trace_result.py",
     "hyso/performance/_saved_activation.py",
     "hyso/performance/isolated_training_memory.py",
     "hyso/performance/_training_process.py",
@@ -87,12 +97,13 @@ def distributions(tmp_path_factory):
 
 def test_canonical_packaging_configuration():
     assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == MODULES
-    assert len(MODULES) == 47
+    assert len(MODULES) == 67
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
     assert not (ROOT / "hyso/setup.cfg").exists()
     cfg = configparser.ConfigParser()
     cfg.read(ROOT / "setup.cfg", encoding="utf-8")
+    assert not cfg.has_option('metadata','author_email')
     assert cfg["metadata"]["name"] == "hyso"
     assert cfg["metadata"]["version"] == "0.2.0"
     assert cfg["options"]["python_requires"] == ">=3.10"
@@ -134,8 +145,22 @@ def test_wheel_and_sdist_content_and_metadata(distributions):
         # Email metadata may use CRLF; compare every content line unchanged.
         assert description.strip().splitlines() == (ROOT / "README.md").read_text(encoding="utf-8").strip().splitlines()
     requirements = [Requirement(value) for value in wheel_meta.get_all("Requires-Dist")]
-    assert {str(Requirement(value)) for value in sdist_requires if value.strip()} == {str(item) for item in requirements}
-    assert {item.name for item in requirements} == DEPENDENCIES
+    section=None;sdist_requirements=[]
+    for value in sdist_requires:
+        if not value.strip():continue
+        if value.startswith('['):
+            assert value=='[deployment]'
+            section='deployment';continue
+        sdist_requirements.append(Requirement(value+('; extra == "deployment"' if section else '')))
+    assert {str(item) for item in sdist_requirements} == {str(item) for item in requirements}
+    assert {item.name for item in requirements if item.marker is None} == DEPENDENCIES
+    optional={item.name:item for item in requirements if item.marker is not None}
+    assert set(optional)=={'onnx','onnxruntime'}
+    assert str(optional['onnx'].specifier)=='==1.20.0'
+    assert str(optional['onnxruntime'].specifier)=='==1.23.2'
+    assert all(item.marker.evaluate({'extra':'deployment'}) and not item.marker.evaluate({'extra':''})
+               for item in optional.values())
+    assert wheel_meta['Author-email'] is None and sdist_meta['Author-email'] is None
     assert str(next(item.specifier for item in requirements if item.name == "torch")) == ">=2.2.2"
     assert str(next(item.specifier for item in requirements if item.name == "torchvision")) == ">=0.17.2"
     assert not next(item.specifier for item in requirements if item.name == "numpy")

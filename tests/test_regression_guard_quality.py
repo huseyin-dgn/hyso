@@ -5,6 +5,7 @@ import json
 import os
 import re
 import sys
+import xml.etree.ElementTree as ET
 
 
 pytest_plugins = ["pytester"]
@@ -119,9 +120,14 @@ def test_late_ema_rejection_is_a_normal_failure(side_effect):
 def test_correct_early_ema_rejection():
     require_early_ema_rejection(observation())
 ''')
-    result = run_isolated(pytester, monkeypatch, "-q", "--tb=short", "--show-capture=no")
+    report=pytester.path/'negative-controls.xml'
+    result = run_isolated(pytester, monkeypatch, "-q", "--tb=short", "--show-capture=no",
+                          '--junitxml='+str(report))
     # Nested negative controls: nine ordinary failures, two XPASS(strict)
     # failures, one genuine XFAIL. The outer quality test must pass this gate.
     result.assert_outcomes(passed=0, failed=11, xfailed=1, xpassed=0, skipped=0, errors=0)
     assert result.ret == 1
-    assert result.stdout.str().count("[XPASS(strict)]") == 2
+    strict_xpasses={case.attrib['name'] for case in ET.parse(report).getroot().iter('testcase')
+        if case.find('failure') is not None and
+        case.find('failure').attrib.get('message','').startswith('[XPASS(strict)]')}
+    assert strict_xpasses=={'test_fixed_boundary','test_correct_early_ema_rejection'}

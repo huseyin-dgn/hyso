@@ -4,10 +4,9 @@ DATA = {'schema_version': 1,
  'head_commit': 'b74e3e2cdec527e7bb7b078f69636a27b19923fe',
  'provenance': 'Fresh CPU constructors from working tree matching HEAD; structural reference only; '
                'no historical checkpoint or tensor values.',
- 'environment': {'python': '3.10.18 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 13:08:55) '
-                           '[MSC v.1929 64 bit (AMD64)]',
-                 'executable': 'C:\\Users\\hdgn5\\.conda\\envs\\torch_gpu\\python.exe',
-                 'platform': 'Windows-10-10.0.26200-SP0',
+ 'environment': {'python': '3.10.18',
+                 'executable': None,
+                 'platform': 'Windows',
                  'torch': '2.5.1+cu121',
                  'device': 'cpu',
                  'cuda_available': True,
@@ -3064,4 +3063,6 @@ DATA = {'schema_version': 1,
                                                  'RandomRotation',
                                                  'ColorJitter',
                                                  'ToTensor',
-                                                 'Normalize']}}
+                                                 'Normalize']},
+ 'environment_scope': 'Historical constructor environment; local executable, compiler and OS build '
+                      'omitted.'}

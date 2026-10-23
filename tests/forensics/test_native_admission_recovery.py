@@ -9,6 +9,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]/'tools/forensics'))
 import native_admission as admission
 import native_scenario_runner as runner
+from offline_test_isolation import offline_test
 from test_p23_preflight import capture, NOW, RUN, SHA
 
 
@@ -115,6 +116,7 @@ class RecoveryRejections(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'manifest'):
                 runner.verify(root, '0'*64)
 
+    @offline_test
     def test_bounded_artifacts_and_duplicate_keys_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)/'result.json'

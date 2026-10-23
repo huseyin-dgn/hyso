@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]/'tools/forensics'))
 import gpu_admission_policy as policy
 import gpu_scenario_runner as runner
 import native_scenario_runner as previous
+from offline_test_isolation import offline_test
 from test_p23_preflight import capture, NOW, RUN, SHA
 
 
@@ -89,6 +90,7 @@ class WarningPolicyTests(unittest.TestCase):
         self.assertEqual(policy.sensor_metadata(dict(status='timed_out', reason='deadline')),
                          policy.field(reason='deadline'))
 
+    @offline_test
     def test_no_mutation_and_no_torch_import(self):
         value = capture()
         before = copy.deepcopy(value)
@@ -144,6 +146,7 @@ class WarningPolicyTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'scenario/limit'):
                     runner.verify(root, runner.digest(path))
 
+    @offline_test
     def test_oom_handler_only_catches_typed_oom_and_never_retries(self):
         class FakeOOM(RuntimeError):
             pass

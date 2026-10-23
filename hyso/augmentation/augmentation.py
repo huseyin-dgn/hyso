@@ -6,9 +6,9 @@ import torch
 import os
 
 
-# ----------------------
+
 # Transform builder
-# ----------------------
+
 def build_transforms(img_size=(224,224), augment="basic", extra_ops=None, channels=3):
     """
     img_size: tuple (H, W)
@@ -26,9 +26,9 @@ def build_transforms(img_size=(224,224), augment="basic", extra_ops=None, channe
     if channels == 1:
         ops.append(transforms.Grayscale(num_output_channels=1))
 
-    # --------------------
+
     # Basic augment
-    # --------------------
+
     basic = [
         transforms.Resize((H, W)),
         transforms.RandomHorizontalFlip(),
@@ -37,9 +37,9 @@ def build_transforms(img_size=(224,224), augment="basic", extra_ops=None, channe
         transforms.ToTensor()
     ]
 
-    # --------------------
+
     # Advanced augment
-    # --------------------
+
     kernel_size = max(3, int(round(max(H,W)/64)) | 1)
     advanced = [
         transforms.RandomVerticalFlip(p=0.3),
@@ -71,9 +71,9 @@ def build_transforms(img_size=(224,224), augment="basic", extra_ops=None, channe
     return transforms.Compose(ops)
 
 
-# ----------------------
+
 # Dataset loader
-# ----------------------
+
 def _validation_transform(img_size, channels):
     # Validation deliberately excludes training augmentation and extra_ops.
     ops = [transforms.Grayscale(num_output_channels=1)] if channels == 1 else []
