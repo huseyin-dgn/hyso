@@ -18,6 +18,7 @@ class TracedDataset(Dataset):
         recorder: WorkerTimingRecorder | None = None,
         channel=None,
         max_events_per_sample: int = 64,
+        trace_batches: bool = False,
     ):
         if not isinstance(dataset, Dataset):
             raise TypeError("expected torch Dataset")
@@ -36,10 +37,19 @@ class TracedDataset(Dataset):
         ):
             raise ValueError("invalid per-sample event budget")
 
+        if type(trace_batches) is not bool:
+            raise TypeError("trace_batches must be bool")
+
+        if trace_batches and channel is None:
+            raise ValueError(
+                "trace_batches requires an event channel"
+            )
+
         self.dataset = dataset
         self.recorder = recorder
         self.channel = channel
         self.max_events_per_sample = max_events_per_sample
+        self.trace_batches = trace_batches
         self.failed_sends = 0
 
     def __len__(self):
@@ -57,8 +67,9 @@ class TracedDataset(Dataset):
             )
 
         before = len(recorder.events)
+        dropped_before = recorder.dropped_events
 
-        # Unique ID for this specific __getitem__ execution.
+        # Unique identity for this __getitem__ execution.
         trace_id = uuid.uuid4().hex
 
         try:
@@ -68,18 +79,49 @@ class TracedDataset(Dataset):
                     sample_id=str(index),
                 ):
                     return self.dataset[index]
+
         finally:
             if self.channel is not None:
+                events = []
+
                 for event in recorder.events[before:]:
                     payload = event.to_dict()
-
                     payload["trace_id"] = trace_id
 
                     if info is not None:
                         payload["worker_id"] = info.id
 
+                    events.append(payload)
+
+                if self.trace_batches:
+                    envelope = {
+                        "schema_version": 1,
+                        "trace_id": trace_id,
+                        "worker_id": (
+                            info.id if info is not None else None
+                        ),
+                        "worker_pid": (
+                            events[0]["worker_pid"]
+                            if events else None
+                        ),
+                        "sample_id": str(index),
+                        "event_count": len(events),
+                        "dropped_events": (
+                            recorder.dropped_events - dropped_before
+                        ),
+                        "events": events,
+                    }
+
                     try:
-                        if not self.channel.send(payload):
+                        if not self.channel.send_trace(envelope):
                             self.failed_sends += 1
-                    except (OSError, ValueError):
+                    except (OSError, ValueError, RuntimeError):
                         self.failed_sends += 1
+
+                else:
+                    for payload in events:
+                        try:
+                            if not self.channel.send(payload):
+                                self.failed_sends += 1
+                        except (OSError, ValueError, RuntimeError):
+                            self.failed_sends += 1
