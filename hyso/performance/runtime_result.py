@@ -1,0 +1,94 @@
+"""Additive P30--P33 immutable evidence; independent of legacy schema v1."""
+from dataclasses import dataclass
+import hashlib
+import json
+import math
+import uuid
+
+from hyso.benchmark.result import _write_export, _csv_text
+
+
+def _hash(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()).hexdigest()
+
+
+def _int(value, minimum=0, maximum=2**63-1):
+    if type(value) is not int or not minimum <= value <= maximum:
+        raise ValueError('integer outside supported bounds')
+
+
+def _number(value, minimum=0):
+    if type(value) not in (int, float) or not math.isfinite(value) or value < minimum:
+        raise ValueError('finite measurement required')
+
+
+def _name(value):
+    if type(value) is not str or not value.strip() or len(value)>4096:
+        raise ValueError('explicit bounded identity required')
+
+
+def _digest(value):
+    if type(value) is not str or len(value)!=64 or any(c not in '0123456789abcdef' for c in value):
+        raise ValueError('SHA256 required')
+
+
+def _derive(feature, evidence):
+    if feature=='P30':
+        from .streaming import _analyze_stream
+        return _analyze_stream(evidence)
+    if feature=='P31':
+        from .stability import _analyze_stability
+        return _analyze_stability(evidence)
+    if feature=='P32':
+        from .memory_trend import _analyze_trend
+        return _analyze_trend(evidence)
+    if feature=='P33':
+        from .energy import _analyze_energy
+        return _analyze_energy(evidence)
+    raise ValueError('unsupported runtime feature')
+
+
+@dataclass(frozen=True, init=False)
+class RuntimeResult:
+    """Self-contained snapshot. Hashes detect inconsistency, not signed authenticity."""
+    __slots__=('_payload',)
+    _payload: str
+
+    def __init__(self, data):
+        try:
+            value=json.loads(json.dumps(data, allow_nan=False))
+            if (set(value)!={'format','schema_version','feature_id','result_id','evidence','source_sha256','analysis'}
+                    or value['format']!='hyso.performance.runtime' or type(value['schema_version']) is not int
+                    or value['schema_version']!=1 or str(uuid.UUID(value['result_id']))!=value['result_id']):
+                raise ValueError('invalid runtime result schema')
+            if value['source_sha256']!=_hash(dict(feature_id=value['feature_id'],evidence=value['evidence'])):
+                raise ValueError('source hash mismatch')
+            if _hash(value['analysis'])!=_hash(_derive(value['feature_id'],value['evidence'])):
+                raise ValueError('derived runtime analysis mismatch')
+        except (KeyError, TypeError, IndexError, OverflowError) as exc:
+            raise ValueError('malformed runtime evidence') from exc
+        object.__setattr__(self, '_payload', json.dumps(value, allow_nan=False))
+
+    def to_dict(self):
+        return json.loads(self._payload)
+
+    def to_json(self, path, *, overwrite=False):
+        _write_export(path, json.dumps(self.to_dict(), indent=2, allow_nan=False)+'\n', overwrite)
+
+    def to_csv(self, path, *, overwrite=False):
+        data=self.to_dict();rows=[]
+        def walk(value, field):
+            if type(value) is dict:
+                for key, item in value.items():walk(item,field+'.'+key)
+            elif type(value) is list:
+                for i, item in enumerate(value):walk(item,field+'.'+str(i))
+            else:rows.append(dict(feature_id=data['feature_id'],result_id=data['result_id'],
+                source_sha256=data['source_sha256'],field=field,value=value))
+        walk(data['analysis'],'analysis');walk(data['evidence'],'evidence')
+        _write_export(path,_csv_text(['feature_id','result_id','source_sha256','field','value'],rows),overwrite)
+
+
+def _result(feature, evidence):
+    return RuntimeResult(dict(format='hyso.performance.runtime',schema_version=1,feature_id=feature,
+        result_id=str(uuid.uuid4()),evidence=evidence,
+        source_sha256=_hash(dict(feature_id=feature,evidence=evidence)),analysis=_derive(feature,evidence)))
