@@ -34,6 +34,8 @@ from .stability import (WorkloadRecipe, StabilityProtocol, InferenceWorkload, me
 from .streaming import (StreamSource, StreamProtocol, FrameInferenceProcessor, measure_streaming)
 from .memory_trend import RetentionTracker, analyze_memory_trend
 from .energy import observe_nvidia_power, analyze_energy
+from .devices import DeviceProtocol, compare_devices
+from .providers import ProviderProtocol, profile_execution_providers
 
 __all__ = ["TailPolicy", "ThroughputProtocol", "analyze_latency", "measure_throughput",
            "LatencyAnalysis", "ThroughputResult", "MemoryProtocol", "measure_memory", "measure_footprint",
@@ -57,4 +59,5 @@ __all__ = ["TailPolicy", "ThroughputProtocol", "analyze_latency", "measure_throu
     "TrainingMemoryRecipe", "IsolatedTrainingMemoryProtocol", "IsolatedTrainingMemoryResult", "measure_training_memory_isolated",
     "RuntimeResult", "WorkloadRecipe", "StabilityProtocol", "InferenceWorkload", "measure_stability", "reopen_stability",
     "StreamSource", "StreamProtocol", "FrameInferenceProcessor", "measure_streaming", "RetentionTracker",
-    "analyze_memory_trend", "observe_nvidia_power", "analyze_energy"]
+    "analyze_memory_trend", "observe_nvidia_power", "analyze_energy",
+    "DeviceProtocol", "compare_devices", "ProviderProtocol", "profile_execution_providers"]

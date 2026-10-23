@@ -22,6 +22,9 @@ def main():
     elif request['mode']=='streaming':
         from hyso.performance.streaming import _worker_stream
         _worker_stream(root,request)
+    elif request['mode'] in ('devices','providers'):
+        from hyso.performance.devices import _worker_dispatch
+        _worker_dispatch(root,request)
     else:raise ValueError('unsupported owned runtime mode')
 
 
