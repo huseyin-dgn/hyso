@@ -1,4 +1,5 @@
 """P03/P04 IDs, clock evidence, bounded queue and P05 actual fresh interpreters."""
+from fixture_support import example_fixture
 from dataclasses import FrozenInstanceError
 import csv
 import gc
@@ -252,7 +253,7 @@ def test_cold_failures_are_explicit_terminal_trials(case,tmp_path):
 
 def test_executable_guide_and_reopen(tmp_path,monkeypatch):
     monkeypatch.chdir(tmp_path)
-    path=Path(__file__).resolve().parents[1]/'docs/guides/performance-pipeline.md'; namespace={}
+    path=example_fixture('docs/guides/performance-pipeline.md'); namespace={}
     for block in re.findall(r'```python\n(.*?)```',path.read_text(encoding='utf-8'),re.S):
         exec(compile(block,str(path),'exec'),namespace)
     from hyso.experiments import ExperimentManager

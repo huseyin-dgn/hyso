@@ -1,4 +1,5 @@
 """Execute the manual guide against real public training/benchmark/storage APIs."""
+from fixture_support import example_fixture
 import copy
 import csv
 import hashlib
@@ -24,7 +25,7 @@ from hyso.models.modular import ModularCNN
 from hyso.training import Trainer
 from hyso.callbacks.callbacks import EarlyStopping
 
-GUIDE = Path(__file__).resolve().parents[1] / "docs/guides/experiment-manager.md"
+GUIDE = example_fixture('docs/guides/experiment-manager.md')
 BLOCKS = re.findall(r"```python\n(.*?)```", GUIDE.read_text(encoding="utf-8"), re.S)
 EXAMPLE = {}
 exec(compile(BLOCKS[0], str(GUIDE), "exec"), EXAMPLE)

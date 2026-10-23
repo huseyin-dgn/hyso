@@ -1,4 +1,5 @@
 """P23 native tensor accounting, one-fit replay, bounded cleanup and exports."""
+from fixture_support import example_fixture
 import copy
 import gc
 import hashlib
@@ -319,7 +320,7 @@ def test_cuda_summary_never_invents_window_peak_or_reset_arithmetic():
 
 def test_memory_guide():
     import re
-    path=Path(__file__).resolve().parents[1]/'docs/guides/performance-training-memory.md'
+    path=example_fixture('docs/guides/performance-training-memory.md')
     namespace={'__name__':'p23_guide'}
     for block in re.findall(r'```python\n(.*?)```',path.read_text(encoding='utf-8'),re.S):
         exec(compile(block,str(path),'exec'),namespace)

@@ -1,4 +1,5 @@
 """Execute the documented code, not a separately maintained equivalent example."""
+from fixture_support import example_fixture
 
 import ast
 from functools import wraps
@@ -16,7 +17,7 @@ from test_ebo_training_resume import seed, EpochBoundaryStop
 from test_training_checkpoint import assert_state
 
 
-README = Path(__file__).resolve().parents[1] / "README.md"
+README = example_fixture('README.md')
 
 
 def blocks():

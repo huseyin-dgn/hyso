@@ -1,4 +1,5 @@
 """Native single-process DataLoader training, exact state and artifact contracts."""
+from fixture_support import example_fixture
 import copy
 import csv
 import json
@@ -206,7 +207,7 @@ def test_exact_loader_budget(cap,success):
 
 def test_dataloader_guide():
     import re
-    guide=Path(__file__).resolve().parents[1]/'docs/guides/performance-dataloader.md'
+    guide=example_fixture('docs/guides/performance-dataloader.md')
     namespace={'__name__':'p21_guide_test'}
     for block in re.findall(r'```python\n(.*?)```',guide.read_text(encoding='utf-8'),re.S):
         exec(compile(block,str(guide),'exec'),namespace)

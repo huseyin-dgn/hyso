@@ -1,4 +1,5 @@
 """Actual finite CPU sweeps, precision execution and ownership contracts."""
+from fixture_support import example_fixture
 import copy
 from dataclasses import FrozenInstanceError
 import gc
@@ -196,7 +197,7 @@ def test_forged_results_rejected(result,case):
 
 def test_guide_manager_reopen(tmp_path,monkeypatch):
     monkeypatch.setattr('tempfile.mkdtemp',lambda **kwargs:str(tmp_path))
-    guide=Path(__file__).resolve().parents[1]/'docs/guides/performance-sweeps.md'; namespace={}
+    guide=example_fixture('docs/guides/performance-sweeps.md'); namespace={}
     for block in re.findall(r'```python\n(.*?)```',guide.read_text(encoding='utf-8'),re.S):exec(compile(block,str(guide),'exec'),namespace)
     assert namespace['batches'].to_dict()['actual']['measured']==4
 

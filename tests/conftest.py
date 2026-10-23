@@ -1,4 +1,5 @@
 """CPU-only fixtures for the P0.1-B compatibility baseline."""
+from fixture_support import load_fixture
 
 import copy
 import importlib
@@ -15,8 +16,7 @@ import pytest
 import torch
 
 
-MANIFEST_PATH = Path(__file__).parent / "fixtures" / "model_state_manifest.json"
-MANIFEST = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+MANIFEST = load_fixture("model_state_manifest")
 
 
 @pytest.fixture(scope="session", autouse=True)

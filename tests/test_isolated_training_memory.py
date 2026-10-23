@@ -1,4 +1,5 @@
 """Phase A production admission/limits, real native CPU fit and immutable evidence."""
+from fixture_support import load_fixture
 import copy
 import json
 from pathlib import Path
@@ -158,8 +159,7 @@ def test_immutable_export_and_tamper(tmp_path):
 
 
 def test_legacy_p23_schema_fixture():
-    path=TESTS/'fixtures/training-memory-p23-schema1.json'
-    d=json.loads(path.read_text(encoding='utf-8'));assert TrainingMemoryResult(d).to_dict()==d
+    d=load_fixture('training-memory-p23-schema1');assert TrainingMemoryResult(d).to_dict()==d
 
 
 def test_no_live_trainer_admission():
