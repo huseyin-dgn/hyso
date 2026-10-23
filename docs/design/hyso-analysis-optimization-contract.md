@@ -33,7 +33,7 @@ optimizer, loader ve lifecycle admission koşulları geçerlidir.
 [performans backlog v1.1](../roadmap/hyso-performance-backlog-v1.1.md) **35 ID'dir**.
 Mimari roadmap'in tarihsel M2 planned satırları, sonradan yazılan Trainer/
 Benchmark/Manager kodlarını yok saydırmaz; bu belge sabit roadmap'i yeniden yazmaz.
-Güncel performans sayımı **17 implemented / 7 partial / 11 planned**.
+Güncel performans sayımı **18 implemented / 7 partial / 10 planned** (P26 CPU classification kabulü dahil).
 Implemented, yalnız audit'te doğrulanan kapsamdır; platform/genel release onayı değildir.
 Yerel P23 ekleri uncommitted'dir ve P23'ü implemented yapmaz.
 
@@ -242,7 +242,7 @@ platform/installed/minimum/package doğrulaması yeni kaynağa göre ayrıca ger
 |P23 partial|Legacy never-reset; yerel Windows isolated/CPU saved-payload, historical CUDA window scope; B10/R1|CUDA activation disabled; final native/install gates açık|P09/P10/P19, ownership ve B4 gate|CPU replay/mutation/GC; native ayrıca açık onay ve final matrix/packaging|Mevcut iki ayrı result formatı; genişleme koşullu|Eğitim belleğini domain/ownership ile anlar|
 |P24 planned|API yok|Censored time-to-target, variance|P19/P26, labeled fixed split/target/cadence, repeated seeds|Known first-crossing, unmet censoring, eval clock exclusion|Plan evaluation/training refs + JSON|Kalite hedefine gerçek süre|
 |P25 implemented|Dense CPU/CUDA pre/post clip norm + real AMP ledger; gradients.py/B10|Sparse/gapped/complex/custom unsupported|P19/P20 ve gerçek FP16 GradScaler|Known norm, skip→recovery/scale, exact state/RNG|Mevcut GradientDiagnosticsResult|Gradient/AMP davranışını gözler|
-|P26 planned|Ortak evaluation API yok; Trainer/legacy accuracy mevcut|Precision/recall/F1/confusion shared evaluator|Labels/class map/split; future task adapter|Known confusion/zero division/missing classes/averaging; task capability|Plan EvaluationResult artifact; finite metrics|Hızın kaliteyle birlikte değerlendirilmesi|
+|P26 implemented, CPU classification|evaluation.py: binary/multiclass confusion, accuracy, per-class/macro/micro/weighted precision/recall/F1/support; finite CPU model inference|Detection/segmentation, CUDA, multiworker/custom sampling unsupported|Explicit labeled finite sequential split/class map; isolated model copy; training association yok|Known confusion/zero division/absent classes; state/RNG/coverage, failure/export/tamper kabulü; p26-classification-acceptance.md|Yeni immutable EvaluationResult schema1; JSON/CSV; eski formatlar değişmez|Gerçek etiket/prediction kanıtını kalite metriğine dönüştürür|
 |P27 planned|API yok|Paired robustness evaluation|P26, labeled clean/perturbed pairs, seed/severity|Sample-ID paired deltas/order ve corruption provenance|Plan evaluation refs/artifacts|Dağılım değişiminde kalite|
 |P28 planned|API yok; P08 hız sonuçları kalite değildir|Precision/quantization accuracy delta|P08/P26, identical labeled eval/calibration|pp vs relative %, baseline0 null, preprocessing equality|Plan baseline/candidate evaluation refs|Hızın kalite bedelini gösterir|
 |P29 partial|Benchmark schema1 comparison eligibility; benchmark/result.py ve B3|Quality/Pareto/regression/significance yok|P01/P09/P10/P26; matched protocol/runtime/input|Incompatible/insufficient guards; quality constraints ve bounded comparison|Mevcut comparison JSON/CSV; quality plan|Uygun alternatifleri gerçek ödünleşimle kıyaslar|
@@ -467,7 +467,7 @@ kapsar; diğer senaryolar çalıştırılmadı ve B4 OPEN/UNRESOLVED kaldı.
 3. **Evidence envelope ve capability validator.** Bölüm6'nın saf importer'ı,
    ardından yalnız mevcut kanıtla applicable/not-applicable kuralları. Model
    veya factory çalıştırmadan JSON/Manager acceptance ayrı tamamlanır.
-4. **İlk tamamen planned feature: P26 classification evaluation.** Known
+4. **P26 classification evaluation: CPU kapsamı kabul edildi.** Known
    confusion tests → gerçek labeled CPU evaluation → immutable result/Manager.
    Sonra P24 target/censoring, P27 paired robustness ve P28 precision quality;
    bunlar P29 quality-aware comparison/Pareto/regression için veri sağlar.

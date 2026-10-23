@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "format": "hyso.evaluation.classification",
+  "feature_ids": [
+    "P26"
+  ],
+  "evaluation_id": "7b318ac9-1f0e-473d-bdf3-2c639189c9f7",
+  "configuration": {
+    "task": "multiclass",
+    "class_names": [
+      "a",
+      "b",
+      "c"
+    ],
+    "split": "known-reference",
+    "zero_division": 0,
+    "binary_rule": "logit >= 0",
+    "multiclass_rule": "argmax_first_index"
+  },
+  "raw": {
+    "targets": [
+      0,
+      0,
+      0,
+      1,
+      1,
+      2
+    ],
+    "predictions": [
+      0,
+      0,
+      1,
+      1,
+      2,
+      0
+    ],
+    "prediction_type": "labels"
+  },
+  "source": {
+    "kind": "supplied_predictions",
+    "source_id": "P26-known-matrix"
+  },
+  "provenance": {
+    "python": "3.10.18",
+    "torch": "2.5.1+cu121",
+    "platform": "Windows-10-10.0.26200-SP0"
+  },
+  "accounting": {
+    "expected_samples": 6,
+    "batch_sizes": [
+      6
+    ]
+  },
+  "training_source": null,
+  "source_sha256": "14d0f95639ea944216ab5c2db8791063747699ee4ee4e5e0858e8086adf2dde0",
+  "metrics": {
+    "sample_count": 6,
+    "confusion_matrix": [
+      [
+        2,
+        1,
+        0
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        0,
+        0
+      ]
+    ],
+    "accuracy": 0.5,
+    "per_class": [
+      {
+        "class_index": 0,
+        "class_name": "a",
+        "support": 3,
+        "precision": 0.6666666666666666,
+        "recall": 0.6666666666666666,
+        "f1": 0.6666666666666666
+      },
+      {
+        "class_index": 1,
+        "class_name": "b",
+        "support": 2,
+        "precision": 0.5,
+        "recall": 0.5,
+        "f1": 0.5
+      },
+      {
+        "class_index": 2,
+        "class_name": "c",
+        "support": 1,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      }
+    ],
+    "averages": {
+      "macro": {
+        "support": 6,
+        "precision": 0.38888888888888884,
+        "recall": 0.38888888888888884,
+        "f1": 0.38888888888888884
+      },
+      "micro": {
+        "support": 6,
+        "precision": 0.5,
+        "recall": 0.5,
+        "f1": 0.5
+      },
+      "weighted": {
+        "support": 6,
+        "precision": 0.5,
+        "recall": 0.5,
+        "f1": 0.5
+      }
+    }
+  },
+  "status": "complete"
+}
