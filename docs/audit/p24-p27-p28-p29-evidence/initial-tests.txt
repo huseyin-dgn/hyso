@@ -1,0 +1,137 @@
+F.....F..............EEEEEEEE..F.                                        [100%]
+=================================== ERRORS ====================================
+_ ERROR at setup of test_actual_pareto_constraints_regression_and_exact_test __
+tests\test_quality_experiments.py:150: in comparison
+    def comparison():return compare_performance_quality(classifier(False),classifier(),cohort(),iterations=3,independent_samples=True,min_quality=.8)
+hyso\quality.py:266: in compare_performance_quality
+    return _result('P29',dict(cohort=cohort.to_dict(),baseline=_bundle(baseline,cohort,precision,iterations),
+hyso\quality.py:411: in _result
+    experiment_id=str(uuid.uuid4()),sources=sources,source_sha256=_hash(sources),analysis=_derive(feature,sources)))
+hyso\quality.py:351: in _derive
+    la=a['performance']['stats']['mean_ms'];lb=b['performance']['stats']['mean_ms']
+E   KeyError: 'mean_ms'
+______ ERROR at setup of test_significance_insufficient_and_not_attested ______
+tests\test_quality_experiments.py:150: in comparison
+    def comparison():return compare_performance_quality(classifier(False),classifier(),cohort(),iterations=3,independent_samples=True,min_quality=.8)
+hyso\quality.py:266: in compare_performance_quality
+    return _result('P29',dict(cohort=cohort.to_dict(),baseline=_bundle(baseline,cohort,precision,iterations),
+hyso\quality.py:411: in _result
+    experiment_id=str(uuid.uuid4()),sources=sources,source_sha256=_hash(sources),analysis=_derive(feature,sources)))
+hyso\quality.py:351: in _derive
+    la=a['performance']['stats']['mean_ms'];lb=b['performance']['stats']['mean_ms']
+E   KeyError: 'mean_ms'
+__________ ERROR at setup of test_comparison_mismatch_rejected[host] __________
+tests\test_quality_experiments.py:150: in comparison
+    def comparison():return compare_performance_quality(classifier(False),classifier(),cohort(),iterations=3,independent_samples=True,min_quality=.8)
+hyso\quality.py:266: in compare_performance_quality
+    return _result('P29',dict(cohort=cohort.to_dict(),baseline=_bundle(baseline,cohort,precision,iterations),
+hyso\quality.py:411: in _result
+    experiment_id=str(uuid.uuid4()),sources=sources,source_sha256=_hash(sources),analysis=_derive(feature,sources)))
+hyso\quality.py:351: in _derive
+    la=a['performance']['stats']['mean_ms'];lb=b['performance']['stats']['mean_ms']
+E   KeyError: 'mean_ms'
+_______ ERROR at setup of test_comparison_mismatch_rejected[precision] ________
+tests\test_quality_experiments.py:150: in comparison
+    def comparison():return compare_performance_quality(classifier(False),classifier(),cohort(),iterations=3,independent_samples=True,min_quality=.8)
+hyso\quality.py:266: in compare_performance_quality
+    return _result('P29',dict(cohort=cohort.to_dict(),baseline=_bundle(baseline,cohort,precision,iterations),
+hyso\quality.py:411: in _result
+    experiment_id=str(uuid.uuid4()),sources=sources,source_sha256=_hash(sources),analysis=_derive(feature,sources)))
+hyso\quality.py:351: in _derive
+    la=a['performance']['stats']['mean_ms'];lb=b['performance']['stats']['mean_ms']
+E   KeyError: 'mean_ms'
+__________ ERROR at setup of test_comparison_mismatch_rejected[data] __________
+tests\test_quality_experiments.py:150: in comparison
+    def comparison():return compare_performance_quality(classifier(False),classifier(),cohort(),iterations=3,independent_samples=True,min_quality=.8)
+hyso\quality.py:266: in compare_performance_quality
+    return _result('P29',dict(cohort=cohort.to_dict(),baseline=_bundle(baseline,cohort,precision,iterations),
+hyso\quality.py:411: in _result
+    experiment_id=str(uuid.uuid4()),sources=sources,source_sha256=_hash(sources),analysis=_derive(feature,sources)))
+hyso\quality.py:351: in _derive
+    la=a['performance']['stats']['mean_ms'];lb=b['performance']['stats']['mean_ms']
+E   KeyError: 'mean_ms'
+________ ERROR at setup of test_comparison_mismatch_rejected[protocol] ________
+tests\test_quality_experiments.py:150: in comparison
+    def comparison():return compare_performance_quality(classifier(False),classifier(),cohort(),iterations=3,independent_samples=True,min_quality=.8)
+hyso\quality.py:266: in compare_performance_quality
+    return _result('P29',dict(cohort=cohort.to_dict(),baseline=_bundle(baseline,cohort,precision,iterations),
+hyso\quality.py:411: in _result
+    experiment_id=str(uuid.uuid4()),sources=sources,source_sha256=_hash(sources),analysis=_derive(feature,sources)))
+hyso\quality.py:351: in _derive
+    la=a['performance']['stats']['mean_ms'];lb=b['performance']['stats']['mean_ms']
+E   KeyError: 'mean_ms'
+_________ ERROR at setup of test_comparison_mismatch_rejected[device] _________
+tests\test_quality_experiments.py:150: in comparison
+    def comparison():return compare_performance_quality(classifier(False),classifier(),cohort(),iterations=3,independent_samples=True,min_quality=.8)
+hyso\quality.py:266: in compare_performance_quality
+    return _result('P29',dict(cohort=cohort.to_dict(),baseline=_bundle(baseline,cohort,precision,iterations),
+hyso\quality.py:411: in _result
+    experiment_id=str(uuid.uuid4()),sources=sources,source_sha256=_hash(sources),analysis=_derive(feature,sources)))
+hyso\quality.py:351: in _derive
+    la=a['performance']['stats']['mean_ms'];lb=b['performance']['stats']['mean_ms']
+E   KeyError: 'mean_ms'
+________ ERROR at setup of test_comparison_mismatch_rejected[runtime] _________
+tests\test_quality_experiments.py:150: in comparison
+    def comparison():return compare_performance_quality(classifier(False),classifier(),cohort(),iterations=3,independent_samples=True,min_quality=.8)
+hyso\quality.py:266: in compare_performance_quality
+    return _result('P29',dict(cohort=cohort.to_dict(),baseline=_bundle(baseline,cohort,precision,iterations),
+hyso\quality.py:411: in _result
+    experiment_id=str(uuid.uuid4()),sources=sources,source_sha256=_hash(sources),analysis=_derive(feature,sources)))
+hyso\quality.py:351: in _derive
+    la=a['performance']['stats']['mean_ms'];lb=b['performance']['stats']['mean_ms']
+E   KeyError: 'mean_ms'
+================================== FAILURES ===================================
+_______________ test_robustness_actual_pairing_delta_rng_state ________________
+tests\test_quality_experiments.py:41: in test_robustness_actual_pairing_delta_rng_state
+    assert d['analysis']['macro_f1']['percentage_points']==-100
+E   assert -50.0 == -100
+_____________________ test_perturbation_failure_no_result _____________________
+tests\test_quality_experiments.py:63: in test_perturbation_failure_no_result
+    equal(_rng_state(),rng)
+tests\trainer_replay_support.py:31: in equal
+    equal(actual[key], expected[key], path + "." + str(key))
+tests\trainer_replay_support.py:24: in equal
+    assert torch.equal(actual.detach().cpu().contiguous().reshape(-1).view(torch.uint8),
+E   AssertionError: state.torch_cpu
+__________ test_artifact_integrity_roundtrip_no_clobber[comparison] ___________
+tests\test_quality_experiments.py:188: in test_artifact_integrity_roundtrip_no_clobber
+    r=request.getfixturevalue(source);d=r.to_dict();p=tmp_path/'result.json';c=tmp_path/'result.csv'
+..\..\..\..\.conda\envs\torch_gpu\lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+..\..\..\..\.conda\envs\torch_gpu\lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+..\..\..\..\.conda\envs\torch_gpu\lib\site-packages\_pytest\fixtures.py:1204: in execute
+    raise exc.with_traceback(exc_tb)
+..\..\..\..\.conda\envs\torch_gpu\lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+..\..\..\..\.conda\envs\torch_gpu\lib\site-packages\_pytest\fixtures.py:1005: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+tests\test_quality_experiments.py:150: in comparison
+    def comparison():return compare_performance_quality(classifier(False),classifier(),cohort(),iterations=3,independent_samples=True,min_quality=.8)
+hyso\quality.py:266: in compare_performance_quality
+    return _result('P29',dict(cohort=cohort.to_dict(),baseline=_bundle(baseline,cohort,precision,iterations),
+hyso\quality.py:411: in _result
+    experiment_id=str(uuid.uuid4()),sources=sources,source_sha256=_hash(sources),analysis=_derive(feature,sources)))
+hyso\quality.py:351: in _derive
+    la=a['performance']['stats']['mean_ms'];lb=b['performance']['stats']['mean_ms']
+E   KeyError: 'mean_ms'
+============================== warnings summary ===============================
+test_quality_experiments.py::test_real_repeated_seeds_first_crossing_and_eval_exclusion
+test_quality_experiments.py::test_real_censoring_and_initial_crossing
+  C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\tests\..\hyso\training\trainer.py:116: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+    self.scaler = torch.cuda.amp.GradScaler(enabled=amp)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+ERROR tests\test_quality_experiments.py::test_actual_pareto_constraints_regression_and_exact_test
+ERROR tests\test_quality_experiments.py::test_significance_insufficient_and_not_attested
+ERROR tests\test_quality_experiments.py::test_comparison_mismatch_rejected[host]
+ERROR tests\test_quality_experiments.py::test_comparison_mismatch_rejected[precision]
+ERROR tests\test_quality_experiments.py::test_comparison_mismatch_rejected[data]
+ERROR tests\test_quality_experiments.py::test_comparison_mismatch_rejected[protocol]
+ERROR tests\test_quality_experiments.py::test_comparison_mismatch_rejected[device]
+ERROR tests\test_quality_experiments.py::test_comparison_mismatch_rejected[runtime]
+FAILED tests\test_quality_experiments.py::test_robustness_actual_pairing_delta_rng_state
+FAILED tests\test_quality_experiments.py::test_perturbation_failure_no_result
+FAILED tests\test_quality_experiments.py::test_artifact_integrity_roundtrip_no_clobber[comparison]
+3 failed, 22 passed, 2 warnings, 8 errors in 24.71s

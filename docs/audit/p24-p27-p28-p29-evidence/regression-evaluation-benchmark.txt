@@ -1,0 +1,14 @@
+........................................................................ [ 17%]
+........................................................................ [ 34%]
+........................................................................ [ 51%]
+........................................................................ [ 68%]
+........................................................................ [ 85%]
+............................................................             [100%]
+============================== warnings summary ===============================
+test_benchmark_state_safety.py::test_native_bn_dropout_gradients_modes_rng_and_threads_preserved[False]
+test_benchmark_state_safety.py::test_native_bn_dropout_gradients_modes_rng_and_threads_preserved[True]
+  C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\tests\test_benchmark_state_safety.py:96: DeprecationWarning: torch.is_autocast_cpu_enabled() is deprecated. Please use torch.is_autocast_enabled('cpu') instead. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\builder\windows\pytorch\torch\csrc\autograd\init.cpp:664.)
+    assert torch.is_autocast_cpu_enabled()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+420 passed, 2 warnings in 25.01s

@@ -1,0 +1,27 @@
+.................................................F.                      [100%]
+================================== FAILURES ===================================
+________________ test_seed_reuse_and_incomplete_training_fail _________________
+tests\test_quality_experiments.py:314: in test_seed_reuse_and_incomplete_training_fail
+    measure_time_to_quality(fail,cohort(4),seeds=[1,2],target=1,epochs=1)
+hyso\quality.py:245: in measure_time_to_quality
+    try:timing=measure_training(trainer,loader,epochs=epochs).to_dict()
+hyso\performance\training.py:347: in measure_training
+    return _measure_training(trainer, train_loader, val_loader, epochs=epochs, protocol=protocol,
+hyso\performance\training.py:390: in _measure_training
+    trainer.fit(train_loader, val_loader, epochs=epochs, save_last_to=save_last_to,
+hyso\training\trainer.py:462: in fit
+    self._validate_setup()
+hyso\training\trainer.py:211: in _validate_setup
+    raise TypeError(f"{self.task} requires standard {expected.__name__}")
+E   TypeError: multiclass requires standard CrossEntropyLoss
+============================== warnings summary ===============================
+test_quality_experiments.py::test_real_repeated_seeds_first_crossing_and_eval_exclusion
+test_quality_experiments.py::test_real_censoring_and_initial_crossing
+test_quality_experiments.py::test_seed_reuse_and_incomplete_training_fail
+  C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\tests\..\hyso\training\trainer.py:116: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+    self.scaler = torch.cuda.amp.GradScaler(enabled=amp)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests\test_quality_experiments.py::test_seed_reuse_and_incomplete_training_fail
+1 failed, 50 passed, 3 warnings in 13.52s

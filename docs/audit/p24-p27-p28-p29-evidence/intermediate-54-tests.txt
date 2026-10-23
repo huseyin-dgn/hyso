@@ -1,0 +1,11 @@
+......................................................                   [100%]
+============================== warnings summary ===============================
+test_quality_experiments.py::test_real_repeated_seeds_first_crossing_and_eval_exclusion
+test_quality_experiments.py::test_real_censoring_and_initial_crossing
+test_quality_experiments.py::test_seed_reuse_and_incomplete_training_fail
+test_quality_experiments.py::test_actual_training_parity_and_rng
+  C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\tests\..\hyso\training\trainer.py:116: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+    self.scaler = torch.cuda.amp.GradScaler(enabled=amp)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+54 passed, 4 warnings in 13.70s

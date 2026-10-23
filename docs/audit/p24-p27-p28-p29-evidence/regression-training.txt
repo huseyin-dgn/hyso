@@ -1,0 +1,13 @@
+........................................................................ [ 32%]
+........................................................................ [ 64%]
+........................................................................ [ 97%]
+......                                                                   [100%]
+============================== warnings summary ===============================
+test_performance_dataloader.py: 70 warnings
+test_performance_training.py: 58 warnings
+test_training_details.py: 71 warnings
+  C:\Users\hdgn5\OneDrive\Belgeler\GitHub\hyso\tests\..\hyso\training\trainer.py:116: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+    self.scaler = torch.cuda.amp.GradScaler(enabled=amp)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+222 passed, 199 warnings in 58.80s

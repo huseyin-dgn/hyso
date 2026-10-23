@@ -1,0 +1,643 @@
+{
+  "schema_version": 1,
+  "format": "hyso.quality_experiment",
+  "feature_id": "P27",
+  "experiment_id": "2bd68938-f753-4a9f-940c-600595a163c5",
+  "sources": {
+    "clean_cohort": {
+      "inputs": [
+        [
+          [
+            [
+              1.0,
+              -1.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              2.0,
+              -2.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              3.0,
+              -3.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              4.0,
+              -4.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              5.0,
+              -5.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              6.0,
+              -6.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              7.0,
+              -7.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              8.0,
+              -8.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              9.0,
+              -9.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              10.0,
+              -10.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              11.0,
+              -11.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              12.0,
+              -12.0
+            ]
+          ]
+        ]
+      ],
+      "dtype": "torch.float32",
+      "targets": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "sample_ids": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11"
+      ],
+      "configuration": {
+        "task": "multiclass",
+        "class_names": [
+          "no",
+          "yes"
+        ],
+        "split": "test",
+        "zero_division": 0,
+        "binary_rule": "logit >= 0",
+        "multiclass_rule": "argmax_first_index"
+      },
+      "preprocessing_id": "fixed-v1"
+    },
+    "perturbed_cohort": {
+      "inputs": [
+        [
+          [
+            [
+              -1.0,
+              1.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              -2.0,
+              2.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              -3.0,
+              3.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              -4.0,
+              4.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              -5.0,
+              5.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              -6.0,
+              6.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              -7.0,
+              7.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              -8.0,
+              8.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              -9.0,
+              9.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              -10.0,
+              10.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              -11.0,
+              11.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              -12.0,
+              12.0
+            ]
+          ]
+        ]
+      ],
+      "dtype": "torch.float32",
+      "targets": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "sample_ids": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11"
+      ],
+      "configuration": {
+        "task": "multiclass",
+        "class_names": [
+          "no",
+          "yes"
+        ],
+        "split": "test",
+        "zero_division": 0,
+        "binary_rule": "logit >= 0",
+        "multiclass_rule": "argmax_first_index"
+      },
+      "preprocessing_id": "fixed-v1"
+    },
+    "clean": {
+      "schema_version": 1,
+      "format": "hyso.evaluation.classification",
+      "feature_ids": [
+        "P26"
+      ],
+      "evaluation_id": "3fdfb62d-3925-4359-84ad-c889c5bef9c8",
+      "configuration": {
+        "task": "multiclass",
+        "class_names": [
+          "no",
+          "yes"
+        ],
+        "split": "test",
+        "zero_division": 0,
+        "binary_rule": "logit >= 0",
+        "multiclass_rule": "argmax_first_index"
+      },
+      "raw": {
+        "targets": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "predictions": [
+          [
+            -1.0,
+            1.0
+          ],
+          [
+            -2.0,
+            2.0
+          ],
+          [
+            -3.0,
+            3.0
+          ],
+          [
+            -4.0,
+            4.0
+          ],
+          [
+            -5.0,
+            5.0
+          ],
+          [
+            -6.0,
+            6.0
+          ],
+          [
+            -7.0,
+            7.0
+          ],
+          [
+            -8.0,
+            8.0
+          ],
+          [
+            -9.0,
+            9.0
+          ],
+          [
+            -10.0,
+            10.0
+          ],
+          [
+            -11.0,
+            11.0
+          ],
+          [
+            -12.0,
+            12.0
+          ]
+        ],
+        "prediction_type": "logits"
+      },
+      "source": {
+        "kind": "model_inference",
+        "source_id": "5fd4f901af7a3bf30fdd29dbb98feb22364be2cdb4f8e7bf85138d0122f651ed",
+        "model_type": "torch.nn.modules.container.Sequential",
+        "model_state_sha256": "f4edf6160bcbfeb8ddfc6966e7bcf8120873ff19c8d3a6790ef08302882118a4",
+        "device": "cpu",
+        "execution": "isolated_deepcopy_eval_inference_mode",
+        "dataset_type": "torch.utils.data.dataset.TensorDataset",
+        "sampler": "sequential",
+        "num_workers": 0
+      },
+      "provenance": {
+        "python": "3.10.18",
+        "torch": "2.5.1+cu121",
+        "platform": "Windows-10-10.0.26200-SP0"
+      },
+      "accounting": {
+        "expected_samples": 12,
+        "batch_sizes": [
+          12
+        ]
+      },
+      "training_source": null,
+      "source_sha256": "5b2eb2f68635a2cd72d4e146359c7718ceb8a9a7b37790f6f5e07c796decce51",
+      "metrics": {
+        "sample_count": 12,
+        "confusion_matrix": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            12
+          ]
+        ],
+        "accuracy": 1.0,
+        "per_class": [
+          {
+            "class_index": 0,
+            "class_name": "no",
+            "support": 0,
+            "precision": 0,
+            "recall": 0,
+            "f1": 0
+          },
+          {
+            "class_index": 1,
+            "class_name": "yes",
+            "support": 12,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        ],
+        "averages": {
+          "macro": {
+            "support": 12,
+            "precision": 0.5,
+            "recall": 0.5,
+            "f1": 0.5
+          },
+          "micro": {
+            "support": 12,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "weighted": {
+            "support": 12,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        }
+      },
+      "status": "complete"
+    },
+    "perturbed": {
+      "schema_version": 1,
+      "format": "hyso.evaluation.classification",
+      "feature_ids": [
+        "P26"
+      ],
+      "evaluation_id": "00a8c3c7-8461-473d-8544-223dfc519120",
+      "configuration": {
+        "task": "multiclass",
+        "class_names": [
+          "no",
+          "yes"
+        ],
+        "split": "test",
+        "zero_division": 0,
+        "binary_rule": "logit >= 0",
+        "multiclass_rule": "argmax_first_index"
+      },
+      "raw": {
+        "targets": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "predictions": [
+          [
+            1.0,
+            -1.0
+          ],
+          [
+            2.0,
+            -2.0
+          ],
+          [
+            3.0,
+            -3.0
+          ],
+          [
+            4.0,
+            -4.0
+          ],
+          [
+            5.0,
+            -5.0
+          ],
+          [
+            6.0,
+            -6.0
+          ],
+          [
+            7.0,
+            -7.0
+          ],
+          [
+            8.0,
+            -8.0
+          ],
+          [
+            9.0,
+            -9.0
+          ],
+          [
+            10.0,
+            -10.0
+          ],
+          [
+            11.0,
+            -11.0
+          ],
+          [
+            12.0,
+            -12.0
+          ]
+        ],
+        "prediction_type": "logits"
+      },
+      "source": {
+        "kind": "model_inference",
+        "source_id": "b3ff146204a8393865694a60d2f94b955f8ed63edf7acb5223aab6bd6586ac69",
+        "model_type": "torch.nn.modules.container.Sequential",
+        "model_state_sha256": "f4edf6160bcbfeb8ddfc6966e7bcf8120873ff19c8d3a6790ef08302882118a4",
+        "device": "cpu",
+        "execution": "isolated_deepcopy_eval_inference_mode",
+        "dataset_type": "torch.utils.data.dataset.TensorDataset",
+        "sampler": "sequential",
+        "num_workers": 0
+      },
+      "provenance": {
+        "python": "3.10.18",
+        "torch": "2.5.1+cu121",
+        "platform": "Windows-10-10.0.26200-SP0"
+      },
+      "accounting": {
+        "expected_samples": 12,
+        "batch_sizes": [
+          12
+        ]
+      },
+      "training_source": null,
+      "source_sha256": "c6c01658f7d9ebcd3217a5573e922648b6ae5115661a68c875654c6e83b44e6f",
+      "metrics": {
+        "sample_count": 12,
+        "confusion_matrix": [
+          [
+            0,
+            0
+          ],
+          [
+            12,
+            0
+          ]
+        ],
+        "accuracy": 0.0,
+        "per_class": [
+          {
+            "class_index": 0,
+            "class_name": "no",
+            "support": 0,
+            "precision": 0.0,
+            "recall": 0,
+            "f1": 0.0
+          },
+          {
+            "class_index": 1,
+            "class_name": "yes",
+            "support": 12,
+            "precision": 0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        ],
+        "averages": {
+          "macro": {
+            "support": 12,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "micro": {
+            "support": 12,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "weighted": {
+            "support": 12,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        }
+      },
+      "status": "complete"
+    },
+    "corruption": {
+      "id": "sign-flip",
+      "severity": 1.0,
+      "seed": 21,
+      "calls": 12,
+      "operation": "flip",
+      "source_sha256": "4136375b294d361e102090d3c811904623e2a59154165a357d884ec187dffa44"
+    }
+  },
+  "source_sha256": "d3450fc33327d0c569ab0bf396404a149c194d3e60928a1eb5c4f6e1efca3018",
+  "analysis": {
+    "status": "measured",
+    "accuracy": {
+      "baseline": 1.0,
+      "candidate": 0.0,
+      "percentage_points": -100.0,
+      "relative_percent": -100.0,
+      "relative_status": "defined"
+    },
+    "macro_f1": {
+      "baseline": 0.5,
+      "candidate": 0.0,
+      "percentage_points": -50.0,
+      "relative_percent": -100.0,
+      "relative_status": "defined"
+    },
+    "paired_samples": 12
+  }
+}

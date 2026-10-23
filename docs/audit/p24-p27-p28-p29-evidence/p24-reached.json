@@ -1,0 +1,2396 @@
+{
+  "schema_version": 1,
+  "format": "hyso.quality_experiment",
+  "feature_id": "P24",
+  "experiment_id": "34414c35-5e04-4bc9-b99e-18786abd2a9e",
+  "sources": {
+    "cohort": {
+      "inputs": [
+        [
+          [
+            [
+              1.0,
+              -1.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              2.0,
+              -2.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              3.0,
+              -3.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              4.0,
+              -4.0
+            ]
+          ]
+        ]
+      ],
+      "dtype": "torch.float32",
+      "targets": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "sample_ids": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "configuration": {
+        "task": "multiclass",
+        "class_names": [
+          "no",
+          "yes"
+        ],
+        "split": "holdout",
+        "zero_division": 0,
+        "binary_rule": "logit >= 0",
+        "multiclass_rule": "argmax_first_index"
+      },
+      "preprocessing_id": "fixed-v1"
+    },
+    "seeds": [
+      1,
+      2,
+      3
+    ],
+    "target": 1.0,
+    "epochs": 2,
+    "cadence": 1,
+    "metric": "accuracy",
+    "runs": [
+      {
+        "seed": 1,
+        "training_protocol": {
+          "accum_steps": 1,
+          "amp": false,
+          "batch_size": 4,
+          "grad_clip": null,
+          "loss": {
+            "ignore_index": -100,
+            "label_smoothing": 0.0,
+            "reduction": "mean",
+            "tensors": {},
+            "type": "torch.nn.modules.loss.CrossEntropyLoss"
+          },
+          "model": {
+            "modules": [
+              {
+                "name": "",
+                "native_config": {},
+                "qualified_class": "torch.nn.modules.container.Sequential"
+              },
+              {
+                "name": "0",
+                "native_config": {},
+                "qualified_class": "torch.nn.modules.flatten.Flatten"
+              },
+              {
+                "name": "1",
+                "native_config": {
+                  "in_features": 2,
+                  "out_features": 2
+                },
+                "qualified_class": "torch.nn.modules.linear.Linear"
+              }
+            ],
+            "tensors": [
+              {
+                "dtype": "torch.float32",
+                "kind": "parameter",
+                "name": "1.weight",
+                "object_alias": 0,
+                "requires_grad": true,
+                "shape": [
+                  2,
+                  2
+                ],
+                "storage_alias": 0,
+                "storage_offset": 0,
+                "stride": [
+                  2,
+                  1
+                ]
+              },
+              {
+                "dtype": "torch.float32",
+                "kind": "parameter",
+                "name": "1.bias",
+                "object_alias": 1,
+                "requires_grad": true,
+                "shape": [
+                  2
+                ],
+                "storage_alias": 1,
+                "storage_offset": 0,
+                "stride": [
+                  1
+                ]
+              }
+            ]
+          },
+          "optimizer": {
+            "groups": [
+              {
+                "names": [
+                  "1.weight",
+                  "1.bias"
+                ],
+                "options": {
+                  "dampening": 0,
+                  "differentiable": false,
+                  "foreach": null,
+                  "fused": null,
+                  "lr": 1,
+                  "maximize": false,
+                  "momentum": 0,
+                  "nesterov": false,
+                  "weight_decay": 0
+                }
+              }
+            ],
+            "type": "torch.optim.sgd.SGD"
+          },
+          "scheduler": null
+        },
+        "training_data_sha256": "a99e5435b7083bc65fd507e9da3a2c43689ff9d4b0725099d239ff99765bd05c",
+        "timing": {
+          "schema_version": 1,
+          "feature_ids": [
+            "P19"
+          ],
+          "format": "hyso.performance.training_timing",
+          "segment_id": "85ce76ee-8e73-48e6-b8a4-e45a83584dec",
+          "protocol": {
+            "max_records": 100000,
+            "event_buffer": 128,
+            "warmup_epochs": 0
+          },
+          "provenance": {
+            "model": {
+              "config": null,
+              "modules": [
+                {
+                  "name": "",
+                  "type": "torch.nn.modules.container.Sequential"
+                },
+                {
+                  "name": "0",
+                  "type": "torch.nn.modules.flatten.Flatten"
+                },
+                {
+                  "name": "1",
+                  "type": "torch.nn.modules.linear.Linear"
+                }
+              ],
+              "tensors": [
+                {
+                  "device": "cpu",
+                  "dtype": "torch.float32",
+                  "name": "1.weight",
+                  "shape": [
+                    2,
+                    2
+                  ]
+                },
+                {
+                  "device": "cpu",
+                  "dtype": "torch.float32",
+                  "name": "1.bias",
+                  "shape": [
+                    2
+                  ]
+                }
+              ],
+              "type": "torch.nn.modules.container.Sequential"
+            },
+            "optimizer": {
+              "groups": [
+                {
+                  "dampening": 0,
+                  "differentiable": false,
+                  "foreach": null,
+                  "fused": null,
+                  "lr": 1,
+                  "maximize": false,
+                  "momentum": 0,
+                  "nesterov": false,
+                  "weight_decay": 0
+                }
+              ],
+              "type": "torch.optim.sgd.SGD"
+            },
+            "runtime": {
+              "cpu_threads": 1,
+              "cuda_build": "12.1",
+              "cudnn_benchmark": false,
+              "cudnn_deterministic": false,
+              "deterministic_algorithms": false,
+              "device": "cpu",
+              "platform": "Windows-10-10.0.26200-SP0",
+              "python": "3.10.18",
+              "torch": "2.5.1+cu121"
+            },
+            "training": {
+              "accum_steps": 1,
+              "amp": false,
+              "ema": false,
+              "loader_type": "torch.utils.data.dataloader.DataLoader",
+              "loss_type": "torch.nn.modules.loss.CrossEntropyLoss",
+              "scheduler": "builtins.NoneType",
+              "task": "multiclass",
+              "validation": false
+            },
+            "input": {
+              "shape": [
+                4,
+                1,
+                1,
+                2
+              ],
+              "dtype": "torch.float32",
+              "target_dtype": "torch.int64",
+              "device": "cpu",
+              "scope": "first_actual_microbatch; ledger records varying batch sizes"
+            }
+          },
+          "requested_epochs": 2,
+          "actual_epochs": 2,
+          "epochs": [
+            {
+              "epoch_id": 1,
+              "start_ns": 9465514240100,
+              "warmup": false,
+              "train_start_ns": 9465514240100,
+              "train_end_ns": 9465517856700,
+              "validation_start_ns": null,
+              "validation_end_ns": null,
+              "end_ns": 9465522371900,
+              "training_s": 0.0036166,
+              "validation_s": null,
+              "total_s": 0.0081318,
+              "samples": 4,
+              "microbatches": 1,
+              "windows": 1,
+              "attempts": 1,
+              "applied": 1,
+              "skipped": 0
+            },
+            {
+              "epoch_id": 2,
+              "start_ns": 9465522396800,
+              "warmup": false,
+              "train_start_ns": 9465522396800,
+              "train_end_ns": 9465524390300,
+              "validation_start_ns": null,
+              "validation_end_ns": null,
+              "end_ns": 9465530782300,
+              "training_s": 0.0019935,
+              "validation_s": null,
+              "total_s": 0.0083855,
+              "samples": 4,
+              "microbatches": 1,
+              "windows": 1,
+              "attempts": 1,
+              "applied": 1,
+              "skipped": 0
+            }
+          ],
+          "observations": [
+            {
+              "kind": "microbatch",
+              "epoch_id": 1,
+              "start_ns": 9465514924800,
+              "microbatch_id": 1,
+              "window_id": 1,
+              "end_ns": 9465516789300,
+              "samples": 4,
+              "host_ms": 1.8645,
+              "cuda_event_ms": null
+            },
+            {
+              "kind": "attempt",
+              "epoch_id": 1,
+              "start_ns": 9465516839500,
+              "attempt_id": 1,
+              "window_id": 1,
+              "update_before": 0,
+              "end_ns": 9465517661000,
+              "update_after": 1,
+              "applied": true,
+              "skipped": false,
+              "applied_update_id": 1,
+              "samples": 4,
+              "host_ms": 0.8215,
+              "cuda_event_ms": null
+            },
+            {
+              "kind": "window",
+              "epoch_id": 1,
+              "start_ns": 9465514918600,
+              "window_id": 1,
+              "end_ns": 9465517669700,
+              "samples": 4,
+              "host_ms": 2.7511,
+              "cuda_event_ms": null
+            },
+            {
+              "kind": "microbatch",
+              "epoch_id": 2,
+              "start_ns": 9465523079600,
+              "microbatch_id": 2,
+              "window_id": 2,
+              "end_ns": 9465523905500,
+              "samples": 4,
+              "host_ms": 0.8259,
+              "cuda_event_ms": null
+            },
+            {
+              "kind": "attempt",
+              "epoch_id": 2,
+              "start_ns": 9465523917600,
+              "attempt_id": 2,
+              "window_id": 2,
+              "update_before": 1,
+              "end_ns": 9465524318300,
+              "update_after": 2,
+              "applied": true,
+              "skipped": false,
+              "applied_update_id": 2,
+              "samples": 4,
+              "host_ms": 0.4007,
+              "cuda_event_ms": null
+            },
+            {
+              "kind": "window",
+              "epoch_id": 2,
+              "start_ns": 9465523073900,
+              "window_id": 2,
+              "end_ns": 9465524324500,
+              "samples": 4,
+              "host_ms": 1.2506,
+              "cuda_event_ms": null
+            }
+          ],
+          "counters": {
+            "before": {
+              "microbatches": 0,
+              "attempts": 0,
+              "applied": 0,
+              "ema_updates": 0
+            },
+            "after": {
+              "microbatches": 2,
+              "attempts": 2,
+              "applied": 2,
+              "ema_updates": 0
+            }
+          },
+          "status": "measured",
+          "reason": null,
+          "limitations": [
+            "instrumented wall time includes timer/event/drain overhead",
+            "no P20 stage decomposition or kernel attribution",
+            "hidden streams and concurrent process attribution unsupported",
+            "checkpoint I/O and fit finalization excluded; no cumulative resume timing"
+          ],
+          "instrumentation": {
+            "host_clock": "perf_counter_ns",
+            "device_clock": null,
+            "stream_id": null,
+            "event_drains": 0,
+            "max_pending_event_pairs": 0,
+            "pending_event_pairs": 0,
+            "warmup_policy": "label_real_epochs_no_extra_work",
+            "validation_policy": "separate_completion_wall_included_in_total_epoch",
+            "event_policy": "bounded_closed_pairs_plus_at_most_three_open_pairs; chunk_and_epoch_drain"
+          }
+        },
+        "checkpoints": [
+          {
+            "epoch": 0,
+            "start_ns": 9465510173900,
+            "end_ns": 9465513770200,
+            "model_state_sha256": "1439d0956e81aa72dd817a26aad055f780f052d108aacd6d6cd1334c80543b4c",
+            "evaluation": {
+              "schema_version": 1,
+              "format": "hyso.evaluation.classification",
+              "feature_ids": [
+                "P26"
+              ],
+              "evaluation_id": "152a4412-e4d0-4c2d-9511-a0d94f77c7dc",
+              "configuration": {
+                "task": "multiclass",
+                "class_names": [
+                  "no",
+                  "yes"
+                ],
+                "split": "holdout",
+                "zero_division": 0,
+                "binary_rule": "logit >= 0",
+                "multiclass_rule": "argmax_first_index"
+              },
+              "raw": {
+                "targets": [
+                  1,
+                  1,
+                  1,
+                  1
+                ],
+                "predictions": [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                "prediction_type": "logits"
+              },
+              "source": {
+                "kind": "model_inference",
+                "source_id": "cd0fbbc32cb3954a30f4c5c82bda645819aaf5443a2ce4fe3eaf1b0da80b1061",
+                "model_type": "torch.nn.modules.container.Sequential",
+                "model_state_sha256": "1439d0956e81aa72dd817a26aad055f780f052d108aacd6d6cd1334c80543b4c",
+                "device": "cpu",
+                "execution": "isolated_deepcopy_eval_inference_mode",
+                "dataset_type": "torch.utils.data.dataset.TensorDataset",
+                "sampler": "sequential",
+                "num_workers": 0
+              },
+              "provenance": {
+                "python": "3.10.18",
+                "torch": "2.5.1+cu121",
+                "platform": "Windows-10-10.0.26200-SP0"
+              },
+              "accounting": {
+                "expected_samples": 4,
+                "batch_sizes": [
+                  4
+                ]
+              },
+              "training_source": null,
+              "source_sha256": "dc12254e4c42ea9cb24de8804d39a94ff17820cfdcda9d6e725b64271365f8c3",
+              "metrics": {
+                "sample_count": 4,
+                "confusion_matrix": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    4,
+                    0
+                  ]
+                ],
+                "accuracy": 0.0,
+                "per_class": [
+                  {
+                    "class_index": 0,
+                    "class_name": "no",
+                    "support": 0,
+                    "precision": 0.0,
+                    "recall": 0,
+                    "f1": 0.0
+                  },
+                  {
+                    "class_index": 1,
+                    "class_name": "yes",
+                    "support": 4,
+                    "precision": 0,
+                    "recall": 0.0,
+                    "f1": 0.0
+                  }
+                ],
+                "averages": {
+                  "macro": {
+                    "support": 4,
+                    "precision": 0.0,
+                    "recall": 0.0,
+                    "f1": 0.0
+                  },
+                  "micro": {
+                    "support": 4,
+                    "precision": 0.0,
+                    "recall": 0.0,
+                    "f1": 0.0
+                  },
+                  "weighted": {
+                    "support": 4,
+                    "precision": 0.0,
+                    "recall": 0.0,
+                    "f1": 0.0
+                  }
+                }
+              },
+              "status": "complete"
+            }
+          },
+          {
+            "epoch": 1,
+            "start_ns": 9465518163900,
+            "end_ns": 9465522363500,
+            "model_state_sha256": "87a36cd5e1fffd2f1de62e1df95ae66f5ef01be9029810bf2a78098c2bd95ffe",
+            "evaluation": {
+              "schema_version": 1,
+              "format": "hyso.evaluation.classification",
+              "feature_ids": [
+                "P26"
+              ],
+              "evaluation_id": "2df83c2b-02e5-4d21-94dc-54c4da29ee0f",
+              "configuration": {
+                "task": "multiclass",
+                "class_names": [
+                  "no",
+                  "yes"
+                ],
+                "split": "holdout",
+                "zero_division": 0,
+                "binary_rule": "logit >= 0",
+                "multiclass_rule": "argmax_first_index"
+              },
+              "raw": {
+                "targets": [
+                  1,
+                  1,
+                  1,
+                  1
+                ],
+                "predictions": [
+                  [
+                    -0.5,
+                    0.5
+                  ],
+                  [
+                    -0.5,
+                    0.5
+                  ],
+                  [
+                    -0.5,
+                    0.5
+                  ],
+                  [
+                    -0.5,
+                    0.5
+                  ]
+                ],
+                "prediction_type": "logits"
+              },
+              "source": {
+                "kind": "model_inference",
+                "source_id": "cd0fbbc32cb3954a30f4c5c82bda645819aaf5443a2ce4fe3eaf1b0da80b1061",
+                "model_type": "torch.nn.modules.container.Sequential",
+                "model_state_sha256": "87a36cd5e1fffd2f1de62e1df95ae66f5ef01be9029810bf2a78098c2bd95ffe",
+                "device": "cpu",
+                "execution": "isolated_deepcopy_eval_inference_mode",
+                "dataset_type": "torch.utils.data.dataset.TensorDataset",
+                "sampler": "sequential",
+                "num_workers": 0
+              },
+              "provenance": {
+                "python": "3.10.18",
+                "torch": "2.5.1+cu121",
+                "platform": "Windows-10-10.0.26200-SP0"
+              },
+              "accounting": {
+                "expected_samples": 4,
+                "batch_sizes": [
+                  4
+                ]
+              },
+              "training_source": null,
+              "source_sha256": "025e62509fb813853cc7280acf14851d5c3e6078c415154fa8a9d70c91e1c80e",
+              "metrics": {
+                "sample_count": 4,
+                "confusion_matrix": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "accuracy": 1.0,
+                "per_class": [
+                  {
+                    "class_index": 0,
+                    "class_name": "no",
+                    "support": 0,
+                    "precision": 0,
+                    "recall": 0,
+                    "f1": 0
+                  },
+                  {
+                    "class_index": 1,
+                    "class_name": "yes",
+                    "support": 4,
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0
+                  }
+                ],
+                "averages": {
+                  "macro": {
+                    "support": 4,
+                    "precision": 0.5,
+                    "recall": 0.5,
+                    "f1": 0.5
+                  },
+                  "micro": {
+                    "support": 4,
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0
+                  },
+                  "weighted": {
+                    "support": 4,
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0
+                  }
+                }
+              },
+              "status": "complete"
+            }
+          },
+          {
+            "epoch": 2,
+            "start_ns": 9465524792100,
+            "end_ns": 9465530764900,
+            "model_state_sha256": "284878840b3dad399d4e3ca35e3a7f7372801a1caed20d01dd677cc8eb4323e4",
+            "evaluation": {
+              "schema_version": 1,
+              "format": "hyso.evaluation.classification",
+              "feature_ids": [
+                "P26"
+              ],
+              "evaluation_id": "336a41be-ab21-4788-9c90-8d74949ad8e5",
+              "configuration": {
+                "task": "multiclass",
+                "class_names": [
+                  "no",
+                  "yes"
+                ],
+                "split": "holdout",
+                "zero_division": 0,
+                "binary_rule": "logit >= 0",
+                "multiclass_rule": "argmax_first_index"
+              },
+              "raw": {
+                "targets": [
+                  1,
+                  1,
+                  1,
+                  1
+                ],
+                "predictions": [
+                  [
+                    -0.7689414024353027,
+                    0.7689414024353027
+                  ],
+                  [
+                    -0.7689414024353027,
+                    0.7689414024353027
+                  ],
+                  [
+                    -0.7689414024353027,
+                    0.7689414024353027
+                  ],
+                  [
+                    -0.7689414024353027,
+                    0.7689414024353027
+                  ]
+                ],
+                "prediction_type": "logits"
+              },
+              "source": {
+                "kind": "model_inference",
+                "source_id": "cd0fbbc32cb3954a30f4c5c82bda645819aaf5443a2ce4fe3eaf1b0da80b1061",
+                "model_type": "torch.nn.modules.container.Sequential",
+                "model_state_sha256": "284878840b3dad399d4e3ca35e3a7f7372801a1caed20d01dd677cc8eb4323e4",
+                "device": "cpu",
+                "execution": "isolated_deepcopy_eval_inference_mode",
+                "dataset_type": "torch.utils.data.dataset.TensorDataset",
+                "sampler": "sequential",
+                "num_workers": 0
+              },
+              "provenance": {
+                "python": "3.10.18",
+                "torch": "2.5.1+cu121",
+                "platform": "Windows-10-10.0.26200-SP0"
+              },
+              "accounting": {
+                "expected_samples": 4,
+                "batch_sizes": [
+                  4
+                ]
+              },
+              "training_source": null,
+              "source_sha256": "d14392dece613dc7fb1816a4af5f64050f28e6d8eb070382d2cda982840c92bc",
+              "metrics": {
+                "sample_count": 4,
+                "confusion_matrix": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "accuracy": 1.0,
+                "per_class": [
+                  {
+                    "class_index": 0,
+                    "class_name": "no",
+                    "support": 0,
+                    "precision": 0,
+                    "recall": 0,
+                    "f1": 0
+                  },
+                  {
+                    "class_index": 1,
+                    "class_name": "yes",
+                    "support": 4,
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0
+                  }
+                ],
+                "averages": {
+                  "macro": {
+                    "support": 4,
+                    "precision": 0.5,
+                    "recall": 0.5,
+                    "f1": 0.5
+                  },
+                  "micro": {
+                    "support": 4,
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0
+                  },
+                  "weighted": {
+                    "support": 4,
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0
+                  }
+                }
+              },
+              "status": "complete"
+            }
+          }
+        ]
+      },
+      {
+        "seed": 2,
+        "training_protocol": {
+          "accum_steps": 1,
+          "amp": false,
+          "batch_size": 4,
+          "grad_clip": null,
+          "loss": {
+            "ignore_index": -100,
+            "label_smoothing": 0.0,
+            "reduction": "mean",
+            "tensors": {},
+            "type": "torch.nn.modules.loss.CrossEntropyLoss"
+          },
+          "model": {
+            "modules": [
+              {
+                "name": "",
+                "native_config": {},
+                "qualified_class": "torch.nn.modules.container.Sequential"
+              },
+              {
+                "name": "0",
+                "native_config": {},
+                "qualified_class": "torch.nn.modules.flatten.Flatten"
+              },
+              {
+                "name": "1",
+                "native_config": {
+                  "in_features": 2,
+                  "out_features": 2
+                },
+                "qualified_class": "torch.nn.modules.linear.Linear"
+              }
+            ],
+            "tensors": [
+              {
+                "dtype": "torch.float32",
+                "kind": "parameter",
+                "name": "1.weight",
+                "object_alias": 0,
+                "requires_grad": true,
+                "shape": [
+                  2,
+                  2
+                ],
+                "storage_alias": 0,
+                "storage_offset": 0,
+                "stride": [
+                  2,
+                  1
+                ]
+              },
+              {
+                "dtype": "torch.float32",
+                "kind": "parameter",
+                "name": "1.bias",
+                "object_alias": 1,
+                "requires_grad": true,
+                "shape": [
+                  2
+                ],
+                "storage_alias": 1,
+                "storage_offset": 0,
+                "stride": [
+                  1
+                ]
+              }
+            ]
+          },
+          "optimizer": {
+            "groups": [
+              {
+                "names": [
+                  "1.weight",
+                  "1.bias"
+                ],
+                "options": {
+                  "dampening": 0,
+                  "differentiable": false,
+                  "foreach": null,
+                  "fused": null,
+                  "lr": 1,
+                  "maximize": false,
+                  "momentum": 0,
+                  "nesterov": false,
+                  "weight_decay": 0
+                }
+              }
+            ],
+            "type": "torch.optim.sgd.SGD"
+          },
+          "scheduler": null
+        },
+        "training_data_sha256": "a99e5435b7083bc65fd507e9da3a2c43689ff9d4b0725099d239ff99765bd05c",
+        "timing": {
+          "schema_version": 1,
+          "feature_ids": [
+            "P19"
+          ],
+          "format": "hyso.performance.training_timing",
+          "segment_id": "b20a3c96-5b1a-49f9-a3f1-b36c68d32379",
+          "protocol": {
+            "max_records": 100000,
+            "event_buffer": 128,
+            "warmup_epochs": 0
+          },
+          "provenance": {
+            "model": {
+              "config": null,
+              "modules": [
+                {
+                  "name": "",
+                  "type": "torch.nn.modules.container.Sequential"
+                },
+                {
+                  "name": "0",
+                  "type": "torch.nn.modules.flatten.Flatten"
+                },
+                {
+                  "name": "1",
+                  "type": "torch.nn.modules.linear.Linear"
+                }
+              ],
+              "tensors": [
+                {
+                  "device": "cpu",
+                  "dtype": "torch.float32",
+                  "name": "1.weight",
+                  "shape": [
+                    2,
+                    2
+                  ]
+                },
+                {
+                  "device": "cpu",
+                  "dtype": "torch.float32",
+                  "name": "1.bias",
+                  "shape": [
+                    2
+                  ]
+                }
+              ],
+              "type": "torch.nn.modules.container.Sequential"
+            },
+            "optimizer": {
+              "groups": [
+                {
+                  "dampening": 0,
+                  "differentiable": false,
+                  "foreach": null,
+                  "fused": null,
+                  "lr": 1,
+                  "maximize": false,
+                  "momentum": 0,
+                  "nesterov": false,
+                  "weight_decay": 0
+                }
+              ],
+              "type": "torch.optim.sgd.SGD"
+            },
+            "runtime": {
+              "cpu_threads": 1,
+              "cuda_build": "12.1",
+              "cudnn_benchmark": false,
+              "cudnn_deterministic": false,
+              "deterministic_algorithms": false,
+              "device": "cpu",
+              "platform": "Windows-10-10.0.26200-SP0",
+              "python": "3.10.18",
+              "torch": "2.5.1+cu121"
+            },
+            "training": {
+              "accum_steps": 1,
+              "amp": false,
+              "ema": false,
+              "loader_type": "torch.utils.data.dataloader.DataLoader",
+              "loss_type": "torch.nn.modules.loss.CrossEntropyLoss",
+              "scheduler": "builtins.NoneType",
+              "task": "multiclass",
+              "validation": false
+            },
+            "input": {
+              "shape": [
+                4,
+                1,
+                1,
+                2
+              ],
+              "dtype": "torch.float32",
+              "target_dtype": "torch.int64",
+              "device": "cpu",
+              "scope": "first_actual_microbatch; ledger records varying batch sizes"
+            }
+          },
+          "requested_epochs": 2,
+          "actual_epochs": 2,
+          "epochs": [
+            {
+              "epoch_id": 1,
+              "start_ns": 9465544910700,
+              "warmup": false,
+              "train_start_ns": 9465544910700,
+              "train_end_ns": 9465547620200,
+              "validation_start_ns": null,
+              "validation_end_ns": null,
+              "end_ns": 9465552488100,
+              "training_s": 0.0027095,
+              "validation_s": null,
+              "total_s": 0.0075774,
+              "samples": 4,
+              "microbatches": 1,
+              "windows": 1,
+              "attempts": 1,
+              "applied": 1,
+              "skipped": 0
+            },
+            {
+              "epoch_id": 2,
+              "start_ns": 9465552524300,
+              "warmup": false,
+              "train_start_ns": 9465552524300,
+              "train_end_ns": 9465554890900,
+              "validation_start_ns": null,
+              "validation_end_ns": null,
+              "end_ns": 9465559425800,
+              "training_s": 0.0023666,
+              "validation_s": null,
+              "total_s": 0.0069015,
+              "samples": 4,
+              "microbatches": 1,
+              "windows": 1,
+              "attempts": 1,
+              "applied": 1,
+              "skipped": 0
+            }
+          ],
+          "observations": [
+            {
+              "kind": "microbatch",
+              "epoch_id": 1,
+              "start_ns": 9465545670800,
+              "microbatch_id": 1,
+              "window_id": 1,
+              "end_ns": 9465546794100,
+              "samples": 4,
+              "host_ms": 1.1233,
+              "cuda_event_ms": null
+            },
+            {
+              "kind": "attempt",
+              "epoch_id": 1,
+              "start_ns": 9465546832600,
+              "attempt_id": 1,
+              "window_id": 1,
+              "update_before": 0,
+              "end_ns": 9465547500400,
+              "update_after": 1,
+              "applied": true,
+              "skipped": false,
+              "applied_update_id": 1,
+              "samples": 4,
+              "host_ms": 0.6678,
+              "cuda_event_ms": null
+            },
+            {
+              "kind": "window",
+              "epoch_id": 1,
+              "start_ns": 9465545662400,
+              "window_id": 1,
+              "end_ns": 9465547511900,
+              "samples": 4,
+              "host_ms": 1.8495,
+              "cuda_event_ms": null
+            },
+            {
+              "kind": "microbatch",
+              "epoch_id": 2,
+              "start_ns": 9465553103500,
+              "microbatch_id": 2,
+              "window_id": 2,
+              "end_ns": 9465554113600,
+              "samples": 4,
+              "host_ms": 1.0101,
+              "cuda_event_ms": null
+            },
+            {
+              "kind": "attempt",
+              "epoch_id": 2,
+              "start_ns": 9465554129400,
+              "attempt_id": 2,
+              "window_id": 2,
+              "update_before": 1,
+              "end_ns": 9465554753300,
+              "update_after": 2,
+              "applied": true,
+              "skipped": false,
+              "applied_update_id": 2,
+              "samples": 4,
+              "host_ms": 0.6239,
+              "cuda_event_ms": null
+            },
+            {
+              "kind": "window",
+              "epoch_id": 2,
+              "start_ns": 9465553093700,
+              "window_id": 2,
+              "end_ns": 9465554764000,
+              "samples": 4,
+              "host_ms": 1.6703,
+              "cuda_event_ms": null
+            }
+          ],
+          "counters": {
+            "before": {
+              "microbatches": 0,
+              "attempts": 0,
+              "applied": 0,
+              "ema_updates": 0
+            },
+            "after": {
+              "microbatches": 2,
+              "attempts": 2,
+              "applied": 2,
+              "ema_updates": 0
+            }
+          },
+          "status": "measured",
+          "reason": null,
+          "limitations": [
+            "instrumented wall time includes timer/event/drain overhead",
+            "no P20 stage decomposition or kernel attribution",
+            "hidden streams and concurrent process attribution unsupported",
+            "checkpoint I/O and fit finalization excluded; no cumulative resume timing"
+          ],
+          "instrumentation": {
+            "host_clock": "perf_counter_ns",
+            "device_clock": null,
+            "stream_id": null,
+            "event_drains": 0,
+            "max_pending_event_pairs": 0,
+            "pending_event_pairs": 0,
+            "warmup_policy": "label_real_epochs_no_extra_work",
+            "validation_policy": "separate_completion_wall_included_in_total_epoch",
+            "event_policy": "bounded_closed_pairs_plus_at_most_three_open_pairs; chunk_and_epoch_drain"
+          }
+        },
+        "checkpoints": [
+          {
+            "epoch": 0,
+            "start_ns": 9465540130800,
+            "end_ns": 9465544432600,
+            "model_state_sha256": "1439d0956e81aa72dd817a26aad055f780f052d108aacd6d6cd1334c80543b4c",
+            "evaluation": {
+              "schema_version": 1,
+              "format": "hyso.evaluation.classification",
+              "feature_ids": [
+                "P26"
+              ],
+              "evaluation_id": "5af1e333-74d4-4fbf-8ae1-839608e8b111",
+              "configuration": {
+                "task": "multiclass",
+                "class_names": [
+                  "no",
+                  "yes"
+                ],
+                "split": "holdout",
+                "zero_division": 0,
+                "binary_rule": "logit >= 0",
+                "multiclass_rule": "argmax_first_index"
+              },
+              "raw": {
+                "targets": [
+                  1,
+                  1,
+                  1,
+                  1
+                ],
+                "predictions": [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                "prediction_type": "logits"
+              },
+              "source": {
+                "kind": "model_inference",
+                "source_id": "cd0fbbc32cb3954a30f4c5c82bda645819aaf5443a2ce4fe3eaf1b0da80b1061",
+                "model_type": "torch.nn.modules.container.Sequential",
+                "model_state_sha256": "1439d0956e81aa72dd817a26aad055f780f052d108aacd6d6cd1334c80543b4c",
+                "device": "cpu",
+                "execution": "isolated_deepcopy_eval_inference_mode",
+                "dataset_type": "torch.utils.data.dataset.TensorDataset",
+                "sampler": "sequential",
+                "num_workers": 0
+              },
+              "provenance": {
+                "python": "3.10.18",
+                "torch": "2.5.1+cu121",
+                "platform": "Windows-10-10.0.26200-SP0"
+              },
+              "accounting": {
+                "expected_samples": 4,
+                "batch_sizes": [
+                  4
+                ]
+              },
+              "training_source": null,
+              "source_sha256": "a527281214cf79a0bf4f05aefd20df2b296d8f29bafdbdcae8007d33d35248a3",
+              "metrics": {
+                "sample_count": 4,
+                "confusion_matrix": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    4,
+                    0
+                  ]
+                ],
+                "accuracy": 0.0,
+                "per_class": [
+                  {
+                    "class_index": 0,
+                    "class_name": "no",
+                    "support": 0,
+                    "precision": 0.0,
+                    "recall": 0,
+                    "f1": 0.0
+                  },
+                  {
+                    "class_index": 1,
+                    "class_name": "yes",
+                    "support": 4,
+                    "precision": 0,
+                    "recall": 0.0,
+                    "f1": 0.0
+                  }
+                ],
+                "averages": {
+                  "macro": {
+                    "support": 4,
+                    "precision": 0.0,
+                    "recall": 0.0,
+                    "f1": 0.0
+                  },
+                  "micro": {
+                    "support": 4,
+                    "precision": 0.0,
+                    "recall": 0.0,
+                    "f1": 0.0
+                  },
+                  "weighted": {
+                    "support": 4,
+                    "precision": 0.0,
+                    "recall": 0.0,
+                    "f1": 0.0
+                  }
+                }
+              },
+              "status": "complete"
+            }
+          },
+          {
+            "epoch": 1,
+            "start_ns": 9465548201800,
+            "end_ns": 9465552473900,
+            "model_state_sha256": "87a36cd5e1fffd2f1de62e1df95ae66f5ef01be9029810bf2a78098c2bd95ffe",
+            "evaluation": {
+              "schema_version": 1,
+              "format": "hyso.evaluation.classification",
+              "feature_ids": [
+                "P26"
+              ],
+              "evaluation_id": "c30ead15-faac-4be1-bf45-9a09541cce20",
+              "configuration": {
+                "task": "multiclass",
+                "class_names": [
+                  "no",
+                  "yes"
+                ],
+                "split": "holdout",
+                "zero_division": 0,
+                "binary_rule": "logit >= 0",
+                "multiclass_rule": "argmax_first_index"
+              },
+              "raw": {
+                "targets": [
+                  1,
+                  1,
+                  1,
+                  1
+                ],
+                "predictions": [
+                  [
+                    -0.5,
+                    0.5
+                  ],
+                  [
+                    -0.5,
+                    0.5
+                  ],
+                  [
+                    -0.5,
+                    0.5
+                  ],
+                  [
+                    -0.5,
+                    0.5
+                  ]
+                ],
+                "prediction_type": "logits"
+              },
+              "source": {
+                "kind": "model_inference",
+                "source_id": "cd0fbbc32cb3954a30f4c5c82bda645819aaf5443a2ce4fe3eaf1b0da80b1061",
+                "model_type": "torch.nn.modules.container.Sequential",
+                "model_state_sha256": "87a36cd5e1fffd2f1de62e1df95ae66f5ef01be9029810bf2a78098c2bd95ffe",
+                "device": "cpu",
+                "execution": "isolated_deepcopy_eval_inference_mode",
+                "dataset_type": "torch.utils.data.dataset.TensorDataset",
+                "sampler": "sequential",
+                "num_workers": 0
+              },
+              "provenance": {
+                "python": "3.10.18",
+                "torch": "2.5.1+cu121",
+                "platform": "Windows-10-10.0.26200-SP0"
+              },
+              "accounting": {
+                "expected_samples": 4,
+                "batch_sizes": [
+                  4
+                ]
+              },
+              "training_source": null,
+              "source_sha256": "747faba863cc22839fb7d69874cc26a84214827e2263c188abdacdebcc755d3a",
+              "metrics": {
+                "sample_count": 4,
+                "confusion_matrix": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "accuracy": 1.0,
+                "per_class": [
+                  {
+                    "class_index": 0,
+                    "class_name": "no",
+                    "support": 0,
+                    "precision": 0,
+                    "recall": 0,
+                    "f1": 0
+                  },
+                  {
+                    "class_index": 1,
+                    "class_name": "yes",
+                    "support": 4,
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0
+                  }
+                ],
+                "averages": {
+                  "macro": {
+                    "support": 4,
+                    "precision": 0.5,
+                    "recall": 0.5,
+                    "f1": 0.5
+                  },
+                  "micro": {
+                    "support": 4,
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0
+                  },
+                  "weighted": {
+                    "support": 4,
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0
+                  }
+                }
+              },
+              "status": "complete"
+            }
+          },
+          {
+            "epoch": 2,
+            "start_ns": 9465555222500,
+            "end_ns": 9465559415600,
+            "model_state_sha256": "284878840b3dad399d4e3ca35e3a7f7372801a1caed20d01dd677cc8eb4323e4",
+            "evaluation": {
+              "schema_version": 1,
+              "format": "hyso.evaluation.classification",
+              "feature_ids": [
+                "P26"
+              ],
+              "evaluation_id": "4a9cef8e-0b8a-4ac1-9b70-f908eb8e03c3",
+              "configuration": {
+                "task": "multiclass",
+                "class_names": [
+                  "no",
+                  "yes"
+                ],
+                "split": "holdout",
+                "zero_division": 0,
+                "binary_rule": "logit >= 0",
+                "multiclass_rule": "argmax_first_index"
+              },
+              "raw": {
+                "targets": [
+                  1,
+                  1,
+                  1,
+                  1
+                ],
+                "predictions": [
+                  [
+                    -0.7689414024353027,
+                    0.7689414024353027
+                  ],
+                  [
+                    -0.7689414024353027,
+                    0.7689414024353027
+                  ],
+                  [
+                    -0.7689414024353027,
+                    0.7689414024353027
+                  ],
+                  [
+                    -0.7689414024353027,
+                    0.7689414024353027
+                  ]
+                ],
+                "prediction_type": "logits"
+              },
+              "source": {
+                "kind": "model_inference",
+                "source_id": "cd0fbbc32cb3954a30f4c5c82bda645819aaf5443a2ce4fe3eaf1b0da80b1061",
+                "model_type": "torch.nn.modules.container.Sequential",
+                "model_state_sha256": "284878840b3dad399d4e3ca35e3a7f7372801a1caed20d01dd677cc8eb4323e4",
+                "device": "cpu",
+                "execution": "isolated_deepcopy_eval_inference_mode",
+                "dataset_type": "torch.utils.data.dataset.TensorDataset",
+                "sampler": "sequential",
+                "num_workers": 0
+              },
+              "provenance": {
+                "python": "3.10.18",
+                "torch": "2.5.1+cu121",
+                "platform": "Windows-10-10.0.26200-SP0"
+              },
+              "accounting": {
+                "expected_samples": 4,
+                "batch_sizes": [
+                  4
+                ]
+              },
+              "training_source": null,
+              "source_sha256": "b1039fa62953e48e6142fe0379c4cd9f9f16afb300eafcc38b748dbbc78d3b0e",
+              "metrics": {
+                "sample_count": 4,
+                "confusion_matrix": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "accuracy": 1.0,
+                "per_class": [
+                  {
+                    "class_index": 0,
+                    "class_name": "no",
+                    "support": 0,
+                    "precision": 0,
+                    "recall": 0,
+                    "f1": 0
+                  },
+                  {
+                    "class_index": 1,
+                    "class_name": "yes",
+                    "support": 4,
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0
+                  }
+                ],
+                "averages": {
+                  "macro": {
+                    "support": 4,
+                    "precision": 0.5,
+                    "recall": 0.5,
+                    "f1": 0.5
+                  },
+                  "micro": {
+                    "support": 4,
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0
+                  },
+                  "weighted": {
+                    "support": 4,
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0
+                  }
+                }
+              },
+              "status": "complete"
+            }
+          }
+        ]
+      },
+      {
+        "seed": 3,
+        "training_protocol": {
+          "accum_steps": 1,
+          "amp": false,
+          "batch_size": 4,
+          "grad_clip": null,
+          "loss": {
+            "ignore_index": -100,
+            "label_smoothing": 0.0,
+            "reduction": "mean",
+            "tensors": {},
+            "type": "torch.nn.modules.loss.CrossEntropyLoss"
+          },
+          "model": {
+            "modules": [
+              {
+                "name": "",
+                "native_config": {},
+                "qualified_class": "torch.nn.modules.container.Sequential"
+              },
+              {
+                "name": "0",
+                "native_config": {},
+                "qualified_class": "torch.nn.modules.flatten.Flatten"
+              },
+              {
+                "name": "1",
+                "native_config": {
+                  "in_features": 2,
+                  "out_features": 2
+                },
+                "qualified_class": "torch.nn.modules.linear.Linear"
+              }
+            ],
+            "tensors": [
+              {
+                "dtype": "torch.float32",
+                "kind": "parameter",
+                "name": "1.weight",
+                "object_alias": 0,
+                "requires_grad": true,
+                "shape": [
+                  2,
+                  2
+                ],
+                "storage_alias": 0,
+                "storage_offset": 0,
+                "stride": [
+                  2,
+                  1
+                ]
+              },
+              {
+                "dtype": "torch.float32",
+                "kind": "parameter",
+                "name": "1.bias",
+                "object_alias": 1,
+                "requires_grad": true,
+                "shape": [
+                  2
+                ],
+                "storage_alias": 1,
+                "storage_offset": 0,
+                "stride": [
+                  1
+                ]
+              }
+            ]
+          },
+          "optimizer": {
+            "groups": [
+              {
+                "names": [
+                  "1.weight",
+                  "1.bias"
+                ],
+                "options": {
+                  "dampening": 0,
+                  "differentiable": false,
+                  "foreach": null,
+                  "fused": null,
+                  "lr": 1,
+                  "maximize": false,
+                  "momentum": 0,
+                  "nesterov": false,
+                  "weight_decay": 0
+                }
+              }
+            ],
+            "type": "torch.optim.sgd.SGD"
+          },
+          "scheduler": null
+        },
+        "training_data_sha256": "a99e5435b7083bc65fd507e9da3a2c43689ff9d4b0725099d239ff99765bd05c",
+        "timing": {
+          "schema_version": 1,
+          "feature_ids": [
+            "P19"
+          ],
+          "format": "hyso.performance.training_timing",
+          "segment_id": "146e9bd1-8bc9-4f87-ad6b-a3626078c0a2",
+          "protocol": {
+            "max_records": 100000,
+            "event_buffer": 128,
+            "warmup_epochs": 0
+          },
+          "provenance": {
+            "model": {
+              "config": null,
+              "modules": [
+                {
+                  "name": "",
+                  "type": "torch.nn.modules.container.Sequential"
+                },
+                {
+                  "name": "0",
+                  "type": "torch.nn.modules.flatten.Flatten"
+                },
+                {
+                  "name": "1",
+                  "type": "torch.nn.modules.linear.Linear"
+                }
+              ],
+              "tensors": [
+                {
+                  "device": "cpu",
+                  "dtype": "torch.float32",
+                  "name": "1.weight",
+                  "shape": [
+                    2,
+                    2
+                  ]
+                },
+                {
+                  "device": "cpu",
+                  "dtype": "torch.float32",
+                  "name": "1.bias",
+                  "shape": [
+                    2
+                  ]
+                }
+              ],
+              "type": "torch.nn.modules.container.Sequential"
+            },
+            "optimizer": {
+              "groups": [
+                {
+                  "dampening": 0,
+                  "differentiable": false,
+                  "foreach": null,
+                  "fused": null,
+                  "lr": 1,
+                  "maximize": false,
+                  "momentum": 0,
+                  "nesterov": false,
+                  "weight_decay": 0
+                }
+              ],
+              "type": "torch.optim.sgd.SGD"
+            },
+            "runtime": {
+              "cpu_threads": 1,
+              "cuda_build": "12.1",
+              "cudnn_benchmark": false,
+              "cudnn_deterministic": false,
+              "deterministic_algorithms": false,
+              "device": "cpu",
+              "platform": "Windows-10-10.0.26200-SP0",
+              "python": "3.10.18",
+              "torch": "2.5.1+cu121"
+            },
+            "training": {
+              "accum_steps": 1,
+              "amp": false,
+              "ema": false,
+              "loader_type": "torch.utils.data.dataloader.DataLoader",
+              "loss_type": "torch.nn.modules.loss.CrossEntropyLoss",
+              "scheduler": "builtins.NoneType",
+              "task": "multiclass",
+              "validation": false
+            },
+            "input": {
+              "shape": [
+                4,
+                1,
+                1,
+                2
+              ],
+              "dtype": "torch.float32",
+              "target_dtype": "torch.int64",
+              "device": "cpu",
+              "scope": "first_actual_microbatch; ledger records varying batch sizes"
+            }
+          },
+          "requested_epochs": 2,
+          "actual_epochs": 2,
+          "epochs": [
+            {
+              "epoch_id": 1,
+              "start_ns": 9465573726400,
+              "warmup": false,
+              "train_start_ns": 9465573726400,
+              "train_end_ns": 9465576017700,
+              "validation_start_ns": null,
+              "validation_end_ns": null,
+              "end_ns": 9465580678400,
+              "training_s": 0.0022913,
+              "validation_s": null,
+              "total_s": 0.006952,
+              "samples": 4,
+              "microbatches": 1,
+              "windows": 1,
+              "attempts": 1,
+              "applied": 1,
+              "skipped": 0
+            },
+            {
+              "epoch_id": 2,
+              "start_ns": 9465580701900,
+              "warmup": false,
+              "train_start_ns": 9465580701900,
+              "train_end_ns": 9465583539200,
+              "validation_start_ns": null,
+              "validation_end_ns": null,
+              "end_ns": 9465588661700,
+              "training_s": 0.0028373,
+              "validation_s": null,
+              "total_s": 0.0079598,
+              "samples": 4,
+              "microbatches": 1,
+              "windows": 1,
+              "attempts": 1,
+              "applied": 1,
+              "skipped": 0
+            }
+          ],
+          "observations": [
+            {
+              "kind": "microbatch",
+              "epoch_id": 1,
+              "start_ns": 9465574418400,
+              "microbatch_id": 1,
+              "window_id": 1,
+              "end_ns": 9465575384400,
+              "samples": 4,
+              "host_ms": 0.966,
+              "cuda_event_ms": null
+            },
+            {
+              "kind": "attempt",
+              "epoch_id": 1,
+              "start_ns": 9465575414100,
+              "attempt_id": 1,
+              "window_id": 1,
+              "update_before": 0,
+              "end_ns": 9465575885800,
+              "update_after": 1,
+              "applied": true,
+              "skipped": false,
+              "applied_update_id": 1,
+              "samples": 4,
+              "host_ms": 0.4717,
+              "cuda_event_ms": null
+            },
+            {
+              "kind": "window",
+              "epoch_id": 1,
+              "start_ns": 9465574411500,
+              "window_id": 1,
+              "end_ns": 9465575895000,
+              "samples": 4,
+              "host_ms": 1.4835,
+              "cuda_event_ms": null
+            },
+            {
+              "kind": "microbatch",
+              "epoch_id": 2,
+              "start_ns": 9465581511600,
+              "microbatch_id": 2,
+              "window_id": 2,
+              "end_ns": 9465582605500,
+              "samples": 4,
+              "host_ms": 1.0939,
+              "cuda_event_ms": null
+            },
+            {
+              "kind": "attempt",
+              "epoch_id": 2,
+              "start_ns": 9465582669200,
+              "attempt_id": 2,
+              "window_id": 2,
+              "update_before": 1,
+              "end_ns": 9465583413100,
+              "update_after": 2,
+              "applied": true,
+              "skipped": false,
+              "applied_update_id": 2,
+              "samples": 4,
+              "host_ms": 0.7439,
+              "cuda_event_ms": null
+            },
+            {
+              "kind": "window",
+              "epoch_id": 2,
+              "start_ns": 9465581502800,
+              "window_id": 2,
+              "end_ns": 9465583423000,
+              "samples": 4,
+              "host_ms": 1.9202,
+              "cuda_event_ms": null
+            }
+          ],
+          "counters": {
+            "before": {
+              "microbatches": 0,
+              "attempts": 0,
+              "applied": 0,
+              "ema_updates": 0
+            },
+            "after": {
+              "microbatches": 2,
+              "attempts": 2,
+              "applied": 2,
+              "ema_updates": 0
+            }
+          },
+          "status": "measured",
+          "reason": null,
+          "limitations": [
+            "instrumented wall time includes timer/event/drain overhead",
+            "no P20 stage decomposition or kernel attribution",
+            "hidden streams and concurrent process attribution unsupported",
+            "checkpoint I/O and fit finalization excluded; no cumulative resume timing"
+          ],
+          "instrumentation": {
+            "host_clock": "perf_counter_ns",
+            "device_clock": null,
+            "stream_id": null,
+            "event_drains": 0,
+            "max_pending_event_pairs": 0,
+            "pending_event_pairs": 0,
+            "warmup_policy": "label_real_epochs_no_extra_work",
+            "validation_policy": "separate_completion_wall_included_in_total_epoch",
+            "event_policy": "bounded_closed_pairs_plus_at_most_three_open_pairs; chunk_and_epoch_drain"
+          }
+        },
+        "checkpoints": [
+          {
+            "epoch": 0,
+            "start_ns": 9465568047900,
+            "end_ns": 9465573043300,
+            "model_state_sha256": "1439d0956e81aa72dd817a26aad055f780f052d108aacd6d6cd1334c80543b4c",
+            "evaluation": {
+              "schema_version": 1,
+              "format": "hyso.evaluation.classification",
+              "feature_ids": [
+                "P26"
+              ],
+              "evaluation_id": "57422fc2-949a-469f-befe-b55cac4c7e5f",
+              "configuration": {
+                "task": "multiclass",
+                "class_names": [
+                  "no",
+                  "yes"
+                ],
+                "split": "holdout",
+                "zero_division": 0,
+                "binary_rule": "logit >= 0",
+                "multiclass_rule": "argmax_first_index"
+              },
+              "raw": {
+                "targets": [
+                  1,
+                  1,
+                  1,
+                  1
+                ],
+                "predictions": [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                "prediction_type": "logits"
+              },
+              "source": {
+                "kind": "model_inference",
+                "source_id": "cd0fbbc32cb3954a30f4c5c82bda645819aaf5443a2ce4fe3eaf1b0da80b1061",
+                "model_type": "torch.nn.modules.container.Sequential",
+                "model_state_sha256": "1439d0956e81aa72dd817a26aad055f780f052d108aacd6d6cd1334c80543b4c",
+                "device": "cpu",
+                "execution": "isolated_deepcopy_eval_inference_mode",
+                "dataset_type": "torch.utils.data.dataset.TensorDataset",
+                "sampler": "sequential",
+                "num_workers": 0
+              },
+              "provenance": {
+                "python": "3.10.18",
+                "torch": "2.5.1+cu121",
+                "platform": "Windows-10-10.0.26200-SP0"
+              },
+              "accounting": {
+                "expected_samples": 4,
+                "batch_sizes": [
+                  4
+                ]
+              },
+              "training_source": null,
+              "source_sha256": "838463aedcc3d891772667d24c6953cacb701652048bf6080d83d1c1145d9353",
+              "metrics": {
+                "sample_count": 4,
+                "confusion_matrix": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    4,
+                    0
+                  ]
+                ],
+                "accuracy": 0.0,
+                "per_class": [
+                  {
+                    "class_index": 0,
+                    "class_name": "no",
+                    "support": 0,
+                    "precision": 0.0,
+                    "recall": 0,
+                    "f1": 0.0
+                  },
+                  {
+                    "class_index": 1,
+                    "class_name": "yes",
+                    "support": 4,
+                    "precision": 0,
+                    "recall": 0.0,
+                    "f1": 0.0
+                  }
+                ],
+                "averages": {
+                  "macro": {
+                    "support": 4,
+                    "precision": 0.0,
+                    "recall": 0.0,
+                    "f1": 0.0
+                  },
+                  "micro": {
+                    "support": 4,
+                    "precision": 0.0,
+                    "recall": 0.0,
+                    "f1": 0.0
+                  },
+                  "weighted": {
+                    "support": 4,
+                    "precision": 0.0,
+                    "recall": 0.0,
+                    "f1": 0.0
+                  }
+                }
+              },
+              "status": "complete"
+            }
+          },
+          {
+            "epoch": 1,
+            "start_ns": 9465576300100,
+            "end_ns": 9465580670900,
+            "model_state_sha256": "87a36cd5e1fffd2f1de62e1df95ae66f5ef01be9029810bf2a78098c2bd95ffe",
+            "evaluation": {
+              "schema_version": 1,
+              "format": "hyso.evaluation.classification",
+              "feature_ids": [
+                "P26"
+              ],
+              "evaluation_id": "56b44415-fd33-4a29-817c-8956595a2a02",
+              "configuration": {
+                "task": "multiclass",
+                "class_names": [
+                  "no",
+                  "yes"
+                ],
+                "split": "holdout",
+                "zero_division": 0,
+                "binary_rule": "logit >= 0",
+                "multiclass_rule": "argmax_first_index"
+              },
+              "raw": {
+                "targets": [
+                  1,
+                  1,
+                  1,
+                  1
+                ],
+                "predictions": [
+                  [
+                    -0.5,
+                    0.5
+                  ],
+                  [
+                    -0.5,
+                    0.5
+                  ],
+                  [
+                    -0.5,
+                    0.5
+                  ],
+                  [
+                    -0.5,
+                    0.5
+                  ]
+                ],
+                "prediction_type": "logits"
+              },
+              "source": {
+                "kind": "model_inference",
+                "source_id": "cd0fbbc32cb3954a30f4c5c82bda645819aaf5443a2ce4fe3eaf1b0da80b1061",
+                "model_type": "torch.nn.modules.container.Sequential",
+                "model_state_sha256": "87a36cd5e1fffd2f1de62e1df95ae66f5ef01be9029810bf2a78098c2bd95ffe",
+                "device": "cpu",
+                "execution": "isolated_deepcopy_eval_inference_mode",
+                "dataset_type": "torch.utils.data.dataset.TensorDataset",
+                "sampler": "sequential",
+                "num_workers": 0
+              },
+              "provenance": {
+                "python": "3.10.18",
+                "torch": "2.5.1+cu121",
+                "platform": "Windows-10-10.0.26200-SP0"
+              },
+              "accounting": {
+                "expected_samples": 4,
+                "batch_sizes": [
+                  4
+                ]
+              },
+              "training_source": null,
+              "source_sha256": "269aee279ccaf68ef7fd44c7175b00611579d210e79a24cc7e950c7bd17a60cd",
+              "metrics": {
+                "sample_count": 4,
+                "confusion_matrix": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "accuracy": 1.0,
+                "per_class": [
+                  {
+                    "class_index": 0,
+                    "class_name": "no",
+                    "support": 0,
+                    "precision": 0,
+                    "recall": 0,
+                    "f1": 0
+                  },
+                  {
+                    "class_index": 1,
+                    "class_name": "yes",
+                    "support": 4,
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0
+                  }
+                ],
+                "averages": {
+                  "macro": {
+                    "support": 4,
+                    "precision": 0.5,
+                    "recall": 0.5,
+                    "f1": 0.5
+                  },
+                  "micro": {
+                    "support": 4,
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0
+                  },
+                  "weighted": {
+                    "support": 4,
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0
+                  }
+                }
+              },
+              "status": "complete"
+            }
+          },
+          {
+            "epoch": 2,
+            "start_ns": 9465583888700,
+            "end_ns": 9465588646100,
+            "model_state_sha256": "284878840b3dad399d4e3ca35e3a7f7372801a1caed20d01dd677cc8eb4323e4",
+            "evaluation": {
+              "schema_version": 1,
+              "format": "hyso.evaluation.classification",
+              "feature_ids": [
+                "P26"
+              ],
+              "evaluation_id": "b92eb224-7c6a-4e57-92fd-74c7d705fada",
+              "configuration": {
+                "task": "multiclass",
+                "class_names": [
+                  "no",
+                  "yes"
+                ],
+                "split": "holdout",
+                "zero_division": 0,
+                "binary_rule": "logit >= 0",
+                "multiclass_rule": "argmax_first_index"
+              },
+              "raw": {
+                "targets": [
+                  1,
+                  1,
+                  1,
+                  1
+                ],
+                "predictions": [
+                  [
+                    -0.7689414024353027,
+                    0.7689414024353027
+                  ],
+                  [
+                    -0.7689414024353027,
+                    0.7689414024353027
+                  ],
+                  [
+                    -0.7689414024353027,
+                    0.7689414024353027
+                  ],
+                  [
+                    -0.7689414024353027,
+                    0.7689414024353027
+                  ]
+                ],
+                "prediction_type": "logits"
+              },
+              "source": {
+                "kind": "model_inference",
+                "source_id": "cd0fbbc32cb3954a30f4c5c82bda645819aaf5443a2ce4fe3eaf1b0da80b1061",
+                "model_type": "torch.nn.modules.container.Sequential",
+                "model_state_sha256": "284878840b3dad399d4e3ca35e3a7f7372801a1caed20d01dd677cc8eb4323e4",
+                "device": "cpu",
+                "execution": "isolated_deepcopy_eval_inference_mode",
+                "dataset_type": "torch.utils.data.dataset.TensorDataset",
+                "sampler": "sequential",
+                "num_workers": 0
+              },
+              "provenance": {
+                "python": "3.10.18",
+                "torch": "2.5.1+cu121",
+                "platform": "Windows-10-10.0.26200-SP0"
+              },
+              "accounting": {
+                "expected_samples": 4,
+                "batch_sizes": [
+                  4
+                ]
+              },
+              "training_source": null,
+              "source_sha256": "56445eec2ccfb3d954db7d890a3ea5d56cc226fbff0e8b971fad3034d7cabcaf",
+              "metrics": {
+                "sample_count": 4,
+                "confusion_matrix": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "accuracy": 1.0,
+                "per_class": [
+                  {
+                    "class_index": 0,
+                    "class_name": "no",
+                    "support": 0,
+                    "precision": 0,
+                    "recall": 0,
+                    "f1": 0
+                  },
+                  {
+                    "class_index": 1,
+                    "class_name": "yes",
+                    "support": 4,
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0
+                  }
+                ],
+                "averages": {
+                  "macro": {
+                    "support": 4,
+                    "precision": 0.5,
+                    "recall": 0.5,
+                    "f1": 0.5
+                  },
+                  "micro": {
+                    "support": 4,
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0
+                  },
+                  "weighted": {
+                    "support": 4,
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0
+                  }
+                }
+              },
+              "status": "complete"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "source_sha256": "a4bdbbadccf8643e3e5e80c264e21e0d097b0bff65506482a0127fe1f67bb4a5",
+  "analysis": {
+    "status": "measured",
+    "runs": [
+      {
+        "seed": 1,
+        "status": "reached",
+        "first_observed_crossing": {
+          "epoch": 1,
+          "training_seconds": 0.0036166,
+          "interval_low_seconds": 0,
+          "interval_high_seconds": 0.0036166
+        },
+        "censor_training_seconds": null,
+        "checkpoints": [
+          {
+            "epoch": 0,
+            "training_seconds": 0,
+            "score": 0.0,
+            "evaluation_seconds": 0.0035963
+          },
+          {
+            "epoch": 1,
+            "training_seconds": 0.0036166,
+            "score": 1.0,
+            "evaluation_seconds": 0.0041996
+          },
+          {
+            "epoch": 2,
+            "training_seconds": 0.0056101,
+            "score": 1.0,
+            "evaluation_seconds": 0.0059728
+          }
+        ]
+      },
+      {
+        "seed": 2,
+        "status": "reached",
+        "first_observed_crossing": {
+          "epoch": 1,
+          "training_seconds": 0.0027095,
+          "interval_low_seconds": 0,
+          "interval_high_seconds": 0.0027095
+        },
+        "censor_training_seconds": null,
+        "checkpoints": [
+          {
+            "epoch": 0,
+            "training_seconds": 0,
+            "score": 0.0,
+            "evaluation_seconds": 0.0043018
+          },
+          {
+            "epoch": 1,
+            "training_seconds": 0.0027095,
+            "score": 1.0,
+            "evaluation_seconds": 0.0042721
+          },
+          {
+            "epoch": 2,
+            "training_seconds": 0.0050761,
+            "score": 1.0,
+            "evaluation_seconds": 0.0041931
+          }
+        ]
+      },
+      {
+        "seed": 3,
+        "status": "reached",
+        "first_observed_crossing": {
+          "epoch": 1,
+          "training_seconds": 0.0022913,
+          "interval_low_seconds": 0,
+          "interval_high_seconds": 0.0022913
+        },
+        "censor_training_seconds": null,
+        "checkpoints": [
+          {
+            "epoch": 0,
+            "training_seconds": 0,
+            "score": 0.0,
+            "evaluation_seconds": 0.0049954
+          },
+          {
+            "epoch": 1,
+            "training_seconds": 0.0022913,
+            "score": 1.0,
+            "evaluation_seconds": 0.0043708
+          },
+          {
+            "epoch": 2,
+            "training_seconds": 0.0051286000000000005,
+            "score": 1.0,
+            "evaluation_seconds": 0.0047574
+          }
+        ]
+      }
+    ],
+    "reached": 3,
+    "censored": 0,
+    "reached_mean_seconds": 0.002872466666666667,
+    "reached_sample_variance_seconds2": 4.5902362333333346e-07,
+    "variance_scope": "reached_runs_only_not_censor_adjusted",
+    "timing_scope": "sum_P19_training_s_excludes_evaluation"
+  }
+}
