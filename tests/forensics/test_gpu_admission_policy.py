@@ -14,6 +14,7 @@ import gpu_admission_policy as policy
 import gpu_scenario_runner as runner
 import native_scenario_runner as previous
 from offline_test_isolation import offline_test
+from supervisor_contract import assert_supervisor_contract
 from test_p23_preflight import capture, NOW, RUN, SHA
 
 
@@ -181,6 +182,9 @@ class WarningPolicyTests(unittest.TestCase):
     def test_isolation_implementation_is_preserved(self):
         a, b = ast.parse(Path(previous.__file__).read_text()), ast.parse(Path(runner.__file__).read_text())
         for name in ('job_class', 'expected_limits', 'validate_gate', 'await_gate', 'supervise'):
+            if name=='supervise':
+                assert_supervisor_contract(self,previous,runner)
+                continue
             left = next(n for n in a.body if isinstance(n, ast.FunctionDef) and n.name==name)
             right = next(n for n in b.body if isinstance(n, ast.FunctionDef) and n.name==name)
             # The only supervisor change is the new sealed bootstrap filename.

@@ -296,7 +296,8 @@ def supervise(root, work, role, mode, token, expected_sha, timeout=None, nested=
     kind = 'outer' if role == 'parent' else 'child'
     budget = LIMITS['outer_timeout_s' if kind == 'outer' else 'child_timeout_s']
     if timeout is not None:  # only shorter dry-run deadlines
-        if (mode == 'native' and not nested) or timeout > budget:
+        if (type(timeout) not in (int,float) or not math.isfinite(timeout)
+                or not 0 < timeout <= budget or (mode == 'native' and not nested)):
             raise ValueError('invalid timeout override')
         budget = timeout
     Job = job_class(root)
