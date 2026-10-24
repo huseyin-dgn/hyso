@@ -11,6 +11,19 @@ def tiny_cuda():
     return nn.Sequential(nn.Conv2d(2,2,1),nn.Flatten(1),nn.Linear(18,3))
 
 
+class OtherStream(nn.Module):
+    """Valid joined CUDA work, deliberately outside the supported timing stream."""
+    def __init__(self):
+        super().__init__();self.side=None
+    def forward(self,x):
+        if not x.is_cuda:return x*2
+        if self.side is None:self.side=torch.cuda.Stream(device=x.device)
+        current=torch.cuda.current_stream(x.device);self.side.wait_stream(current)
+        with torch.cuda.stream(self.side):out=x*2
+        current.wait_stream(self.side)
+        return out
+
+
 def conv1():
     return nn.Sequential(nn.Flatten(2),nn.Conv1d(2,4,3,padding=1,groups=2,bias=False))
 

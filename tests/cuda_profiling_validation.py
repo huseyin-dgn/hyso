@@ -71,10 +71,10 @@ while (preflight['job']['active_processes']!=1 or preflight['job']['pids']!=[os.
 preflight['warnings']=['GPU process occupancy/utilization is telemetry, not an admission blocker']
 preflight['torch_imported_before_admission']='torch' in sys.modules
 preflight['blockers']=[]
-if not all(s['uuid']==admission.policy.GPU_UUID and s['free_mib']>=2048 for s in preflight['gpu_samples']):
-    preflight['blockers'].append('device_identity_or_free_memory')
-if preflight['host_free_bytes']<4*1024**3 or preflight['disk_free_bytes']<12*1024**3:
-    preflight['blockers'].append('host_or_disk_resource_limit')
+if not all(s['uuid']==admission.policy.GPU_UUID for s in preflight['gpu_samples']):
+    preflight['blockers'].append('device_identity_mismatch')
+preflight['resource_policy']='RAM/VRAM/disk/PIDs/utilization are advisory; only identity/Job ownership are admission gates'
+preflight['warnings'].append('Resource contention can perturb timings; occupancy alone does not establish a performance cause')
 if preflight['job']['active_processes']!=1 or preflight['job']['pids']!=[os.getpid()]:preflight['blockers'].append('unexpected_owned_process')
 preflight['policy_scope']='P13/P14 bounded profiler; GPU PID/utilization warnings per explicit task; P23 policy unchanged'
 args.output.parent.mkdir(parents=True,exist_ok=True)

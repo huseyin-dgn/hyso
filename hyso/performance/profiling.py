@@ -16,17 +16,18 @@ from .inference import _base
 from .result import (OperatorProfileResult,LayerProfileResult,OperationCountResult,
                      _integer,_positive,_plain,_write_export)
 from ._operation_models import CONVENTION,summarize
-from ._profile_evidence import validate_events,validate_modules,module_timings,correlate
+from ._profile_evidence import validate_events,validate_modules,module_timings,correlate,cuda_event_timings
 
 
 @dataclass(frozen=True)
 class ProfilingProtocol:
+    """Capture bounds plus opt-in resource limits; None imposes no resource quota."""
     warmup_iterations:int=1
     measure_iterations:int=3
     timeout_seconds:float=60.
-    cpu_memory_limit_bytes:int=3*1024**3
-    input_limit_bytes:int=32*1024**2
-    cuda_memory_fraction:float=.1
+    cpu_memory_limit_bytes:int|None=None
+    input_limit_bytes:int|None=None
+    cuda_memory_fraction:float|None=None
     max_events:int=20000
     max_trace_bytes:int=16*1024**2
 
@@ -34,9 +35,11 @@ class ProfilingProtocol:
         _integer(self.warmup_iterations);_integer(self.measure_iterations,1);_positive(self.timeout_seconds)
         if self.warmup_iterations+self.measure_iterations>100 or self.timeout_seconds>600:
             raise ValueError('bounded profile: at most100 forwards/600 seconds')
-        _integer(self.cpu_memory_limit_bytes,256*1024**2);_integer(self.input_limit_bytes,1)
-        _positive(self.cuda_memory_fraction)
-        if self.cuda_memory_fraction>1:raise ValueError('invalid allocator budget')
+        if self.cpu_memory_limit_bytes is not None:_integer(self.cpu_memory_limit_bytes,256*1024**2)
+        if self.input_limit_bytes is not None:_integer(self.input_limit_bytes,1)
+        if self.cuda_memory_fraction is not None:
+            _positive(self.cuda_memory_fraction)
+            if self.cuda_memory_fraction>1:raise ValueError('invalid allocator budget')
         _integer(self.max_events,1);_integer(self.max_trace_bytes,1)
         if self.max_events>100000 or self.max_trace_bytes>64*1024**2:raise ValueError('evidence budget too large')
 
@@ -138,7 +141,7 @@ def analyze_flops(source,*,protocol=ProfilingProtocol()):
     return OperationCountResult(data)
 
 
-def _layer_metrics(inventory,invocations,*,evidence=None):
+def _layer_metrics(inventory,invocations,*,evidence=None,cuda_events=None):
     modules=[]
     for item in inventory:
         calls=[r for r in invocations if r['module_id']==item['module_id']]
@@ -149,6 +152,13 @@ def _layer_metrics(inventory,invocations,*,evidence=None):
             status='measured' if measured else 'not_executed' if not calls else 'partial',
             reason=None if measured else 'no_observed_invocation' if not calls else 'invalid_or_missing_CPU_duration',
             cpu_exclusive_us=total('cpu_exclusive_us'),cuda_activity_us=total('cuda_activity_us')))
+        if cuda_events is not None:
+            status=('not_requested' if not cuda_events['requested'] else 'not_executed' if not calls else
+                    'measured' if all(c['cuda_elapsed_status']=='measured' for c in calls) else
+                    'unsupported' if cuda_events['scope_reason'] else 'partial')
+            modules[-1].update(cuda_elapsed_us=total('cuda_elapsed_us'),cuda_elapsed_status=status,
+                cuda_elapsed_reason=cuda_events['scope_reason'] or ('missing_or_invalid_CUDA_Event_interval' if status=='partial' else None),
+                cuda_exclusive_elapsed_us=None)
     ranking=[r['module_id'] for r in sorted((r for r in modules if r['cpu_exclusive_us'] is not None),
                                           key=lambda r:r['cpu_exclusive_us'],reverse=True)]
     complete=all(r['cpu_total_us'] is not None and (evidence is None or r['cpu_exclusive_us'] is not None) for r in invocations)
@@ -164,20 +174,37 @@ def _layer_metrics(inventory,invocations,*,evidence=None):
         if evidence['cuda_attribution']['mapped_kernel_count']:
             result.update(cuda_layer_status='partial',
                 cuda_layer_reason='observed_kernel_links_only; complete_layer_activity_not_claimed')
+    if cuda_events is not None:
+        valid=sum(r['cuda_elapsed_status']=='measured' for r in invocations)
+        status=('not_requested' if not cuda_events['requested'] else 'unsupported' if cuda_events['scope_reason'] else
+                'measured' if valid==len(invocations) else 'partial')
+        result.update(cuda_event_timing=dict(status=status,reason=cuda_events['scope_reason'] or
+            ('missing_or_invalid_CUDA_Event_interval' if status=='partial' else None),
+            device=cuda_events['device'],stream_id=cuda_events['stream_id'],clock=cuda_events['clock'],unit='us',
+            invocation_count=len(invocations),measured_invocations=valid,
+            aggregation='sum_of_inclusive_event_intervals_over_invocations; not_kernel_time_or_inference_latency',
+            exclusive='unsupported; not_derived_from_inclusive_intervals',validation=cuda_events['validation']),
+            cuda_elapsed_ranking=[m['module_id'] for m in sorted((m for m in modules if m['cuda_elapsed_us'] is not None),
+                key=lambda m:m['cuda_elapsed_us'],reverse=True)])
+        if complete and status in ('partial','unsupported'):
+            result.update(status='partial',reason='CUDA_Event_layer_timing_unavailable_or_invalid')
     return result
 
 
 def profile_layers(source,*,protocol=ProfilingProtocol()):
     """Module invocation tree from the same capture; shared calls remain distinct."""
     s=_source(source,protocol);raw=s['raw_evidence']
-    extra={};evidence=None
-    if s['protocol']['instrumentation'].get('evidence_version')==2:
+    extra={};evidence=None;cuda_events=None
+    version=s['protocol']['instrumentation'].get('evidence_version',1)
+    if version>=2:
         evidence=dict(cuda_attribution=s['measurements']['cuda_attribution'],overhead=s['measurements']['overhead'])
         extra=dict(events=raw['events'],trace_events=raw['trace_events'],profile_measurements=evidence)
+    if version==3:
+        cuda_events=raw['cuda_event_timing'];extra['cuda_event_timing']=cuda_events
     data=_derived('layer_profile','P13',s,
         dict(module_inventory=raw['module_inventory'],invocations=raw['invocations'],**extra),
-        _layer_metrics(raw['module_inventory'],raw['invocations'],evidence=evidence))
-    if evidence is not None:data['protocol']['profile_evidence_version']=2
+        _layer_metrics(raw['module_inventory'],raw['invocations'],evidence=evidence,cuda_events=cuda_events))
+    if evidence is not None:data['protocol']['profile_evidence_version']=version
     return LayerProfileResult(data)
 
 
@@ -210,9 +237,12 @@ def _validate_profile(data,kind):
         inventory=raw['module_inventory'];invocations=raw['invocations']
         validate_modules(inventory,invocations,p.measure_iterations)
         version=data['protocol']['instrumentation'].get('evidence_version',1)
-        if type(version) is not int or version not in (1,2):raise ValueError('invalid profiler evidence version')
-        if version==2:
-            if module_timings(inventory,invocations,raw['events'],p.measure_iterations)!=invocations:
+        if type(version) is not int or version not in (1,2,3):raise ValueError('invalid profiler evidence version')
+        if version>=2:
+            expected_rows=module_timings(inventory,invocations,raw['events'],p.measure_iterations)
+            if version==3:
+                expected_rows=cuda_event_timings(expected_rows,raw['cuda_event_timing'],_event_device(data,r))
+            if expected_rows!=invocations:
                 raise ValueError('unverified module timing evidence')
             _validate_trace_evidence(raw,data['measurements']['cuda_attribution'],p.max_events)
         mids={m['module_id'] for m in inventory}
@@ -226,7 +256,7 @@ def _validate_profile(data,kind):
         if roots!=p.measure_iterations:raise ValueError('incomplete module forward ledger')
         for i,c in enumerate(raw['aten_calls']):
             if c['call_index']!=i or not 0<=c['measurement_index']<p.measure_iterations:raise ValueError('invalid dispatch association')
-        if version==2:return
+        if version>=2:return
         for row in raw['invocations']:
             children=[x for x in raw['invocations'] if x['parent_invocation_id']==row['invocation_id']]
             value=row['cpu_total_us']
@@ -245,16 +275,26 @@ def _validate_profile(data,kind):
             raise ValueError('invalid analytic operation-count claim')
     else:
         validate_modules(raw['module_inventory'],raw['invocations'],p.measure_iterations)
-        version=data['protocol'].get('profile_evidence_version',1);evidence=None
-        if type(version) is not int or version not in (1,2):raise ValueError('invalid layer evidence version')
-        if version==2:
-            if module_timings(raw['module_inventory'],raw['invocations'],raw['events'],p.measure_iterations)!=raw['invocations']:
+        version=data['protocol'].get('profile_evidence_version',1);evidence=None;cuda_events=None
+        if type(version) is not int or version not in (1,2,3):raise ValueError('invalid layer evidence version')
+        if version>=2:
+            expected_rows=module_timings(raw['module_inventory'],raw['invocations'],raw['events'],p.measure_iterations)
+            if version==3:
+                cuda_events=raw['cuda_event_timing']
+                expected_rows=cuda_event_timings(expected_rows,cuda_events,_event_device(data,r))
+            if expected_rows!=raw['invocations']:
                 raise ValueError('unverified layer event timings')
             evidence=raw['profile_measurements']
             _validate_trace_evidence(raw,evidence['cuda_attribution'],p.max_events)
             _validate_overhead(evidence['overhead'],p.measure_iterations)
-        if data['measurements']!=_layer_metrics(raw['module_inventory'],raw['invocations'],evidence=evidence):
+        if data['measurements']!=_layer_metrics(raw['module_inventory'],raw['invocations'],evidence=evidence,cuda_events=cuda_events):
             raise ValueError('invalid module totals/ranking')
+
+
+def _event_device(data,recipe):
+    expected='cuda:0' if recipe['device']=='cuda' else recipe['device']
+    if data['provenance']['environment']['device']!=expected:raise ValueError('CUDA Event provenance device mismatch')
+    return expected
 
 
 def _validate_overhead(overhead,forwards):

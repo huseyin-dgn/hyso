@@ -118,6 +118,72 @@ def module_timings(inventory,rows,events,forwards):
     return result
 
 
+def cuda_event_timings(rows,evidence,device):
+    """Validate a worker's serialized event ledger, not the original GPU clock.
+
+    Inclusive stream elapsed intervals include idle/launch/instrumentation gaps.
+    Kernel attribution and exclusive CUDA work cannot be inferred from them.
+    """
+    if type(evidence.get('version')) is not int or evidence['version']!=1:
+        raise ValueError('invalid CUDA Event evidence version')
+    requested=device.startswith('cuda:')
+    if type(evidence['requested']) is not bool or evidence['requested']!=requested or evidence['device']!=device:
+        raise ValueError('CUDA Event device/request mismatch')
+    if evidence['clock']!='torch.cuda.Event.elapsed_time_ms' or evidence['scope']!='owned_eager_single_host_thread_and_stream; unmanaged_native_async_excluded':
+        raise ValueError('invalid CUDA Event clock/scope')
+    if evidence['validation']!='serialized_ledger_and_ms_to_us_only; CUDA_event_objects_not_serialized_or_replayed':
+        raise ValueError('invalid CUDA Event validation claim')
+    pairs=evidence['pairs'];reason=evidence['scope_reason']
+    reasons={'multiple_or_changed_CUDA_streams','unverified_async_Python_thread',
+        'unverified_existing_Python_threads','cross_thread_module_or_dispatch','unverified_custom_CUDA_dispatch'}
+    if reason is not None and reason not in reasons:raise ValueError('invalid CUDA Event scope reason')
+    if not requested:
+        if (pairs or evidence['stream_id'] is not None or evidence['host_thread_id'] is not None
+                or evidence['synchronized'] is not False or reason is not None):raise ValueError('CPU capture cannot claim CUDA Events')
+    elif (not _id(evidence['stream_id']) or not _id(evidence['host_thread_id'])
+            or evidence['synchronized'] is not True or len(pairs)!=len(rows)):
+        raise ValueError('incomplete CUDA Event capture/stream ledger')
+    result=[]
+    for i,r in enumerate(rows):
+        value=None;status='not_requested';why=None
+        if requested:
+            p=pairs[i]
+            for key,expected in (('invocation_id',i),('measurement_index',r['measurement_index']),
+                                 ('start_event_index',2*i),('end_event_index',2*i+1)):
+                if type(p[key]) is not int or p[key]!=expected:raise ValueError('CUDA Event invocation/pair association mismatch')
+            if p['device']!=device:raise ValueError('CUDA Event pair on wrong device')
+            for key in ('start_stream_id','end_stream_id','start_thread_id','end_thread_id'):
+                if p[key] is not None and not _id(p[key]):raise ValueError('invalid CUDA Event stream/thread ID')
+            for key in ('start_recorded','end_recorded','start_complete','end_complete'):
+                if type(p[key]) is not bool:raise ValueError('invalid CUDA Event completion flag')
+            for prefix in ('start','end'):
+                if p[prefix+'_complete'] and not p[prefix+'_recorded']:raise ValueError('unrecorded CUDA Event cannot be complete')
+            elapsed=p['elapsed_ms']
+            if elapsed is not None and (type(elapsed) not in (int,float) or not math.isfinite(elapsed)):
+                raise ValueError('invalid serialized CUDA Event elapsed time')
+            if p['error'] not in (None,'nonpositive_or_nonfinite_CUDA_event_elapsed',
+                'CUDA_event_elapsed_failed','missing_or_incomplete_CUDA_event_pair'):
+                raise ValueError('invalid CUDA Event error reason')
+            if reason is not None:
+                if elapsed is not None:raise ValueError('unsupported CUDA scope cannot claim elapsed time')
+                status='unsupported';why=reason
+            else:
+                if (p['start_stream_id']!=evidence['stream_id'] or p['end_stream_id']!=evidence['stream_id']
+                        or p['start_thread_id']!=evidence['host_thread_id'] or p['end_thread_id']!=evidence['host_thread_id']):
+                    raise ValueError('CUDA Event stream/thread mismatch')
+                complete=all(p[k] for k in ('start_recorded','end_recorded','start_complete','end_complete'))
+                if complete and elapsed is not None and elapsed>0 and p['error'] is None:
+                    value=elapsed*1000.
+                    if not math.isfinite(value):raise ValueError('CUDA Event microsecond conversion overflow')
+                    status='measured'
+                else:
+                    if elapsed is not None and elapsed>0:raise ValueError('unverified CUDA Event interval cannot be numeric')
+                    status='invalid';why=p['error'] or 'missing_or_nonpositive_CUDA_event_elapsed'
+        result.append(dict(r,cuda_elapsed_us=value,cuda_elapsed_status=status,cuda_elapsed_reason=why,
+            cuda_exclusive_elapsed_us=None,cuda_exclusive_elapsed_reason='not_derived_from_inclusive_CUDA_Event_intervals' if requested else 'not_requested'))
+    return result
+
+
 def normalize_trace(trace,max_events):
     rows=[];kernels=[]
     for index,e in enumerate(trace.get('traceEvents',[])):

@@ -20,7 +20,8 @@ def recipe(factory='spatial',shape=(2,2,5,7),precision='fp32',**kwargs):
 
 
 def protocol(**kw):
-    return ProfilingProtocol(**dict(dict(warmup_iterations=1,measure_iterations=2,timeout_seconds=45),**kw))
+    return ProfilingProtocol(**dict(dict(warmup_iterations=1,measure_iterations=2,timeout_seconds=45,
+        cpu_memory_limit_bytes=3*1024**3,input_limit_bytes=32*1024**2),**kw))
 
 
 @pytest.fixture(scope='module')
@@ -161,11 +162,11 @@ def test_real_cpu_events_trace_and_cleanup(captured):
     assert d['measurements']['overhead']['perturbation_ms'] is None
 
 
-def test_v2_real_module_events_unused_memory_and_shared_capture(captured):
+def test_layer_event_evidence_cpu_unused_memory_and_shared_capture(captured):
     source=captured.to_dict();layers=profile_layers(captured).to_dict();raw=layers['raw_evidence']
     assert source['schema_version']==layers['schema_version']==1
-    assert source['protocol']['instrumentation']['evidence_version']==2
-    assert layers['protocol']['profile_evidence_version']==2
+    assert source['protocol']['instrumentation']['evidence_version']==3
+    assert layers['protocol']['profile_evidence_version']==3
     assert layers['identity']['source_result_id']==source['result_id']
     assert raw['events']==source['raw_evidence']['events'] and raw['trace_events']==source['raw_evidence']['trace_events']
     assert raw['profile_measurements']['cuda_attribution']==source['measurements']['cuda_attribution']
@@ -175,15 +176,19 @@ def test_v2_real_module_events_unused_memory_and_shared_capture(captured):
         assert e['name']==invocation['annotation']
         assert invocation['cpu_total_us']==pytest.approx(e['end_us']-e['start_us'])
         assert invocation['cpu_timing_reason'] is None
+        assert invocation['cuda_elapsed_us'] is None and invocation['cuda_elapsed_status']=='not_requested'
+        assert invocation['cuda_exclusive_elapsed_us'] is None and invocation['cuda_activity_us'] is None
     unused=next(m for m in layers['measurements']['modules'] if m['path']=='unused')
     assert unused['status']=='not_executed' and unused['cpu_total_us'] is None and unused['invocation_count']==0
     memory=layers['measurements']['layer_memory']
     assert memory['status']=='unsupported' and all(memory[k] is None for k in ('allocation_bytes','retained_bytes','peak_bytes'))
     assert layers['measurements']['overhead']['perturbation_ms'] is None
     assert layers['measurements']['cuda_attribution']['mapped_kernel_count']==0
+    assert layers['measurements']['cuda_event_timing']['status']=='not_requested'
+    assert source['raw_evidence']['cuda_event_timing']['pairs']==[]
 
 
-def test_v2_rejects_module_event_and_correlation_tamper(captured):
+def test_current_rejects_module_event_and_correlation_tamper(captured):
     import copy
     d=captured.to_dict()
     for mutate in (
@@ -194,12 +199,36 @@ def test_v2_rejects_module_event_and_correlation_tamper(captured):
         lambda p:p['raw_evidence']['trace_events'].append(copy.deepcopy(p['raw_evidence']['trace_events'][0])),
         lambda p:p['measurements']['cuda_attribution'].update(mapped_kernel_count=1),
         lambda p:p['raw_evidence']['trace'].update(timestamp_unit='ns'),
+        lambda p:p['raw_evidence']['cuda_event_timing'].update(requested=True),
+        lambda p:p['raw_evidence']['invocations'][0].update(cuda_elapsed_us=1),
     ):
         broken=copy.deepcopy(d);mutate(broken)
         with pytest.raises(ValueError):OperatorProfileResult(broken)
     layer=profile_layers(captured).to_dict()
     layer['raw_evidence']['invocations'][1]['cpu_total_us']=1
     with pytest.raises(ValueError):LayerProfileResult(layer)
+
+
+@pytest.mark.parametrize('version',[1,2])
+def test_legacy_layer_evidence_reopen(captured,version,tmp_path):
+    old=captured.to_dict();old['raw_evidence'].pop('cuda_event_timing')
+    fields=('cuda_elapsed_us','cuda_elapsed_status','cuda_elapsed_reason','cuda_exclusive_elapsed_us','cuda_exclusive_elapsed_reason')
+    for r in old['raw_evidence']['invocations']:
+        for key in fields:r.pop(key)
+    if version==1:
+        old['protocol']['instrumentation'].pop('evidence_version')
+        old['measurements'].pop('cuda_attribution');old['raw_evidence'].pop('trace_events')
+        for r in old['raw_evidence']['invocations']:
+            r.pop('cpu_event_id');r.pop('cpu_timing_reason')
+        for r in old['raw_evidence']['events']:
+            for key in ('start_us','end_us','thread_id'):r.pop(key)
+    else:old['protocol']['instrumentation']['evidence_version']=2
+    legacy=OperatorProfileResult(old);assert legacy.to_dict()==old
+    layer=profile_layers(legacy);path=tmp_path/'legacy.json'
+    layer.to_json(path);layer.to_csv(tmp_path/'legacy.csv')
+    assert LayerProfileResult(json.loads(path.read_text())).to_dict()==layer.to_dict()
+    assert 'cuda_event_timing' not in layer.to_dict()['measurements']
+    assert analyze_flops(legacy).to_dict()['measurements']['total_flops_per_batch']==1820
 
 
 @pytest.mark.parametrize('mode',['fail','mutate'])
