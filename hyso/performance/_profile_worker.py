@@ -101,6 +101,7 @@ def main():
         from hyso.benchmark.runner import _Snapshot,_descriptor,_bits,_output,StateMutationError
         from hyso.performance.inference import _base,_context_check
         from hyso.performance.profiling import _operator_metrics,_cuda_metrics,_profile_status
+        from hyso.performance._profile_evidence import module_timings,normalize_trace,correlate
         from hyso.performance.memory import _file_info
         torch.set_num_threads(1);torch.manual_seed(r['seed']);random.seed(r['seed']);np.random.seed(r['seed']%(2**32))
         module,name=r['factory'].split(':');factory=importlib.import_module(module)
@@ -191,35 +192,24 @@ def main():
             events.append(dict(event_id=event.id,name=event.name,
                 device_type=str(event.device_type).split('.')[-1],scope=int(event.scope),
                 parent_id=event.cpu_parent.id if event.cpu_parent else None,
+                start_us=_duration(event.time_range.start),end_us=_duration(event.time_range.end),thread_id=event.thread,
                 input_shapes=_meta(event.input_shapes),cpu_total_us=_duration(event.cpu_time_total),
                 self_cpu_us=_duration(event.self_cpu_time_total),
                 timing_status='measured' if _duration(event.cpu_time_total) is not None and _duration(event.self_cpu_time_total) is not None else 'invalid_or_missing'))
-        scopes={e['name']:e for e in events if e['name'].startswith(prefix)}
-        for row in invocations:
-            event=scopes.get(row['annotation']);row['cpu_total_us']=event['cpu_total_us'] if event else None
-        for row in invocations:
-            children=[x for x in invocations if x['parent_invocation_id']==row['invocation_id']]
-            if row['cpu_total_us'] is not None and all(x['cpu_total_us'] is not None for x in children):
-                row['cpu_exclusive_us']=_duration(row['cpu_total_us']-sum(x['cpu_total_us'] for x in children))
+        invocations=module_timings(inventory,invocations,events,p['measure_iterations'])
         prof.export_chrome_trace(str(trace_path))
         trace_bytes=Path(trace_path).read_bytes()
         if len(trace_bytes)>p['max_trace_bytes']:raise ValueError('trace evidence budget exceeded')
         from hyso.benchmark.result import _plain
         trace=_plain(json.loads(trace_bytes.decode('utf-8')))
-        kernels=[]
-        for event in trace.get('traceEvents',[]):
-            if event.get('cat')!='kernel' or event.get('ph')!='X':continue
-            args=event.get('args',{});duration=_duration(event.get('dur'))
-            kernels.append(dict(name=event['name'],duration_us=duration,category='kernel',phase='X',
-                status='measured' if duration is not None else 'invalid_duration',
-                raw_correlation=args.get('correlation'),raw_external_id=args.get('External id'),
-                device=args.get('device'),stream=args.get('stream'),correlation_status='raw_trace_ids_only_not_verified'))
+        trace_events,kernels=normalize_trace(trace,p['max_events'])
+        attribution=correlate(trace_events,invocations)
         cuda_metrics=_cuda_metrics(kernels,stream is not None)
         status,reason=_profile_status(events,cuda_metrics)
         data=_base('operator_profile','P14',dict(id='isolated_torch_profiler',version=1,
             scope='owned_worker_eval_inference_profile',configuration=p,recipe=r,
             instrumentation=dict(record_shapes=True,profile_memory=False,with_stack=False,
-                with_flops=False,module_hooks='worker_only',dispatch_observer='TorchDispatchMode_version_verified')),
+                with_flops=False,module_hooks='worker_only',dispatch_observer='TorchDispatchMode_version_verified',evidence_version=2)),
             dict(model=dict(structural_descriptor=descriptor,weights_sha256=weights,execution_mode='owned_worker_eval'),
                 input=dict(shape=list(inputs.shape),dtype=str(inputs.dtype),content_sha256=digest,recipe='ones'),
                 environment=dict(device=str(device),torch=str(torch.__version__),python=sys.version,
@@ -229,15 +219,19 @@ def main():
         data.update(requested=ledger,actual=ledger,measurements=dict(
             status=status,reason=reason,
             operators=_operator_metrics(events),cuda_kernels=kernels,
+            cuda_attribution=attribution,
             cuda_activity=cuda_metrics,
             overhead=dict(collector_lifecycle_wall_ms=lifecycle_ms,instrumented_host_forward_windows_ms=host_windows,
                 unit='ms',clock='worker_perf_counter_ns',
                 perturbation_ms=None,perturbation_status='not_measured',
                 reason='no_matched_uninstrumented_baseline; host_windows_are_not_GPU_kernel_time')),
             raw_evidence=dict(events=events,aten_calls=calls,module_inventory=inventory,invocations=invocations,
-                output=boundary,supported_activities=supported,kernel_events=kernels,
+                output=boundary,supported_activities=supported,kernel_events=kernels,trace_events=trace_events,
                 trace=dict(sha256=hashlib.sha256(trace_bytes).hexdigest(),size_bytes=len(trace_bytes),path=None,
-                    retention='generated_not_retained',event_count=len(trace.get('traceEvents',[]))),
+                    retention='generated_not_retained',event_count=len(trace.get('traceEvents',[])),
+                    timestamp_unit='us',base_time_nanoseconds=trace.get('baseTimeNanoseconds'),
+                    display_time_unit=trace.get('displayTimeUnit'),
+                    timestamp_domain='single_exported_chrome_trace; native_FunctionEvent_clock_is_separate'),
                 safety={},worker={}))
         data['diagnostics']['limitations']=['Analytic dispatch counts and instrumented timings are not hardware FLOP counters or benchmark latency.',
             'Only observed recipe/seed/input/control flow; no full NVIDIA kernel coverage claim.',

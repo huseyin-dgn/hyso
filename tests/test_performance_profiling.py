@@ -26,7 +26,7 @@ def protocol(**kw):
 @pytest.fixture(scope='module')
 def captured(tmp_path_factory):
     path=tmp_path_factory.mktemp('profile')/'trace.json'
-    return profile_operators(recipe('Shared'),protocol=protocol(),trace_path=path)
+    return profile_operators(recipe('Shared',unused=True),protocol=protocol(),trace_path=path)
 
 
 @pytest.mark.parametrize('groups,bias',[(1,False),(1,True),(2,False),(2,True)])
@@ -159,6 +159,47 @@ def test_real_cpu_events_trace_and_cleanup(captured):
     assert hashlib.sha256(path.read_bytes()).hexdigest()==d['raw_evidence']['trace']['sha256']
     assert json.loads(path.read_text())['traceEvents']
     assert d['measurements']['overhead']['perturbation_ms'] is None
+
+
+def test_v2_real_module_events_unused_memory_and_shared_capture(captured):
+    source=captured.to_dict();layers=profile_layers(captured).to_dict();raw=layers['raw_evidence']
+    assert source['schema_version']==layers['schema_version']==1
+    assert source['protocol']['instrumentation']['evidence_version']==2
+    assert layers['protocol']['profile_evidence_version']==2
+    assert layers['identity']['source_result_id']==source['result_id']
+    assert raw['events']==source['raw_evidence']['events'] and raw['trace_events']==source['raw_evidence']['trace_events']
+    assert raw['profile_measurements']['cuda_attribution']==source['measurements']['cuda_attribution']
+    events={e['event_id']:e for e in raw['events'] if e['device_type']=='CPU'}
+    for invocation in raw['invocations']:
+        e=events[invocation['cpu_event_id']]
+        assert e['name']==invocation['annotation']
+        assert invocation['cpu_total_us']==pytest.approx(e['end_us']-e['start_us'])
+        assert invocation['cpu_timing_reason'] is None
+    unused=next(m for m in layers['measurements']['modules'] if m['path']=='unused')
+    assert unused['status']=='not_executed' and unused['cpu_total_us'] is None and unused['invocation_count']==0
+    memory=layers['measurements']['layer_memory']
+    assert memory['status']=='unsupported' and all(memory[k] is None for k in ('allocation_bytes','retained_bytes','peak_bytes'))
+    assert layers['measurements']['overhead']['perturbation_ms'] is None
+    assert layers['measurements']['cuda_attribution']['mapped_kernel_count']==0
+
+
+def test_v2_rejects_module_event_and_correlation_tamper(captured):
+    import copy
+    d=captured.to_dict()
+    for mutate in (
+        lambda p:p['raw_evidence']['events'].append(copy.deepcopy(p['raw_evidence']['events'][0])),
+        lambda p:p['raw_evidence']['events'][0].update(parent_id=999999),
+        lambda p:p['raw_evidence']['invocations'][1].update(parent_invocation_id=None),
+        lambda p:p['raw_evidence']['invocations'][1].update(cpu_total_us=1),
+        lambda p:p['raw_evidence']['trace_events'].append(copy.deepcopy(p['raw_evidence']['trace_events'][0])),
+        lambda p:p['measurements']['cuda_attribution'].update(mapped_kernel_count=1),
+        lambda p:p['raw_evidence']['trace'].update(timestamp_unit='ns'),
+    ):
+        broken=copy.deepcopy(d);mutate(broken)
+        with pytest.raises(ValueError):OperatorProfileResult(broken)
+    layer=profile_layers(captured).to_dict()
+    layer['raw_evidence']['invocations'][1]['cpu_total_us']=1
+    with pytest.raises(ValueError):LayerProfileResult(layer)
 
 
 @pytest.mark.parametrize('mode',['fail','mutate'])

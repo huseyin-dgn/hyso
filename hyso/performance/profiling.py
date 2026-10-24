@@ -16,6 +16,7 @@ from .inference import _base
 from .result import (OperatorProfileResult,LayerProfileResult,OperationCountResult,
                      _integer,_positive,_plain,_write_export)
 from ._operation_models import CONVENTION,summarize
+from ._profile_evidence import validate_events,validate_modules,module_timings,correlate
 
 
 @dataclass(frozen=True)
@@ -137,7 +138,7 @@ def analyze_flops(source,*,protocol=ProfilingProtocol()):
     return OperationCountResult(data)
 
 
-def _layer_metrics(inventory,invocations):
+def _layer_metrics(inventory,invocations,*,evidence=None):
     modules=[]
     for item in inventory:
         calls=[r for r in invocations if r['module_id']==item['module_id']]
@@ -150,18 +151,34 @@ def _layer_metrics(inventory,invocations):
             cpu_exclusive_us=total('cpu_exclusive_us'),cuda_activity_us=total('cuda_activity_us')))
     ranking=[r['module_id'] for r in sorted((r for r in modules if r['cpu_exclusive_us'] is not None),
                                           key=lambda r:r['cpu_exclusive_us'],reverse=True)]
-    return dict(status='measured' if all(r['cpu_total_us'] is not None for r in invocations) else 'partial',
-        reason=None if all(r['cpu_total_us'] is not None for r in invocations) else 'missing_or_invalid_module_cpu_event',
+    complete=all(r['cpu_total_us'] is not None and (evidence is None or r['cpu_exclusive_us'] is not None) for r in invocations)
+    result=dict(status='measured' if complete else 'partial',
+        reason=None if complete else 'missing_or_invalid_module_cpu_event',
         modules=modules,ranking=ranking,ranking_basis='cpu_exclusive_us_instrumented',unit='us',
         cuda_layer_status='unsupported',cuda_layer_reason='no_verified_kernel_to_module_attribution')
+    if evidence is not None:
+        result.update(cuda_attribution=evidence['cuda_attribution'],
+            layer_memory=dict(status='unsupported',allocation_bytes=None,retained_bytes=None,peak_bytes=None,
+                reason='capture_profile_memory_false; allocations_retained_and_peak_are_distinct'),
+            overhead=evidence['overhead'])
+        if evidence['cuda_attribution']['mapped_kernel_count']:
+            result.update(cuda_layer_status='partial',
+                cuda_layer_reason='observed_kernel_links_only; complete_layer_activity_not_claimed')
+    return result
 
 
 def profile_layers(source,*,protocol=ProfilingProtocol()):
     """Module invocation tree from the same capture; shared calls remain distinct."""
     s=_source(source,protocol);raw=s['raw_evidence']
-    return LayerProfileResult(_derived('layer_profile','P13',s,
-        dict(module_inventory=raw['module_inventory'],invocations=raw['invocations']),
-        _layer_metrics(raw['module_inventory'],raw['invocations'])))
+    extra={};evidence=None
+    if s['protocol']['instrumentation'].get('evidence_version')==2:
+        evidence=dict(cuda_attribution=s['measurements']['cuda_attribution'],overhead=s['measurements']['overhead'])
+        extra=dict(events=raw['events'],trace_events=raw['trace_events'],profile_measurements=evidence)
+    data=_derived('layer_profile','P13',s,
+        dict(module_inventory=raw['module_inventory'],invocations=raw['invocations'],**extra),
+        _layer_metrics(raw['module_inventory'],raw['invocations'],evidence=evidence))
+    if evidence is not None:data['protocol']['profile_evidence_version']=2
+    return LayerProfileResult(data)
 
 
 def _validate_profile(data,kind):
@@ -173,6 +190,7 @@ def _validate_profile(data,kind):
         if data['protocol']['id']!='isolated_torch_profiler':raise ValueError('invalid profiler protocol')
         if not raw['worker']['process_terminated'] or raw['worker']['exit_code']!=0:raise ValueError('worker did not finish normally')
         if not all(raw['safety'].values()):raise ValueError('state/ownership safety not verified')
+        validate_events(raw['events'])
         if len(raw['events'])>p.max_events or len(raw['aten_calls'])>p.max_events:raise ValueError('evidence budget exceeded')
         if data['measurements']['operators']!=_operator_metrics(raw['events']):raise ValueError('operator aggregation mismatch')
         overhead=data['measurements']['overhead']
@@ -190,6 +208,13 @@ def _validate_profile(data,kind):
         status,reason=_profile_status(raw['events'],cuda)
         if (data['measurements']['status'],data['measurements']['reason'])!=(status,reason):raise ValueError('invalid profile status')
         inventory=raw['module_inventory'];invocations=raw['invocations']
+        validate_modules(inventory,invocations,p.measure_iterations)
+        version=data['protocol']['instrumentation'].get('evidence_version',1)
+        if type(version) is not int or version not in (1,2):raise ValueError('invalid profiler evidence version')
+        if version==2:
+            if module_timings(inventory,invocations,raw['events'],p.measure_iterations)!=invocations:
+                raise ValueError('unverified module timing evidence')
+            _validate_trace_evidence(raw,data['measurements']['cuda_attribution'],p.max_events)
         mids={m['module_id'] for m in inventory}
         if len(mids)!=len(inventory):raise ValueError('duplicate module identity')
         if [v['invocation_id'] for v in invocations]!=list(range(len(invocations))):raise ValueError('invalid invocation IDs')
@@ -201,6 +226,7 @@ def _validate_profile(data,kind):
         if roots!=p.measure_iterations:raise ValueError('incomplete module forward ledger')
         for i,c in enumerate(raw['aten_calls']):
             if c['call_index']!=i or not 0<=c['measurement_index']<p.measure_iterations:raise ValueError('invalid dispatch association')
+        if version==2:return
         for row in raw['invocations']:
             children=[x for x in raw['invocations'] if x['parent_invocation_id']==row['invocation_id']]
             value=row['cpu_total_us']
@@ -217,7 +243,44 @@ def _validate_profile(data,kind):
         rows,m=summarize(raw['aten_calls'],p.measure_iterations,r['input_shape'][0],model_version=version)
         if raw['operations']!=rows or data['measurements']!=m or data['protocol']['convention']!=CONVENTION:
             raise ValueError('invalid analytic operation-count claim')
-    elif data['measurements']!=_layer_metrics(raw['module_inventory'],raw['invocations']):raise ValueError('invalid module totals/ranking')
+    else:
+        validate_modules(raw['module_inventory'],raw['invocations'],p.measure_iterations)
+        version=data['protocol'].get('profile_evidence_version',1);evidence=None
+        if type(version) is not int or version not in (1,2):raise ValueError('invalid layer evidence version')
+        if version==2:
+            if module_timings(raw['module_inventory'],raw['invocations'],raw['events'],p.measure_iterations)!=raw['invocations']:
+                raise ValueError('unverified layer event timings')
+            evidence=raw['profile_measurements']
+            _validate_trace_evidence(raw,evidence['cuda_attribution'],p.max_events)
+            _validate_overhead(evidence['overhead'],p.measure_iterations)
+        if data['measurements']!=_layer_metrics(raw['module_inventory'],raw['invocations'],evidence=evidence):
+            raise ValueError('invalid module totals/ranking')
+
+
+def _validate_overhead(overhead,forwards):
+    _positive(overhead['collector_lifecycle_wall_ms'])
+    if len(overhead['instrumented_host_forward_windows_ms'])!=forwards:raise ValueError('invalid host windows')
+    for v in overhead['instrumented_host_forward_windows_ms']:_positive(v)
+    if overhead['perturbation_ms'] is not None or overhead['perturbation_status']!='not_measured':
+        raise ValueError('unmeasured overhead cannot be numeric')
+
+
+def _validate_trace_evidence(raw,attribution,max_events):
+    events=raw['trace_events']
+    if len(events)>max_events:raise ValueError('trace event budget exceeded')
+    if raw['trace'].get('timestamp_unit')!='us' or raw['trace'].get('timestamp_domain')!='single_exported_chrome_trace; native_FunctionEvent_clock_is_separate':
+        raise ValueError('invalid profiler timestamp domain')
+    if any(type(e['trace_index']) is not int or not 0<=e['trace_index']<raw['trace']['event_count'] for e in events):
+        raise ValueError('trace event index outside capture')
+    if correlate(events,raw['invocations'])!=attribution:raise ValueError('invalid kernel attribution')
+    if 'kernel_events' in raw:
+        kernels={k['trace_index']:k for k in raw['kernel_events']}
+        trace_kernels=[e for e in events if e['category']=='kernel']
+        if len(kernels)!=len(raw['kernel_events']) or len(kernels)!=len(trace_kernels):raise ValueError('kernel ledger mismatch')
+        for e in trace_kernels:
+            k=kernels.get(e['trace_index'])
+            if k is None or any(k[key]!=e[key] for key in ('name','duration_us','start_us','device','stream','raw_correlation','raw_external_id','raw_event_id')):
+                raise ValueError('kernel metadata mismatch')
 
 
 def _cuda_metrics(kernels,requested):
@@ -227,10 +290,13 @@ def _cuda_metrics(kernels,requested):
         if k['duration_us'] is not None and (type(k['duration_us']) not in (int,float) or not math.isfinite(k['duration_us']) or k['duration_us']<0):
             raise ValueError('invalid kernel duration')
     if not requested and kernels:raise ValueError('unrequested device activity')
-    status=('not_requested' if not requested else 'unsupported' if not kernels else
-            'measured' if all(k['duration_us'] is not None for k in kernels) else 'partial')
+    valid=all(k['duration_us'] is not None and ('trace_index' not in k or
+        (type(k['device']) is int and k['device']>=0 and type(k['stream']) is int and k['stream']>=0
+         and k.get('start_us') is not None and type(k['start_us']) in (int,float)
+         and math.isfinite(k['start_us']) and k['start_us']>=0)) for k in kernels)
+    status=('not_requested' if not requested else 'unsupported' if not kernels else 'measured' if valid else 'partial')
     return dict(status=status,reason='no_exported_CUDA_kernel_activity' if status=='unsupported' else
-        'invalid_kernel_duration' if status=='partial' else None,
+        ('invalid_kernel_duration_or_identity_or_timestamp' if any('trace_index' in k for k in kernels) else 'invalid_kernel_duration') if status=='partial' else None,
         total_kernel_us=math.fsum(k['duration_us'] for k in kernels) if status=='measured' else None,
         kernel_count=len(kernels) if kernels else None,
         coverage='observed_exported_trace_only; not full GPU coverage',cpu_to_cuda_correlation='not_asserted')

@@ -7,15 +7,20 @@ def spatial(channels=2,outputs=4,groups=1,bias=True):
     return nn.Conv2d(channels,outputs,3,padding=1,groups=groups,bias=bias)
 
 
+def tiny_cuda():
+    return nn.Sequential(nn.Conv2d(2,2,1),nn.Flatten(1),nn.Linear(18,3))
+
+
 def conv1():
     return nn.Sequential(nn.Flatten(2),nn.Conv1d(2,4,3,padding=1,groups=2,bias=False))
 
 
 class Shared(nn.Module):
-    def __init__(self,fail=False,mutate=False):
+    def __init__(self,fail=False,mutate=False,unused=False):
         super().__init__();self.proj=nn.Conv2d(2,2,1,bias=False)
         self.alias=self.proj;self.branch=nn.Sequential(nn.ReLU(),self.proj)
         self.fail=fail;self.mutate=mutate;self.calls=0
+        if unused:self.unused=nn.Linear(2,2)
         self.register_buffer('counter',torch.zeros(1))
         self.proj.weight.grad=torch.ones_like(self.proj.weight)
         self.proj.register_forward_hook(lambda m,a,o: None)
