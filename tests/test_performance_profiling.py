@@ -162,6 +162,25 @@ def test_real_cpu_events_trace_and_cleanup(captured):
     assert d['measurements']['overhead']['perturbation_ms'] is None
 
 
+def test_operator_self_total_counts_and_csv_preserve_cpu_evidence(captured,tmp_path):
+    import csv
+    import math
+    d=captured.to_dict();events=d['raw_evidence']['events']
+    for row in d['measurements']['operators']:
+        observed=[e for e in events if e['device_type']=='CPU' and e['scope']==0 and e['name']==row['name']]
+        assert observed and row['count']==len(observed)
+        assert row['cpu_total_us']==math.fsum(e['cpu_total_us'] for e in observed)
+        assert row['self_cpu_us']==math.fsum(e['self_cpu_us'] for e in observed)
+        assert 0<=row['self_cpu_us']<=row['cpu_total_us']
+        assert row['shapes']==[e['input_shapes'] for e in observed]
+        assert row['status']=='measured' and row['unit']=='us'
+    path=tmp_path/'operators.csv';captured.to_csv(path)
+    with path.open(newline='',encoding='utf-8') as stream:
+        rows=list(csv.DictReader(stream))
+    assert [json.loads(r['payload']) for r in rows]==d['measurements']['operators']
+    assert all(r['row_kind']=='operator_profile' for r in rows)
+
+
 def test_layer_event_evidence_cpu_unused_memory_and_shared_capture(captured):
     source=captured.to_dict();layers=profile_layers(captured).to_dict();raw=layers['raw_evidence']
     assert source['schema_version']==layers['schema_version']==1
@@ -237,10 +256,28 @@ def test_forward_exception_state_and_hook_cleanup(mode):
         profile_operators(recipe('Shared',**{mode:True}),protocol=protocol())
     d=error.value.diagnostics
     assert d['status']==('state_mutation' if mode=='mutate' else 'failed')
+    if mode=='fail':assert d['reason']=='RuntimeError: controlled forward failure'
     assert d['process_terminated'] and d['exit_code']==0
     assert d['cleanup']['hooks_preserved'] and d['cleanup']['rng_restored']
     r=profile_operators(recipe('pooled'),protocol=protocol())
     assert r.to_dict()['actual']['measured_forwards']==2
+
+
+def test_oom_exception_is_exposed_with_worker_cleanup(tmp_path):
+    # Inject the exception type; deliberately exhausting real RAM/VRAM is unnecessary.
+    (tmp_path/'operator_oom_factory.py').write_text('''
+import torch
+class Model(torch.nn.Module):
+    def forward(self,x):
+        raise torch.OutOfMemoryError('controlled operator OOM')
+def build():return Model()
+''',encoding='utf-8')
+    source=ColdStartRecipe('operator_oom_factory:build',factory_search_path=tmp_path,input_shape=(1,1,1,1))
+    with pytest.raises(ProfilingError) as error:
+        profile_operators(source,protocol=ProfilingProtocol(warmup_iterations=0,measure_iterations=1,timeout_seconds=45))
+    d=error.value.diagnostics
+    assert d['status']=='failed' and d['reason']=='OutOfMemoryError: controlled operator OOM'
+    assert d['process_terminated'] and d['exit_code']==0 and all(d['cleanup'].values())
 
 
 def test_timeout_and_parent_state():
