@@ -48,9 +48,19 @@ def pooled():
 
 
 class Norm(nn.Module):
-    def __init__(self):
-        super().__init__();self.bn=nn.BatchNorm2d(2);self.activation=nn.SiLU()
-    def forward(self,x):return self.activation(self.bn(x))
+    def __init__(self,channels=2,spatial_dims=2,affine=True,activation=True):
+        super().__init__()
+        self.bn=(nn.BatchNorm1d if spatial_dims==1 else nn.BatchNorm2d)(channels,affine=affine)
+        self.activation=nn.SiLU() if activation else nn.Identity()
+    def forward(self,x):
+        if isinstance(self.bn,nn.BatchNorm1d):x=x.flatten(2)
+        return self.activation(self.bn(x))
+
+
+class Reduction(nn.Module):
+    def __init__(self,kind='mean',dims=(-1,-2),keepdim=False):
+        super().__init__();self.kind=kind;self.dims=dims;self.keepdim=keepdim
+    def forward(self,x):return getattr(x,self.kind)(dim=self.dims,keepdim=self.keepdim)
 
 
 def fixed_pool():return nn.MaxPool2d(2)

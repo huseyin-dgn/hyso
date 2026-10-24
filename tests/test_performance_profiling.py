@@ -14,9 +14,9 @@ from hyso.performance import (ColdStartRecipe,ProfilingProtocol,ProfilingError,
     profile_operators,profile_layers,analyze_flops)
 
 
-def recipe(factory='spatial',shape=(2,2,5,7),**kwargs):
+def recipe(factory='spatial',shape=(2,2,5,7),precision='fp32',**kwargs):
     return ColdStartRecipe('profiling_factories:'+factory,factory_search_path=Path(__file__).parent,
-                           input_shape=shape,model_kwargs=kwargs)
+                           input_shape=shape,precision=precision,model_kwargs=kwargs)
 
 
 def protocol(**kw):
@@ -68,8 +68,47 @@ def test_unknown_is_not_zero_and_normalization_explicit():
     assert any(r['flops'] is None and r['reason'] for r in d['raw_evidence']['operations'])
     d=analyze_flops(recipe('Norm'),protocol=protocol()).to_dict()
     assert d['measurements']['status']=='partial'
-    assert any('batch_norm' in r['operator'] for r in d['raw_evidence']['operations'] if r['flops'] is None)
+    bn=[r for r in d['raw_evidence']['operations'] if 'batch_norm' in r['operator']]
+    assert len(bn)==2 and all(r['flops']==2*2+4*(2*2*5*7) for r in bn)
     assert any('silu' in r['operator'] for r in d['raw_evidence']['operations'] if r['flops'] is None)
+
+
+@pytest.mark.parametrize('precision',['fp32','fp64'])
+@pytest.mark.parametrize('shape,spatial_dims,affine',[
+    ((2,3,2,4),1,False),((3,2,3,5),2,True)])
+def test_batch_norm_inference_reference_cpu(precision,shape,spatial_dims,affine,tmp_path):
+    source=profile_operators(recipe('Norm',shape=shape,precision=precision,channels=shape[1],
+        spatial_dims=spatial_dims,affine=affine,activation=False),protocol=protocol())
+    d=analyze_flops(source).to_dict();m=d['measurements']
+    expected=2*shape[1]+np.prod(shape)*(2+2*int(affine))
+    assert m['status']=='complete' and m['total_macs_per_batch']==0
+    assert m['total_flops_per_batch']==expected and m['total_flops_per_sample']==expected/shape[0]
+    assert m['supported_subtotal_flops']==2*expected
+    assert all(r['total_flops']==expected for r in m['per_forward'])
+    bn=[r for r in d['raw_evidence']['operations'] if 'batch_norm' in r['operator']]
+    assert len(bn)==2 and all(r['flops']==expected for r in bn)
+    assert all(r['arguments']['input']['dtype']=='torch.'+('float64' if precision=='fp64' else 'float32') for r in bn)
+    assert any('batch_norm' in r['name'] for r in source.to_dict()['raw_evidence']['events'])
+    result=OperationCountResult(d);path=tmp_path/'bn.json'
+    result.to_json(path);result.to_csv(tmp_path/'bn.csv')
+    assert OperationCountResult(json.loads(path.read_text())).to_dict()==d
+    assert profile_layers(source).to_dict()['measurements']['status']=='measured'
+    from hyso.performance._operation_models import summarize
+    old=json.loads(path.read_text());old['protocol'].pop('operation_model_version')
+    old['raw_evidence']['operations'],old['measurements']=summarize(
+        old['raw_evidence']['aten_calls'],2,shape[0],model_version=1)
+    assert OperationCountResult(old).to_dict()['measurements']['status']=='partial'
+
+
+@pytest.mark.parametrize('precision',['fp32','fp64'])
+@pytest.mark.parametrize('kind,keepdim',[('sum',False),('mean',True)])
+def test_reduction_reference_cpu(precision,kind,keepdim):
+    d=analyze_flops(recipe('Reduction',precision=precision,kind=kind,keepdim=keepdim),protocol=protocol()).to_dict()
+    expected=2*2*(5*7-1+int(kind=='mean'))
+    assert d['measurements']['status']=='complete'
+    assert d['measurements']['total_flops_per_batch']==expected
+    assert d['measurements']['total_flops_per_sample']==expected/2
+    assert len(d['raw_evidence']['operations'])==2
 
 
 def test_pooling_activation_policy():
@@ -142,8 +181,10 @@ def test_timeout_and_parent_state():
     with pytest.raises(ProfilingError) as error:
         profile_operators(recipe(),protocol=protocol(timeout_seconds=.01))
     assert error.value.diagnostics['status']=='timed_out'
+    assert error.value.diagnostics['process_terminated'] and error.value.diagnostics['exit_code'] is not None
     assert dict(model._forward_hooks)==refs and model.training
     assert all(torch.equal(p,q) for p,q in zip(model.parameters(),params))
+    assert torch.equal(model.weight.grad,torch.ones_like(model.weight)) and model.bias.grad is None
     assert torch.equal(torch.get_rng_state(),rng) and random.getstate()==py
     assert np.array_equal(np.random.get_state()[1],n[1]) and torch.cuda.is_initialized()==cuda
     hook.remove()
@@ -168,6 +209,30 @@ def test_immutable_exports_and_tamper(captured,tmp_path):
         with pytest.raises(ValueError):cls(d)
     d=captured.to_dict();d['measurements']['operators'][0]['self_cpu_us']=float('nan')
     with pytest.raises(ValueError):OperatorProfileResult(d)
+
+
+def test_operation_model_revision_legacy_reopen_and_tamper(captured,tmp_path):
+    import copy
+    from hyso.performance._operation_models import summarize
+    d=analyze_flops(captured).to_dict()
+    assert d['protocol']['operation_model_version']==2 and d['schema_version']==1
+    old=copy.deepcopy(d);old['protocol'].pop('operation_model_version')
+    old['raw_evidence']['operations'],old['measurements']=summarize(
+        old['raw_evidence']['aten_calls'],2,2,model_version=1)
+    legacy=OperationCountResult(old);legacy.to_json(tmp_path/'legacy.json');legacy.to_csv(tmp_path/'legacy.csv')
+    assert OperationCountResult(json.loads((tmp_path/'legacy.json').read_text())).to_dict()==old
+    for mutate in (
+        lambda p:p['protocol'].update(operation_model_version=999),
+        lambda p:p['protocol'].update(operation_model_version=True),
+        lambda p:p['raw_evidence']['aten_calls'][0].update(measurement_index=2),
+        lambda p:p['raw_evidence']['aten_calls'][0].update(call_index=3),
+        lambda p:p['raw_evidence']['aten_calls'][0].update(arguments={}),
+        lambda p:p['raw_evidence']['operations'][0].update(flops=0),
+        lambda p:p['protocol']['convention'].update(fma_flops=1),
+        lambda p:p.update(schema_version=2),
+    ):
+        broken=copy.deepcopy(d);mutate(broken)
+        with pytest.raises(ValueError):OperationCountResult(broken)
 
 
 def test_no_clobber_trace(captured):

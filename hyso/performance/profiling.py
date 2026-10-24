@@ -132,7 +132,9 @@ def analyze_flops(source,*,protocol=ProfilingProtocol()):
     """Analytic observed-ATen operation models. No timing or hardware FLOP counter."""
     s=_source(source,protocol);calls=s['raw_evidence']['aten_calls']
     rows,m=summarize(calls,s['actual']['measured_forwards'],s['provenance']['input']['shape'][0])
-    return OperationCountResult(_derived('operation_count','P12',s,dict(aten_calls=calls,operations=rows),m))
+    data=_derived('operation_count','P12',s,dict(aten_calls=calls,operations=rows),m)
+    data['protocol']['operation_model_version']=2
+    return OperationCountResult(data)
 
 
 def _layer_metrics(inventory,invocations):
@@ -210,7 +212,9 @@ def _validate_profile(data,kind):
     if data['identity']['source_result_id']!=raw['source_result_id'] or len(raw['source_sha256'])!=64:
         raise ValueError('missing source identity')
     if kind=='operation_count':
-        rows,m=summarize(raw['aten_calls'],p.measure_iterations,r['input_shape'][0])
+        version=data['protocol'].get('operation_model_version',1)
+        if type(version) is not int or version not in (1,2):raise ValueError('invalid operation model version')
+        rows,m=summarize(raw['aten_calls'],p.measure_iterations,r['input_shape'][0],model_version=version)
         if raw['operations']!=rows or data['measurements']!=m or data['protocol']['convention']!=CONVENTION:
             raise ValueError('invalid analytic operation-count claim')
     elif data['measurements']!=_layer_metrics(raw['module_inventory'],raw['invocations']):raise ValueError('invalid module totals/ranking')
