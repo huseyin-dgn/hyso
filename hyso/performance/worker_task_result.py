@@ -24,6 +24,7 @@ def _derive(data):
         raise ValueError("invalid task evidence budget")
     errors, submitted, received, delivered, packet_map = [], {}, {}, {}, {}
     pending = buffered = pending_max = buffered_max = 0
+    task_ids = set()
     for sequence, row in enumerate(ledger):
         if type(row["sequence"]) is not int or row["sequence"] != sequence:
             errors.append("ledger sequence mismatch")
@@ -45,6 +46,10 @@ def _derive(data):
         if any(type(receipt[k]) is not int or receipt[k] < 1 for k in ("epoch_id", "batch_id")):
             errors.append("invalid epoch/batch identity")
         if kind == "submit":
+            identity = (receipt["epoch_id"], receipt["batch_id"])
+            if identity in task_ids:
+                errors.append("duplicate epoch/batch task identity")
+            task_ids.add(identity)
             pending += 1
             if not (type(row["start_ns"]) is int and type(row["end_ns"]) is int
                     and type(row["duration_ns"]) is int
@@ -222,6 +227,42 @@ class WorkerTaskAnalysisResult:
 
     def to_dict(self):
         return json.loads(self._payload)
+
+    def diagnostics(self):
+        """Additional same-clock durations from audited task receipts.
+
+        Retains the v2 artifact schema. Incomplete evidence never yields a
+        numeric duration. Worker service includes instrumentation between fetch
+        entry and collate completion; it excludes worker queue/serialization
+        work. Parent buffer residence begins only at the observed receive call.
+        Neither interval estimates physical queue wait or prefetch efficiency.
+        """
+        data = self.to_dict()
+        self._check(data)
+        complete = data["analysis"]["status"] == "complete"
+        service = [(p["receipt"]["finish_ns"] - p["receipt"]["receive_ns"]) / 1e6
+                   for p in data["packets"]] if complete else []
+        received = {r["receipt"]["token"]: r["at_ns"] for r in data["ledger"]
+                    if r["kind"] == "receive"} if complete else {}
+        residence = [(r["at_ns"] - received[r["receipt"]["token"]]) / 1e6
+                     for r in data["ledger"] if r["kind"] == "deliver"] if complete else []
+
+        def metric(values, scope):
+            return dict(status="measured" if complete else "incomplete", scope=scope,
+                        count=len(values), mean_ms=sum(values) / len(values) if values else None)
+
+        stages = data["analysis"]["stage_timings"]
+        return dict(status="partial" if complete else "incomplete",
+            worker_service=metric(service, "worker_fetch_entry_to_collate_completion_including_trace_overhead"),
+            parent_buffer_residence=metric(residence, "parent_receive_to_delivery_excludes_unobserved_queue_wait"),
+            stages={stage: stages.get(stage, dict(status="unsupported", count=0, mean_ms=None))
+                    for stage in ("dataset_fetch", "decode", "transform", "collate")},
+            lifecycle=data["analysis"]["lifecycle"],
+            queue_occupancy=data["analysis"]["queue_occupancy"],
+            prefetch_efficiency=data["analysis"]["prefetch_efficiency"],
+            cross_process_queue_wait=dict(status="unsupported", value=None,
+                                          reason="no_accuracy_bound_for_cross_process_clocks"),
+            overhead="included_not_separately_calibrated")
 
     def to_json(self, path, *, overwrite=False):
         data = self.to_dict()

@@ -184,15 +184,15 @@ def _hash(data):
     return hashlib.sha256(json.dumps(data, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")).hexdigest()
 
 
-def _distribution(values):
+def _distribution(values, *, insufficient_reason="requires_1000_delivered_batches"):
     if not values:
         return dict(count=0, mean_ms=None, p50_ms=None, p95_ms=None,
-                    p99=dict(value=None, unit="ms", status="insufficient_samples", reason="requires_1000_delivered_batches"))
+                    p99=dict(value=None, unit="ms", status="insufficient_samples", reason=insufficient_reason))
     return dict(count=len(values), mean_ms=sum(values)/len(values), p50_ms=_quantile(values, .5),
                 p95_ms=_quantile(values, .95),
                 p99=dict(value=_quantile(values, .99) if len(values) >= 1000 else None, unit="ms",
                          status="derived" if len(values) >= 1000 else "insufficient_samples",
-                         reason=None if len(values) >= 1000 else "requires_1000_delivered_batches"))
+                         reason=None if len(values) >= 1000 else insufficient_reason))
 
 
 def _summaries(rows, source):
@@ -358,6 +358,46 @@ class DataLoaderAnalysisResult:
 
     def to_dict(self):
         return json.loads(self._payload)
+
+    def core_metrics(self):
+        """Derive core diagnostics without changing the v1 JSON/CSV contract.
+
+        Rates use the observed phase wall clock, including training/validation
+        work, iterator startup and exhaustion. They are achieved in-run rates,
+        not estimates of standalone loader capacity. Delivery gaps also include
+        consumer work between calls. No resource probes or loader operations.
+        """
+        data = self._export_data()
+        epochs = {e["epoch_id"]: e for e in data["source_p19"]["epochs"]}
+        deliveries_by_phase = {}
+        for row in data["observations"]:
+            if row["kind"] == "batch":
+                deliveries_by_phase.setdefault((row["epoch_id"], row["phase"]), []).append(row["delivery_ns"])
+        summaries = []
+        for summary in data["summaries"]:
+            epoch, phase = epochs[summary["epoch_id"]], summary["phase"]
+            start, end = ((epoch["train_start_ns"], epoch["train_end_ns"])
+                          if phase == "training" else
+                          (epoch["validation_start_ns"], epoch["validation_end_ns"]))
+            seconds = (end - start) / 1e9
+            deliveries = deliveries_by_phase.get((summary["epoch_id"], phase), [])
+            summaries.append(dict(summary, phase_wall_s=seconds,
+                throughput=dict(status="derived" if seconds > 0 else "unavailable",
+                    denominator="phase_wall_including_consumer_work",
+                    batches_per_second=summary["batches"] / seconds if seconds > 0 else None,
+                    samples_per_second=summary["samples"] / seconds if seconds > 0 else None),
+                delivery_gap=_distribution([(b-a) / 1e6 for a, b in zip(deliveries, deliveries[1:])],
+                                           insufficient_reason="requires_1000_delivery_intervals")))
+        return dict(status="complete" if summaries else "not_executed", summaries=summaries,
+            configurations=data["provenance"]["loaders"],
+            resource_policy="advisory_only_no_resource_quotas",
+            limitations=[
+                "next wait is a parent call duration, not worker service or GPU idle time",
+                "delivery gaps and phase throughput include consumer work",
+                "pin_memory and prefetch settings are configuration, not evidence of effective overlap",
+                "persistent_workers is configuration, not proof of worker reuse",
+                "observer and optional trace overhead are included and not separately calibrated",
+                "worker, stage and queue coverage requires separate verified trace evidence"])
 
     def _export_data(self):
         data = _plain(self.to_dict()); self._check(data)

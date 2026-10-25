@@ -81,6 +81,49 @@ def test_v2_roundtrip_integrity_and_no_clobber(task_case,tmp_path):
         with pytest.raises(ValueError):WorkerTaskAnalysisResult(damaged)
 
 
+def test_diagnostics_use_worker_local_service_and_parent_local_residence(task_case):
+    data=task_case('persistent')
+    result=WorkerTaskAnalysisResult(data)
+    diagnostics=result.diagnostics()
+    assert diagnostics['status']=='partial'
+    service=diagnostics['worker_service']
+    assert service['status']=='measured' and service['count']==8
+    assert service['mean_ms']>=diagnostics['stages']['collate']['mean_ms']>=2
+    assert diagnostics['parent_buffer_residence']['status']=='measured'
+    assert diagnostics['parent_buffer_residence']['mean_ms']>=0
+    assert diagnostics['cross_process_queue_wait']['value'] is None
+    assert diagnostics['queue_occupancy']['value'] is None
+    assert diagnostics['prefetch_efficiency']['value'] is None
+    assert result.to_dict()==data
+    # Loss cannot turn the remaining worker packets into a complete result.
+    data['packets'].pop()
+    data['analysis']=_derive(data)
+    data['evidence_sha256']=_hash({k:v for k,v in data.items() if k not in ('analysis','evidence_sha256')})
+    incomplete=WorkerTaskAnalysisResult(data).diagnostics()
+    assert incomplete['worker_service']['mean_ms'] is None
+    assert incomplete['parent_buffer_residence']['mean_ms'] is None
+
+
+def test_absent_explicit_stage_receipts_are_unsupported(task_case):
+    data=task_case('persistent')
+    for packet in data['packets']:
+        for sample in packet['samples']:
+            sample['events']=[r for r in sample['events'] if r['stage']=='dataset_fetch']
+    data['analysis']=_derive(data)
+    data['evidence_sha256']=_hash({k:v for k,v in data.items() if k not in ('analysis','evidence_sha256')})
+    diagnostics=WorkerTaskAnalysisResult(data).diagnostics()
+    assert diagnostics['worker_service']['status']=='measured'
+    for stage in ('decode','transform'):
+        assert diagnostics['stages'][stage]==dict(status='unsupported',count=0,mean_ms=None)
+
+
+def test_duplicate_epoch_batch_ids_with_distinct_tokens_fail_closed(task_case):
+    data=task_case('persistent')
+    submits=[r for r in data['ledger'] if r['kind']=='submit']
+    submits[1]['batch_id']=submits[0]['batch_id']
+    assert 'duplicate epoch/batch task identity' in _derive(data)['errors']
+
+
 def test_unsupported_loader_scopes_rejected():
     import torch
     from torch.utils.data import TensorDataset
