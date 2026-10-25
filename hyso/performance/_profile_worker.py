@@ -9,6 +9,7 @@ from pathlib import Path
 import sys
 import time
 import uuid
+from contextlib import nullcontext
 
 
 def _ready(path,phase):
@@ -156,7 +157,7 @@ def main():
     _ready(ready_path,'bootstrap')
     request=json.loads(Path(request_path).read_text(encoding='utf-8'));r=request['recipe'];p=request['protocol']
     body=dict(worker_pid=os.getpid(),status='failed',reason=None,cleanup={},result=None)
-    guard=None;snapshot=None;saved_hooks=None;rng=None;cuda_rng=None;device=None;stream=None;handles=[];active=[];timer=None;allocation=None
+    guard=None;snapshot=None;saved_hooks=None;rng=None;cuda_rng=None;device=None;stream=None;handles=[];active=[];timer=None;allocation=None;early_profiler=None;early_active=False;early_start=None
     try:
         # This existing Windows guard owns only this fresh process and disallows children.
         spec=importlib.util.spec_from_file_location('hyso_profile_memory_guard',Path(__file__).with_name('_batch_worker.py'))
@@ -176,6 +177,11 @@ def main():
         from hyso.performance._profile_evidence import module_timings,normalize_trace,correlate,cuda_event_timings
         from hyso.performance.memory import _file_info
         torch.set_num_threads(1);torch.manual_seed(r['seed']);random.seed(r['seed']);np.random.seed(r['seed']%(2**32))
+        if p.get('cpu_memory_ownership') and request.get('experiment_mode')!='control':
+            if r['device']!='cpu':raise ValueError('CPU memory/ownership mode requires CPU recipe')
+            early_start=time.perf_counter_ns()
+            early_profiler=torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU],record_shapes=False,profile_memory=True,with_stack=False,with_flops=False)
+            early_profiler.__enter__();early_active=True
         module,name=r['factory'].split(':');factory=importlib.import_module(module)
         for part in name.split('.'):factory=getattr(factory,part)
         model=factory(**r['model_kwargs'])
@@ -207,7 +213,10 @@ def main():
         if stream is not None:stream.synchronize()
         if p.get('allocation_lifetimes') and request.get('experiment_mode')!='control':
             from hyso.performance._layer_allocator import AllocationRecorder
-            allocation=AllocationRecorder(torch,device,p['max_events'])
+            if p.get('cpu_memory_ownership'):
+                from hyso.performance._cpu_layer_memory import CPUAllocationRecorder
+                allocation=CPUAllocationRecorder(torch,device,p['max_events'],modules,inventory)
+            else:allocation=AllocationRecorder(torch,device,p['max_events'])
         if request.get('experiment_mode')=='control':
             windows=[]
             for iteration in range(p['measure_iterations']):
@@ -272,9 +281,9 @@ def main():
             activities=[torch.profiler.ProfilerActivity.CPU]
             if stream is not None:activities.append(torch.profiler.ProfilerActivity.CUDA)
             supported=[str(a).split('.')[-1] for a in torch.profiler.supported_activities()]
-            capture_start=time.perf_counter_ns();host_windows=[]
-            with torch.profiler.profile(activities=activities,record_shapes=not p.get('allocation_lifetimes',False),profile_memory=p.get('profile_memory',False),
-                                        with_stack=False,with_flops=False) as prof:
+            capture_start=early_start if early_start is not None else time.perf_counter_ns();host_windows=[]
+            with (nullcontext(early_profiler) if early_profiler is not None else torch.profiler.profile(activities=activities,record_shapes=not p.get('allocation_lifetimes',False),profile_memory=p.get('profile_memory',False),
+                                        with_stack=False,with_flops=False)) as prof:
                 _ready(ready_path,'profiler_active')
                 if stream is not None:timer=_CudaLayerTimer(torch,device,stream)
                 with Observer():
@@ -286,6 +295,7 @@ def main():
                         # Validation/copies remain outside profiler capture.
                         if measurement_index+1<p['measure_iterations']:del out
                 if stream is not None:stream.synchronize()
+            if early_active:early_profiler.__exit__(None,None,None);early_active=False
             lifecycle_ms=(time.perf_counter_ns()-capture_start)/1e6
             event_timing=(timer.finish() if timer is not None else dict(version=1,requested=False,device='cpu',stream_id=None,
                 host_thread_id=None,synchronized=False,scope_reason=None,pairs=[],clock='torch.cuda.Event.elapsed_time_ms',
@@ -310,6 +320,9 @@ def main():
                     input_shapes=_meta(event.input_shapes),cpu_total_us=_duration(event.cpu_time_total),
                     self_cpu_us=_duration(event.self_cpu_time_total),
                     timing_status='measured' if _duration(event.cpu_time_total) is not None and _duration(event.self_cpu_time_total) is not None else 'invalid_or_missing'))
+            if p.get('cpu_memory_ownership'):
+                from hyso.performance._cpu_layer_memory import measured_subtree_events
+                events=measured_subtree_events(events,invocations)
             invocations=module_timings(inventory,invocations,events,p['measure_iterations'])
             invocations=cuda_event_timings(invocations,event_timing,str(device))
             prof.export_chrome_trace(str(trace_path))
@@ -324,7 +337,7 @@ def main():
             data=_base('operator_profile','P14',dict(id='isolated_torch_profiler',version=1,
                 scope='owned_worker_eval_inference_profile',configuration=p,recipe=r,
                 instrumentation=dict(record_shapes=not p.get('allocation_lifetimes',False),profile_memory=p.get('profile_memory',False),with_stack=False,
-                    with_flops=False,module_hooks='worker_only',dispatch_observer='TorchDispatchMode_version_verified',evidence_version=6 if p.get('allocation_lifetimes') else 5 if p.get('profile_memory',False) else 3)),
+                    with_flops=False,module_hooks='worker_only',dispatch_observer='TorchDispatchMode_version_verified',evidence_version=7 if p.get('cpu_memory_ownership') else 6 if p.get('allocation_lifetimes') else 5 if p.get('profile_memory',False) else 3)),
                 dict(model=dict(structural_descriptor=descriptor,weights_sha256=weights,execution_mode='owned_worker_eval'),
                     input=dict(shape=list(inputs.shape),dtype=str(inputs.dtype),content_sha256=digest,recipe='ones'),
                     environment=dict(device=str(device),torch=str(torch.__version__),python=sys.version,
@@ -358,7 +371,7 @@ def main():
                 'B4 native failure UNRESOLVED; risk OPEN.']
             if p.get('profile_memory',False):
                 from hyso.performance._layer_memory import memory_events,attribute_memory
-                memory=memory_events(trace,p['max_events'],allocation_details=p.get('allocation_lifetimes',False))
+                memory=memory_events(trace,p['max_events'],allocation_details=p.get('allocation_lifetimes',False),cpu_totals=p.get('cpu_memory_ownership',False))
                 data['raw_evidence']['memory_events']=memory
                 data['measurements']['layer_memory']=attribute_memory(memory,trace_events,invocations,inventory,str(device),analysis_version=2)
             if allocation is not None:
@@ -377,6 +390,7 @@ def main():
     finally:
         cleanup=dict(hooks_preserved=True,rng_restored=True,state_preserved=True)
         try:
+            if early_active:early_profiler.__exit__(None,None,None);early_active=False
             if allocation is not None:allocation.close();cleanup['allocation_history_closed']=True
             if timer is not None:cleanup['cuda_timing_observers_restored']=timer.close()
             while active:

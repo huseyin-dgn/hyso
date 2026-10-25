@@ -158,6 +158,10 @@ def _cuda_metrics(evidence,invocations,*,memory_events=None,device_index=0):
 
 
 def derive_allocator(evidence,memory_events,trace,invocations,inventory,device):
+    if evidence['version']==4:
+        from ._cpu_layer_memory import extend_cpu_result
+        base=derive_allocator(dict(evidence,version=3),memory_events,trace,invocations,inventory,device)
+        return extend_cpu_result(base,evidence,memory_events,trace,invocations,inventory)
     if evidence['version'] not in (1,2,3) or evidence['collector_peak_reset_called'] is not False:raise ValueError('invalid allocator collector contract')
     exits={r['invocation_id']:r['storages'] for r in evidence['storage_exits']}
     if len(evidence['storage_exits'])!=len(invocations) or len(exits)!=len(invocations) or set(exits)!=set(range(len(invocations))):

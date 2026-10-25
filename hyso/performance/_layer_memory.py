@@ -6,7 +6,7 @@ It neither measures physical RAM/VRAM traffic nor establishes object lifetimes.
 import math
 
 
-def memory_events(trace, budget, *,allocation_details=False):
+def memory_events(trace, budget, *,allocation_details=False,cpu_totals=False):
     rows=[]
     for index,event in enumerate(trace.get('traceEvents',[])):
         if event.get('name')!='[memory]':continue
@@ -16,6 +16,7 @@ def memory_events(trace, budget, *,allocation_details=False):
             pid=event.get('pid'),tid=event.get('tid'),bytes=args.get('Bytes'),
             device_type=args.get('Device Type'),device_id=args.get('Device Id')))
         if allocation_details:rows[-1]['address']=args.get('Addr')
+        if cpu_totals:rows[-1]['total_allocated_bytes']=args.get('Total Allocated')
     return rows
 
 

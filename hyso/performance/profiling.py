@@ -32,10 +32,12 @@ class ProfilingProtocol:
     max_trace_bytes:int=16*1024**2
     profile_memory:bool=False
     allocation_lifetimes:bool=False
+    cpu_memory_ownership:bool=False
 
     def __post_init__(self):
         if type(self.profile_memory) is not bool:raise ValueError("profile_memory must be boolean")
         if type(self.allocation_lifetimes) is not bool or self.allocation_lifetimes and not self.profile_memory:raise ValueError('allocation_lifetimes requires profile_memory=True')
+        if type(self.cpu_memory_ownership) is not bool or self.cpu_memory_ownership and not self.allocation_lifetimes:raise ValueError('cpu_memory_ownership requires allocation_lifetimes=True')
         _integer(self.warmup_iterations);_integer(self.measure_iterations,1);_positive(self.timeout_seconds)
         if self.warmup_iterations+self.measure_iterations>100 or self.timeout_seconds>600:
             raise ValueError('bounded profile: at most100 forwards/600 seconds')
@@ -71,6 +73,7 @@ def profile_operators(recipe,*,protocol=ProfilingProtocol(),trace_path=None):
 def _execute_profile(recipe,protocol,*,trace_path=None,experiment_mode=None):
     if type(recipe) is not ColdStartRecipe or type(protocol) is not ProfilingProtocol:
         raise TypeError('expected ColdStartRecipe and ProfilingProtocol')
+    if protocol.cpu_memory_ownership and recipe.to_dict()['device']!='cpu':raise ValueError('CPU memory/ownership capture requires CPU recipe')
     if trace_path is not None and Path(trace_path).exists():raise FileExistsError(trace_path)
     receipt=dict(status='failed',reason=None,exit_code=None,worker_pid=None,launcher_pid=None,
                  worker_phase=None,process_terminated=True,stderr_tail='',cleanup={})
@@ -215,6 +218,9 @@ def profile_layers(source,*,protocol=ProfilingProtocol(),memory_analysis_version
     cohorts confirmed alive at module exit and native CUDA allocator peak history.
     This disables profiler shape-reference retention, preserves dispatch shapes,
     adds diagnostic overhead, and never claims physical RAM/VRAM peaks.
+    CPU-only cpu_memory_ownership=True starts memory capture before construction,
+    reports the captured C10 counter baseline/peak and observable reference graph,
+    and samples RSS at call boundaries. It does not claim global heap coverage.
     """
     if memory_analysis_version is not None and (type(memory_analysis_version) is not int or memory_analysis_version!=2):
         raise ValueError('memory_analysis_version must be None or 2')
@@ -284,7 +290,8 @@ def _validate_profile(data,kind):
         inventory=raw['module_inventory'];invocations=raw['invocations']
         validate_modules(inventory,invocations,p.measure_iterations)
         version=data['protocol']['instrumentation'].get('evidence_version',1)
-        if type(version) is not int or version not in (1,2,3,4,5,6):raise ValueError('invalid profiler evidence version')
+        if type(version) is not int or version not in (1,2,3,4,5,6,7):raise ValueError('invalid profiler evidence version')
+        if p.cpu_memory_ownership and version!=7:raise ValueError('CPU memory/ownership requires version7 evidence')
         if version<4 and p.profile_memory:raise ValueError('memory tracing requires evidence version4')
         if version>=2:
             expected_rows=module_timings(inventory,invocations,raw['events'],p.measure_iterations)
@@ -302,10 +309,13 @@ def _validate_profile(data,kind):
         if version>=6:
             from ._layer_allocator import derive_allocator
             if not p.allocation_lifetimes:raise ValueError('allocator evidence not requested')
+            if raw['allocation_evidence']['version']==4 and version!=7:raise ValueError('CPU context evidence requires version7')
             if data['protocol']['instrumentation']['record_shapes'] is not False or raw['safety'].get('allocation_history_closed') is not True:
                 raise ValueError('lifetime capture must disable shape retention and close history')
             if data['measurements']['allocator_diagnostics']!=derive_allocator(raw['allocation_evidence'],raw['memory_events'],raw['trace_events'],invocations,inventory,_event_device(data,r)):
                 raise ValueError('invalid allocator lifetime/peak claim')
+        if version>=7:
+            if not p.cpu_memory_ownership or r['device']!='cpu' or raw['allocation_evidence']['version']!=4:raise ValueError('invalid CPU peak/ownership scope')
         mids={m['module_id'] for m in inventory}
         if len(mids)!=len(inventory):raise ValueError('duplicate module identity')
         if [v['invocation_id'] for v in invocations]!=list(range(len(invocations))):raise ValueError('invalid invocation IDs')
@@ -337,7 +347,8 @@ def _validate_profile(data,kind):
     else:
         validate_modules(raw['module_inventory'],raw['invocations'],p.measure_iterations)
         version=data['protocol'].get('profile_evidence_version',1);evidence=None;cuda_events=None
-        if type(version) is not int or version not in (1,2,3,4,5,6):raise ValueError('invalid layer evidence version')
+        if type(version) is not int or version not in (1,2,3,4,5,6,7):raise ValueError('invalid layer evidence version')
+        if p.cpu_memory_ownership and version!=7:raise ValueError('CPU memory/ownership requires version7 evidence')
         if version<4 and p.profile_memory:raise ValueError('memory tracing requires evidence version4')
         if version>=2:
             expected_rows=module_timings(raw['module_inventory'],raw['invocations'],raw['events'],p.measure_iterations)
@@ -361,10 +372,12 @@ def _validate_profile(data,kind):
         if version>=6:
             from ._layer_allocator import derive_allocator
             if not p.allocation_lifetimes:raise ValueError('allocator evidence not requested')
+            if raw['allocation_evidence']['version']==4 and version!=7:raise ValueError('CPU context evidence requires version7')
             diagnostics=derive_allocator(raw['allocation_evidence'],raw['memory_events'],raw['trace_events'],raw['invocations'],raw['module_inventory'],device)
             expected_metrics['allocator_diagnostics']=diagnostics
             for module in expected_metrics['modules']:
                 module['allocator']=next(m for m in diagnostics['modules'] if m['module_id']==module['module_id'])
+        if version>=7 and (not p.cpu_memory_ownership or r['device']!='cpu' or raw['allocation_evidence']['version']!=4):raise ValueError('invalid CPU peak/ownership scope')
         if data['measurements']!=expected_metrics:
             raise ValueError('invalid module totals/ranking')
 
