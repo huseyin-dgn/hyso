@@ -30,8 +30,10 @@ class ProfilingProtocol:
     cuda_memory_fraction:float|None=None
     max_events:int=20000
     max_trace_bytes:int=16*1024**2
+    profile_memory:bool=False
 
     def __post_init__(self):
+        if type(self.profile_memory) is not bool:raise ValueError("profile_memory must be boolean")
         _integer(self.warmup_iterations);_integer(self.measure_iterations,1);_positive(self.timeout_seconds)
         if self.warmup_iterations+self.measure_iterations>100 or self.timeout_seconds>600:
             raise ValueError('bounded profile: at most100 forwards/600 seconds')
@@ -61,6 +63,10 @@ def profile_operators(recipe,*,protocol=ProfilingProtocol(),trace_path=None):
     are instrumented costs, not BenchmarkRunner latency. Only exported kernel
     activities qualify as kernel evidence; legacy event.kernels is not used.
     """
+    return _execute_profile(recipe,protocol,trace_path=trace_path)
+
+
+def _execute_profile(recipe,protocol,*,trace_path=None,experiment_mode=None):
     if type(recipe) is not ColdStartRecipe or type(protocol) is not ProfilingProtocol:
         raise TypeError('expected ColdStartRecipe and ProfilingProtocol')
     if trace_path is not None and Path(trace_path).exists():raise FileExistsError(trace_path)
@@ -69,7 +75,7 @@ def profile_operators(recipe,*,protocol=ProfilingProtocol(),trace_path=None):
     start=time.perf_counter();worker=None
     with tempfile.TemporaryDirectory(prefix='hyso-profile-') as directory:
         root=Path(directory);request=root/'request.json';output=root/'result.json';trace=root/'trace.json';ready=root/'ready.json'
-        request.write_text(json.dumps(dict(recipe=recipe.to_dict(),protocol=asdict(protocol))),encoding='utf-8')
+        request.write_text(json.dumps(dict(recipe=recipe.to_dict(),protocol=asdict(protocol),experiment_mode=experiment_mode)),encoding='utf-8')
         command=[sys.executable,'-I','-B',str(Path(__file__).with_name('_profile_worker.py')),
                  str(request),str(output),str(trace),str(ready),str(Path(__file__).resolve().parents[2])]
         with tempfile.TemporaryFile() as stdout,tempfile.TemporaryFile() as stderr:
@@ -101,7 +107,11 @@ def profile_operators(recipe,*,protocol=ProfilingProtocol(),trace_path=None):
                 receipt['stderr_tail']=stderr.read().decode('utf-8',errors='replace')
         receipt['execution_seconds']=time.perf_counter()-start
         if receipt['status']!='completed':raise ProfilingError(receipt)
-        data=body['result'];data['raw_evidence']['worker']=receipt
+        data=body['result']
+        if experiment_mode=='control':
+            data['worker']=receipt
+            return data
+        data['raw_evidence']['worker']=receipt
         meta=data['raw_evidence']['trace'];meta['path']=str(Path(trace_path).resolve()) if trace_path is not None else None
         meta['retention']='published' if trace_path is not None else 'generated_not_retained'
         result=OperatorProfileResult(data)
@@ -192,18 +202,32 @@ def _layer_metrics(inventory,invocations,*,evidence=None,cuda_events=None):
 
 
 def profile_layers(source,*,protocol=ProfilingProtocol()):
-    """Module invocation tree from the same capture; shared calls remain distinct."""
+    """Module invocation tree from the same capture; shared calls remain distinct.
+
+    Opt into allocation-event attribution with ProfilingProtocol(profile_memory=True)
+    when capturing a recipe. Existing captures cannot retroactively gain memory
+    evidence. Ordinary analysis runs no extra forward or overhead experiment.
+    """
     s=_source(source,protocol);raw=s['raw_evidence']
     extra={};evidence=None;cuda_events=None
     version=s['protocol']['instrumentation'].get('evidence_version',1)
     if version>=2:
         evidence=dict(cuda_attribution=s['measurements']['cuda_attribution'],overhead=s['measurements']['overhead'])
         extra=dict(events=raw['events'],trace_events=raw['trace_events'],profile_measurements=evidence)
-    if version==3:
+    if version>=3:
         cuda_events=raw['cuda_event_timing'];extra['cuda_event_timing']=cuda_events
+    if version==4:
+        extra['memory_events']=raw['memory_events']
+        extra['memory_device']=s['provenance']['environment']['device']
     data=_derived('layer_profile','P13',s,
         dict(module_inventory=raw['module_inventory'],invocations=raw['invocations'],**extra),
         _layer_metrics(raw['module_inventory'],raw['invocations'],evidence=evidence,cuda_events=cuda_events))
+    if version==4:
+        from ._layer_memory import attribute_memory
+        data['measurements']['layer_memory']=attribute_memory(raw['memory_events'],raw['trace_events'],
+            raw['invocations'],raw['module_inventory'],s['provenance']['environment']['device'])
+        for module in data['measurements']['modules']:
+            module['memory']=next(m['domains'] for m in data['measurements']['layer_memory']['modules'] if m['module_id']==module['module_id'])
     if evidence is not None:data['protocol']['profile_evidence_version']=version
     return LayerProfileResult(data)
 
@@ -237,14 +261,21 @@ def _validate_profile(data,kind):
         inventory=raw['module_inventory'];invocations=raw['invocations']
         validate_modules(inventory,invocations,p.measure_iterations)
         version=data['protocol']['instrumentation'].get('evidence_version',1)
-        if type(version) is not int or version not in (1,2,3):raise ValueError('invalid profiler evidence version')
+        if type(version) is not int or version not in (1,2,3,4):raise ValueError('invalid profiler evidence version')
+        if version<4 and p.profile_memory:raise ValueError('memory tracing requires evidence version4')
         if version>=2:
             expected_rows=module_timings(inventory,invocations,raw['events'],p.measure_iterations)
-            if version==3:
+            if version>=3:
                 expected_rows=cuda_event_timings(expected_rows,raw['cuda_event_timing'],_event_device(data,r))
             if expected_rows!=invocations:
                 raise ValueError('unverified module timing evidence')
             _validate_trace_evidence(raw,data['measurements']['cuda_attribution'],p.max_events)
+            if version==4:
+                from ._layer_memory import attribute_memory
+                if not p.profile_memory or data['protocol']['instrumentation']['profile_memory'] is not True:raise ValueError('memory tracing not requested')
+                _validate_memory_indices(raw,p.max_events)
+                if data['measurements']['layer_memory']!=attribute_memory(raw['memory_events'],raw['trace_events'],invocations,inventory,r['device'] if r['device']!='cuda' else 'cuda:0'):
+                    raise ValueError('unverified allocation attribution')
         mids={m['module_id'] for m in inventory}
         if len(mids)!=len(inventory):raise ValueError('duplicate module identity')
         if [v['invocation_id'] for v in invocations]!=list(range(len(invocations))):raise ValueError('invalid invocation IDs')
@@ -276,10 +307,11 @@ def _validate_profile(data,kind):
     else:
         validate_modules(raw['module_inventory'],raw['invocations'],p.measure_iterations)
         version=data['protocol'].get('profile_evidence_version',1);evidence=None;cuda_events=None
-        if type(version) is not int or version not in (1,2,3):raise ValueError('invalid layer evidence version')
+        if type(version) is not int or version not in (1,2,3,4):raise ValueError('invalid layer evidence version')
+        if version<4 and p.profile_memory:raise ValueError('memory tracing requires evidence version4')
         if version>=2:
             expected_rows=module_timings(raw['module_inventory'],raw['invocations'],raw['events'],p.measure_iterations)
-            if version==3:
+            if version>=3:
                 cuda_events=raw['cuda_event_timing']
                 expected_rows=cuda_event_timings(expected_rows,cuda_events,_event_device(data,r))
             if expected_rows!=raw['invocations']:
@@ -287,7 +319,16 @@ def _validate_profile(data,kind):
             evidence=raw['profile_measurements']
             _validate_trace_evidence(raw,evidence['cuda_attribution'],p.max_events)
             _validate_overhead(evidence['overhead'],p.measure_iterations)
-        if data['measurements']!=_layer_metrics(raw['module_inventory'],raw['invocations'],evidence=evidence,cuda_events=cuda_events):
+        expected_metrics=_layer_metrics(raw['module_inventory'],raw['invocations'],evidence=evidence,cuda_events=cuda_events)
+        if version==4:
+            from ._layer_memory import attribute_memory
+            _validate_memory_indices(raw,p.max_events)
+            device=r['device'] if r['device']!='cuda' else 'cuda:0'
+            if raw['memory_device']!=device or not p.profile_memory:raise ValueError('memory context mismatch')
+            expected_metrics['layer_memory']=attribute_memory(raw['memory_events'],raw['trace_events'],raw['invocations'],raw['module_inventory'],device)
+            for module in expected_metrics['modules']:
+                module['memory']=next(m['domains'] for m in expected_metrics['layer_memory']['modules'] if m['module_id']==module['module_id'])
+        if data['measurements']!=expected_metrics:
             raise ValueError('invalid module totals/ranking')
 
 
@@ -361,3 +402,12 @@ def _operator_metrics(events):
             shapes=[e['input_shapes'] for e in events],unit='us',scope='instrumented_CPU_operator_events',
             status='measured' if all(e['self_cpu_us'] is not None and e['cpu_total_us'] is not None for e in events) else 'partial'))
     return sorted(rows,key=lambda r:r['self_cpu_us'] if r['self_cpu_us'] is not None else -1,reverse=True)
+
+
+def _validate_memory_indices(raw,budget):
+    events=raw['memory_events']
+    if len(events)>budget:raise ValueError('memory evidence budget exceeded')
+    trace_indices={e['trace_index'] for e in raw['trace_events']}
+    for e in events:
+        if type(e['trace_index']) is not int or not 0<=e['trace_index']<raw['trace']['event_count'] or e['trace_index'] in trace_indices:
+            raise ValueError('invalid memory/trace association')

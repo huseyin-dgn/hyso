@@ -205,127 +205,161 @@ def main():
             out=forward();_output(out,inputs.shape[0],device=device);del out
         snapshot.check(full=True);_context_check(device,stream)
         if stream is not None:stream.synchronize()
-        calls=[];invocations=[];measurement_index=0
-        class Observer(TorchDispatchMode):
-            def __torch_dispatch__(self,func,types,args=(),kwargs=None):
-                if timer is not None:timer.check(str(func))
-                kwargs=kwargs or {};out=func(*args,**kwargs)
-                if timer is not None:timer.check(str(func))
-                if str(func).startswith('profiler.'):return out
-                if len(calls)>=p['max_events']:raise RuntimeError('dispatch evidence budget exceeded')
-                bound={}
-                for index,arg in enumerate(func._schema.arguments):
-                    if index<len(args):bound[arg.name]=_meta(args[index])
-                    elif arg.name in kwargs:bound[arg.name]=_meta(kwargs[arg.name])
-                    elif arg.has_default_value():bound[arg.name]=_meta(arg.default_value)
-                calls.append(dict(call_index=len(calls),measurement_index=measurement_index,
-                    operator=str(func),arguments=bound,output=_meta(out)))
-                return out
-        ids={id(m):inventory[i]['module_id'] for i,(_,m) in enumerate(modules)}
-        by_module={};prefix='hyso.profile.'+str(uuid.uuid4())+'.module.'
-        def pre(m,args,kwargs):
-            if len(invocations)>=p['max_events']:raise RuntimeError('module evidence budget exceeded')
-            i=len(invocations);row=dict(invocation_id=i,module_id=ids[id(m)],
-                parent_invocation_id=active[-1][0] if active else None,measurement_index=measurement_index,
-                annotation=prefix+str(i),input_shapes=_meta([args,kwargs]),output_shapes=None,
-                cpu_total_us=None,cpu_exclusive_us=None,cuda_activity_us=None)
-            invocations.append(row)
-            if timer is not None:timer.begin(i,measurement_index)
-            context=torch.profiler.record_function(row['annotation']);context.__enter__()
-            active.append((i,context));by_module.setdefault(id(m),[]).append(i)
-        def post(m,args,kwargs,out):
-            stack=by_module.get(id(m),[])
-            if not stack:return
-            i=stack.pop();invocations[i]['output_shapes']=_meta(out)
-            if not active or active[-1][0]!=i:raise RuntimeError('module call nesting unsupported')
-            if timer is not None:timer.end(i)
-            _,ctx=active.pop();ctx.__exit__(None,None,None)
-        for _,m in modules:
-            handles.append(m.register_forward_pre_hook(pre,with_kwargs=True))
-            handles.append(m.register_forward_hook(post,with_kwargs=True,always_call=True))
-        activities=[torch.profiler.ProfilerActivity.CPU]
-        if stream is not None:activities.append(torch.profiler.ProfilerActivity.CUDA)
-        supported=[str(a).split('.')[-1] for a in torch.profiler.supported_activities()]
-        capture_start=time.perf_counter_ns();host_windows=[]
-        with torch.profiler.profile(activities=activities,record_shapes=True,profile_memory=False,
-                                    with_stack=False,with_flops=False) as prof:
-            _ready(ready_path,'profiler_active')
-            if stream is not None:timer=_CudaLayerTimer(torch,device,stream)
-            with Observer():
-                for measurement_index in range(p['measure_iterations']):
-                    t=time.perf_counter_ns();out=forward();host_windows.append((time.perf_counter_ns()-t)/1e6)
-                    # Validation/copies remain outside profiler capture.
-                    if measurement_index+1<p['measure_iterations']:del out
-            if stream is not None:stream.synchronize()
-        lifecycle_ms=(time.perf_counter_ns()-capture_start)/1e6
-        event_timing=(timer.finish() if timer is not None else dict(version=1,requested=False,device='cpu',stream_id=None,
-            host_thread_id=None,synchronized=False,scope_reason=None,pairs=[],clock='torch.cuda.Event.elapsed_time_ms',
-            scope='owned_eager_single_host_thread_and_stream; unmanaged_native_async_excluded',
-            validation='serialized_ledger_and_ms_to_us_only; CUDA_event_objects_not_serialized_or_replayed'))
-        boundary=_output(out,inputs.shape[0],device=device);del out
-        _context_check(device,stream);snapshot.check(full=True)
-        if device.type=='cpu' and torch.cuda.is_initialized():raise ValueError('CPU recipe initialized CUDA during forward')
-        for handle in reversed(handles):handle.remove()
-        handles.clear()
-        if not _hooks_equal(saved_hooks):raise StateMutationError('factory hooks changed during forward')
-        events=[]
-        native_events=prof.events()
-        if len(native_events)>p['max_events']:raise ValueError('profiler event budget exceeded')
-        for event in native_events:
-            events.append(dict(event_id=event.id,name=event.name,
-                device_type=str(event.device_type).split('.')[-1],scope=int(event.scope),
-                parent_id=event.cpu_parent.id if event.cpu_parent else None,
-                start_us=_duration(event.time_range.start),end_us=_duration(event.time_range.end),thread_id=event.thread,
-                input_shapes=_meta(event.input_shapes),cpu_total_us=_duration(event.cpu_time_total),
-                self_cpu_us=_duration(event.self_cpu_time_total),
-                timing_status='measured' if _duration(event.cpu_time_total) is not None and _duration(event.self_cpu_time_total) is not None else 'invalid_or_missing'))
-        invocations=module_timings(inventory,invocations,events,p['measure_iterations'])
-        invocations=cuda_event_timings(invocations,event_timing,str(device))
-        prof.export_chrome_trace(str(trace_path))
-        trace_bytes=Path(trace_path).read_bytes()
-        if len(trace_bytes)>p['max_trace_bytes']:raise ValueError('trace evidence budget exceeded')
-        from hyso.benchmark.result import _plain
-        trace=_plain(json.loads(trace_bytes.decode('utf-8')))
-        trace_events,kernels=normalize_trace(trace,p['max_events'])
-        attribution=correlate(trace_events,invocations)
-        cuda_metrics=_cuda_metrics(kernels,stream is not None)
-        status,reason=_profile_status(events,cuda_metrics)
-        data=_base('operator_profile','P14',dict(id='isolated_torch_profiler',version=1,
-            scope='owned_worker_eval_inference_profile',configuration=p,recipe=r,
-            instrumentation=dict(record_shapes=True,profile_memory=False,with_stack=False,
-                with_flops=False,module_hooks='worker_only',dispatch_observer='TorchDispatchMode_version_verified',evidence_version=3)),
-            dict(model=dict(structural_descriptor=descriptor,weights_sha256=weights,execution_mode='owned_worker_eval'),
-                input=dict(shape=list(inputs.shape),dtype=str(inputs.dtype),content_sha256=digest,recipe='ones'),
-                environment=dict(device=str(device),torch=str(torch.__version__),python=sys.version,
-                    gpu=torch.cuda.get_device_name(device) if stream is not None else None,
-                    cuda_build=torch.version.cuda,package_source=importlib.import_module('hyso.performance').__file__)))
-        ledger=dict(measured_forwards=p['measure_iterations'],warmup_forwards=p['warmup_iterations'])
-        data.update(requested=ledger,actual=ledger,measurements=dict(
-            status=status,reason=reason,
-            operators=_operator_metrics(events),cuda_kernels=kernels,
-            cuda_attribution=attribution,
-            cuda_activity=cuda_metrics,
-            overhead=dict(collector_lifecycle_wall_ms=lifecycle_ms,instrumented_host_forward_windows_ms=host_windows,
-                unit='ms',clock='worker_perf_counter_ns',
-                perturbation_ms=None,perturbation_status='not_measured',
-                reason='no_matched_uninstrumented_baseline; host_windows_are_not_GPU_kernel_time')),
-            raw_evidence=dict(events=events,aten_calls=calls,module_inventory=inventory,invocations=invocations,
-                output=boundary,supported_activities=supported,kernel_events=kernels,trace_events=trace_events,cuda_event_timing=event_timing,
-                trace=dict(sha256=hashlib.sha256(trace_bytes).hexdigest(),size_bytes=len(trace_bytes),path=None,
-                    retention='generated_not_retained',event_count=len(trace.get('traceEvents',[])),
-                    timestamp_unit='us',base_time_nanoseconds=trace.get('baseTimeNanoseconds'),
-                    display_time_unit=trace.get('displayTimeUnit'),
-                    timestamp_domain='single_exported_chrome_trace; native_FunctionEvent_clock_is_separate'),
-                safety={},worker={}))
-        data['diagnostics']['limitations']=['Analytic dispatch counts and instrumented timings are not hardware FLOP counters or benchmark latency.',
-            'Only observed recipe/seed/input/control flow; no full NVIDIA kernel coverage claim.',
-            'Legacy event.kernels labels are excluded: they can be CPU operator names.',
-            'Hooks/shape capture/dispatch tracing change allocation and scheduling; perturbation is not quantified.',
-            'Owned inference worker only; parent model/hook/device/RNG/allocator handles never transferred.',
-            'CUDA Event elapsed intervals are inclusive instrumented stream intervals, not kernel attribution or benchmark latency.',
-            'CUDA Event objects are worker-local; exported evidence validates pairing/conversion, not independent replay of the GPU clock.',
-            'B4 native failure UNRESOLVED; risk OPEN.']
-        body.update(status='completed',result=data)
+        if request.get('experiment_mode')=='control':
+            windows=[]
+            for iteration in range(p['measure_iterations']):
+                if stream is not None:torch.cuda.synchronize(device)
+                t=time.perf_counter_ns();out=forward()
+                if stream is not None:torch.cuda.synchronize(device)
+                windows.append((time.perf_counter_ns()-t)/1e6)
+                if iteration+1<p['measure_iterations']:del out
+            _output(out,inputs.shape[0],device=device)
+            output_digest=hashlib.sha256(_bits(out).numpy().tobytes()).hexdigest();del out
+            _context_check(device,stream);snapshot.check(full=True)
+            if device.type=='cpu' and torch.cuda.is_initialized():raise ValueError('CPU control initialized CUDA')
+            data=dict(recipe=r,configuration=p,model=dict(structural_descriptor=descriptor,weights_sha256=weights),
+                input_sha256=digest,device=str(device),dtype=str(dtype),torch=str(torch.__version__),
+                mode='control',windows_ms=windows,output_sha256=output_digest,python=sys.version,gpu=torch.cuda.get_device_name(device) if stream is not None else None,
+                cuda_build=torch.version.cuda,
+                synchronization='device_before_and_after_each_forward' if stream is not None else 'synchronous_CPU',
+                threads=torch.get_num_threads())
+            body.update(status='completed',result=data)
+        else:
+            calls=[];invocations=[];measurement_index=0
+            class Observer(TorchDispatchMode):
+                def __torch_dispatch__(self,func,types,args=(),kwargs=None):
+                    if timer is not None:timer.check(str(func))
+                    kwargs=kwargs or {};out=func(*args,**kwargs)
+                    if timer is not None:timer.check(str(func))
+                    if str(func).startswith('profiler.'):return out
+                    if len(calls)>=p['max_events']:raise RuntimeError('dispatch evidence budget exceeded')
+                    bound={}
+                    for index,arg in enumerate(func._schema.arguments):
+                        if index<len(args):bound[arg.name]=_meta(args[index])
+                        elif arg.name in kwargs:bound[arg.name]=_meta(kwargs[arg.name])
+                        elif arg.has_default_value():bound[arg.name]=_meta(arg.default_value)
+                    calls.append(dict(call_index=len(calls),measurement_index=measurement_index,
+                        operator=str(func),arguments=bound,output=_meta(out)))
+                    return out
+            ids={id(m):inventory[i]['module_id'] for i,(_,m) in enumerate(modules)}
+            by_module={};prefix='hyso.profile.'+str(uuid.uuid4())+'.module.'
+            def pre(m,args,kwargs):
+                if len(invocations)>=p['max_events']:raise RuntimeError('module evidence budget exceeded')
+                i=len(invocations);row=dict(invocation_id=i,module_id=ids[id(m)],
+                    parent_invocation_id=active[-1][0] if active else None,measurement_index=measurement_index,
+                    annotation=prefix+str(i),input_shapes=_meta([args,kwargs]),output_shapes=None,
+                    cpu_total_us=None,cpu_exclusive_us=None,cuda_activity_us=None)
+                invocations.append(row)
+                if timer is not None:timer.begin(i,measurement_index)
+                context=torch.profiler.record_function(row['annotation']);context.__enter__()
+                active.append((i,context));by_module.setdefault(id(m),[]).append(i)
+            def post(m,args,kwargs,out):
+                stack=by_module.get(id(m),[])
+                if not stack:return
+                i=stack.pop();invocations[i]['output_shapes']=_meta(out)
+                if not active or active[-1][0]!=i:raise RuntimeError('module call nesting unsupported')
+                if timer is not None:timer.end(i)
+                _,ctx=active.pop();ctx.__exit__(None,None,None)
+            for _,m in modules:
+                handles.append(m.register_forward_pre_hook(pre,with_kwargs=True))
+                handles.append(m.register_forward_hook(post,with_kwargs=True,always_call=True))
+            activities=[torch.profiler.ProfilerActivity.CPU]
+            if stream is not None:activities.append(torch.profiler.ProfilerActivity.CUDA)
+            supported=[str(a).split('.')[-1] for a in torch.profiler.supported_activities()]
+            capture_start=time.perf_counter_ns();host_windows=[]
+            with torch.profiler.profile(activities=activities,record_shapes=True,profile_memory=p.get('profile_memory',False),
+                                        with_stack=False,with_flops=False) as prof:
+                _ready(ready_path,'profiler_active')
+                if stream is not None:timer=_CudaLayerTimer(torch,device,stream)
+                with Observer():
+                    for measurement_index in range(p['measure_iterations']):
+                        if request.get('experiment_mode') and stream is not None:torch.cuda.synchronize(device)
+                        t=time.perf_counter_ns();out=forward()
+                        if request.get('experiment_mode') and stream is not None:torch.cuda.synchronize(device)
+                        host_windows.append((time.perf_counter_ns()-t)/1e6)
+                        # Validation/copies remain outside profiler capture.
+                        if measurement_index+1<p['measure_iterations']:del out
+                if stream is not None:stream.synchronize()
+            lifecycle_ms=(time.perf_counter_ns()-capture_start)/1e6
+            event_timing=(timer.finish() if timer is not None else dict(version=1,requested=False,device='cpu',stream_id=None,
+                host_thread_id=None,synchronized=False,scope_reason=None,pairs=[],clock='torch.cuda.Event.elapsed_time_ms',
+                scope='owned_eager_single_host_thread_and_stream; unmanaged_native_async_excluded',
+                validation='serialized_ledger_and_ms_to_us_only; CUDA_event_objects_not_serialized_or_replayed'))
+            boundary=_output(out,inputs.shape[0],device=device)
+            output_digest=hashlib.sha256(_bits(out).numpy().tobytes()).hexdigest() if request.get('experiment_mode') else None
+            del out
+            _context_check(device,stream);snapshot.check(full=True)
+            if device.type=='cpu' and torch.cuda.is_initialized():raise ValueError('CPU recipe initialized CUDA during forward')
+            for handle in reversed(handles):handle.remove()
+            handles.clear()
+            if not _hooks_equal(saved_hooks):raise StateMutationError('factory hooks changed during forward')
+            events=[]
+            native_events=prof.events()
+            if len(native_events)>p['max_events']:raise ValueError('profiler event budget exceeded')
+            for event in native_events:
+                events.append(dict(event_id=event.id,name=event.name,
+                    device_type=str(event.device_type).split('.')[-1],scope=int(event.scope),
+                    parent_id=event.cpu_parent.id if event.cpu_parent else None,
+                    start_us=_duration(event.time_range.start),end_us=_duration(event.time_range.end),thread_id=event.thread,
+                    input_shapes=_meta(event.input_shapes),cpu_total_us=_duration(event.cpu_time_total),
+                    self_cpu_us=_duration(event.self_cpu_time_total),
+                    timing_status='measured' if _duration(event.cpu_time_total) is not None and _duration(event.self_cpu_time_total) is not None else 'invalid_or_missing'))
+            invocations=module_timings(inventory,invocations,events,p['measure_iterations'])
+            invocations=cuda_event_timings(invocations,event_timing,str(device))
+            prof.export_chrome_trace(str(trace_path))
+            trace_bytes=Path(trace_path).read_bytes()
+            if len(trace_bytes)>p['max_trace_bytes']:raise ValueError('trace evidence budget exceeded')
+            from hyso.benchmark.result import _plain
+            trace=_plain(json.loads(trace_bytes.decode('utf-8')))
+            trace_events,kernels=normalize_trace(trace,p['max_events'])
+            attribution=correlate(trace_events,invocations)
+            cuda_metrics=_cuda_metrics(kernels,stream is not None)
+            status,reason=_profile_status(events,cuda_metrics)
+            data=_base('operator_profile','P14',dict(id='isolated_torch_profiler',version=1,
+                scope='owned_worker_eval_inference_profile',configuration=p,recipe=r,
+                instrumentation=dict(record_shapes=True,profile_memory=p.get('profile_memory',False),with_stack=False,
+                    with_flops=False,module_hooks='worker_only',dispatch_observer='TorchDispatchMode_version_verified',evidence_version=4 if p.get('profile_memory',False) else 3)),
+                dict(model=dict(structural_descriptor=descriptor,weights_sha256=weights,execution_mode='owned_worker_eval'),
+                    input=dict(shape=list(inputs.shape),dtype=str(inputs.dtype),content_sha256=digest,recipe='ones'),
+                    environment=dict(device=str(device),torch=str(torch.__version__),python=sys.version,
+                        gpu=torch.cuda.get_device_name(device) if stream is not None else None,
+                        cuda_build=torch.version.cuda,package_source=importlib.import_module('hyso.performance').__file__)))
+            ledger=dict(measured_forwards=p['measure_iterations'],warmup_forwards=p['warmup_iterations'])
+            data.update(requested=ledger,actual=ledger,measurements=dict(
+                status=status,reason=reason,
+                operators=_operator_metrics(events),cuda_kernels=kernels,
+                cuda_attribution=attribution,
+                cuda_activity=cuda_metrics,
+                overhead=dict(collector_lifecycle_wall_ms=lifecycle_ms,instrumented_host_forward_windows_ms=host_windows,
+                    unit='ms',clock='worker_perf_counter_ns',
+                    perturbation_ms=None,perturbation_status='not_measured',
+                    reason='no_matched_uninstrumented_baseline; host_windows_are_not_GPU_kernel_time')),
+                raw_evidence=dict(events=events,aten_calls=calls,module_inventory=inventory,invocations=invocations,
+                    output=boundary,supported_activities=supported,kernel_events=kernels,trace_events=trace_events,cuda_event_timing=event_timing,
+                    trace=dict(sha256=hashlib.sha256(trace_bytes).hexdigest(),size_bytes=len(trace_bytes),path=None,
+                        retention='generated_not_retained',event_count=len(trace.get('traceEvents',[])),
+                        timestamp_unit='us',base_time_nanoseconds=trace.get('baseTimeNanoseconds'),
+                        display_time_unit=trace.get('displayTimeUnit'),
+                        timestamp_domain='single_exported_chrome_trace; native_FunctionEvent_clock_is_separate'),
+                    safety={},worker={}))
+            data['diagnostics']['limitations']=['Analytic dispatch counts and instrumented timings are not hardware FLOP counters or benchmark latency.',
+                'Only observed recipe/seed/input/control flow; no full NVIDIA kernel coverage claim.',
+                'Legacy event.kernels labels are excluded: they can be CPU operator names.',
+                'Hooks/shape capture/dispatch tracing change allocation and scheduling; perturbation is not quantified.',
+                'Owned inference worker only; parent model/hook/device/RNG/allocator handles never transferred.',
+                'CUDA Event elapsed intervals are inclusive instrumented stream intervals, not kernel attribution or benchmark latency.',
+                'CUDA Event objects are worker-local; exported evidence validates pairing/conversion, not independent replay of the GPU clock.',
+                'B4 native failure UNRESOLVED; risk OPEN.']
+            if p.get('profile_memory',False):
+                from hyso.performance._layer_memory import memory_events,attribute_memory
+                memory=memory_events(trace,p['max_events'])
+                data['raw_evidence']['memory_events']=memory
+                data['measurements']['layer_memory']=attribute_memory(memory,trace_events,invocations,inventory,str(device))
+            if request.get('experiment_mode'):
+                data['raw_evidence']['overhead_experiment']=dict(mode='instrumented',windows_ms=host_windows,
+                    output_sha256=output_digest,synchronization='device_before_and_after_each_forward' if stream is not None else 'synchronous_CPU',
+                    threads=torch.get_num_threads())
+            body.update(status='completed',result=data)
     except Exception as error:
         kind=type(error).__name__
         body.update(status='state_mutation' if kind=='StateMutationError' else 'unsupported' if isinstance(error,NotImplementedError) else 'failed',
@@ -350,7 +384,9 @@ def main():
         body['cleanup']=cleanup
         if body['status']=='completed':
             if not all(cleanup.values()):body.update(status='failed',reason='profile safety validation failed')
-            else:body['result']['raw_evidence']['safety']=dict(cleanup,allocator_reset_not_called=True)
+            else:
+                if request.get('experiment_mode')=='control':body['result']['safety']=dict(cleanup,allocator_reset_not_called=True)
+                else:body['result']['raw_evidence']['safety']=dict(cleanup,allocator_reset_not_called=True)
     Path(output_path).write_text(json.dumps(body,allow_nan=False),encoding='utf-8')
     if guard is not None:guard[0].CloseHandle(guard[1])
 
