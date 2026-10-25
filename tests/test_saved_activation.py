@@ -24,7 +24,8 @@ TESTS=Path(__file__).parent
 def seed():random.seed(71);np.random.seed(71);torch.manual_seed(71)
 
 
-def protocol(**kwargs):return IsolatedTrainingMemoryProtocol(saved_activation_lifetime=True,**kwargs)
+def protocol(**kwargs):return IsolatedTrainingMemoryProtocol(saved_activation_lifetime=True,process_memory_bytes=4*1024**3,
+    job_memory_bytes=8*1024**3,cuda_memory_fraction=.15,**kwargs)
 
 
 @pytest.mark.parametrize('kwargs',[{},dict(optimizer='adam'),dict(optimizer='adamw'),dict(tied=True),dict(modular=True),dict(modular=True,early=True)])

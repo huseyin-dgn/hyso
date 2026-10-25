@@ -22,7 +22,8 @@ import torch
 from hyso.benchmark.result import _plain,_csv_text,_write_export
 from .training import _int,TrainingTimingProtocol,TrainingPerformanceResult,_measure_training
 from .training_details import _source
-from .training_memory import (TrainingMemoryProtocol,_MemoryRecorder,_logical_summary,_rss_summary)
+from .training_memory import (TrainingMemoryProtocol,TrainingMemoryError,_MemoryRecorder,_logical_summary,
+                              _rss_summary,_memory_diagnostics,_validate_stage_pairs)
 from .training_memory import _cuda
 from ._training_process import _launch,_bounded_read
 from ._saved_activation import _SavedActivationRecorder, _validate_activation
@@ -75,11 +76,16 @@ class TrainingMemoryRecipe:
 
 @dataclass(frozen=True)
 class IsolatedTrainingMemoryProtocol:
+    """Owned-worker deadlines and evidence bounds; RAM/allocator limits opt-in.
+
+    None leaves the corresponding OS memory/allocator quota unset. Process-tree
+    ownership, timeout and bounded publication remain independent of those limits.
+    """
     timeout_seconds:float=60.
-    process_memory_bytes:int=4*1024**3
-    job_memory_bytes:int=8*1024**3
+    process_memory_bytes:int|None=None
+    job_memory_bytes:int|None=None
     max_processes:int=4
-    cuda_memory_fraction:float=.15
+    cuda_memory_fraction:float|None=None
     max_result_bytes:int=16*1024**2
     max_log_bytes:int=65536
     deterministic:bool=True
@@ -96,11 +102,15 @@ class IsolatedTrainingMemoryProtocol:
                 ("job_memory_bytes",512*1024**2,64*1024**3),("max_processes",1,16),
                 ("max_result_bytes",16384,64*1024**2),("max_log_bytes",1024,1048576),("max_windows",1,100000),
                 ("max_saved_tensors",1,100000),("max_saved_tensor_events",1,400000)):
-            value=getattr(self,name);_int(value,minimum)
+            value=getattr(self,name)
+            if name in ("process_memory_bytes","job_memory_bytes") and value is None:continue
+            _int(value,minimum)
             if value>maximum:raise ValueError(name+" exceeds ceiling")
-        if self.job_memory_bytes<self.process_memory_bytes:raise ValueError("job memory must cover one process")
+        if (self.job_memory_bytes is not None and self.process_memory_bytes is not None
+                and self.job_memory_bytes<self.process_memory_bytes):raise ValueError("job memory must cover one process")
         for name,maximum in (("timeout_seconds",3600),("cuda_memory_fraction",1)):
             value=getattr(self,name)
+            if name=="cuda_memory_fraction" and value is None:continue
             if type(value) not in (int,float) or not math.isfinite(value) or not 0<value<=maximum:raise ValueError("invalid "+name)
         if any(type(v) is not bool for v in (self.deterministic,self.allow_peak_reset,self.saved_activation_lifetime)):raise TypeError("boolean policy required")
         if type(self.memory_protocol) is not TrainingMemoryProtocol or type(self.timing_protocol) is not TrainingTimingProtocol:
@@ -171,6 +181,7 @@ class _IsolatedRecorder(_MemoryRecorder):
             self.activation.context=dict(epoch_id=self.epoch["epoch_id"],microbatch_id=microbatch_id,window_id=self.window_id)
 
     def stage_begin(self,name):
+        super().stage_begin(name)
         if self.activation is not None:self.activation.stage=name
 
     def stage_end(self,name):
@@ -211,7 +222,9 @@ def _run_recipe(request):
         raise NotImplementedError("CUDA saved-activation adapter disabled: P23 R1 native-crash gate unresolved (0xC0000409)")
     if device.type=="cuda":
         if not torch.cuda.is_available() or device.index>=torch.cuda.device_count():raise NotImplementedError("requested CUDA device unavailable")
-        torch.cuda.set_device(device);torch.cuda.set_per_process_memory_fraction(protocol.cuda_memory_fraction,device)
+        torch.cuda.set_device(device)
+        if protocol.cuda_memory_fraction is not None:
+            torch.cuda.set_per_process_memory_fraction(protocol.cuda_memory_fraction,device)
         if torch.cuda.get_allocator_backend()!="native":raise NotImplementedError("only native CUDA allocator is validated")
     torch.set_num_threads(1)
     if protocol.deterministic:
@@ -247,7 +260,7 @@ def _run_recipe(request):
                 protocol=protocol.timing_protocol,save_last_to=recipe["save_last_to"],resume_from=recipe["resume_from"],
                 recorder_factory=factory_recorder)
         recorder=captured[0]
-        if recorder.errors:raise RuntimeError("RSS sampler failure: "+recorder.errors[0])
+        if recorder.errors:raise TrainingMemoryError("RSS sampler failure: "+recorder.errors[0])
         projection=timing._export_data()
         projection["limitations"][1]="P19 projection of isolated P23 memory capture; no P20 stage timing"
         projection["instrumentation"]["event_policy"]="P19 bounded event pairs; memory queries do not record events"
@@ -328,7 +341,7 @@ def _validate(data):
     uuid.UUID(data["probe_id"]);recipe=TrainingMemoryRecipe(**data["recipe"]).to_dict();protocol=_protocol(data["protocol"])
     if recipe["device"]!=protocol.memory_protocol.device:raise ValueError("recipe/protocol device mismatch")
     outcome=data["outcome"]
-    if outcome not in ("success","unsupported","workload_exception","resource_limit","timeout","oom","native_crash","invalid_receipt"):
+    if outcome not in ("success","unsupported","workload_exception","measurement_error","resource_limit","timeout","oom","native_crash","invalid_receipt"):
         raise ValueError("invalid isolated outcome")
     receipt=data["receipt"]
     if receipt is not None:
@@ -368,6 +381,7 @@ def _validate(data):
     for boundary,kind in (("pre_microbatch","microbatch"),("post_backward","microbatch"),("pre_attempt","attempt"),("post_attempt","attempt")):
         if [r[kind+"_id"] for r in boundaries if r["boundary"]==boundary]!=[r[kind+"_id"] for r in source["observations"] if r["kind"]==kind]:raise ValueError("boundary/source ledger mismatch")
     if total>protocol.memory_protocol.max_tensor_records:raise ValueError("unbounded logical records")
+    _validate_stage_pairs(boundaries)
     rss=measured["rss"]
     if len(rss["observations"])>protocol.memory_protocol.max_samples or rss["summary"]!=_rss_summary(rss["observations"],rss["reason"]):raise ValueError("invalid RSS evidence")
     last=hwm=0;backend=None
@@ -397,6 +411,14 @@ class IsolatedTrainingMemoryResult:
     def to_dict(self):return json.loads(self._payload)
     def _export_data(self):
         data=_plain(self.to_dict());self._check(data);return data
+    def diagnostics(self):
+        """Independent core/peak/activation coverage without changing v1 exports."""
+        data=self._export_data();measurement=data["measurement"]
+        if measurement is None:
+            return dict(core_status="not_executed",outcome=data["outcome"],reason=data["reason"],
+                        scope="isolated_recipe_fit")
+        return _memory_diagnostics(measurement["boundaries"],measurement["rss"],data["recipe"]["device"],
+            isolated=True,windows=measurement["windows"],activation=measurement["activation"])
     def to_json(self,path,*,overwrite=False):
         _write_export(path,json.dumps(self._export_data(),sort_keys=True,ensure_ascii=False,indent=2,allow_nan=False)+"\n",overwrite)
     def to_csv(self,path,*,overwrite=False):
@@ -433,7 +455,7 @@ def _classify(receipt,worker,token):
     if receipt["exit_code"]!=0:return "invalid_receipt","bootstrap/publication failed with Python exit status"
     if worker is None or worker.get("token")!=token or worker.get("pid")!=receipt["launcher_pid"]:
         return "invalid_receipt","worker token/PID/result mismatch"
-    if set(worker) not in ({"token","pid","status","reason","measurement"},{"token","pid","status","reason"}) or worker["status"] not in ("success","unsupported","workload_exception","resource_limit","oom"):
+    if set(worker) not in ({"token","pid","status","reason","measurement"},{"token","pid","status","reason"}) or worker["status"] not in ("success","unsupported","workload_exception","measurement_error","resource_limit","oom"):
         return "invalid_receipt","unrecognized worker outcome"
     return worker["status"],worker["reason"]
 
