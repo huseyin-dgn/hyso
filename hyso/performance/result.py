@@ -59,7 +59,7 @@ def _validate(data, kind):
                                "precision": ["P08"], "capacity": ["P17"],
                                "operator_profile": ["P14"], "layer_profile": ["P13"],
                                "operation_count": ["P12"], "transfer": ["P15"],
-                               "utilization": ["P16"]}[kind]:
+                               "utilization": ["P16"], "roofline": ["P18"]}[kind]:
         raise ValueError("invalid feature identity")
     if data["identity"].get("experiment_run_id") is not None:
         raise ValueError("associate experiment run externally; result identity is immutable")
@@ -69,6 +69,10 @@ def _validate(data, kind):
             raise ValueError("missing model/input/runtime provenance")
     if type(protocol["version"]) is not int or protocol["version"] != 1:
         raise ValueError("unsupported protocol version")
+    if kind == 'roofline':
+        from .roofline import _validate_roofline
+        _validate_roofline(data)
+        return
     if kind == 'transfer':
         from .transfers import _validate_transfer
         _validate_transfer(data)
@@ -362,6 +366,47 @@ class LayerProfileResult(_Result):
 class OperationCountResult(_Result):
     __slots__ = ()
     _kind = 'operation_count'
+
+
+@dataclass(frozen=True, init=False)
+class RooflineResult(_Result):
+    __slots__ = ()
+    _kind = 'roofline'
+
+    def to_json(self,path,*,overwrite=False):
+        data=RooflineResult(self.to_dict()).to_dict()
+        _write_export(path,json.dumps(data,ensure_ascii=False,allow_nan=False,sort_keys=True,indent=2)+'\n',overwrite)
+
+    def to_csv(self,path,*,overwrite=False):
+        data=RooflineResult(self.to_dict()).to_dict()
+        columns=['format','schema_version','result_id','payload']
+        row={k:data[k] for k in columns if k!='payload'};row['payload']=json.dumps(data,allow_nan=False)
+        _write_export(path,_csv_text(columns,[row]),overwrite)
+
+    @classmethod
+    def from_json(cls,path):
+        from pathlib import Path
+        path=Path(path)
+        if path.stat().st_size>128*1024**2:raise ValueError('oversized roofline evidence')
+        return cls(json.loads(path.read_text(encoding='utf-8')))
+
+    @classmethod
+    def from_csv(cls,path):
+        import csv
+        from pathlib import Path
+        if Path(path).stat().st_size>128*1024**2:raise ValueError('oversized roofline evidence')
+        previous=csv.field_size_limit()
+        try:
+            csv.field_size_limit(128*1024**2)
+            with open(path,encoding='utf-8',newline='') as stream:
+                reader=csv.DictReader(stream)
+                if reader.fieldnames!=['format','schema_version','result_id','payload']:raise ValueError('invalid P18 CSV columns')
+                rows=list(reader)
+        finally:csv.field_size_limit(previous)
+        if len(rows)!=1:raise ValueError('one canonical P18 envelope required')
+        result=cls(json.loads(rows[0]['payload']));data=result.to_dict()
+        if any(rows[0][k]!=str(data[k]) for k in ('format','schema_version','result_id')):raise ValueError('P18 CSV identity mismatch')
+        return result
 
 
 @dataclass(frozen=True, init=False)

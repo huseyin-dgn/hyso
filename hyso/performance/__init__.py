@@ -36,6 +36,8 @@ from .memory_trend import RetentionTracker, analyze_memory_trend
 from .energy import observe_nvidia_power, analyze_energy
 from .devices import DeviceProtocol, compare_devices
 from .providers import ProviderProtocol, profile_execution_providers
+from .roofline import RooflineProtocol,RooflineReference,analyze_roofline,measure_roofline
+from .result import RooflineResult
 
 __all__ = ["TailPolicy", "ThroughputProtocol", "analyze_latency", "measure_throughput",
            "LatencyAnalysis", "ThroughputResult", "MemoryProtocol", "measure_memory", "measure_footprint",
@@ -60,4 +62,5 @@ __all__ = ["TailPolicy", "ThroughputProtocol", "analyze_latency", "measure_throu
     "RuntimeResult", "WorkloadRecipe", "StabilityProtocol", "InferenceWorkload", "measure_stability", "reopen_stability",
     "StreamSource", "StreamProtocol", "FrameInferenceProcessor", "measure_streaming", "RetentionTracker",
     "analyze_memory_trend", "observe_nvidia_power", "analyze_energy",
-    "DeviceProtocol", "compare_devices", "ProviderProtocol", "profile_execution_providers"]
+    "DeviceProtocol", "compare_devices", "ProviderProtocol", "profile_execution_providers",
+    "RooflineProtocol", "RooflineReference", "RooflineResult", "analyze_roofline", "measure_roofline"]
