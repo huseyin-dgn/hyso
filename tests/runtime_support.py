@@ -7,6 +7,7 @@ from hyso.performance import InferenceWorkload, FrameInferenceProcessor, Retenti
 
 
 def make_cpu(mode='normal', delay=.005):
+    if mode=='setup_oom':raise MemoryError('controlled constructor OOM receipt')
     model=nn.Sequential(nn.Flatten(),nn.Linear(12,2))
     base=InferenceWorkload(model,torch.ones(2,3,2,2))
     class Work:
@@ -20,10 +21,12 @@ def make_cpu(mode='normal', delay=.005):
             if mode=='hang':time.sleep(60)
             if mode=='crash':os._exit(17)
             if mode=='exception':raise RuntimeError('intentional real step failure')
+            if mode=='oom':raise torch.cuda.OutOfMemoryError('controlled OOM exception without allocation stress')
+            if mode=='device_error':raise RuntimeError('CUDA error: controlled device error receipt')
             if mode=='retain':
                 tensor=torch.ones(32768);self.retention_tracker.watch(tensor,label='allocation-'+str(self.calls));self.held.append(tensor)
             if mode=='release':self.held.clear()
-            time.sleep(delay)
+            time.sleep(delay+min(self.calls//20,5)*.002 if mode=='slowdown' else delay)
             return base.step()
         def close(self):
             if mode=='close_hang':time.sleep(60)
@@ -46,13 +49,14 @@ def make_frames(delay=.03,mode='normal'):
     return Processor()
 
 
-def make_gpu(gpu_uuid):
+def make_gpu(gpu_uuid,cuda_memory_fraction=None):
     model=nn.Sequential(nn.Conv2d(3,4,3,padding=1),nn.ReLU(),nn.AdaptiveAvgPool2d(1),nn.Flatten(),nn.Linear(4,2))
-    return InferenceWorkload(model,torch.ones(2,3,16,16),device='cuda:0',gpu_uuid=gpu_uuid)
+    return InferenceWorkload(model,torch.ones(2,3,16,16),device='cuda:0',gpu_uuid=gpu_uuid,cuda_memory_fraction=cuda_memory_fraction)
 
 
 def make_gpu_cache(gpu_uuid):
-    base=InferenceWorkload(nn.Sequential(nn.Flatten(),nn.Linear(12,2)),torch.ones(2,3,2,2),device='cuda:0',gpu_uuid=gpu_uuid)
+    base=InferenceWorkload(nn.Sequential(nn.Flatten(),nn.Linear(12,2)),torch.ones(2,3,2,2),device='cuda:0',gpu_uuid=gpu_uuid,
+                           cuda_memory_fraction=.1)  # Explicit test-only cache probe guard.
     base.step()  # Settle lazy GEMM workspace before the observed cache probe.
     class Cache:
         identity=dict(base.identity,setup_warmup_forwards=1,controlled_temporary_bytes=[2*1024**2,8*1024**2,16*1024**2])

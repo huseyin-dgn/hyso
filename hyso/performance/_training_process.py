@@ -40,8 +40,9 @@ class _Job:
         self.api,self.Accounting,self.Extended = api,Accounting,Extended
         self.handle = api.CreateJobObjectW(None,None)
         if not self.handle:raise OSError(c.get_last_error(),"CreateJobObjectW")
-        info=Extended();info.basic.flags=0x2000|0x8
-        info.basic.processes=processes
+        info=Extended();info.basic.flags=0x2000
+        if processes is not None:
+            info.basic.flags|=0x8;info.basic.processes=processes
         # Ownership/cleanup remain mandatory; memory quotas are caller opt-in.
         if process_bytes is not None:
             info.basic.flags|=0x100;info.process_memory=process_bytes

@@ -78,6 +78,13 @@ class RuntimeResult:
     def to_dict(self):
         return json.loads(self._payload)
 
+    def stability_diagnostics(self):
+        """P31 descriptive diagnostics; legacy JSON/CSV schemas stay intact."""
+        data=RuntimeResult(self.to_dict()).to_dict()
+        if data['feature_id']!='P31':raise TypeError('P31 result required')
+        from ._stability_diagnostics import _diagnostics
+        return _diagnostics(data['evidence'],data['analysis'])
+
     def to_json(self, path, *, overwrite=False):
         _write_export(path, json.dumps(self.to_dict(), indent=2, allow_nan=False)+'\n', overwrite)
 

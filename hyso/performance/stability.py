@@ -38,6 +38,11 @@ class WorkloadRecipe:
 
 @dataclass(frozen=True)
 class StabilityProtocol:
+    """Owned run/evidence bounds; memory and process-count quotas are opt-in.
+
+    OS memory limits constrain private commit, not RSS. Ownership and deadlines
+    remain active when quotas are None; no free-memory admission gate is used.
+    """
     duration_seconds: float = 1.
     interval_seconds: float = .1
     idle_seconds: float = 0.
@@ -47,6 +52,9 @@ class StabilityProtocol:
     chunk_rows: int = 64
     max_journal_bytes: int = 128*1024**2
     seed: int = 0
+    process_memory_bytes: int | None = None
+    job_memory_bytes: int | None = None
+    max_processes: int | None = None
 
     def __post_init__(self):
         for x in (self.duration_seconds,self.interval_seconds,self.startup_timeout_seconds,self.step_timeout_seconds):_number(x,1e-3)
@@ -56,6 +64,11 @@ class StabilityProtocol:
                 or self.step_timeout_seconds<3*self.interval_seconds):raise ValueError('unsupported duration/heartbeat budget')
         _int(self.max_samples,3,10000);_int(self.chunk_rows,1,512)
         _int(self.max_journal_bytes,65536,256*1024**2);_int(self.seed,0,2**32-1)
+        for limit in (self.process_memory_bytes,self.job_memory_bytes):
+            if limit is not None:_int(limit,1)
+        if self.max_processes is not None:_int(self.max_processes,1,2**32-1)
+        if (self.process_memory_bytes is not None and self.job_memory_bytes is not None
+                and self.process_memory_bytes>self.job_memory_bytes):raise ValueError('job memory must cover one process')
         if math.ceil((self.duration_seconds+self.idle_seconds)/self.interval_seconds)+4>self.max_samples:
             raise ValueError('requested duration exceeds sample budget; select a larger interval')
 
@@ -115,7 +128,11 @@ def _run_owned(root, mode, request, *, startup_timeout, heartbeat_timeout, max_r
                 runtime_paths=[p for p in sys.path if Path(p).is_dir() and Path(p).name in ('site-packages','dist-packages')])
     if not config['runtime_paths']:raise RuntimeError('cannot reproduce runtime site paths')
     (root/'request.json').write_text(json.dumps(config,allow_nan=False),encoding='utf-8')
-    job=_Job(4*1024**3,6*1024**3,4);process=None;cleanup=None;reason=None
+    # P31 resource quotas are opt-in; unrelated runtime adapters retain their policy.
+    limits=((request['protocol'].get('process_memory_bytes'),request['protocol'].get('job_memory_bytes'))
+            if mode=='stability' else (4*1024**3,6*1024**3))
+    process_limit=request['protocol'].get('max_processes') if mode=='stability' else 4
+    job=_Job(*limits,process_limit);process=None;cleanup=None;reason=None;interrupted=None
     started=time.monotonic();ready_seen=None;last_beat=None;last_mtime=None
     stdout=root/'stdout.txt';stderr=root/'stderr.txt'
     try:
@@ -142,6 +159,10 @@ def _run_owned(root, mode, request, *, startup_timeout, heartbeat_timeout, max_r
                 if (sum(_size_if_present(p) for p in files)>max_bytes
                         or stdout.stat().st_size+stderr.stat().st_size>65536):reason='resource_limit';break
                 time.sleep(.02)
+    except BaseException as error:
+        if mode!='stability':raise
+        reason='controller_interrupted' if isinstance(error,(KeyboardInterrupt,SystemExit)) else 'controller_error'
+        interrupted=error
     finally:
         try:
             job.terminate()
@@ -155,10 +176,14 @@ def _run_owned(root, mode, request, *, startup_timeout, heartbeat_timeout, max_r
                 time.sleep(.01)
         finally:job.close()
     if cleanup is None or cleanup['active_processes']!=0:raise RuntimeError('owned process tree cleanup failed')
+    if interrupted is not None and process is None:raise interrupted
     controller=dict(token=token,launcher_pid=process.pid,exit_code=process.returncode,reason=reason,
         elapsed_seconds=time.monotonic()-started,cleanup=cleanup,kill_on_close=True,
         stderr_tail=stderr.read_bytes()[-4096:].decode('utf-8',errors='replace'))
+    if mode=='stability':controller['memory_limits']=dict(process_memory_bytes=limits[0],job_memory_bytes=limits[1])
+    if mode=='stability':controller['process_limit']=process_limit
     _atomic(root/'controller.json',controller)
+    if interrupted is not None:raise interrupted
     return root
 
 
@@ -195,9 +220,12 @@ def _read_journal(root):
         chunks.append(dict(name=path.name,sha256=previous,rows=len(chunk['rows'])))
     if terminal and (terminal['last_chunk_sha256']!=previous or terminal['chunks']!=chunks):
         raise ValueError('terminal journal manifest mismatch')
-    return dict(request={k:request[k] for k in ('token','recipe','protocol','source') if k in request},header=header,rows=rows,
+    evidence=dict(request={k:request[k] for k in ('token','recipe','protocol','source') if k in request},header=header,rows=rows,
                 chunks=chunks,terminal=terminal,controller=controller,
                 incomplete_tail=any(root.glob('*.tmp')))
+    if request['mode']=='stability' and (root/'worker_failure.json').exists():
+        evidence['worker_failure']=_load(root/'worker_failure.json',16384)
+    return evidence
 
 
 def reopen_stability(directory):
@@ -213,15 +241,24 @@ def _analyze_stability(e):
     if type(c['exit_code']) is not int:raise ValueError('invalid worker exit code')
     if c['token']!=e['request']['token'] or c['cleanup']['active_processes']!=0 or c['kill_on_close'] is not True:
         raise ValueError('controller identity/cleanup mismatch')
+    if 'memory_limits' in c and c['memory_limits']!=dict(process_memory_bytes=p.process_memory_bytes,job_memory_bytes=p.job_memory_bytes):
+        raise ValueError('controller resource policy mismatch')
+    if 'process_limit' in c and c['process_limit']!=p.max_processes:raise ValueError('controller process policy mismatch')
     rows=e['rows'];header=e['header'];terminal=e['terminal']
+    worker_failure=e.get('worker_failure')
+    if worker_failure is not None and (worker_failure['token']!=c['token'] or worker_failure['pid']!=c['launcher_pid']
+            or worker_failure['kind'] not in ('oom','device_error','workload_exception','measurement_error')):
+        raise ValueError('worker failure identity/category mismatch')
     if len(rows)>p.max_samples:raise ValueError('excess journal rows')
     if header is None:
         if rows or e['chunks'] or terminal:raise ValueError('rows without header')
-        return dict(status='aborted',reason=c['reason'] or 'worker_setup_failed',completed=0,
+        return dict(status='aborted',reason=c['reason'] or (worker_failure['kind'] if worker_failure else 'worker_setup_failed'),completed=0,
                     steps=0,completed_per_second=None,duration_seconds=None,
                     requested_duration_seconds=p.duration_seconds,coverage='none')
     if header['run_id']!=e['request']['token'] or header['pid']!=c['launcher_pid']:
         raise ValueError('journal worker/run association mismatch')
+    if e['request']['recipe'].get('gpu_uuid') is not None and header['workload']['device_id']!=e['request']['recipe']['gpu_uuid']:
+        raise ValueError('workload physical GPU association mismatch')
     if _hash(header['protocol'])!=_hash(e['request']['protocol']):raise ValueError('journal protocol mismatch')
     if header['source']['factory']!=e['request']['recipe']['factory'] or header['source']['configuration']!=e['request']['recipe']['configuration']:
         raise ValueError('workload source association mismatch')
@@ -292,6 +329,8 @@ def _analyze_stability(e):
         complete=(terminal['status']=='completed' and terminal['closed'] is True and not failures and last_steps>0
             and elapsed>=p.duration_seconds and c['reason'] is None and c['exit_code']==0 and not e['incomplete_tail'])
     from .utilization import _cpu_intervals
+    from ._stability_diagnostics import _validate_extensions
+    _validate_extensions(rows,terminal,header)
     cpu_intervals=_cpu_intervals(cpu,header['runtime']['logical_cores'],int(p.interval_seconds*1e9))
     return dict(status='completed' if complete else 'aborted',reason=None if complete else c['reason'] or
         ((terminal['reason'] or 'duration_or_completion_coverage_not_met') if terminal else 'missing_terminal'),completed=last_completed,steps=last_steps,
@@ -308,12 +347,19 @@ def _analyze_stability(e):
 
 
 class InferenceWorkload:
-    """Trusted factory helper: isolated eager model, synchronous actual completions."""
-    def __init__(self, model, inputs, *, device='cpu', gpu_uuid=None):
+    """Trusted eager helper with synchronous completions and validation overhead.
+
+    cuda_memory_fraction=None leaves the allocator quota unset. An explicit
+    fraction constrains only the admitted worker allocator, not physical VRAM.
+    """
+    def __init__(self, model, inputs, *, device='cpu', gpu_uuid=None, cuda_memory_fraction=None):
         import copy
         import torch
         from hyso.benchmark.runner import _profile,_descriptor,_Snapshot,_output
         self.torch=torch;self.device=torch.device(device)
+        if cuda_memory_fraction is not None:
+            _number(cuda_memory_fraction,1e-9)
+            if cuda_memory_fraction>1 or self.device.type!='cuda':raise ValueError('explicit CUDA allocator fraction in (0,1] required')
         if self.device.type not in ('cpu','cuda'):raise NotImplementedError('CPU/CUDA only')
         if self.device.type=='cuda' and os.environ.get('HYSO_RUNTIME_ADMITTED_PID')!=str(os.getpid()):
             raise ValueError('CUDA helper requires an admitted owned runtime worker')
@@ -321,13 +367,15 @@ class InferenceWorkload:
             raise ValueError('CUDA worker requires one explicit UUID-visible device')
         if self.device.type=='cuda':
             self.device=torch.device('cuda',0)
-            torch.cuda.set_per_process_memory_fraction(.1,self.device)
+            if cuda_memory_fraction is not None:
+                torch.cuda.set_per_process_memory_fraction(cuda_memory_fraction,self.device)
         self.model=copy.deepcopy(model).to(self.device).eval();self.inputs=inputs.detach().clone().to(self.device).contiguous()
         modules,entries=_profile(self.model,self.inputs.dtype,self.device)
         descriptor,digest=_descriptor(modules,entries)
         self.guard=_Snapshot(modules,entries,self.inputs);self.validate_output=_output
         self.identity=dict(kind='model_inference',unit='image',device_id=gpu_uuid if self.device.type=='cuda' else 'cpu',
-            model_sha256=digest,structural_descriptor=descriptor,input_shape=list(self.inputs.shape),backend='pytorch_eager')
+            model_sha256=digest,structural_descriptor=descriptor,input_shape=list(self.inputs.shape),backend='pytorch_eager',
+            cuda_memory_fraction=cuda_memory_fraction)
 
     def step(self):
         with self.torch.inference_mode():
@@ -366,7 +414,8 @@ def _worker_stability(root, request):
         torch=str(torch.__version__),platform=platform.platform(),logical_cores=os.cpu_count() or 1))
     journal=_Journal(root,header,p.chunk_rows,p.max_samples)
     _atomic(root/'ready.json',dict(pid=os.getpid(),token=request['token']))
-    completed=steps=work_ns=0;last_completion=None;failure=None;closed=False;start=end=0
+    completed=steps=work_ns=attempted=0;last_completion=None;failure=None;closed=False;start=end=0
+    mean_ns=m2_ns2=0.;minimum=maximum=None;failure_kind=None;stage='telemetry'
     def sample(phase, error=None):
         try:rss=_observe()
         except (OSError,RuntimeError):rss=None
@@ -374,13 +423,20 @@ def _worker_stability(root, request):
         except (OSError,NotImplementedError):cpu=None
         allocator=None
         if identity['device_id']!='cpu' and torch.cuda.is_initialized():
-            allocator=dict(device_id=identity['device_id'],allocated_bytes=torch.cuda.memory_allocated(0),reserved_bytes=torch.cuda.memory_reserved(0))
+            query_start=time.perf_counter_ns()
+            allocator=dict(device_id=identity['device_id'],allocated_bytes=torch.cuda.memory_allocated(0),reserved_bytes=torch.cuda.memory_reserved(0),
+                           query_start_ns=query_start,query_end_ns=time.perf_counter_ns())
         from .energy import observe_nvidia_power
         gpu=observe_nvidia_power(identity['device_id'],clock_id=header['clock_id'],timeout_seconds=1.) if identity['device_id']!='cpu' else dict(status='not_requested')
+        gpu_utilization=(_telemetry.gpu_observe(identity['device_id'],1.) if identity['device_id']!='cpu'
+                         else dict(status='not_requested'))
         tracker=getattr(workload,'retention_tracker',None)
         retention=tracker.snapshot() if tracker is not None else None
         journal.append(dict(timestamp_ns=time.perf_counter_ns(),phase=phase,completed=completed,steps=steps,work_ns=work_ns,
-            last_completion_ns=last_completion,rss=rss,cpu=cpu,allocator=allocator,gpu=gpu,retention=retention,failure=error))
+            last_completion_ns=last_completion,rss=rss,cpu=cpu,allocator=allocator,gpu=gpu,retention=retention,failure=error,
+            attempted_steps=attempted,failure_kind=failure_kind,
+            step_timing=dict(count=steps,mean_ns=mean_ns if steps else None,m2_ns2=m2_ns2,min_ns=minimum,max_ns=maximum),
+            gpu_utilization=gpu_utilization))
         _atomic(root/'heartbeat.json',dict(sequence=journal.count))
     try:
         idle_deadline=time.perf_counter()+p.idle_seconds
@@ -389,21 +445,41 @@ def _worker_stability(root, request):
         start=time.perf_counter_ns();due=start
         sample('work');due+=int(p.interval_seconds*1e9)
         while time.perf_counter_ns()-start<p.duration_seconds*1e9:
+            stage='step';attempted+=1
             a=time.perf_counter_ns();count=workload.step();b=time.perf_counter_ns()
             _int(count,1);completed+=count;steps+=1;work_ns+=b-a;last_completion=b
+            duration=b-a;delta=duration-mean_ns;mean_ns+=delta/steps;m2_ns2+=delta*(duration-mean_ns)
+            minimum=duration if minimum is None else min(minimum,duration)
+            maximum=duration if maximum is None else max(maximum,duration)
+            stage='telemetry'
             if b>=due:
                 sample('work');due=time.perf_counter_ns()+int(p.interval_seconds*1e9)
         end=time.perf_counter_ns();sample('terminal')
     except Exception as exc:
         failure=type(exc).__name__+': '+str(exc)[:1024];end=time.perf_counter_ns()
+        kind=_failure_kind(exc)
+        failure_kind=kind if stage=='step' or kind in ('oom','device_error') else 'measurement_error'
         if start==0:start=end
         try:sample('failure',failure)
         except Exception:pass
     finally:
         try:workload.close();closed=True
-        except Exception as exc:failure=failure or 'close: '+str(exc)[:1024]
+        except Exception as exc:
+            failure=failure or 'close: '+str(exc)[:1024];failure_kind=failure_kind or _failure_kind(exc)
         journal.flush()
         terminal=dict(status='completed' if failure is None else 'failed',reason=failure,closed=closed,
             work_start_ns=start,work_end_ns=end,completed=completed,steps=steps,rows=journal.count,
-            chunks=journal.chunks,last_chunk_sha256=journal.previous)
+            chunks=journal.chunks,last_chunk_sha256=journal.previous,attempted_steps=attempted,failure_kind=failure_kind)
         _atomic(root/'terminal.json',terminal)
+
+
+def _failure_kind(error):
+    """Classify actual exceptions; device occupancy never establishes a cause."""
+    import torch
+    if isinstance(error,(MemoryError,torch.cuda.OutOfMemoryError)) or (
+            isinstance(error,RuntimeError) and 'DefaultCPUAllocator: not enough memory' in str(error)):
+        return 'oom'
+    if isinstance(error,RuntimeError) and any(marker in str(error) for marker in
+            ('CUDA error:', 'CUDA driver error:', 'device-side assert', 'device lost')):
+        return 'device_error'
+    return 'workload_exception'
