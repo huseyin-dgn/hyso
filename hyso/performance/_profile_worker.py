@@ -156,7 +156,7 @@ def main():
     _ready(ready_path,'bootstrap')
     request=json.loads(Path(request_path).read_text(encoding='utf-8'));r=request['recipe'];p=request['protocol']
     body=dict(worker_pid=os.getpid(),status='failed',reason=None,cleanup={},result=None)
-    guard=None;snapshot=None;saved_hooks=None;rng=None;cuda_rng=None;device=None;stream=None;handles=[];active=[];timer=None
+    guard=None;snapshot=None;saved_hooks=None;rng=None;cuda_rng=None;device=None;stream=None;handles=[];active=[];timer=None;allocation=None
     try:
         # This existing Windows guard owns only this fresh process and disallows children.
         spec=importlib.util.spec_from_file_location('hyso_profile_memory_guard',Path(__file__).with_name('_batch_worker.py'))
@@ -205,6 +205,9 @@ def main():
             out=forward();_output(out,inputs.shape[0],device=device);del out
         snapshot.check(full=True);_context_check(device,stream)
         if stream is not None:stream.synchronize()
+        if p.get('allocation_lifetimes') and request.get('experiment_mode')!='control':
+            from hyso.performance._layer_allocator import AllocationRecorder
+            allocation=AllocationRecorder(torch,device,p['max_events'])
         if request.get('experiment_mode')=='control':
             windows=[]
             for iteration in range(p['measure_iterations']):
@@ -230,6 +233,7 @@ def main():
                 def __torch_dispatch__(self,func,types,args=(),kwargs=None):
                     if timer is not None:timer.check(str(func))
                     kwargs=kwargs or {};out=func(*args,**kwargs)
+                    if allocation is not None:allocation.observe([args,kwargs,out])
                     if timer is not None:timer.check(str(func))
                     if str(func).startswith('profiler.'):return out
                     if len(calls)>=p['max_events']:raise RuntimeError('dispatch evidence budget exceeded')
@@ -250,6 +254,7 @@ def main():
                     annotation=prefix+str(i),input_shapes=_meta([args,kwargs]),output_shapes=None,
                     cpu_total_us=None,cpu_exclusive_us=None,cuda_activity_us=None)
                 invocations.append(row)
+                if allocation is not None:allocation.begin(i,[args,kwargs])
                 if timer is not None:timer.begin(i,measurement_index)
                 context=torch.profiler.record_function(row['annotation']);context.__enter__()
                 active.append((i,context));by_module.setdefault(id(m),[]).append(i)
@@ -260,6 +265,7 @@ def main():
                 if not active or active[-1][0]!=i:raise RuntimeError('module call nesting unsupported')
                 if timer is not None:timer.end(i)
                 _,ctx=active.pop();ctx.__exit__(None,None,None)
+                if allocation is not None:allocation.end(i,out,modules)
             for _,m in modules:
                 handles.append(m.register_forward_pre_hook(pre,with_kwargs=True))
                 handles.append(m.register_forward_hook(post,with_kwargs=True,always_call=True))
@@ -267,7 +273,7 @@ def main():
             if stream is not None:activities.append(torch.profiler.ProfilerActivity.CUDA)
             supported=[str(a).split('.')[-1] for a in torch.profiler.supported_activities()]
             capture_start=time.perf_counter_ns();host_windows=[]
-            with torch.profiler.profile(activities=activities,record_shapes=True,profile_memory=p.get('profile_memory',False),
+            with torch.profiler.profile(activities=activities,record_shapes=not p.get('allocation_lifetimes',False),profile_memory=p.get('profile_memory',False),
                                         with_stack=False,with_flops=False) as prof:
                 _ready(ready_path,'profiler_active')
                 if stream is not None:timer=_CudaLayerTimer(torch,device,stream)
@@ -317,8 +323,8 @@ def main():
             status,reason=_profile_status(events,cuda_metrics)
             data=_base('operator_profile','P14',dict(id='isolated_torch_profiler',version=1,
                 scope='owned_worker_eval_inference_profile',configuration=p,recipe=r,
-                instrumentation=dict(record_shapes=True,profile_memory=p.get('profile_memory',False),with_stack=False,
-                    with_flops=False,module_hooks='worker_only',dispatch_observer='TorchDispatchMode_version_verified',evidence_version=5 if p.get('profile_memory',False) else 3)),
+                instrumentation=dict(record_shapes=not p.get('allocation_lifetimes',False),profile_memory=p.get('profile_memory',False),with_stack=False,
+                    with_flops=False,module_hooks='worker_only',dispatch_observer='TorchDispatchMode_version_verified',evidence_version=6 if p.get('allocation_lifetimes') else 5 if p.get('profile_memory',False) else 3)),
                 dict(model=dict(structural_descriptor=descriptor,weights_sha256=weights,execution_mode='owned_worker_eval'),
                     input=dict(shape=list(inputs.shape),dtype=str(inputs.dtype),content_sha256=digest,recipe='ones'),
                     environment=dict(device=str(device),torch=str(torch.__version__),python=sys.version,
@@ -352,9 +358,13 @@ def main():
                 'B4 native failure UNRESOLVED; risk OPEN.']
             if p.get('profile_memory',False):
                 from hyso.performance._layer_memory import memory_events,attribute_memory
-                memory=memory_events(trace,p['max_events'])
+                memory=memory_events(trace,p['max_events'],allocation_details=p.get('allocation_lifetimes',False))
                 data['raw_evidence']['memory_events']=memory
                 data['measurements']['layer_memory']=attribute_memory(memory,trace_events,invocations,inventory,str(device),analysis_version=2)
+            if allocation is not None:
+                from hyso.performance._layer_allocator import derive_allocator
+                data['raw_evidence']['allocation_evidence']=allocation.result()
+                data['measurements']['allocator_diagnostics']=derive_allocator(data['raw_evidence']['allocation_evidence'],memory,trace_events,invocations,inventory,str(device))
             if request.get('experiment_mode'):
                 data['raw_evidence']['overhead_experiment']=dict(mode='instrumented',windows_ms=host_windows,
                     output_sha256=output_digest,synchronization='device_before_and_after_each_forward' if stream is not None else 'synchronous_CPU',
@@ -367,6 +377,7 @@ def main():
     finally:
         cleanup=dict(hooks_preserved=True,rng_restored=True,state_preserved=True)
         try:
+            if allocation is not None:allocation.close();cleanup['allocation_history_closed']=True
             if timer is not None:cleanup['cuda_timing_observers_restored']=timer.close()
             while active:
                 _,ctx=active.pop();ctx.__exit__(None,None,None)

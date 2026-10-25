@@ -31,9 +31,11 @@ class ProfilingProtocol:
     max_events:int=20000
     max_trace_bytes:int=16*1024**2
     profile_memory:bool=False
+    allocation_lifetimes:bool=False
 
     def __post_init__(self):
         if type(self.profile_memory) is not bool:raise ValueError("profile_memory must be boolean")
+        if type(self.allocation_lifetimes) is not bool or self.allocation_lifetimes and not self.profile_memory:raise ValueError('allocation_lifetimes requires profile_memory=True')
         _integer(self.warmup_iterations);_integer(self.measure_iterations,1);_positive(self.timeout_seconds)
         if self.warmup_iterations+self.measure_iterations>100 or self.timeout_seconds>600:
             raise ValueError('bounded profile: at most100 forwards/600 seconds')
@@ -209,6 +211,10 @@ def profile_layers(source,*,protocol=ProfilingProtocol(),memory_analysis_version
     evidence. Ordinary analysis runs no extra forward or overhead experiment.
     memory_analysis_version=2 explicitly reanalyzes existing version4 allocation
     events with chronological observed net high-water; it needs no new capture.
+    allocation_lifetimes=True with profile_memory=True opts into new allocation
+    cohorts confirmed alive at module exit and native CUDA allocator peak history.
+    This disables profiler shape-reference retention, preserves dispatch shapes,
+    adds diagnostic overhead, and never claims physical RAM/VRAM peaks.
     """
     if memory_analysis_version is not None and (type(memory_analysis_version) is not int or memory_analysis_version!=2):
         raise ValueError('memory_analysis_version must be None or 2')
@@ -219,7 +225,7 @@ def profile_layers(source,*,protocol=ProfilingProtocol(),memory_analysis_version
     version=s['protocol']['instrumentation'].get('evidence_version',1)
     if memory_analysis_version==2:
         if version<4:raise ValueError('existing capture has no allocation event evidence')
-        version=5
+        version=max(version,5)
     if version>=2:
         evidence=dict(cuda_attribution=s['measurements']['cuda_attribution'],overhead=s['measurements']['overhead'])
         extra=dict(events=raw['events'],trace_events=raw['trace_events'],profile_measurements=evidence)
@@ -237,6 +243,14 @@ def profile_layers(source,*,protocol=ProfilingProtocol(),memory_analysis_version
             raw['invocations'],raw['module_inventory'],s['provenance']['environment']['device'],analysis_version=2 if version>=5 else 1)
         for module in data['measurements']['modules']:
             module['memory']=next(m['domains'] for m in data['measurements']['layer_memory']['modules'] if m['module_id']==module['module_id'])
+    if version>=6:
+        from ._layer_allocator import derive_allocator
+        extra_allocation=raw['allocation_evidence']
+        data['raw_evidence']['allocation_evidence']=extra_allocation
+        diagnostics=derive_allocator(extra_allocation,raw['memory_events'],raw['trace_events'],raw['invocations'],raw['module_inventory'],s['provenance']['environment']['device'])
+        data['measurements']['allocator_diagnostics']=diagnostics
+        for module in data['measurements']['modules']:
+            module['allocator']=next(m for m in diagnostics['modules'] if m['module_id']==module['module_id'])
     if evidence is not None:data['protocol']['profile_evidence_version']=version
     return LayerProfileResult(data)
 
@@ -270,7 +284,7 @@ def _validate_profile(data,kind):
         inventory=raw['module_inventory'];invocations=raw['invocations']
         validate_modules(inventory,invocations,p.measure_iterations)
         version=data['protocol']['instrumentation'].get('evidence_version',1)
-        if type(version) is not int or version not in (1,2,3,4,5):raise ValueError('invalid profiler evidence version')
+        if type(version) is not int or version not in (1,2,3,4,5,6):raise ValueError('invalid profiler evidence version')
         if version<4 and p.profile_memory:raise ValueError('memory tracing requires evidence version4')
         if version>=2:
             expected_rows=module_timings(inventory,invocations,raw['events'],p.measure_iterations)
@@ -285,6 +299,13 @@ def _validate_profile(data,kind):
                 _validate_memory_indices(raw,p.max_events)
                 if data['measurements']['layer_memory']!=attribute_memory(raw['memory_events'],raw['trace_events'],invocations,inventory,r['device'] if r['device']!='cuda' else 'cuda:0',analysis_version=2 if version>=5 else 1):
                     raise ValueError('unverified allocation attribution')
+        if version>=6:
+            from ._layer_allocator import derive_allocator
+            if not p.allocation_lifetimes:raise ValueError('allocator evidence not requested')
+            if data['protocol']['instrumentation']['record_shapes'] is not False or raw['safety'].get('allocation_history_closed') is not True:
+                raise ValueError('lifetime capture must disable shape retention and close history')
+            if data['measurements']['allocator_diagnostics']!=derive_allocator(raw['allocation_evidence'],raw['memory_events'],raw['trace_events'],invocations,inventory,_event_device(data,r)):
+                raise ValueError('invalid allocator lifetime/peak claim')
         mids={m['module_id'] for m in inventory}
         if len(mids)!=len(inventory):raise ValueError('duplicate module identity')
         if [v['invocation_id'] for v in invocations]!=list(range(len(invocations))):raise ValueError('invalid invocation IDs')
@@ -316,7 +337,7 @@ def _validate_profile(data,kind):
     else:
         validate_modules(raw['module_inventory'],raw['invocations'],p.measure_iterations)
         version=data['protocol'].get('profile_evidence_version',1);evidence=None;cuda_events=None
-        if type(version) is not int or version not in (1,2,3,4,5):raise ValueError('invalid layer evidence version')
+        if type(version) is not int or version not in (1,2,3,4,5,6):raise ValueError('invalid layer evidence version')
         if version<4 and p.profile_memory:raise ValueError('memory tracing requires evidence version4')
         if version>=2:
             expected_rows=module_timings(raw['module_inventory'],raw['invocations'],raw['events'],p.measure_iterations)
@@ -337,6 +358,13 @@ def _validate_profile(data,kind):
             expected_metrics['layer_memory']=attribute_memory(raw['memory_events'],raw['trace_events'],raw['invocations'],raw['module_inventory'],device,analysis_version=2 if version>=5 else 1)
             for module in expected_metrics['modules']:
                 module['memory']=next(m['domains'] for m in expected_metrics['layer_memory']['modules'] if m['module_id']==module['module_id'])
+        if version>=6:
+            from ._layer_allocator import derive_allocator
+            if not p.allocation_lifetimes:raise ValueError('allocator evidence not requested')
+            diagnostics=derive_allocator(raw['allocation_evidence'],raw['memory_events'],raw['trace_events'],raw['invocations'],raw['module_inventory'],device)
+            expected_metrics['allocator_diagnostics']=diagnostics
+            for module in expected_metrics['modules']:
+                module['allocator']=next(m for m in diagnostics['modules'] if m['module_id']==module['module_id'])
         if data['measurements']!=expected_metrics:
             raise ValueError('invalid module totals/ranking')
 
@@ -420,3 +448,17 @@ def _validate_memory_indices(raw,budget):
     for e in events:
         if type(e['trace_index']) is not int or not 0<=e['trace_index']<raw['trace']['event_count'] or e['trace_index'] in trace_indices:
             raise ValueError('invalid memory/trace association')
+
+
+def layer_profiling_capabilities():
+    """Build/API capabilities only; no CUDA initialization or fake native PASS."""
+    import torch
+    activities=sorted(str(a).split('.')[-1] for a in torch.profiler.supported_activities())
+    return dict(torch=str(torch.__version__),supported_activities=activities,
+        cuda_kernel_trace='available_requires_actual_trace_validation' if 'CUDA' in activities else 'unsupported_backend_capability',
+        kineto_available=bool(torch.profiler.kineto_available()),
+        cuda_allocator_history_API=torch.version.cuda is not None and hasattr(torch._C,'_cuda_memorySnapshot') and
+            all(hasattr(torch.cuda.memory,k) for k in ('_snapshot','_record_memory_history')),
+        allocator_history_runtime_validation='not_performed_by_capability_query',
+        kernel_trace_requires='runtime_build_with_CUDA_profiler_activity_and_actual_exported_kernel_events',
+        CUDA_Event_is_kernel_time=False,external_profiler_required=False)
