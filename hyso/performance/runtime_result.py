@@ -85,6 +85,13 @@ class RuntimeResult:
         from ._stability_diagnostics import _diagnostics
         return _diagnostics(data['evidence'],data['analysis'])
 
+    def provider_diagnostics(self):
+        """P35 observed providers, host Node durations and explicit fallback limits."""
+        data=RuntimeResult(self.to_dict()).to_dict()
+        if data['feature_id']!='P35':raise TypeError('P35 result required')
+        from .providers import _diagnostics
+        return _diagnostics(data['evidence'],data['analysis'])
+
     def to_json(self, path, *, overwrite=False):
         _write_export(path, json.dumps(self.to_dict(), indent=2, allow_nan=False)+'\n', overwrite)
 

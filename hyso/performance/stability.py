@@ -128,10 +128,10 @@ def _run_owned(root, mode, request, *, startup_timeout, heartbeat_timeout, max_r
                 runtime_paths=[p for p in sys.path if Path(p).is_dir() and Path(p).name in ('site-packages','dist-packages')])
     if not config['runtime_paths']:raise RuntimeError('cannot reproduce runtime site paths')
     (root/'request.json').write_text(json.dumps(config,allow_nan=False),encoding='utf-8')
-    # P31 resource quotas are opt-in; unrelated runtime adapters retain their policy.
+    # P31/P35 quotas are opt-in; unrelated runtime adapters retain their policy.
     limits=((request['protocol'].get('process_memory_bytes'),request['protocol'].get('job_memory_bytes'))
-            if mode=='stability' else (4*1024**3,6*1024**3))
-    process_limit=request['protocol'].get('max_processes') if mode=='stability' else 4
+            if mode in ('stability','providers') else (4*1024**3,6*1024**3))
+    process_limit=request['protocol'].get('max_processes') if mode in ('stability','providers') else 4
     job=_Job(*limits,process_limit);process=None;cleanup=None;reason=None;interrupted=None
     started=time.monotonic();ready_seen=None;last_beat=None;last_mtime=None
     stdout=root/'stdout.txt';stderr=root/'stderr.txt'
@@ -180,8 +180,8 @@ def _run_owned(root, mode, request, *, startup_timeout, heartbeat_timeout, max_r
     controller=dict(token=token,launcher_pid=process.pid,exit_code=process.returncode,reason=reason,
         elapsed_seconds=time.monotonic()-started,cleanup=cleanup,kill_on_close=True,
         stderr_tail=stderr.read_bytes()[-4096:].decode('utf-8',errors='replace'))
-    if mode=='stability':controller['memory_limits']=dict(process_memory_bytes=limits[0],job_memory_bytes=limits[1])
-    if mode=='stability':controller['process_limit']=process_limit
+    if mode in ('stability','providers'):controller['memory_limits']=dict(process_memory_bytes=limits[0],job_memory_bytes=limits[1])
+    if mode in ('stability','providers'):controller['process_limit']=process_limit
     _atomic(root/'controller.json',controller)
     if interrupted is not None:raise interrupted
     return root

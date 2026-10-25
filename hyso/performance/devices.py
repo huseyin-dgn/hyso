@@ -81,7 +81,7 @@ def _valid_run(run):
     report=run['report']
     if report is not None and (report['token']!=run['token'] or report['request_sha256']!=_hash(
             dict(recipe=run['recipe'],protocol=run['protocol'],
-                 **{k:run[k] for k in ('device','providers','expected','optimization','runtime_search_path') if k in run}))):
+                 **{k:run[k] for k in ('device','providers','expected','optimization','runtime_search_path','provider_options') if k in run}))):
         raise ValueError('report belongs to another request/session')
     if c['reason'] or c['exit_code']!=0 or report is None:
         return None,c['reason'] or 'worker_failed_or_missing_report'
@@ -211,7 +211,7 @@ def _worker_devices(root, request):
 def _worker_dispatch(root, request):
     _atomic(root/'ready.json',dict(token=request['token'],pid=os.getpid()))
     report=dict(token=request['token'],request_sha256=_hash({k:request[k] for k in
-        ('recipe','protocol','device','providers','expected','optimization','runtime_search_path') if k in request}))
+        ('recipe','protocol','device','providers','expected','optimization','runtime_search_path','provider_options') if k in request}))
     try:
         if request['mode']=='devices':data=_worker_devices(root,request)
         else:
@@ -219,5 +219,8 @@ def _worker_dispatch(root, request):
             data=_worker_providers(root,request)
         report.update(data,status='completed',reason=None)
     except Exception as exc:
+        if request['mode']=='providers':
+            from .providers import _ProviderFailure
+            if isinstance(exc,_ProviderFailure):report.update(exc.details)
         report.update(status='failed',reason=type(exc).__name__+': '+str(exc)[:1024])
     _atomic(root/'report.json',report)

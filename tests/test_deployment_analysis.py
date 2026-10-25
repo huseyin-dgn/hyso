@@ -23,6 +23,18 @@ HERE=str(Path(__file__).resolve().parent)
 ORT=os.environ.get('HYSO_OPTIONAL_ORT_PATH')
 
 
+def bounded_provider_protocol(**kwargs):
+    return ProviderProtocol(process_memory_bytes=4*1024**3,job_memory_bytes=6*1024**3,max_processes=4,**kwargs)
+
+
+def profile_providers(recipe,directory,**kwargs):
+    kwargs.setdefault('protocol',bounded_provider_protocol())
+    kwargs.setdefault('optimization','disabled')
+    if 'CUDAExecutionProvider' in (kwargs.get('providers') or []):
+        kwargs.setdefault('provider_options',{'CUDAExecutionProvider':{'device_id':0,'gpu_mem_limit':256*1024**2}})
+    return profile_execution_providers(recipe,directory,**kwargs)
+
+
 def recipe(factory='torch_model',mode='normal'):
     return WorkloadRecipe('deployment_support:'+factory,dict(mode=mode),search_path=HERE)
 
@@ -128,7 +140,7 @@ def test_comparison_rejects_model_input_backend_or_precision_identity(cpu):
 def provider_cpu(tmp_path_factory):
     if importlib.util.find_spec('onnx') is None:pytest.skip('optional onnx not installed')
     if not ORT and importlib.util.find_spec('onnxruntime') is None:pytest.skip('optional ORT not installed')
-    return save(profile_execution_providers(recipe('onnx_model'),tmp_path_factory.mktemp('provider')/'run',
+    return save(profile_providers(recipe('onnx_model'),tmp_path_factory.mktemp('provider')/'run',
         providers=['AzureExecutionProvider','CPUExecutionProvider'],expected={'*':'CPUExecutionProvider'},
         runtime_search_path=ORT),'p35-cpu')
 
@@ -144,7 +156,7 @@ def test_actual_provider_events_not_provider_list(provider_cpu):
 
 
 def test_real_unexpected_cpu_execution(tmp_path,provider_cpu):
-    r=profile_execution_providers(recipe('onnx_model'),tmp_path/'run',
+    r=profile_providers(recipe('onnx_model'),tmp_path/'run',
         providers=['AzureExecutionProvider','CPUExecutionProvider'],expected={'relu':'AzureExecutionProvider'},
         runtime_search_path=ORT)
     save(r,'p35-unexpected-cpu')
@@ -188,28 +200,28 @@ def test_wrong_process_trace_rejected_even_after_rehash(provider_cpu):
 
 
 def test_optimization_conservatively_unknown(tmp_path,provider_cpu):
-    r=profile_execution_providers(recipe('onnx_model'),tmp_path/'run',providers=['CPUExecutionProvider'],
+    r=profile_providers(recipe('onnx_model'),tmp_path/'run',providers=['CPUExecutionProvider'],
         expected={'*':'CPUExecutionProvider'},optimization='all',runtime_search_path=ORT)
     assert r.to_dict()['analysis']['fallback_detected'] is None
 
 
 def test_provider_timeout_cleanup(tmp_path,provider_cpu):
-    r=profile_execution_providers(recipe('onnx_model','hang'),tmp_path/'run',providers=['CPUExecutionProvider'],
+    r=profile_providers(recipe('onnx_model','hang'),tmp_path/'run',providers=['CPUExecutionProvider'],
         expected={'*':'CPUExecutionProvider'},runtime_search_path=ORT,
-        protocol=ProviderProtocol(step_timeout_seconds=6))
+        protocol=bounded_provider_protocol(step_timeout_seconds=6))
     d=r.to_dict();assert d['analysis']['status']=='unavailable'
     assert d['evidence']['controller']['reason']=='heartbeat_timeout'
     assert d['evidence']['controller']['cleanup']['active_processes']==0
 
 
 def test_unsupported_provider_and_no_clobber(tmp_path,provider_cpu):
-    with pytest.raises(ValueError,match='unsupported execution provider'):
-        profile_execution_providers(recipe('onnx_model'),tmp_path/'unsupported',
-            providers=['UnknownExecutionProvider'],expected={'*':'CPUExecutionProvider'})
-    with pytest.raises(ValueError):profile_execution_providers(recipe('onnx_model'),tmp_path/'bad',
+    unsupported=profile_providers(recipe('onnx_model'),tmp_path/'unsupported',
+        providers=['UnknownExecutionProvider'],expected={'*':'CPUExecutionProvider'})
+    assert unsupported.to_dict()['analysis']['failure_kind']=='unsupported_provider'
+    with pytest.raises(ValueError):profile_providers(recipe('onnx_model'),tmp_path/'bad',
         providers=['CPUExecutionProvider'],expected={'*':'CPUExecutionProvider'},optimization='unsupported')
     directory=tmp_path/'run';directory.mkdir()
-    with pytest.raises(FileExistsError):profile_execution_providers(recipe('onnx_model'),directory,
+    with pytest.raises(FileExistsError):profile_providers(recipe('onnx_model'),directory,
         providers=['CPUExecutionProvider'],expected={'*':'CPUExecutionProvider'},runtime_search_path=ORT)
 
 
@@ -233,7 +245,7 @@ def test_provider_parent_state_and_execution_ledger(provider_cpu,tmp_path):
     model,inputs=deployment_support.torch_model();before=copy.deepcopy(model.state_dict())
     optimizer=torch.optim.Adam(model.parameters());opt=copy.deepcopy(optimizer.state_dict())
     rng=torch.get_rng_state().clone();py=random.getstate();npstate=np.random.get_state()
-    profile_execution_providers(recipe('onnx_model'),tmp_path/'parent',providers=['CPUExecutionProvider'],
+    profile_providers(recipe('onnx_model'),tmp_path/'parent',providers=['CPUExecutionProvider'],
         expected={'*':'CPUExecutionProvider'},runtime_search_path=ORT)
     assert torch.equal(rng,torch.get_rng_state()) and py==random.getstate()
     assert np.array_equal(npstate[1],np.random.get_state()[1]) and optimizer.state_dict()==opt
@@ -247,7 +259,7 @@ def test_provider_parent_state_and_execution_ledger(provider_cpu,tmp_path):
 def test_actual_ort_cuda(tmp_path):
     selected=WorkloadRecipe('deployment_support:onnx_model',search_path=HERE,
         gpu_uuid=os.environ['HYSO_NATIVE_GPU_UUID'])
-    result=profile_execution_providers(selected,tmp_path/'run',
+    result=profile_providers(selected,tmp_path/'run',
         providers=['CUDAExecutionProvider','CPUExecutionProvider'],expected={'*':'CUDAExecutionProvider'},runtime_search_path=ORT)
     a=result.to_dict()['analysis']
     assert a['events'] and any(x['provider']=='CUDAExecutionProvider' for x in a['events'])
