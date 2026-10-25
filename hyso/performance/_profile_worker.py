@@ -318,7 +318,7 @@ def main():
             data=_base('operator_profile','P14',dict(id='isolated_torch_profiler',version=1,
                 scope='owned_worker_eval_inference_profile',configuration=p,recipe=r,
                 instrumentation=dict(record_shapes=True,profile_memory=p.get('profile_memory',False),with_stack=False,
-                    with_flops=False,module_hooks='worker_only',dispatch_observer='TorchDispatchMode_version_verified',evidence_version=4 if p.get('profile_memory',False) else 3)),
+                    with_flops=False,module_hooks='worker_only',dispatch_observer='TorchDispatchMode_version_verified',evidence_version=5 if p.get('profile_memory',False) else 3)),
                 dict(model=dict(structural_descriptor=descriptor,weights_sha256=weights,execution_mode='owned_worker_eval'),
                     input=dict(shape=list(inputs.shape),dtype=str(inputs.dtype),content_sha256=digest,recipe='ones'),
                     environment=dict(device=str(device),torch=str(torch.__version__),python=sys.version,
@@ -354,7 +354,7 @@ def main():
                 from hyso.performance._layer_memory import memory_events,attribute_memory
                 memory=memory_events(trace,p['max_events'])
                 data['raw_evidence']['memory_events']=memory
-                data['measurements']['layer_memory']=attribute_memory(memory,trace_events,invocations,inventory,str(device))
+                data['measurements']['layer_memory']=attribute_memory(memory,trace_events,invocations,inventory,str(device),analysis_version=2)
             if request.get('experiment_mode'):
                 data['raw_evidence']['overhead_experiment']=dict(mode='instrumented',windows_ms=host_windows,
                     output_sha256=output_digest,synchronization='device_before_and_after_each_forward' if stream is not None else 'synchronous_CPU',

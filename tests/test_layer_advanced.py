@@ -36,7 +36,7 @@ def test_real_cpu_allocations_are_events_not_peaks_or_rss(memory_capture,monkeyp
     def forbidden(*a,**kw):raise AssertionError('pure layer analysis must not run model/CUDA')
     monkeypatch.setattr(torch.cuda,'_lazy_init',forbidden)
     result=profile_layers(memory_capture);d=result.to_dict();m=d['measurements']['layer_memory']
-    assert before['protocol']['instrumentation']['evidence_version']==4
+    assert before['protocol']['instrumentation']['evidence_version']==5
     assert m['status']=='partial' and m['peak_bytes'] is m['retained_bytes'] is None
     leaf=next(module for module in d['measurements']['modules'] if module['path']=='leaf')['memory']['cpu']
     assert leaf['status']=='measured'
@@ -87,7 +87,7 @@ def test_real_overhead_separate_owned_workers_and_canonical_exports(overhead,tmp
         assert control['worker']['worker_pid']!=source['raw_evidence']['worker']['worker_pid']
         assert control['worker']['process_terminated'] and source['raw_evidence']['worker']['process_terminated']
         assert source['measurements']['overhead']['perturbation_ms'] is None
-        assert len(control['windows_ms'])==3
+        assert len(control['windows_ms'])==3+d['protocol']['configuration']['priming_iterations']
     j=tmp_path/'overhead.json';c=tmp_path/'overhead.csv';overhead.to_json(j);overhead.to_csv(c)
     assert LayerOverheadResult.from_json(j).to_dict()==LayerOverheadResult.from_csv(c).to_dict()==d
     with pytest.raises(FileExistsError):overhead.to_json(j)
@@ -99,16 +99,16 @@ def test_real_overhead_separate_owned_workers_and_canonical_exports(overhead,tmp
 def _synthetic_windows(overhead,control,instrumented):
     d=overhead.to_dict()
     for pair in d['raw_evidence']['pairs']:
-        pair['control']['windows_ms']=control[:]
+        pair['control']['windows_ms']=[100.,99.]+control[:]
         source=pair['instrumented']
-        source['raw_evidence']['overhead_experiment']['windows_ms']=instrumented[:]
-        source['measurements']['overhead']['instrumented_host_forward_windows_ms']=instrumented[:]
+        source['raw_evidence']['overhead_experiment']['windows_ms']=[100.,99.]+instrumented[:]
+        source['measurements']['overhead']['instrumented_host_forward_windows_ms']=[100.,99.]+instrumented[:]
     return d
 
 
 def _derive(d):
     p=d['protocol']
-    return _metrics(d['raw_evidence']['pairs'],p['recipe'],p['capture_configuration'],LayerOverheadProtocol(**p['configuration']))
+    return _metrics(d['raw_evidence']['pairs'],p['recipe'],p['capture_configuration'],LayerOverheadProtocol(**p['configuration']),analysis_version=p.get('analysis_version',1))
 
 
 def test_matched_math_variance_and_mismatch_gates_are_not_native_acceptance(overhead):

@@ -44,6 +44,13 @@ def main():
             assert leaf['memory']['cuda']['inclusive']['net_change_bytes']==(
                 leaf['memory']['cuda']['inclusive']['allocation_bytes']-leaf['memory']['cuda']['inclusive']['deallocation_bytes'])
             assert leaf['memory']['cuda']['peak_bytes'] is leaf['memory']['cuda']['retained_bytes'] is None
+            high=leaf['memory']['cuda']['inclusive']['max_invocation_observed_net_high_water']
+            assert high['status'] in ('derived','partial') and high['upper_bound_bytes']>0
+            assert high['lower_bound_bytes']<=high['upper_bound_bytes']
+            experiment=data['measurements']
+            assert experiment['selection']['start_index']==2 and experiment['selection']['forward_windows_per_worker']==3
+            assert experiment['uncertainty']['pairs']==2
+            if experiment['status']=='unsupported':assert experiment['signed_overhead_percent'] is None
             assert torch.cuda.current_stream()==stream
         assert torch.cuda.current_stream()==previous
         assert torch.equal(cpu,torch.get_rng_state()) and torch.equal(gpu,torch.cuda.get_rng_state())
@@ -57,6 +64,7 @@ def main():
         layers.to_json(output.with_name(output.stem+'-layers.json'));layers.to_csv(output.with_name(output.stem+'-layers.csv'))
         print(json.dumps(dict(status='passed',memory='observed_allocation_attribution',peak='unsupported',
             overhead=data['measurements']['status'],overhead_reason=data['measurements']['reason'],parent_state_preserved=True,
+            observed_net_high_water=high,uncertainty=data['measurements']['uncertainty'],
             kernel_attribution=m['cuda_layer_status'])))
     finally:handle.remove()
 

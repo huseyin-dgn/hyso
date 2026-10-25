@@ -201,31 +201,40 @@ def _layer_metrics(inventory,invocations,*,evidence=None,cuda_events=None):
     return result
 
 
-def profile_layers(source,*,protocol=ProfilingProtocol()):
+def profile_layers(source,*,protocol=ProfilingProtocol(),memory_analysis_version=None):
     """Module invocation tree from the same capture; shared calls remain distinct.
 
     Opt into allocation-event attribution with ProfilingProtocol(profile_memory=True)
     when capturing a recipe. Existing captures cannot retroactively gain memory
     evidence. Ordinary analysis runs no extra forward or overhead experiment.
+    memory_analysis_version=2 explicitly reanalyzes existing version4 allocation
+    events with chronological observed net high-water; it needs no new capture.
     """
+    if memory_analysis_version is not None and (type(memory_analysis_version) is not int or memory_analysis_version!=2):
+        raise ValueError('memory_analysis_version must be None or 2')
+    if memory_analysis_version==2 and type(source) is ColdStartRecipe and not protocol.profile_memory:
+        raise ValueError('allocation event capture must be requested')
     s=_source(source,protocol);raw=s['raw_evidence']
     extra={};evidence=None;cuda_events=None
     version=s['protocol']['instrumentation'].get('evidence_version',1)
+    if memory_analysis_version==2:
+        if version<4:raise ValueError('existing capture has no allocation event evidence')
+        version=5
     if version>=2:
         evidence=dict(cuda_attribution=s['measurements']['cuda_attribution'],overhead=s['measurements']['overhead'])
         extra=dict(events=raw['events'],trace_events=raw['trace_events'],profile_measurements=evidence)
     if version>=3:
         cuda_events=raw['cuda_event_timing'];extra['cuda_event_timing']=cuda_events
-    if version==4:
+    if version>=4:
         extra['memory_events']=raw['memory_events']
         extra['memory_device']=s['provenance']['environment']['device']
     data=_derived('layer_profile','P13',s,
         dict(module_inventory=raw['module_inventory'],invocations=raw['invocations'],**extra),
         _layer_metrics(raw['module_inventory'],raw['invocations'],evidence=evidence,cuda_events=cuda_events))
-    if version==4:
+    if version>=4:
         from ._layer_memory import attribute_memory
         data['measurements']['layer_memory']=attribute_memory(raw['memory_events'],raw['trace_events'],
-            raw['invocations'],raw['module_inventory'],s['provenance']['environment']['device'])
+            raw['invocations'],raw['module_inventory'],s['provenance']['environment']['device'],analysis_version=2 if version>=5 else 1)
         for module in data['measurements']['modules']:
             module['memory']=next(m['domains'] for m in data['measurements']['layer_memory']['modules'] if m['module_id']==module['module_id'])
     if evidence is not None:data['protocol']['profile_evidence_version']=version
@@ -261,7 +270,7 @@ def _validate_profile(data,kind):
         inventory=raw['module_inventory'];invocations=raw['invocations']
         validate_modules(inventory,invocations,p.measure_iterations)
         version=data['protocol']['instrumentation'].get('evidence_version',1)
-        if type(version) is not int or version not in (1,2,3,4):raise ValueError('invalid profiler evidence version')
+        if type(version) is not int or version not in (1,2,3,4,5):raise ValueError('invalid profiler evidence version')
         if version<4 and p.profile_memory:raise ValueError('memory tracing requires evidence version4')
         if version>=2:
             expected_rows=module_timings(inventory,invocations,raw['events'],p.measure_iterations)
@@ -270,11 +279,11 @@ def _validate_profile(data,kind):
             if expected_rows!=invocations:
                 raise ValueError('unverified module timing evidence')
             _validate_trace_evidence(raw,data['measurements']['cuda_attribution'],p.max_events)
-            if version==4:
+            if version>=4:
                 from ._layer_memory import attribute_memory
                 if not p.profile_memory or data['protocol']['instrumentation']['profile_memory'] is not True:raise ValueError('memory tracing not requested')
                 _validate_memory_indices(raw,p.max_events)
-                if data['measurements']['layer_memory']!=attribute_memory(raw['memory_events'],raw['trace_events'],invocations,inventory,r['device'] if r['device']!='cuda' else 'cuda:0'):
+                if data['measurements']['layer_memory']!=attribute_memory(raw['memory_events'],raw['trace_events'],invocations,inventory,r['device'] if r['device']!='cuda' else 'cuda:0',analysis_version=2 if version>=5 else 1):
                     raise ValueError('unverified allocation attribution')
         mids={m['module_id'] for m in inventory}
         if len(mids)!=len(inventory):raise ValueError('duplicate module identity')
@@ -307,7 +316,7 @@ def _validate_profile(data,kind):
     else:
         validate_modules(raw['module_inventory'],raw['invocations'],p.measure_iterations)
         version=data['protocol'].get('profile_evidence_version',1);evidence=None;cuda_events=None
-        if type(version) is not int or version not in (1,2,3,4):raise ValueError('invalid layer evidence version')
+        if type(version) is not int or version not in (1,2,3,4,5):raise ValueError('invalid layer evidence version')
         if version<4 and p.profile_memory:raise ValueError('memory tracing requires evidence version4')
         if version>=2:
             expected_rows=module_timings(raw['module_inventory'],raw['invocations'],raw['events'],p.measure_iterations)
@@ -320,12 +329,12 @@ def _validate_profile(data,kind):
             _validate_trace_evidence(raw,evidence['cuda_attribution'],p.max_events)
             _validate_overhead(evidence['overhead'],p.measure_iterations)
         expected_metrics=_layer_metrics(raw['module_inventory'],raw['invocations'],evidence=evidence,cuda_events=cuda_events)
-        if version==4:
+        if version>=4:
             from ._layer_memory import attribute_memory
             _validate_memory_indices(raw,p.max_events)
             device=r['device'] if r['device']!='cuda' else 'cuda:0'
             if raw['memory_device']!=device or not p.profile_memory:raise ValueError('memory context mismatch')
-            expected_metrics['layer_memory']=attribute_memory(raw['memory_events'],raw['trace_events'],raw['invocations'],raw['module_inventory'],device)
+            expected_metrics['layer_memory']=attribute_memory(raw['memory_events'],raw['trace_events'],raw['invocations'],raw['module_inventory'],device,analysis_version=2 if version>=5 else 1)
             for module in expected_metrics['modules']:
                 module['memory']=next(m['domains'] for m in expected_metrics['layer_memory']['modules'] if m['module_id']==module['module_id'])
         if data['measurements']!=expected_metrics:

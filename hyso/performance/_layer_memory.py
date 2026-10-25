@@ -1,4 +1,4 @@
-"""Allocation events attributed in one exported profiler clock, never peaks/RSS.
+"""Allocation events in one exported clock; observed net high-water is not RSS.
 
 This observes PyTorch allocation requests/frees, including instrumentation.
 It neither measures physical RAM/VRAM traffic nor establishes object lifetimes.
@@ -18,8 +18,36 @@ def memory_events(trace, budget):
     return rows
 
 
-def attribute_memory(events,trace,invocations,inventory,device):
+def observed_net_high_water(events):
+    """Maximum signed prefix from zero at scope entry, not absolute live bytes.
+
+    Export array order is not a clock. Equal-timestamp mixed-sign events have
+    unknown sub-timestamp order, so return exact bounds instead of inventing it.
+    Frees may refer to pre-existing allocations; negative balances are retained.
+    """
+    groups={}
+    for event in events:
+        timestamp=event['start_us'];size=event['bytes']
+        if type(timestamp) not in (float,int) or not math.isfinite(timestamp) or timestamp<0:
+            raise ValueError('invalid allocation timestamp')
+        if type(size) is not int or not size:raise ValueError('invalid allocation bytes')
+        positive,negative=groups.get(timestamp,(0,0))
+        groups[timestamp]=(positive+max(size,0),negative+min(size,0))
+    balance=lower=upper=0;ties=0
+    for timestamp,(positive,negative) in sorted(groups.items()):
+        upper=max(upper,balance+positive)
+        balance+=positive+negative;lower=max(lower,balance)
+        ties+=bool(positive and negative)
+    return dict(status='derived' if lower==upper else 'partial',
+        value_bytes=lower if lower==upper else None,lower_bound_bytes=lower,upper_bound_bytes=upper,
+        mixed_sign_timestamp_groups=ties,scope='maximum_signed_observed_event_balance_relative_to_zero_at_invocation_entry',
+        ordering='timestamp_groups; tied_event_order_unknown',
+        absolute_allocator_peak_bytes=None,physical_peak_bytes=None,retained_bytes=None)
+
+
+def attribute_memory(events,trace,invocations,inventory,device,*,analysis_version=1):
     """Inclusive scopes and unique innermost owner; ambiguous events stay unknown."""
+    if type(analysis_version) is not int or analysis_version not in (1,2):raise ValueError('invalid memory analysis version')
     spans={};seen=set();owners=[]
     for row in invocations:
         matches=[e for e in trace if e['category']=='user_annotation' and e['name']==row['annotation']]
@@ -55,10 +83,13 @@ def attribute_memory(events,trace,invocations,inventory,device):
             reason=None if chain else 'outside_missing_or_ambiguous_module_scope_or_device'))
     domains=['cpu']+(['cuda'] if device.startswith('cuda:') else [])
     def summary(indices,domain):
-        values=[e['bytes'] for e,o in zip(events,owners) if o['domain']==domain and indices(o)]
+        selected=[e for e,o in zip(events,owners) if o['domain']==domain and indices(o)]
+        values=[e['bytes'] for e in selected]
         # Zeros mean no observed events in a verified annotation, not zero actual allocation.
-        return dict(allocation_bytes=sum(v for v in values if v>0),
+        result=dict(allocation_bytes=sum(v for v in values if v>0),
             deallocation_bytes=-sum(v for v in values if v<0),net_change_bytes=sum(values),event_count=len(values))
+        if analysis_version==2:result['observed_net_high_water']=observed_net_high_water(selected)
+        return result
     rows=[]
     for row in invocations:
         i=row['invocation_id'];values={}
@@ -83,6 +114,17 @@ def attribute_memory(events,trace,invocations,inventory,device):
                     for key in ('allocation_bytes','deallocation_bytes','net_change_bytes','event_count')} if ok else None
                     for scope in ('inclusive','exclusive')},peak_bytes=None,retained_bytes=None)
         modules.append(dict(module_id=module['module_id'],domains=domains_data))
+        if analysis_version==2:
+            for domain in domains:
+                for scope in ('inclusive','exclusive'):
+                    summary_value=domains_data[domain][scope]
+                    if summary_value is not None:
+                        peaks=[c['domains'][domain][scope]['observed_net_high_water'] for c in calls]
+                        low=max(p['lower_bound_bytes'] for p in peaks);high=max(p['upper_bound_bytes'] for p in peaks)
+                        summary_value['max_invocation_observed_net_high_water']=dict(
+                            status='derived' if low==high else 'partial',value_bytes=low if low==high else None,
+                            lower_bound_bytes=low,upper_bound_bytes=high,
+                            aggregation='maximum_of_invocation_local_values; never_sum; not_whole_capture_peak')
     return dict(status='partial' if any(o['invocation_id'] is not None for o in owners) else 'unsupported',
         scope='observed_PyTorch_allocation_requests_and_frees_on_annotation_host_thread; not_physical_memory',
         allocation_bytes=None,retained_bytes=None,peak_bytes=None,
