@@ -160,6 +160,28 @@ def test_real_file_spawn_integrity(native,case):
     assert data['diagnostics']['source_p21_sha256']==_hash(data['parent'])
 
 
+@pytest.mark.parametrize('case,workers,prefetch,pin',[
+    ('standard_images_inline',0,None,False),
+    ('standard_images_single_prefetch_pin',1,1,True),
+])
+def test_real_file_loader_configuration_integrity(native,case,workers,prefetch,pin):
+    data=native(case)
+    test_real_file_spawn_integrity(native,case)
+    result=DataLoaderAnalysisResult(data['parent'])
+    report=result.diagnostics()
+    config=report['core']['configurations']['training']
+    assert (config['num_workers'],config['prefetch_factor'],config['pin_memory'])==(workers,prefetch,pin)
+    assert config['persistent_workers'] is (workers > 0)
+    assert data['batch_tensor_is_pinned']==[[False]*6]*2
+    assert report['worker']['status']=='unsupported'
+    assert all(row['worker_task'] is None for row in report['batch_timeline'])
+    assert len(report['batch_timeline'])==6
+    assert [row['samples'] for row in report['batch_timeline']]==[2,3,3]*2
+    assert all(row['cpu_forward_backward_wall_ms'] is not None for row in report['batch_timeline'])
+    assert all(row['samples_per_second'] > 0 for row in report['findings'])
+    assert report['recommendations']==[]
+
+
 def test_task_link_scope_and_incomplete_or_foreign_evidence(native):
     data=native('task_images')
     result=DataLoaderAnalysisResult(data['parent'])

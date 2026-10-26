@@ -27,6 +27,14 @@ from hyso.performance._loader_worker_lifecycle import shutdown_traced_workers
 from trainer_replay_support import seed, snapshot, equal
 
 
+CASES = {
+    'standard_images': dict(workers=2, prefetch=2, pin=False),
+    'task_images': dict(workers=2, prefetch=2, pin=False),
+    'standard_images_inline': dict(workers=0, prefetch=None, pin=False),
+    'standard_images_single_prefetch_pin': dict(workers=1, prefetch=1, pin=True),
+}
+
+
 def decode(value):
     with Image.open(io.BytesIO(value)) as image:
         image.load()
@@ -64,7 +72,9 @@ def cleanup(loader, traced):
 
 def run(case):
     torch.set_num_threads(1)
-    records, pids = [], []
+    setting = CASES[case]
+    workers = setting['workers']
+    records, pids, pin_observations = [], [], []
     with tempfile.TemporaryDirectory(prefix='p21-files-') as directory:
         root = Path(directory)
         for i in range(8):
@@ -72,30 +82,38 @@ def run(case):
         for observed in (False, True):
             seed(137)
             batches = [[3,0], [7,1,5], [2,6,4]]
-            options = dict(batch_sampler=batches, num_workers=2, multiprocessing_context='spawn',
-                persistent_workers=True, prefetch_factor=2, timeout=45,
+            options = dict(batch_sampler=batches, num_workers=workers,
+                persistent_workers=workers > 0, pin_memory=setting['pin'],
                 worker_init_fn=initialize_worker, generator=torch.Generator().manual_seed(721))
+            if workers:
+                options.update(multiprocessing_context='spawn', prefetch_factor=setting['prefetch'], timeout=45)
             traced = observed and case == 'task_images'
             loader = (WorkerTaskDataLoader(DiskSamples(root), **options) if traced else DataLoader(DiskSamples(root), **options))
             component_ids = {k:id(getattr(loader,k)) for k in ['dataset','sampler','batch_sampler','generator','worker_init_fn','collate_fn']}
             assert loader.batch_sampler is batches
             epochs = []
             def callback(event, logs):
-                if event == 'epoch_end': epochs.append([w.pid for w in loader._iterator._workers])
+                if event == 'epoch_end':
+                    epochs.append([w.pid for w in loader._iterator._workers] if workers else [])
             model = torch.nn.Sequential(torch.nn.Linear(48,4), torch.nn.Dropout(.2), torch.nn.Linear(4,2))
             trainer = Trainer(model, optimizer=torch.optim.AdamW(model.parameters(),lr=.01),
                 loss_fn=torch.nn.CrossEntropyLoss(), device='cpu', callbacks=(callback,))
-            seen = []
-            hook = model.register_forward_pre_hook(lambda m,a:seen.append(a[0].detach().clone()))
+            seen, pinned = [], []
+            def remember_batch(model, args):
+                seen.append(args[0].detach().clone())
+                pinned.append(args[0].is_pinned())
+            hook = model.register_forward_pre_hook(remember_batch)
             try:
                 if observed: measured = measure_training_with_loader(trainer,loader,epochs=2)
                 else: trainer.fit(loader,epochs=2)
             finally: hook.remove()
             records.append((snapshot(trainer),loader.generator.get_state().clone(),seen))
             assert {k:id(getattr(loader,k)) for k in component_ids} == component_ids
-            assert len(epochs) == 2 and epochs[0] == epochs[1] and len(set(epochs[0])) == 2
-            assert all(w.is_alive() for w in loader._iterator._workers)
+            assert len(epochs) == 2 and epochs[0] == epochs[1] and len(set(epochs[0])) == workers
+            if workers:
+                assert all(w.is_alive() for w in loader._iterator._workers)
             pids.append(epochs)
+            pin_observations.append(pinned)
             states = cleanup(loader, traced)
             if observed:
                 task_result = analyze_worker_tasks(measured.loader,loader,worker_states=states) if traced else None
@@ -110,6 +128,12 @@ def run(case):
                 assert diag['queue_task_scopes']['queue_occupancy']['value'] is None
                 assert diag['queue_task_scopes']['prefetch_efficiency']['value'] is None
                 assert diag['recommendations'] == []
+                config = diag['core']['configurations']['training']
+                assert config['num_workers'] == workers
+                assert config['prefetch_factor'] == setting['prefetch']
+                assert config['pin_memory'] is setting['pin']
+                assert config['persistent_workers'] is (workers > 0)
+                assert config['multiprocessing_context'] == ('spawn' if workers else None)
                 if traced:
                     assert diag['worker']['association'] == dict(execution='verified',epoch='verified',batch='verified')
                     for stage in ['load','decode','transform']:
@@ -129,9 +153,12 @@ def run(case):
                 time.sleep(.05); gc.collect()
             assert not mp.active_children()
         equal(records[0],records[1])
+        assert pin_observations[0] == pin_observations[1] == [False]*6
         assert not torch.cuda.is_initialized()
         return dict(case=case,controlled_transform_delay_ms=10,real_files=True,
             exact_batch_model_optimizer_rng_generator_history=True,persistent_worker_pids=pids,
+            batch_tensor_is_pinned=pin_observations,
+            pin_observation_scope='CPU_without_visible_CUDA_requested_pinning_is_not_effective_pinning',
             all_workers_exited=True,parent=source,diagnostics=diag,
             task_evidence=task_result.to_dict() if task_result is not None else None,
             content_sha256=hashlib.sha256(b''.join(v.numpy().tobytes() for v in records[0][2])).hexdigest())
@@ -139,7 +166,7 @@ def run(case):
 
 if __name__ == '__main__':
     mp.freeze_support()
-    parser=argparse.ArgumentParser();parser.add_argument('--case',choices=['standard_images','task_images'],required=True)
+    parser=argparse.ArgumentParser();parser.add_argument('--case',choices=CASES,required=True)
     parser.add_argument('--output',type=Path,required=True);parser.add_argument('--admit',type=Path,required=True)
     args=parser.parse_args();deadline=time.monotonic()+15
     while not args.admit.exists() and time.monotonic()<deadline: time.sleep(.01)

@@ -39,6 +39,16 @@ loader capacity. `core.configurations` records worker count, prefetch factor,
 pin-memory request, persistence and sampler configuration. These are settings,
 not evidence of effective pinning or efficient prefetching.
 
+The ordinary-loader observer retains the caller's worker, prefetch, pin-memory
+and persistence settings. With `num_workers=0`, dataset operations execute
+inline in the parent `next()` call; they are not relabeled as worker service.
+With workers, prefetch can overlap preparation with consumer work, so stage
+durations must not be added to the consumer wait. A requested `pin_memory=True`
+is not proof that delivered tensors are pinned or that transfers overlap. For
+example, a CPU run without visible CUDA can record that request while tensors
+remain unpinned. The task adapter's narrower restrictions do not apply to an
+ordinary DataLoader.
+
 `batch_timeline` contains parent-local `next()` start/delivery timestamps, batch
 size, epoch and microbatch identity. It links existing P20 input preparation,
 forward, loss/metrics and backward windows. CPU forward/backward wall time is
@@ -85,6 +95,9 @@ Pass an already collected companion from the **same** measurement:
 # task_evidence is a validated WorkerTaskAnalysisResult from the existing
 # analyze_worker_tasks lifecycle; training is not run again here.
 report = measurement.loader.diagnostics(worker_tasks=task_evidence)
+for stage, timing in report["worker"]["stages"].items():
+    if timing["status"] == "measured":
+        print(stage, timing["mean_ms"], "ms per observed call; count", timing["count"])
 ```
 
 The task adapter remains explicitly gated to its verified PyTorch 2.5.1 source
@@ -103,6 +116,20 @@ Do not supply both companions. A foreign parent hash is rejected. Incomplete
 task evidence yields null service/stage means and no per-batch worker links.
 
 ## Which waits are actually measured?
+
+For the consumer-side queue-wait question, `parent_next` answers how long
+training spent acquiring a requested batch. This **batch acquisition wait** is
+the observable P21 wait scope; it includes more than physical queue blocking.
+Verified worker/task receipts associate preparation and delivery with the same
+epoch and batch, but do not partition `next()` into worker compute and physical
+queue residence. Neither `next()` alone nor subtraction of worker service from
+it can measure time spent inside an opaque multiprocessing queue.
+
+The timeline therefore supports comparing observed acquisition wait with CPU
+forward/backward and inspecting separately measured preparation stages. It does
+not establish why the queue was empty, GPU idle time, physical queue occupancy
+or prefetch efficiency. Those require additional evidence and are not implied
+by the P21 wait report.
 
 | Field | Measured scope | Interpretation limit |
 | --- | --- | --- |
