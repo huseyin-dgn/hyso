@@ -3,6 +3,7 @@ from dataclasses import asdict, dataclass
 import json
 import math
 import os
+import statistics
 from pathlib import Path
 import subprocess
 import sys
@@ -16,7 +17,14 @@ from .result import TransferResult, _integer, _positive, _plain
 
 @dataclass(frozen=True)
 class TransferProtocol:
-    """Owned copies; resource quotas are opt-in, overlap probing is separate."""
+    """Owned copies; resource quotas and execution comparison are opt-in.
+
+    Set probe_overlap=True, pinned=True, non_blocking=True and
+    compare_execution=True for a separate H2D+matmul comparison. Each mode
+    warms up warmup_iterations times, then runs repeats*measure_iterations
+    samples in alternating order. JSON retains comparison samples and decision;
+    CSV and actual.completed_copies keep their existing copy-only scope.
+    """
     shape: tuple[int, ...] = (262144,)
     dtype: str = 'float32'
     directions: tuple[str, ...] = ('H2D', 'D2H')
@@ -32,6 +40,7 @@ class TransferProtocol:
     input_limit_bytes: int | None = None
     cuda_memory_fraction: float | None = None
     probe_overlap: bool = False
+    compare_execution: bool = False
 
     def __post_init__(self):
         if type(self.shape) not in (tuple, list) or not 1 <= len(self.shape) <= 8:
@@ -42,8 +51,10 @@ class TransferProtocol:
             raise ValueError('unique directions required')
         if any(d not in ('H2D', 'D2H') for d in self.directions): raise ValueError('H2D/D2H only')
         object.__setattr__(self, 'directions', tuple(self.directions))
-        for v in (self.pinned, self.non_blocking, self.probe_overlap):
+        for v in (self.pinned, self.non_blocking, self.probe_overlap, self.compare_execution):
             if type(v) is not bool: raise TypeError('explicit bool policy required')
+        if self.compare_execution and not (self.probe_overlap and self.pinned and self.non_blocking):
+            raise ValueError('execution comparison requires probe_overlap, pinned and non_blocking')
         for v in (self.dtype, self.device, self.layout):
             if type(v) is not str: raise TypeError('string profile required')
         _integer(self.warmup_iterations); _integer(self.measure_iterations, 1); _integer(self.repeats, 1)
@@ -81,7 +92,7 @@ def _transfer_metrics(rows, *, evidence_version=1, overlap_probe=None):
         asynchronous_execution=dict(value=None, status='not_proven',
             reason='non_blocking_is_request_not_overlap_or_host_async_proof'))
     if evidence_version==1: return result
-    if evidence_version!=2: raise ValueError('unsupported transfer evidence version')
+    if evidence_version not in (2,3): raise ValueError('unsupported transfer evidence version')
     for summary in directions:
         selected=[r for r in rows if r['direction']==summary['direction']]
         bps=summary['completed_bytes_per_second']
@@ -105,7 +116,41 @@ def _transfer_metrics(rows, *, evidence_version=1, overlap_probe=None):
             stream_window_intersection_ms=max(0.,min(overlap_probe['copy_end_ms'],overlap_probe['compute_end_ms'])-
                 max(overlap_probe['copy_start_ms'],overlap_probe['compute_start_ms'])) if overlap_probe is not None else None,
             interval_unit='ms',interval_scope='same_epoch_CUDA_event_windows; not_copy_engine_or_SM_activity'))
+    if evidence_version==3:
+        result['execution_comparison']=_comparison_metrics(overlap_probe['comparison'])
     return result
+
+
+def _comparison_metrics(comparison):
+    """Conservative decision rule, not a confidence interval or hardware proof."""
+    pairs=comparison['pairs']
+    serial=[p['serial']['completion_wall_ms'] for p in pairs]
+    concurrent=[p['concurrent']['completion_wall_ms'] for p in pairs]
+    def summary(samples):
+        mean=statistics.mean(samples)
+        std=statistics.stdev(samples) if len(samples)>1 else 0.
+        return dict(mean_ms=mean,std_ms=std,cv=std/mean,min_ms=min(samples),max_ms=max(samples))
+    s,c=summary(serial),summary(concurrent)
+    differences=[a-b for a,b in zip(serial,concurrent)]
+    delta=statistics.mean(differences)
+    se=statistics.stdev(differences)/math.sqrt(len(pairs)) if len(pairs)>1 else None
+    # Balance order to expose warmup/drift; require both order groups to improve.
+    order_improves=all(any(p['order'][0]==mode for p in pairs) and
+        statistics.mean(d for d,p in zip(differences,pairs) if p['order'][0]==mode)>0
+        for mode in ('serial','concurrent'))
+    reliable=(len(pairs)>=6 and comparison['warmup_pairs']>=1 and
+        max(s['cv'],c['cv'])<=.10 and se is not None and
+        delta-3*se>.05*s['mean_ms'] and order_improves)
+    return dict(status='measured',serial=s,concurrent=c,pairs=len(pairs),
+        observed_speedup=s['mean_ms']/c['mean_ms'],
+        observed_time_reduction_percent=100*delta/s['mean_ms'],
+        paired_mean_saved_ms=delta,paired_standard_error_ms=se,
+        reliable_improvement=reliable,
+        decision_rule='at_least_6_pairs_and_warmup; both_orders_improve; CV<=0.10; mean_saved_minus_3_SE>5%_serial_mean; heuristic_not_confidence_interval',
+        recommendation=('use_concurrent_scheduling_with_pinned_nonblocking_for_this_workload' if reliable
+            else 'no_reliable_concurrent_speedup; retain_serial_unless_application_measurements_support_change'),
+        scope='same_H2D_bytes_and_independent_matmul_work; host_submission_through_both_terminal_completions; preparation_and_validation_excluded',
+        hardware_overlap_proven=False,pinning_benefit='not_isolated; both_modes_use_pinned_memory')
 
 
 def measure_transfers(*, protocol=TransferProtocol()):
@@ -116,6 +161,8 @@ def measure_transfers(*, protocol=TransferProtocol()):
     Native exits are crashed, never inferred OOM. Errors carry plain receipts.
     probe_overlap adds an unmeasured H2D/float32 matmul stream-window probe;
     hardware overlap remains unsupported without direct activity evidence.
+    compare_execution optionally compares that same work serially and on distinct
+    streams, with paired wall timings, warmup, validation and a scoped decision.
     """
     if type(protocol) is not TransferProtocol: raise TypeError('TransferProtocol required')
     receipt = dict(status='failed', reason=None, worker_pid=None, launcher_pid=None,
@@ -163,7 +210,8 @@ def measure_transfers(*, protocol=TransferProtocol()):
 def _validate_transfer(data):
     plan=TransferProtocol(**data['protocol']['configuration']); raw=data['raw_evidence']; rows=raw['copies']
     version=data['protocol'].get('evidence_version',1)
-    if type(version) is not int or version not in (1,2): raise ValueError('unsupported transfer evidence version')
+    if type(version) is not int or version not in (1,2,3): raise ValueError('unsupported transfer evidence version')
+    if plan.compare_execution != (version==3): raise ValueError('execution comparison version mismatch')
     count=len(plan.directions)*plan.repeats*plan.measure_iterations
     if len(rows)!=count or data['actual']!=dict(completed_copies=count,
         warmup_copies=len(plan.directions)*plan.repeats*plan.warmup_iterations,
@@ -186,7 +234,7 @@ def _validate_transfer(data):
             raise ValueError('missing equality/completion evidence')
         if row['host_pinned'] is not plan.pinned or row['non_blocking_requested'] is not plan.non_blocking:
             raise ValueError('host policy mismatch')
-        if version==2:
+        if version>=2:
             if row['events_preinitialized'] is not True: raise ValueError('copy events not initialized before timing')
             _integer(raw['stream_id'])
             if (row['start_stream_id']!=raw['stream_id'] or row['end_stream_id']!=raw['stream_id']
@@ -200,13 +248,14 @@ def _validate_transfer(data):
             _integer(row['host_observation_ns'])
             if not row['host_end_ns']<=row['host_observation_ns']<=row['terminal_end_ns']:
                 raise ValueError('copy observation outside host window')
-    probe=raw.get('overlap_probe') if version==2 else None
-    if version==2:
+    probe=raw.get('overlap_probe') if version>=2 else None
+    if version>=2:
         worker=raw['worker']
         if (worker['status']!='completed' or worker['exit_code']!=0 or worker['process_terminated'] is not True):
             raise ValueError('transfer worker did not finish normally')
         if (probe is not None)!=plan.probe_overlap: raise ValueError('overlap probe request mismatch')
         if probe is not None: _validate_overlap_probe(probe,raw['stream_id'],tensor['transfer_bytes'],plan)
+        if version==3: _validate_comparison(probe['comparison'],probe,plan)
         resources=raw['resources']
         if resources['policy']!='advisory_only; occupancy_is_not_an_execution_gate': raise ValueError('invalid resource policy')
         for observation in (resources['before'],resources['after']):
@@ -224,6 +273,31 @@ def _validate_transfer(data):
             raise ValueError('resource quota mismatch')
         if raw['cleanup']!=dict(terminal_completed=True,process_owned_resources=True): raise ValueError('incomplete copy cleanup')
     if data['measurements']!=_transfer_metrics(rows,evidence_version=version,overlap_probe=probe): raise ValueError('copy metrics mismatch')
+
+
+def _validate_comparison(comparison,probe,plan):
+    if comparison['warmup_pairs']!=plan.warmup_iterations: raise ValueError('comparison warmup mismatch')
+    pairs=comparison['pairs']
+    if len(pairs)!=plan.repeats*plan.measure_iterations: raise ValueError('comparison sample count')
+    for i,pair in enumerate(pairs):
+        order=['serial','concurrent'] if i%2==0 else ['concurrent','serial']
+        if pair['index']!=i or pair['order']!=order: raise ValueError('comparison order mismatch')
+        for mode in order:
+            row=pair[mode]
+            for k in ('host_start_ns','terminal_end_ns'): _integer(row[k])
+            _positive(row['completion_wall_ms'])
+            if row['completion_wall_ms']!=(row['terminal_end_ns']-row['host_start_ns'])/1e6:
+                raise ValueError('comparison completion clock mismatch')
+            if (row['terminal_completed'] is not True or row['round_trip_equal'] is not True
+                    or row['compute_equal'] is not True or row['events_preinitialized'] is not True
+                    or row['host_pinned'] is not True or row['non_blocking_requested'] is not True):
+                raise ValueError('comparison completion/validation/policy missing')
+            expected_compute=probe['copy_stream_id'] if mode=='serial' else probe['compute_stream_id']
+            if row['copy_stream_id']!=probe['copy_stream_id'] or row['compute_stream_id']!=expected_compute:
+                raise ValueError('comparison streams mismatch')
+            if (row['transfer_bytes']!=probe['transfer_bytes'] or row['compute_shape']!=probe['compute_shape']
+                    or row['compute_iterations']!=probe['compute_iterations']):
+                raise ValueError('comparison workloads differ')
 
 
 def _validate_overlap_probe(probe,copy_stream,transfer_bytes,plan):

@@ -56,13 +56,65 @@ def _overlap_probe(torch,stream,host,gpu,reference,returned,p):
     stream.synchronize()
     equal=bool(torch.equal(returned,reference)); compute_equal=bool(torch.equal(c,torch.full_like(c,256.)))
     if not equal or not compute_equal: raise ValueError('copy/compute probe validation failed')
-    return dict(direction='H2D',transfer_bytes=host.numel()*host.element_size(),
+    result=dict(direction='H2D',transfer_bytes=host.numel()*host.element_size(),
         copy_stream_id=int(stream.cuda_stream),compute_stream_id=int(compute.cuda_stream),
         epoch_stream_id=int(stream.cuda_stream),compute_waited_on_epoch=True,
         copy_start_ms=times[0],copy_end_ms=times[1],compute_start_ms=times[2],compute_end_ms=times[3],
         compute_shape=[256,256],compute_iterations=16,terminal_completed=bool(ce.query() and me.query()),
         round_trip_equal=equal,compute_equal=compute_equal,host_pinned=host.is_pinned(),
         non_blocking_requested=p['non_blocking'],events_preinitialized=True)
+    if p['compare_execution']:
+        result['comparison']=_compare_execution(torch,stream,compute,host,gpu,reference,returned,a,b,c,p)
+    return result
+
+
+def _compare_execution(torch,stream,compute,host,gpu,reference,returned,a,b,c,p):
+    """Same owned copy and matmuls; serial stream vs independent streams.
+
+    The wall window includes Python submission and BOTH terminal waits, never
+    sums event durations. No validation, allocation or poisoning inside it.
+    """
+    copy_end=torch.cuda.Event(); compute_end=torch.cuda.Event()
+    copy_end.record(stream); compute_end.record(compute)
+    copy_end.synchronize(); compute_end.synchronize()
+    expected=torch.full_like(c,256.)
+    torch.cuda.synchronize(0)
+
+    def run(mode):
+        target=stream if mode=='serial' else compute
+        host.copy_(reference)
+        with torch.cuda.stream(stream): gpu.fill_(255)
+        with torch.cuda.stream(target): c.fill_(-1)
+        stream.synchronize(); compute.synchronize()
+        start=time.perf_counter_ns()
+        with torch.cuda.stream(stream):
+            gpu.copy_(host,non_blocking=True); copy_end.record(stream)
+        with torch.cuda.stream(target):
+            for _ in range(16): torch.mm(a,b,out=c)
+            compute_end.record(target)
+        copy_end.synchronize(); compute_end.synchronize()
+        end=time.perf_counter_ns()
+        complete=bool(copy_end.query() and compute_end.query())
+        with torch.cuda.stream(stream): returned.copy_(gpu)
+        stream.synchronize()
+        equal=bool(torch.equal(returned,reference)); compute_equal=bool(torch.equal(c,expected))
+        if not (complete and equal and compute_equal): raise ValueError('execution comparison validation failed')
+        return dict(host_start_ns=start,terminal_end_ns=end,completion_wall_ms=(end-start)/1e6,
+            terminal_completed=complete,round_trip_equal=equal,compute_equal=compute_equal,
+            copy_stream_id=int(stream.cuda_stream),compute_stream_id=int(target.cuda_stream),
+            events_preinitialized=True,host_pinned=host.is_pinned(),non_blocking_requested=True,
+            transfer_bytes=host.numel()*host.element_size(),compute_shape=[256,256],compute_iterations=16)
+
+    pairs=[]
+    with torch.inference_mode():
+        for i in range(p['warmup_iterations']):
+            for mode in (('serial','concurrent') if i%2==0 else ('concurrent','serial')): run(mode)
+        for i in range(p['repeats']*p['measure_iterations']):
+            order=['serial','concurrent'] if i%2==0 else ['concurrent','serial']
+            pair=dict(index=i,order=order)
+            for mode in order: pair[mode]=run(mode)
+            pairs.append(pair)
+    return dict(warmup_pairs=p['warmup_iterations'],pairs=pairs)
 
 
 def main():
@@ -141,14 +193,15 @@ def main():
         probe=_overlap_probe(torch,stream,host,gpu,reference,returned,p) if p['probe_overlap'] else None
         resources_after=_resources(torch)
         count=len(rows)
-        data=_base('transfer','P15',dict(id='owned_serial_copy',version=1,evidence_version=2,
+        evidence_version=3 if p['compare_execution'] else 2
+        data=_base('transfer','P15',dict(id='owned_serial_copy',version=1,evidence_version=evidence_version,
             scope='fresh_worker_preallocated_buffers',configuration=p),
             dict(model={'kind':'not_applicable'},input=tensor,environment=dict(device='cuda:0',torch=str(torch.__version__),
                 python=sys.version,gpu=torch.cuda.get_device_name(),cuda_build=torch.version.cuda,
                 package_source=str(Path(package_root)/'hyso/performance/__init__.py'),worker_source=__file__)))
         data.update(requested=dict(measured_copies=count),actual=dict(completed_copies=count,
             warmup_copies=len(p['directions'])*p['repeats']*p['warmup_iterations'],validation_copies=count,pending_copies=0),
-            measurements=_transfer_metrics(rows,evidence_version=2,overlap_probe=probe),
+            measurements=_transfer_metrics(rows,evidence_version=evidence_version,overlap_probe=probe),
             raw_evidence=dict(copies=rows,tensor=tensor,worker={},overlap_probe=probe,
                 resources=dict(policy='advisory_only; occupancy_is_not_an_execution_gate',before=resources_before,after=resources_after),
                 stream_id=int(stream.cuda_stream),allocator_fraction=p['cuda_memory_fraction'],

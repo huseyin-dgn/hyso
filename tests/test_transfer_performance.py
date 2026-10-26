@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import pytest
 
 from hyso.performance import TransferProtocol,TransferResult,TransferError,measure_transfers
-from hyso.performance.transfers import _transfer_metrics
+from hyso.performance.transfers import _transfer_metrics, _comparison_metrics
 from test_performance_transfer_utilization import transfer_fixture
 
 
@@ -166,3 +166,73 @@ def test_advisory_resource_observation_does_not_swallow_cuda_errors(monkeypatch)
     def fail(device): raise RuntimeError('controlled CUDA query error')
     with pytest.raises(RuntimeError,match='controlled CUDA query error'):
         _resources(SimpleNamespace(cuda=SimpleNamespace(mem_get_info=fail)))
+
+
+def comparison_fixture():
+    d=current_fixture(probe=True)
+    d['protocol']['evidence_version']=3
+    d['protocol']['configuration'].update(pinned=True,non_blocking=True,compare_execution=True)
+    raw=d['raw_evidence'];raw['copies'][0].update(host_pinned=True,non_blocking_requested=True)
+    probe=raw['overlap_probe'];probe.update(host_pinned=True,non_blocking_requested=True)
+    def row(stream,end):
+        return dict(host_start_ns=100,terminal_end_ns=end,completion_wall_ms=(end-100)/1e6,
+            terminal_completed=True,round_trip_equal=True,compute_equal=True,events_preinitialized=True,
+            host_pinned=True,non_blocking_requested=True,copy_stream_id=7,compute_stream_id=stream,
+            transfer_bytes=16,compute_shape=[256,256],compute_iterations=16)
+    probe['comparison']=dict(warmup_pairs=0,pairs=[dict(index=0,order=['serial','concurrent'],
+        serial=row(7,2000100),concurrent=row(8,1000100))])
+    d['measurements']=_transfer_metrics(raw['copies'],evidence_version=3,overlap_probe=probe)
+    return d
+
+
+@pytest.mark.parametrize('kwargs',[dict(compare_execution=1),dict(compare_execution=True),
+    dict(compare_execution=True,probe_overlap=True,pinned=True)])
+def test_comparison_requires_explicit_pinned_nonblocking_probe(kwargs):
+    with pytest.raises((ValueError,TypeError)): TransferProtocol(**kwargs)
+
+
+def test_comparison_is_optional_and_preserves_copy_accounting_and_exports(tmp_path):
+    assert not TransferProtocol().compare_execution
+    d=comparison_fixture();result=TransferResult(d)
+    m=d['measurements']['execution_comparison']
+    assert m['observed_speedup']==2 and m['observed_time_reduction_percent']==50
+    assert not m['reliable_improvement'] and not m['hardware_overlap_proven']
+    assert m['pinning_benefit'].startswith('not_isolated')
+    assert d['measurements']['directions'][0]['bytes']==16
+    assert d['measurements']['overlap']['value'] is None
+    result.to_json(tmp_path/'comparison.json');result.to_csv(tmp_path/'comparison.csv')
+    assert TransferResult(json.loads((tmp_path/'comparison.json').read_text())).to_dict()==d
+    with (tmp_path/'comparison.csv').open(newline='') as f:
+        assert [json.loads(r['payload']) for r in csv.DictReader(f)]==d['raw_evidence']['copies']
+
+
+@pytest.mark.parametrize('change',[
+    dict(compute_equal=False),dict(terminal_completed=False),dict(round_trip_equal=False),
+    dict(completion_wall_ms=.5),dict(terminal_end_ns=0),dict(host_pinned=False),
+    dict(non_blocking_requested=False),dict(compute_stream_id=7),dict(transfer_bytes=32),
+    dict(compute_iterations=15),dict(events_preinitialized=False),
+])
+def test_comparison_rejects_missing_completion_or_unequal_work(change):
+    d=comparison_fixture();d['raw_evidence']['overlap_probe']['comparison']['pairs'][0]['concurrent'].update(change)
+    with pytest.raises(ValueError): TransferResult(d)
+
+
+@pytest.mark.parametrize('scenario',['stable_gain','no_gain','regression','noisy','too_few','no_warmup','order_bias'])
+def test_recommendation_requires_repeatable_gain_in_both_orders(scenario):
+    pairs=[]
+    for i in range(8 if scenario!='too_few' else 2):
+        serial=10.
+        concurrent={'no_gain':10.,'regression':12.,'noisy':(2. if i%2 else 12.),
+            'order_bias':(5. if i%2 else 11.)}.get(scenario,7.)
+        pairs.append(dict(order=['serial','concurrent'] if i%2==0 else ['concurrent','serial'],
+            serial=dict(completion_wall_ms=serial),concurrent=dict(completion_wall_ms=concurrent)))
+    m=_comparison_metrics(dict(warmup_pairs=0 if scenario=='no_warmup' else 2,pairs=pairs))
+    assert m['reliable_improvement'] is (scenario=='stable_gain')
+    assert m['recommendation'].startswith('use_concurrent') is (scenario=='stable_gain')
+
+
+def test_comparison_decision_and_version_cannot_be_forged():
+    d=comparison_fixture();d['measurements']['execution_comparison']['reliable_improvement']=True
+    with pytest.raises(ValueError): TransferResult(d)
+    d=comparison_fixture();d['protocol']['evidence_version']=2
+    with pytest.raises(ValueError): TransferResult(d)

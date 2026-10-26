@@ -14,6 +14,8 @@ import sys
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--compare-execution',action='store_true',
+        help='optional paired serial/concurrent H2D+matmul comparison; JSON holds full evidence')
     args=parser.parse_args();args.output.mkdir(parents=True,exist_ok=False)
     root=Path(__file__).resolve().parents[1];sys.path.insert(0,str(root))
     import numpy as np
@@ -35,14 +37,18 @@ def main():
         for pinned in (False,True):
             for nonblocking in (False,True):
                 name=f'pinned_{pinned}_nonblocking_{nonblocking}'
+                compare=args.compare_execution and pinned and nonblocking
+                elements=4*1024**2 if compare else 262144
+                warmup,iterations,repeats=(2,4,2) if compare else (1,2,1)
                 state=(random.getstate(),np.random.get_state(),torch.get_rng_state(),torch.cuda.get_rng_state())
                 allocator=(torch.cuda.memory_allocated(),torch.cuda.memory_reserved(),
                     torch.cuda.max_memory_allocated(),torch.cuda.max_memory_reserved())
                 previous=torch.cuda.current_stream()
                 try:
                     with torch.cuda.stream(stream):
-                        result=measure_transfers(protocol=TransferProtocol(pinned=pinned,non_blocking=nonblocking,
-                            warmup_iterations=1,measure_iterations=2,repeats=1,probe_overlap=pinned and nonblocking))
+                        result=measure_transfers(protocol=TransferProtocol(shape=(elements,),pinned=pinned,non_blocking=nonblocking,
+                            warmup_iterations=warmup,measure_iterations=iterations,repeats=repeats,
+                            probe_overlap=pinned and nonblocking,compare_execution=compare))
                         assert torch.cuda.current_stream()==stream
                 except TransferError as error:
                     cases.append(dict(id=name,status='FAILED',diagnostics=error.diagnostics));save()
@@ -58,17 +64,18 @@ def main():
                     assert all(torch.equal(model.state_dict()[k],v) for k,v in weights.items())
                 d=result.to_dict();raw=d['raw_evidence'];m=d['measurements']
                 assert Path(d['provenance']['environment']['package_source']).resolve().is_relative_to(root)
-                assert d['actual']==dict(completed_copies=4,warmup_copies=2,validation_copies=4,pending_copies=0)
+                count=2*iterations*repeats;transfer_bytes=elements*4
+                assert d['actual']==dict(completed_copies=count,warmup_copies=2*warmup*repeats,validation_copies=count,pending_copies=0)
                 assert raw['worker']['process_terminated'] and raw['worker']['exit_code']==0
                 assert all(d['protocol']['configuration'][key] is None for key in
                     ('cpu_memory_limit_bytes','input_limit_bytes','cuda_memory_fraction'))
                 for row in raw['copies']:
-                    assert row['transfer_bytes']==1048576 and row['equal'] and row['terminal_complete']
+                    assert row['transfer_bytes']==transfer_bytes and row['equal'] and row['terminal_complete']
                     assert row['host_pinned'] is pinned and row['non_blocking_requested'] is nonblocking
                     assert row['start_stream_id']==row['end_stream_id']==raw['stream_id']
                 assert m['transfer_status']=='measured'
                 for summary in m['directions']:
-                    assert summary['completed_copies']==2 and summary['bytes']==2*1048576
+                    assert summary['completed_copies']==iterations*repeats and summary['bytes']==iterations*repeats*transfer_bytes
                     assert summary['effective_bandwidth_gb_s']>0
                     assert summary['completed_bytes_per_second']/1e9==summary['effective_bandwidth_gb_s']
                 assert m['overlap']['status']=='unsupported' and m['overlap']['value'] is None
@@ -77,12 +84,22 @@ def main():
                     assert all(not raw['copies'][i]['start_complete_after_enqueue']
                         for i in m['asynchronous_execution']['observed_copy_indices'])
                 else: assert m['asynchronous_execution']['status']=='unsupported'
+                if compare:
+                    comparison=m['execution_comparison'];probe=raw['overlap_probe']
+                    assert comparison['pairs']==8 and not comparison['hardware_overlap_proven']
+                    assert probe['comparison']['warmup_pairs']==2
+                    for pair in probe['comparison']['pairs']:
+                        for mode in ('serial','concurrent'):
+                            row=pair[mode]
+                            assert row['terminal_completed'] and row['round_trip_equal'] and row['compute_equal']
+                            assert row['transfer_bytes']==transfer_bytes and row['completion_wall_ms']>0
                 path=args.output/(name+'.json');result.to_json(path);result.to_csv(path.with_suffix('.csv'))
                 assert TransferResult(json.loads(path.read_text())).to_dict()==d
                 with path.with_suffix('.csv').open(newline='',encoding='utf-8') as f:
                     assert [json.loads(r['payload']) for r in csv.DictReader(f)]==raw['copies']
                 cases.append(dict(id=name,status='PASS',directions=m['directions'],
                     asynchronous_execution=m['asynchronous_execution'],overlap=m['overlap'],
+                    execution_comparison=m.get('execution_comparison'),
                     probe=raw['overlap_probe'],resources=raw['resources']));save()
         report.update(transfer_bandwidth='PASS',host_asynchrony=('OBSERVED' if any(
             c['asynchronous_execution']['value'] is True for c in cases) else 'UNSUPPORTED'),hardware_overlap='UNSUPPORTED')
