@@ -23,6 +23,8 @@ from .dataloader import (DataLoaderAnalysisProtocol, DataLoaderAnalysisResult, L
 from .worker_trace_result import WorkerTraceAnalysisResult, analyze_worker_traces
 from ._loader_task_trace import WorkerTaskDataLoader
 from .worker_task_result import WorkerTaskAnalysisResult, analyze_worker_tasks
+from ._loader_dataset_trace import TracedDataset
+from ._loader_stage_trace import trace_data_stage
 from .training_memory import (TrainingMemoryProtocol, TrainingMemoryResult, TrainingMemoryError,
                               measure_training_memory)
 from .gradients import (GradientDiagnosticsProtocol, GradientDiagnosticsResult, GradientDiagnosticsError,
@@ -60,6 +62,7 @@ __all__ = ["TailPolicy", "ThroughputProtocol", "analyze_latency", "measure_throu
            "DataLoaderAnalysisResult", "LoaderTrainingResult", "measure_training_with_loader",
            "WorkerTraceAnalysisResult", "analyze_worker_traces",
            "WorkerTaskDataLoader", "WorkerTaskAnalysisResult", "analyze_worker_tasks",
+           "TracedDataset", "trace_data_stage",
            "TrainingMemoryProtocol", "TrainingMemoryResult", "TrainingMemoryError", "measure_training_memory",
            "GradientDiagnosticsProtocol", "GradientDiagnosticsResult", "GradientDiagnosticsError", "measure_gradient_diagnostics",
     "TrainingMemoryRecipe", "IsolatedTrainingMemoryProtocol", "IsolatedTrainingMemoryResult", "measure_training_memory_isolated",

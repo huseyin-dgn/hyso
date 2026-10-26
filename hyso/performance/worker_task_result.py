@@ -256,7 +256,7 @@ class WorkerTaskAnalysisResult:
             worker_service=metric(service, "worker_fetch_entry_to_collate_completion_including_trace_overhead"),
             parent_buffer_residence=metric(residence, "parent_receive_to_delivery_excludes_unobserved_queue_wait"),
             stages={stage: stages.get(stage, dict(status="unsupported", count=0, mean_ms=None))
-                    for stage in ("dataset_fetch", "decode", "transform", "collate")},
+                    for stage in ("dataset_fetch", "load", "decode", "transform", "collate")},
             lifecycle=data["analysis"]["lifecycle"],
             queue_occupancy=data["analysis"]["queue_occupancy"],
             prefetch_efficiency=data["analysis"]["prefetch_efficiency"],

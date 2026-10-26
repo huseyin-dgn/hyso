@@ -403,6 +403,16 @@ class DataLoaderAnalysisResult:
         data = _plain(self.to_dict()); self._check(data)
         return data
 
+    def diagnostics(self, *, worker_tasks=None, worker_traces=None):
+        """Offline same-run wait/compute/stage comparison; never rerun a loader.
+
+        Worker timing is opt-in. Queue occupancy/residence and prefetch
+        efficiency are not inferred from next(), task counts or clock offsets.
+        Existing v1 JSON/CSV and the separate worker companion schemas stay intact.
+        """
+        from ._loader_diagnostics import analyze
+        return analyze(self, worker_tasks=worker_tasks, worker_traces=worker_traces)
+
     def to_json(self, path, *, overwrite=False):
         _write_export(path, json.dumps(self._export_data(), ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False) + "\n", overwrite)
 

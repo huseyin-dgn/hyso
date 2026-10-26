@@ -46,7 +46,7 @@ def measure_stage(
     if not isinstance(recorder, WorkerTimingRecorder):
         raise RuntimeError("no active worker recorder")
 
-    if stage not in ("decode", "transform"):
+    if stage not in ("load", "decode", "transform"):
         raise ValueError("unsupported dataset stage")
 
     if not callable(operation):
@@ -54,3 +54,20 @@ def measure_stage(
 
     with recorder.measure(stage, sample_id=sample_id):
         return operation(value)
+
+
+def trace_data_stage(stage, operation, value, *, sample_id=None):
+    """Run once; collect worker-local wall timing only in an active trace.
+
+    A normal Dataset/DataLoader can call this without a profiler or custom
+    loader. TracedDataset or the explicit task adapter activates collection.
+    No I/O, RNG, result, exception or worker-lifecycle behavior is replaced.
+    """
+    if stage not in ("load", "decode", "transform"):
+        raise ValueError("unsupported dataset stage")
+    if not callable(operation):
+        raise TypeError("operation must be callable")
+    recorder = _active_recorder.get()
+    if recorder is None:
+        return operation(value)
+    return measure_stage(recorder, stage, operation, value, sample_id=sample_id)

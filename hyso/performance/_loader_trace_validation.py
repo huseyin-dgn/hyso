@@ -10,6 +10,9 @@ import math
 
 
 STAGES = ("decode", "transform", "dataset_fetch")
+# Preserve the legacy validate_worker_trace three-stage contract. Group/task
+# validators accept an optional explicitly instrumented I/O load stage.
+EVENT_STAGES = ("load",) + STAGES
 
 
 def validate_timing_event(event):
@@ -23,7 +26,7 @@ def validate_timing_event(event):
         and type(event.get("sample_id")) is str
         and type(event.get("worker_id")) is int and event["worker_id"] >= 0
         and type(event.get("worker_pid")) is int and event["worker_pid"] > 0
-        and type(event.get("stage")) is str and event["stage"] in STAGES
+        and type(event.get("stage")) is str and event["stage"] in EVENT_STAGES
         and all(type(v) is int for v in (start, end, duration))
         and start >= 0 and end >= start and end <= 2**63 - 1 and duration == end - start
         and type(ms) in (int, float) and 0 <= ms <= (2**63 - 1) / 1e6 and math.isfinite(ms)
