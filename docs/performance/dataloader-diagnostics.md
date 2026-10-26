@@ -6,6 +6,9 @@ training, replace the sampler or require an external profiler. Worker tracing
 is optional. No benchmark, RAM/VRAM quota or worker-count policy is imposed on
 ordinary library use.
 
+The [P21 acceptance matrix](p21-acceptance.md) records the verified scopes,
+native evidence, configuration preservation and JSON/CSV compatibility.
+
 ```python
 import torch
 from torch.utils.data import DataLoader, TensorDataset
