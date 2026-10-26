@@ -209,6 +209,10 @@ def measure_roofline(recipe,*,protocol=RooflineProtocol(),profiling_protocol=Non
 
 def _validate_roofline(data):
     p=data['protocol'];raw=data['raw_evidence']
+    if p.get('id')=='ncu_empirical_roofline':
+        from .roofline_counters import _validate_counter_result
+        _validate_counter_result(data)
+        return
     if set(p)!={'id','version','scope','configuration'} or p['id']!='same_capture_roofline' or p['scope']!='owned_profiled_inference':
         raise ValueError('invalid P18 protocol/scope')
     if set(raw)!={'source','source_sha256','reference'}:raise ValueError('invalid P18 evidence fields')
