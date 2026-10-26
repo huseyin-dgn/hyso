@@ -40,6 +40,7 @@ from .roofline import RooflineProtocol,RooflineReference,analyze_roofline,measur
 from .result import RooflineResult,LayerOverheadResult
 from .layer_overhead import LayerOverheadProtocol,measure_layer_overhead
 from .profiling import layer_profiling_capabilities
+from .profiling import analyze_nsys_operators
 
 __all__ = ["TailPolicy", "ThroughputProtocol", "analyze_latency", "measure_throughput",
            "LatencyAnalysis", "ThroughputResult", "MemoryProtocol", "measure_memory", "measure_footprint",
@@ -65,5 +66,5 @@ __all__ = ["TailPolicy", "ThroughputProtocol", "analyze_latency", "measure_throu
     "StreamSource", "StreamProtocol", "FrameInferenceProcessor", "measure_streaming", "RetentionTracker",
     "analyze_memory_trend", "observe_nvidia_power", "analyze_energy",
     "DeviceProtocol", "compare_devices", "ProviderProtocol", "profile_execution_providers",
-    "layer_profiling_capabilities", "LayerOverheadResult", "LayerOverheadProtocol", "measure_layer_overhead",
+    "layer_profiling_capabilities", "analyze_nsys_operators", "LayerOverheadResult", "LayerOverheadProtocol", "measure_layer_overhead",
     "RooflineProtocol", "RooflineReference", "RooflineResult", "analyze_roofline", "measure_roofline"]

@@ -70,6 +70,16 @@ def profile_operators(recipe,*,protocol=ProfilingProtocol(),trace_path=None):
     return _execute_profile(recipe,protocol,trace_path=trace_path)
 
 
+def analyze_nsys_operators(sqlite_path,*,capture_path):
+    """Optional linked P14 GPU/ATen report from one external Nsight capture.
+
+    Requires autograd-nvtx and the capture receipt, launches no GPU/profiler work.
+    Ordinary profiling and its unsupported GPU fields are unchanged without it.
+    """
+    from ._operator_activity import analyze
+    return analyze(sqlite_path,capture_path)
+
+
 def _execute_profile(recipe,protocol,*,trace_path=None,experiment_mode=None):
     if type(recipe) is not ColdStartRecipe or type(protocol) is not ProfilingProtocol:
         raise TypeError('expected ColdStartRecipe and ProfilingProtocol')
