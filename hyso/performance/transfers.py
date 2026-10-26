@@ -24,6 +24,8 @@ class TransferProtocol:
     warms up warmup_iterations times, then runs repeats*measure_iterations
     samples in alternating order. JSON retains comparison samples and decision;
     CSV and actual.completed_copies keep their existing copy-only scope.
+    profile_capture=True additionally enables cudaProfilerStart/Stop and unique
+    NVTX phase labels for an external nsys capture; no profiler is launched here.
     """
     shape: tuple[int, ...] = (262144,)
     dtype: str = 'float32'
@@ -41,6 +43,7 @@ class TransferProtocol:
     cuda_memory_fraction: float | None = None
     probe_overlap: bool = False
     compare_execution: bool = False
+    profile_capture: bool = False
 
     def __post_init__(self):
         if type(self.shape) not in (tuple, list) or not 1 <= len(self.shape) <= 8:
@@ -51,10 +54,12 @@ class TransferProtocol:
             raise ValueError('unique directions required')
         if any(d not in ('H2D', 'D2H') for d in self.directions): raise ValueError('H2D/D2H only')
         object.__setattr__(self, 'directions', tuple(self.directions))
-        for v in (self.pinned, self.non_blocking, self.probe_overlap, self.compare_execution):
+        for v in (self.pinned, self.non_blocking, self.probe_overlap, self.compare_execution, self.profile_capture):
             if type(v) is not bool: raise TypeError('explicit bool policy required')
         if self.compare_execution and not (self.probe_overlap and self.pinned and self.non_blocking):
             raise ValueError('execution comparison requires probe_overlap, pinned and non_blocking')
+        if self.profile_capture and not self.compare_execution:
+            raise ValueError('profile_capture requires execution comparison')
         for v in (self.dtype, self.device, self.layout):
             if type(v) is not str: raise TypeError('string profile required')
         _integer(self.warmup_iterations); _integer(self.measure_iterations, 1); _integer(self.repeats, 1)
@@ -276,6 +281,10 @@ def _validate_transfer(data):
 
 
 def _validate_comparison(comparison,probe,plan):
+    if plan.profile_capture:
+        import uuid
+        uuid.UUID(comparison['trace_token'])
+    elif 'trace_token' in comparison: raise ValueError('unexpected capture token')
     if comparison['warmup_pairs']!=plan.warmup_iterations: raise ValueError('comparison warmup mismatch')
     pairs=comparison['pairs']
     if len(pairs)!=plan.repeats*plan.measure_iterations: raise ValueError('comparison sample count')

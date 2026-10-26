@@ -430,6 +430,17 @@ class TransferResult(_Result):
     __slots__ = ()
     _kind = 'transfer'
 
+    def nsys_activity_timeline(self, sqlite_path):
+        """Return a linked GPU activity report from an external nsys SQLite export.
+
+        Optional, read-only, no Nsight installation/import required for ordinary
+        transfers. Checks this capture's token, PID, phases and GPU workloads.
+        Original copy timings and optimization decisions remain unchanged.
+        Without this external evidence the original overlap stays unsupported.
+        """
+        from ._transfer_activity import analyze_nsys_activity
+        return analyze_nsys_activity(self, sqlite_path)
+
 
 @dataclass(frozen=True, init=False)
 class UtilizationResult(_Result):

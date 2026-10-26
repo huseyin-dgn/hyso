@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import sys
 import time
+import uuid
 
 
 def _ready(path, phase):
@@ -79,13 +80,15 @@ def _compare_execution(torch,stream,compute,host,gpu,reference,returned,a,b,c,p)
     copy_end.synchronize(); compute_end.synchronize()
     expected=torch.full_like(c,256.)
     torch.cuda.synchronize(0)
+    trace_token=str(uuid.uuid4()) if p['profile_capture'] else None
 
-    def run(mode):
+    def run(mode,label):
         target=stream if mode=='serial' else compute
         host.copy_(reference)
         with torch.cuda.stream(stream): gpu.fill_(255)
         with torch.cuda.stream(target): c.fill_(-1)
         stream.synchronize(); compute.synchronize()
+        if trace_token: torch.cuda.nvtx.range_push(f'hyso.p15/{trace_token}/{label}/{mode}')
         start=time.perf_counter_ns()
         with torch.cuda.stream(stream):
             gpu.copy_(host,non_blocking=True); copy_end.record(stream)
@@ -94,6 +97,7 @@ def _compare_execution(torch,stream,compute,host,gpu,reference,returned,a,b,c,p)
             compute_end.record(target)
         copy_end.synchronize(); compute_end.synchronize()
         end=time.perf_counter_ns()
+        if trace_token: torch.cuda.nvtx.range_pop()
         complete=bool(copy_end.query() and compute_end.query())
         with torch.cuda.stream(stream): returned.copy_(gpu)
         stream.synchronize()
@@ -108,13 +112,15 @@ def _compare_execution(torch,stream,compute,host,gpu,reference,returned,a,b,c,p)
     pairs=[]
     with torch.inference_mode():
         for i in range(p['warmup_iterations']):
-            for mode in (('serial','concurrent') if i%2==0 else ('concurrent','serial')): run(mode)
+            for mode in (('serial','concurrent') if i%2==0 else ('concurrent','serial')): run(mode,f'warmup/{i}')
         for i in range(p['repeats']*p['measure_iterations']):
             order=['serial','concurrent'] if i%2==0 else ['concurrent','serial']
             pair=dict(index=i,order=order)
-            for mode in order: pair[mode]=run(mode)
+            for mode in order: pair[mode]=run(mode,f'measure/{i}')
             pairs.append(pair)
-    return dict(warmup_pairs=p['warmup_iterations'],pairs=pairs)
+    result=dict(warmup_pairs=p['warmup_iterations'],pairs=pairs)
+    if trace_token: result['trace_token']=trace_token
+    return result
 
 
 def main():
@@ -157,6 +163,9 @@ def main():
                     dtype=p['dtype'],layout='contiguous_dense',transfer_bytes=host.numel()*host.element_size())
         assert host.is_pinned()==p['pinned'] and host.is_contiguous() and gpu.is_contiguous()
         rows=[]; _ready(ready,'runtime_prepared')
+        if p['profile_capture']:
+            error=torch.cuda.cudart().cudaProfilerStart()
+            if int(error)!=0: raise RuntimeError(f'cudaProfilerStart failed: {error}')
         with torch.inference_mode(),torch.cuda.stream(stream):
             for direction in p['directions']:
                 for repeat in range(p['repeats']):
@@ -191,6 +200,9 @@ def main():
                                 host_observation_ns=observed,events_preinitialized=True))
             stream.synchronize()
         probe=_overlap_probe(torch,stream,host,gpu,reference,returned,p) if p['probe_overlap'] else None
+        if p['profile_capture']:
+            error=torch.cuda.cudart().cudaProfilerStop()
+            if int(error)!=0: raise RuntimeError(f'cudaProfilerStop failed: {error}')
         resources_after=_resources(torch)
         count=len(rows)
         evidence_version=3 if p['compare_execution'] else 2
