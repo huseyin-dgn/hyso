@@ -1,0 +1,8 @@
+include LICENSE
+recursive-include hyso *.py
+prune docs
+prune tests
+prune hyso/dist
+prune hyso/build
+prune hyso/hyso.egg-info
+global-exclude __pycache__ *.py[cod] *.pt *.pth *.ckpt
