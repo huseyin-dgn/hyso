@@ -1,4 +1,5 @@
 """P23 native tensor accounting, one-fit replay, bounded cleanup and exports."""
+from fixture_support import example_fixture
 import copy
 import gc
 import hashlib
@@ -292,6 +293,52 @@ def test_accumulation_gradient_lifecycle_and_attempt_state():
     assert [r['fields'] for r in attempts]==[dict(applied=True,skipped=False,samples=4),dict(applied=True,skipped=False,samples=1)]
 
 
+def test_stage_pairs_and_independent_memory_changes_preserve_exports(tmp_path,monkeypatch):
+    def forbidden(*a,**kw):raise AssertionError('CPU diagnostics must not initialize CUDA')
+    monkeypatch.setattr(torch.cuda,'_lazy_init',forbidden)
+    result=measure_training_memory(make(),loader(),epochs=1)
+    original=result.to_dict();rows=original['observations'];diagnostics=result.diagnostics()
+    assert diagnostics['core_status']=='complete' and diagnostics['scope']=='in_process_fit'
+    assert diagnostics['logical']['parameter']['delta_bytes']==0
+    assert diagnostics['logical']['gradient']['baseline_bytes']==diagnostics['logical']['gradient']['end_bytes']==0
+    assert diagnostics['logical']['gradient']['sampled_max_bytes']>0
+    assert diagnostics['logical']['optimizer']['baseline_bytes']==0<diagnostics['logical']['optimizer']['end_bytes']
+    assert diagnostics['rss']['delta_bytes']==rows_delta(original['rss']['observations'],'rss_bytes')
+    assert diagnostics['peaks']['stage_peaks']['value'] is None
+    assert diagnostics['peaks']['cuda_training_windows']['value'] is None
+    for before,after,count in [('pre_forward','post_forward',3),('pre_backward','post_backward',3),
+                               ('pre_scaler_step','post_scaler_step',2),('pre_zero_grad','post_zero_grad',3)]:
+        starts=[r for r in rows if r['boundary']==before];ends=[r for r in rows if r['boundary']==after]
+        assert len(starts)==len(ends)==count
+        assert all(a['query_end_ns']<=b['query_start_ns'] for a,b in zip(starts,ends))
+    steps=[r for r in rows if r['boundary']=='pre_scaler_step']
+    zeros=[r for r in rows if r['boundary']=='pre_zero_grad']
+    assert all(r['logical']['summary']['gradient']['logical_bytes']>0 for r in steps)
+    assert zeros[0]['logical']['summary']['gradient']['logical_bytes']==0
+    assert all(r['logical']['summary']['gradient']['logical_bytes']>0 for r in zeros[1:])
+    diagnostics['boundary_observations'].clear()
+    assert result.to_dict()==original
+    result.to_json(tmp_path/'memory.json');result.to_csv(tmp_path/'memory.csv')
+    assert TrainingMemoryResult(json.loads((tmp_path/'memory.json').read_text())).to_dict()==original
+
+
+def rows_delta(rows,key):
+    return rows[-1][key]-rows[0][key]
+
+
+@pytest.mark.parametrize('damage',['missing','reversed'])
+def test_missing_before_boundary_cannot_survive_rehash(damage):
+    data=measure_training_memory(make(),loader(),epochs=1).to_dict()
+    before=next(r for r in data['observations'] if r['boundary']=='pre_backward')
+    if damage=='missing':data['observations'].remove(before)
+    else:
+        after=next(r for r in data['observations'] if r['boundary']=='post_backward')
+        before['boundary'],after['boundary']=after['boundary'],before['boundary']
+    data['instrumentation']['boundary_query_ns']=sum(r['query_end_ns']-r['query_start_ns'] for r in data['observations'])
+    data['sha256']=module._digest({k:v for k,v in data.items() if k!='sha256'})
+    with pytest.raises(ValueError,match='boundary pair'):TrainingMemoryResult(data)
+
+
 def test_rss_sampler_bound_and_midrun_missing_backend(monkeypatch):
     t=make();p=TrainingMemoryProtocol(max_samples=2,interval_seconds=.0001)
     recorder=module._MemoryRecorder(t,TrainingTimingProtocol(),p)
@@ -319,7 +366,7 @@ def test_cuda_summary_never_invents_window_peak_or_reset_arithmetic():
 
 def test_memory_guide():
     import re
-    path=Path(__file__).resolve().parents[1]/'docs/guides/performance-training-memory.md'
+    path=example_fixture('docs/guides/performance-training-memory.md')
     namespace={'__name__':'p23_guide'}
     for block in re.findall(r'```python\n(.*?)```',path.read_text(encoding='utf-8'),re.S):
         exec(compile(block,str(path),'exec'),namespace)

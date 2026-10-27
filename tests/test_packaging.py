@@ -17,6 +17,22 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
+    "hyso/evaluation.py", "hyso/quality.py", "hyso/_quality_memory.py",
+    "hyso/performance/_cpu_layer_memory.py", "hyso/performance/_layer_allocator.py",
+    "hyso/performance/_layer_memory.py", "hyso/performance/_loader_diagnostics.py",
+    "hyso/performance/_loader_task_iterator.py", "hyso/performance/_operator_activity.py",
+    "hyso/performance/_profile_evidence.py", "hyso/performance/_stability_diagnostics.py",
+    "hyso/performance/_transfer_activity.py", "hyso/performance/layer_overhead.py",
+    "hyso/performance/roofline.py", "hyso/performance/roofline_counters.py",
+    "hyso/performance/_loader_dataset_trace.py", "hyso/performance/_loader_event_channel.py",
+    "hyso/performance/_loader_stage_trace.py", "hyso/performance/_loader_task_trace.py",
+    "hyso/performance/_loader_trace_groups.py", "hyso/performance/_loader_trace_validation.py",
+    "hyso/performance/_loader_worker_lifecycle.py", "hyso/performance/_loader_worker_trace.py",
+    "hyso/performance/_runtime_worker.py", "hyso/performance/devices.py",
+    "hyso/performance/energy.py", "hyso/performance/memory_trend.py",
+    "hyso/performance/providers.py", "hyso/performance/runtime_result.py",
+    "hyso/performance/stability.py", "hyso/performance/streaming.py",
+    "hyso/performance/worker_task_result.py", "hyso/performance/worker_trace_result.py",
     "hyso/performance/_saved_activation.py",
     "hyso/performance/isolated_training_memory.py",
     "hyso/performance/_training_process.py",
@@ -49,14 +65,14 @@ MODULES = {
 }
 DEPENDENCIES = {"torch", "torchvision", "numpy", "matplotlib", "seaborn",
                 "scikit-learn", "tqdm", "torchsummary"}
-CONFIG_FILES = ("pyproject.toml", "setup.cfg", "MANIFEST.in", "README.md", "LICENSE")
+CONFIG_FILES = ("pyproject.toml", "setup.cfg", "MANIFEST.in", "LICENSE")
 
 
 def command(args, cwd):
     env = dict(os.environ, PIP_CONFIG_FILE=os.devnull, PIP_DISABLE_PIP_VERSION_CHECK="1",
                PYTHONDONTWRITEBYTECODE="1", CUDA_VISIBLE_DEVICES="-1", MPLBACKEND="Agg")
     result = subprocess.run([sys.executable, "-I", "-B", *args], cwd=cwd,
-                            env=env, capture_output=True, text=True, timeout=120)
+                            env=env, capture_output=True, text=True, timeout=240)
     assert result.returncode == 0, result.stdout + result.stderr
     return result.stdout
 
@@ -87,12 +103,13 @@ def distributions(tmp_path_factory):
 
 def test_canonical_packaging_configuration():
     assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == MODULES
-    assert len(MODULES) == 47
+    assert len(MODULES) == 80
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
     assert not (ROOT / "hyso/setup.cfg").exists()
     cfg = configparser.ConfigParser()
     cfg.read(ROOT / "setup.cfg", encoding="utf-8")
+    assert not cfg.has_option('metadata','author_email')
     assert cfg["metadata"]["name"] == "hyso"
     assert cfg["metadata"]["version"] == "0.2.0"
     assert cfg["options"]["python_requires"] == ">=3.10"
@@ -122,7 +139,7 @@ def test_wheel_and_sdist_content_and_metadata(distributions):
         assert {name for name in names if name.endswith(".py")} == MODULES
         assert set(CONFIG_FILES) <= names
         # setuptools adds egg_info settings to the sdist's setup.cfg.
-        for name in ("README.md", "LICENSE", "pyproject.toml", "MANIFEST.in", *MODULES):
+        for name in ("LICENSE", "pyproject.toml", "MANIFEST.in", *MODULES):
             assert archive.extractfile("hyso-0.2.0/" + name).read() == (ROOT / name).read_bytes()
     for name in wheel_names | names:
         assert "sentinel" not in name and not name.endswith((".pth", ".pt", ".ckpt", ".pyc", ".sqlite3", ".db"))
@@ -132,10 +149,24 @@ def test_wheel_and_sdist_content_and_metadata(distributions):
         assert metadata["Requires-Python"] == ">=3.10"
         description = metadata.get_payload(decode=True).decode("utf-8")
         # Email metadata may use CRLF; compare every content line unchanged.
-        assert description.strip().splitlines() == (ROOT / "README.md").read_text(encoding="utf-8").strip().splitlines()
+        assert description.strip() == "HYSo Python library."
     requirements = [Requirement(value) for value in wheel_meta.get_all("Requires-Dist")]
-    assert {str(Requirement(value)) for value in sdist_requires if value.strip()} == {str(item) for item in requirements}
-    assert {item.name for item in requirements} == DEPENDENCIES
+    section=None;sdist_requirements=[]
+    for value in sdist_requires:
+        if not value.strip():continue
+        if value.startswith('['):
+            assert value=='[deployment]'
+            section='deployment';continue
+        sdist_requirements.append(Requirement(value+('; extra == "deployment"' if section else '')))
+    assert {str(item) for item in sdist_requirements} == {str(item) for item in requirements}
+    assert {item.name for item in requirements if item.marker is None} == DEPENDENCIES
+    optional={item.name:item for item in requirements if item.marker is not None}
+    assert set(optional)=={'onnx','onnxruntime'}
+    assert str(optional['onnx'].specifier)=='==1.20.0'
+    assert str(optional['onnxruntime'].specifier)=='==1.23.2'
+    assert all(item.marker.evaluate({'extra':'deployment'}) and not item.marker.evaluate({'extra':''})
+               for item in optional.values())
+    assert wheel_meta['Author-email'] is None and sdist_meta['Author-email'] is None
     assert str(next(item.specifier for item in requirements if item.name == "torch")) == ">=2.2.2"
     assert str(next(item.specifier for item in requirements if item.name == "torchvision")) == ">=0.17.2"
     assert not next(item.specifier for item in requirements if item.name == "numpy")
@@ -381,8 +412,11 @@ assert tracking_b2.get_artifact(owned['id'])['producer_run_id'] == artifact_run.
 tracking_b2.close()
 # Execute the documented manual integration with installed production modules.
 import re
+fixture_spec = importlib.util.spec_from_file_location('fixture_support', sys.argv[3])
+fixture_support = importlib.util.module_from_spec(fixture_spec)
+fixture_spec.loader.exec_module(fixture_support)
 manual = {}
-guide_path = pathlib.Path(sys.argv[3])
+guide_path = fixture_support.example_fixture("docs/guides/experiment-manager.md")
 for block in re.findall(r'```python\\n(.*?)```', guide_path.read_text(encoding='utf-8'), re.S):
     exec(compile(block, str(guide_path), 'exec'), manual)
 manual_manager = ExperimentManager(manual['root'])
@@ -391,7 +425,7 @@ assert len(manual_manager.get_run(manual['training_id']).read_metrics()) == 8
 assert manual_manager.verify_artifact(manual['artifact_id'])['status'] == 'verified'
 manual_manager.close()
 performance_manual = {}
-performance_guide = pathlib.Path(sys.argv[4])
+performance_guide = fixture_support.example_fixture("docs/guides/performance-inference.md")
 for block in re.findall(r'```python\\n(.*?)```', performance_guide.read_text(encoding='utf-8'), re.S):
     exec(compile(block, str(performance_guide), 'exec'), performance_manual)
 assert performance_manual['latency'].to_dict()['measurements'][-1]['status'] == 'derived'
@@ -399,41 +433,42 @@ assert performance_manual['throughput'].to_dict()['actual']['completed_images'] 
 assert isinstance(performance_manual['latency'], LatencyAnalysis)
 assert isinstance(performance_manual['throughput'], ThroughputResult)
 memory_manual = {}
-memory_guide = pathlib.Path(sys.argv[5])
+memory_guide = fixture_support.example_fixture("docs/guides/performance-memory.md")
 for block in re.findall(r'```python\\n(.*?)```', memory_guide.read_text(encoding='utf-8'), re.S):
     exec(compile(block, str(memory_guide), 'exec'), memory_manual)
 assert memory_manual['current'].to_dict()['measurements']['current_rss_bytes']['value'] > 0
 assert memory_manual['footprint'].to_dict()['raw_evidence']['artifact']['format_validation'] == 'roundtrip_verified'
 pipeline_manual = {}
-pipeline_guide = pathlib.Path(sys.argv[6])
+pipeline_guide = fixture_support.example_fixture("docs/guides/performance-pipeline.md")
 for block in re.findall(r'```python\\n(.*?)```', pipeline_guide.read_text(encoding='utf-8'), re.S):
     exec(compile(block, str(pipeline_guide), 'exec'), pipeline_manual)
 assert pipeline_manual['pipeline'].to_dict()['actual']['completed'] == 4
 assert pipeline_manual['cold'].to_dict()['actual']['measured'] == 1
 assert all(row['provenance']['torch'] == str(torch.__version__) for row in pipeline_manual['cold'].to_dict()['raw_evidence']['trials'])
 sweep_manual = {}
-sweep_guide = pathlib.Path(sys.argv[7])
+sweep_guide = fixture_support.example_fixture("docs/guides/performance-sweeps.md")
 for block in re.findall(r'```python\\n(.*?)```', sweep_guide.read_text(encoding='utf-8'), re.S):
     exec(compile(block, str(sweep_guide), 'exec'), sweep_manual)
 assert sweep_manual['batches'].to_dict()['actual']['measured'] == 4
 assert sweep_manual['resolutions'].to_dict()['actual']['measured'] == 3
 assert sweep_manual['precisions'].to_dict()['actual']['measured'] == 4
 capacity_manual = {}
-capacity_guide = pathlib.Path(sys.argv[8])
+capacity_guide = fixture_support.example_fixture("docs/guides/performance-max-batch.md")
 for block in re.findall(r'```python\\n(.*?)```', capacity_guide.read_text(encoding='utf-8'), re.S):
     exec(compile(block, str(capacity_guide), 'exec'), capacity_manual)
 assert capacity_manual['capacity'].to_dict()['measurements']['maximum_proven_within_range'] == 3
 assert all(pathlib.Path(row['provenance']['package_source']).resolve().is_relative_to(target)
            for row in capacity_manual['data']['raw_evidence']['candidates'])
 profiling_manual = {}
-profiling_guide = pathlib.Path(sys.argv[9])
+profiling_guide = fixture_support.example_fixture("docs/guides/performance-profiling-v3.md")
 for block in re.findall(r'```python\\n(.*?)```', profiling_guide.read_text(encoding='utf-8'), re.S):
     exec(compile(block, str(profiling_guide), 'exec'), profiling_manual)
 assert profiling_manual['tiny']['total_flops_per_batch'] == 5320
-assert profiling_manual['count_data']['measurements']['status'] == 'partial'
+assert profiling_manual['count_data']['protocol']['operation_model_version'] == 3
+assert profiling_manual['count_data']['measurements']['status'] == 'complete'
 assert pathlib.Path(profiling_manual['operator_data']['provenance']['environment']['package_source']).resolve().is_relative_to(target)
 telemetry_manual = {}
-telemetry_guide = pathlib.Path(sys.argv[10])
+telemetry_guide = fixture_support.example_fixture("docs/guides/performance-transfer-utilization.md")
 for block in re.findall(r'```python\\n(.*?)```', telemetry_guide.read_text(encoding='utf-8'), re.S):
     exec(compile(block, str(telemetry_guide), 'exec'), telemetry_manual)
 assert telemetry_manual['utilization_data']['actual']['gpu_queries'] == 0
@@ -539,7 +574,7 @@ def test_installed_distribution_import_and_cpu_forward(distributions, kind):
     command(["-m", "pip", "--isolated", "--no-cache-dir", "install", "--no-index",
              "--no-deps", "--no-build-isolation", "--no-compile",
              "--target", str(target), str(artifact)], work)
-    observed = json.loads(command(["-c", SMOKE, str(target), str(ROOT / "tests/trainer_replay_support.py"), str(ROOT / "docs/guides/experiment-manager.md"), str(ROOT / "docs/guides/performance-inference.md"), str(ROOT / "docs/guides/performance-memory.md"), str(ROOT / "docs/guides/performance-pipeline.md"), str(ROOT / "docs/guides/performance-sweeps.md"), str(ROOT / "docs/guides/performance-max-batch.md"), str(ROOT / "docs/guides/performance-profiling.md"), str(ROOT / "docs/guides/performance-transfer-utilization.md")], work).strip().splitlines()[-1])
+    observed = json.loads(command(["-c", SMOKE, str(target), str(ROOT / "tests/trainer_replay_support.py"), str(ROOT / "tests/fixture_support.py")], work).strip().splitlines()[-1])
     assert Path(observed["source"]).resolve().is_relative_to(target.resolve())
     assert observed["manual_integration"] is True
     assert observed["training_timing"] is True

@@ -14,19 +14,20 @@ from hyso.performance import (ColdStartRecipe,ProfilingProtocol,ProfilingError,
     profile_operators,profile_layers,analyze_flops)
 
 
-def recipe(factory='spatial',shape=(2,2,5,7),**kwargs):
+def recipe(factory='spatial',shape=(2,2,5,7),precision='fp32',**kwargs):
     return ColdStartRecipe('profiling_factories:'+factory,factory_search_path=Path(__file__).parent,
-                           input_shape=shape,model_kwargs=kwargs)
+                           input_shape=shape,precision=precision,model_kwargs=kwargs)
 
 
 def protocol(**kw):
-    return ProfilingProtocol(**dict(dict(warmup_iterations=1,measure_iterations=2,timeout_seconds=45),**kw))
+    return ProfilingProtocol(**dict(dict(warmup_iterations=1,measure_iterations=2,timeout_seconds=45,
+        cpu_memory_limit_bytes=3*1024**3,input_limit_bytes=32*1024**2),**kw))
 
 
 @pytest.fixture(scope='module')
 def captured(tmp_path_factory):
     path=tmp_path_factory.mktemp('profile')/'trace.json'
-    return profile_operators(recipe('Shared'),protocol=protocol(),trace_path=path)
+    return profile_operators(recipe('Shared',unused=True),protocol=protocol(),trace_path=path)
 
 
 @pytest.mark.parametrize('groups,bias',[(1,False),(1,True),(2,False),(2,True)])
@@ -67,9 +68,49 @@ def test_unknown_is_not_zero_and_normalization_explicit():
     assert d['measurements']['total_flops_per_batch'] is None
     assert any(r['flops'] is None and r['reason'] for r in d['raw_evidence']['operations'])
     d=analyze_flops(recipe('Norm'),protocol=protocol()).to_dict()
-    assert d['measurements']['status']=='partial'
-    assert any('batch_norm' in r['operator'] for r in d['raw_evidence']['operations'] if r['flops'] is None)
-    assert any('silu' in r['operator'] for r in d['raw_evidence']['operations'] if r['flops'] is None)
+    assert d['measurements']['status']=='complete'
+    bn=[r for r in d['raw_evidence']['operations'] if 'batch_norm' in r['operator']]
+    assert len(bn)==2 and all(r['flops']==2+4*(2*2*5*7) and r['root_ops']=={'sqrt':2} for r in bn)
+    assert d['measurements']['transcendental_ops_per_batch']=={'exp':140}
+
+
+@pytest.mark.parametrize('precision',['fp32','fp64'])
+@pytest.mark.parametrize('shape,spatial_dims,affine',[
+    ((2,3,2,4),1,False),((3,2,3,5),2,True)])
+def test_batch_norm_inference_reference_cpu(precision,shape,spatial_dims,affine,tmp_path):
+    source=profile_operators(recipe('Norm',shape=shape,precision=precision,channels=shape[1],
+        spatial_dims=spatial_dims,affine=affine,activation=False),protocol=protocol())
+    d=analyze_flops(source).to_dict();m=d['measurements']
+    expected=shape[1]+np.prod(shape)*(2+2*int(affine))
+    assert m['status']=='complete' and m['total_macs_per_batch']==0
+    assert m['total_flops_per_batch']==expected and m['total_flops_per_sample']==expected/shape[0]
+    assert m['supported_subtotal_flops']==2*expected
+    assert all(r['total_flops']==expected for r in m['per_forward'])
+    bn=[r for r in d['raw_evidence']['operations'] if 'batch_norm' in r['operator']]
+    assert len(bn)==2 and all(r['flops']==expected for r in bn)
+    assert all(r['arguments']['input']['dtype']=='torch.'+('float64' if precision=='fp64' else 'float32') for r in bn)
+    assert any('batch_norm' in r['name'] for r in source.to_dict()['raw_evidence']['events'])
+    result=OperationCountResult(d);path=tmp_path/'bn.json'
+    result.to_json(path);result.to_csv(tmp_path/'bn.csv')
+    assert OperationCountResult(json.loads(path.read_text())).to_dict()==d
+    assert profile_layers(source).to_dict()['measurements']['status']=='measured'
+    from hyso.performance._operation_models import summarize
+    from hyso.performance._operation_models import CONVENTION
+    old=json.loads(path.read_text());old['protocol'].pop('operation_model_version');old['protocol']['convention']=CONVENTION
+    old['raw_evidence']['operations'],old['measurements']=summarize(
+        old['raw_evidence']['aten_calls'],2,shape[0],model_version=1)
+    assert OperationCountResult(old).to_dict()['measurements']['status']=='partial'
+
+
+@pytest.mark.parametrize('precision',['fp32','fp64'])
+@pytest.mark.parametrize('kind,keepdim',[('sum',False),('mean',True)])
+def test_reduction_reference_cpu(precision,kind,keepdim):
+    d=analyze_flops(recipe('Reduction',precision=precision,kind=kind,keepdim=keepdim),protocol=protocol()).to_dict()
+    expected=2*2*(5*7-1+int(kind=='mean'))
+    assert d['measurements']['status']=='complete'
+    assert d['measurements']['total_flops_per_batch']==expected
+    assert d['measurements']['total_flops_per_sample']==expected/2
+    assert len(d['raw_evidence']['operations'])==2
 
 
 def test_pooling_activation_policy():
@@ -122,16 +163,122 @@ def test_real_cpu_events_trace_and_cleanup(captured):
     assert d['measurements']['overhead']['perturbation_ms'] is None
 
 
+def test_operator_self_total_counts_and_csv_preserve_cpu_evidence(captured,tmp_path):
+    import csv
+    import math
+    d=captured.to_dict();events=d['raw_evidence']['events']
+    for row in d['measurements']['operators']:
+        observed=[e for e in events if e['device_type']=='CPU' and e['scope']==0 and e['name']==row['name']]
+        assert observed and row['count']==len(observed)
+        assert row['cpu_total_us']==math.fsum(e['cpu_total_us'] for e in observed)
+        assert row['self_cpu_us']==math.fsum(e['self_cpu_us'] for e in observed)
+        assert 0<=row['self_cpu_us']<=row['cpu_total_us']
+        assert row['shapes']==[e['input_shapes'] for e in observed]
+        assert row['status']=='measured' and row['unit']=='us'
+    path=tmp_path/'operators.csv';captured.to_csv(path)
+    with path.open(newline='',encoding='utf-8') as stream:
+        rows=list(csv.DictReader(stream))
+    assert [json.loads(r['payload']) for r in rows]==d['measurements']['operators']
+    assert all(r['row_kind']=='operator_profile' for r in rows)
+
+
+def test_layer_event_evidence_cpu_unused_memory_and_shared_capture(captured):
+    source=captured.to_dict();layers=profile_layers(captured).to_dict();raw=layers['raw_evidence']
+    assert source['schema_version']==layers['schema_version']==1
+    assert source['protocol']['instrumentation']['evidence_version']==3
+    assert layers['protocol']['profile_evidence_version']==3
+    assert layers['identity']['source_result_id']==source['result_id']
+    assert raw['events']==source['raw_evidence']['events'] and raw['trace_events']==source['raw_evidence']['trace_events']
+    assert raw['profile_measurements']['cuda_attribution']==source['measurements']['cuda_attribution']
+    events={e['event_id']:e for e in raw['events'] if e['device_type']=='CPU'}
+    for invocation in raw['invocations']:
+        e=events[invocation['cpu_event_id']]
+        assert e['name']==invocation['annotation']
+        assert invocation['cpu_total_us']==pytest.approx(e['end_us']-e['start_us'])
+        assert invocation['cpu_timing_reason'] is None
+        assert invocation['cuda_elapsed_us'] is None and invocation['cuda_elapsed_status']=='not_requested'
+        assert invocation['cuda_exclusive_elapsed_us'] is None and invocation['cuda_activity_us'] is None
+    unused=next(m for m in layers['measurements']['modules'] if m['path']=='unused')
+    assert unused['status']=='not_executed' and unused['cpu_total_us'] is None and unused['invocation_count']==0
+    memory=layers['measurements']['layer_memory']
+    assert memory['status']=='unsupported' and all(memory[k] is None for k in ('allocation_bytes','retained_bytes','peak_bytes'))
+    assert layers['measurements']['overhead']['perturbation_ms'] is None
+    assert layers['measurements']['cuda_attribution']['mapped_kernel_count']==0
+    assert layers['measurements']['cuda_event_timing']['status']=='not_requested'
+    assert source['raw_evidence']['cuda_event_timing']['pairs']==[]
+
+
+def test_current_rejects_module_event_and_correlation_tamper(captured):
+    import copy
+    d=captured.to_dict()
+    for mutate in (
+        lambda p:p['raw_evidence']['events'].append(copy.deepcopy(p['raw_evidence']['events'][0])),
+        lambda p:p['raw_evidence']['events'][0].update(parent_id=999999),
+        lambda p:p['raw_evidence']['invocations'][1].update(parent_invocation_id=None),
+        lambda p:p['raw_evidence']['invocations'][1].update(cpu_total_us=1),
+        lambda p:p['raw_evidence']['trace_events'].append(copy.deepcopy(p['raw_evidence']['trace_events'][0])),
+        lambda p:p['measurements']['cuda_attribution'].update(mapped_kernel_count=1),
+        lambda p:p['raw_evidence']['trace'].update(timestamp_unit='ns'),
+        lambda p:p['raw_evidence']['cuda_event_timing'].update(requested=True),
+        lambda p:p['raw_evidence']['invocations'][0].update(cuda_elapsed_us=1),
+    ):
+        broken=copy.deepcopy(d);mutate(broken)
+        with pytest.raises(ValueError):OperatorProfileResult(broken)
+    layer=profile_layers(captured).to_dict()
+    layer['raw_evidence']['invocations'][1]['cpu_total_us']=1
+    with pytest.raises(ValueError):LayerProfileResult(layer)
+
+
+@pytest.mark.parametrize('version',[1,2])
+def test_legacy_layer_evidence_reopen(captured,version,tmp_path):
+    old=captured.to_dict();old['raw_evidence'].pop('cuda_event_timing')
+    fields=('cuda_elapsed_us','cuda_elapsed_status','cuda_elapsed_reason','cuda_exclusive_elapsed_us','cuda_exclusive_elapsed_reason')
+    for r in old['raw_evidence']['invocations']:
+        for key in fields:r.pop(key)
+    if version==1:
+        old['protocol']['instrumentation'].pop('evidence_version')
+        old['measurements'].pop('cuda_attribution');old['raw_evidence'].pop('trace_events')
+        for r in old['raw_evidence']['invocations']:
+            r.pop('cpu_event_id');r.pop('cpu_timing_reason')
+        for r in old['raw_evidence']['events']:
+            for key in ('start_us','end_us','thread_id'):r.pop(key)
+    else:old['protocol']['instrumentation']['evidence_version']=2
+    legacy=OperatorProfileResult(old);assert legacy.to_dict()==old
+    layer=profile_layers(legacy);path=tmp_path/'legacy.json'
+    layer.to_json(path);layer.to_csv(tmp_path/'legacy.csv')
+    assert LayerProfileResult(json.loads(path.read_text())).to_dict()==layer.to_dict()
+    assert 'cuda_event_timing' not in layer.to_dict()['measurements']
+    assert analyze_flops(legacy).to_dict()['measurements']['total_flops_per_batch']==1820
+
+
 @pytest.mark.parametrize('mode',['fail','mutate'])
 def test_forward_exception_state_and_hook_cleanup(mode):
     with pytest.raises(ProfilingError) as error:
         profile_operators(recipe('Shared',**{mode:True}),protocol=protocol())
     d=error.value.diagnostics
     assert d['status']==('state_mutation' if mode=='mutate' else 'failed')
+    if mode=='fail':assert d['reason']=='RuntimeError: controlled forward failure'
     assert d['process_terminated'] and d['exit_code']==0
     assert d['cleanup']['hooks_preserved'] and d['cleanup']['rng_restored']
     r=profile_operators(recipe('pooled'),protocol=protocol())
     assert r.to_dict()['actual']['measured_forwards']==2
+
+
+def test_oom_exception_is_exposed_with_worker_cleanup(tmp_path):
+    # Inject the exception type; deliberately exhausting real RAM/VRAM is unnecessary.
+    (tmp_path/'operator_oom_factory.py').write_text('''
+import torch
+class Model(torch.nn.Module):
+    def forward(self,x):
+        raise torch.cuda.OutOfMemoryError('controlled operator OOM')
+def build():return Model()
+''',encoding='utf-8')
+    source=ColdStartRecipe('operator_oom_factory:build',factory_search_path=tmp_path,input_shape=(1,1,1,1))
+    with pytest.raises(ProfilingError) as error:
+        profile_operators(source,protocol=ProfilingProtocol(warmup_iterations=0,measure_iterations=1,timeout_seconds=45))
+    d=error.value.diagnostics
+    assert d['status']=='failed' and d['reason']=='OutOfMemoryError: controlled operator OOM'
+    assert d['process_terminated'] and d['exit_code']==0 and all(d['cleanup'].values())
 
 
 def test_timeout_and_parent_state():
@@ -142,8 +289,10 @@ def test_timeout_and_parent_state():
     with pytest.raises(ProfilingError) as error:
         profile_operators(recipe(),protocol=protocol(timeout_seconds=.01))
     assert error.value.diagnostics['status']=='timed_out'
+    assert error.value.diagnostics['process_terminated'] and error.value.diagnostics['exit_code'] is not None
     assert dict(model._forward_hooks)==refs and model.training
     assert all(torch.equal(p,q) for p,q in zip(model.parameters(),params))
+    assert torch.equal(model.weight.grad,torch.ones_like(model.weight)) and model.bias.grad is None
     assert torch.equal(torch.get_rng_state(),rng) and random.getstate()==py
     assert np.array_equal(np.random.get_state()[1],n[1]) and torch.cuda.is_initialized()==cuda
     hook.remove()
@@ -168,6 +317,31 @@ def test_immutable_exports_and_tamper(captured,tmp_path):
         with pytest.raises(ValueError):cls(d)
     d=captured.to_dict();d['measurements']['operators'][0]['self_cpu_us']=float('nan')
     with pytest.raises(ValueError):OperatorProfileResult(d)
+
+
+def test_operation_model_revision_legacy_reopen_and_tamper(captured,tmp_path):
+    import copy
+    from hyso.performance._operation_models import summarize
+    d=analyze_flops(captured).to_dict()
+    assert d['protocol']['operation_model_version']==3 and d['schema_version']==1
+    from hyso.performance._operation_models import CONVENTION
+    old=copy.deepcopy(d);old['protocol'].pop('operation_model_version');old['protocol']['convention']=CONVENTION
+    old['raw_evidence']['operations'],old['measurements']=summarize(
+        old['raw_evidence']['aten_calls'],2,2,model_version=1)
+    legacy=OperationCountResult(old);legacy.to_json(tmp_path/'legacy.json');legacy.to_csv(tmp_path/'legacy.csv')
+    assert OperationCountResult(json.loads((tmp_path/'legacy.json').read_text())).to_dict()==old
+    for mutate in (
+        lambda p:p['protocol'].update(operation_model_version=999),
+        lambda p:p['protocol'].update(operation_model_version=True),
+        lambda p:p['raw_evidence']['aten_calls'][0].update(measurement_index=2),
+        lambda p:p['raw_evidence']['aten_calls'][0].update(call_index=3),
+        lambda p:p['raw_evidence']['aten_calls'][0].update(arguments={}),
+        lambda p:p['raw_evidence']['operations'][0].update(flops=0),
+        lambda p:p['protocol']['convention'].update(fma_flops=1),
+        lambda p:p.update(schema_version=2),
+    ):
+        broken=copy.deepcopy(d);mutate(broken)
+        with pytest.raises(ValueError):OperationCountResult(broken)
 
 
 def test_no_clobber_trace(captured):

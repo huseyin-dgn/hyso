@@ -1,4 +1,5 @@
 """Native process observations, artifact accounting, failure/ownership invariants."""
+from fixture_support import example_fixture
 from dataclasses import FrozenInstanceError
 import csv
 import gc
@@ -372,7 +373,7 @@ def test_reentrant_calls_fail_without_deadlock():
 
 def test_executable_memory_guide_and_experiment_reopen(tmp_path,monkeypatch):
     monkeypatch.chdir(tmp_path)
-    guide=Path(__file__).resolve().parents[1]/'docs/guides/performance-memory.md'
+    guide=example_fixture('docs/guides/performance-memory.md')
     namespace={}
     for block in re.findall(r'```python\n(.*?)```',guide.read_text(encoding='utf-8'),re.S):
         exec(compile(block,str(guide),'exec'),namespace)

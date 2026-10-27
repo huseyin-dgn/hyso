@@ -1,4 +1,5 @@
 """Deterministic P22 arithmetic and historical P19 wire compatibility."""
+from fixture_support import load_fixture
 import copy
 import json
 from pathlib import Path
@@ -8,7 +9,7 @@ from hyso.performance import (TrainingPerformanceResult, TrainingStageProtocol,
 
 
 def source():
-    data = json.loads((Path(__file__).parent/'fixtures/training-p19-schema1.json').read_text())
+    data = load_fixture('training-p19-schema1')
     # Deterministic clocks: epoch 1 train=1 second, epoch 2 train=3 seconds.
     for i, e in enumerate(data['epochs']):
         start = e['start_ns']

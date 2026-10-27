@@ -1,4 +1,5 @@
 """P19 real training, exact paired state, bounded evidence and storage contracts."""
+from fixture_support import example_fixture
 import copy
 import csv
 from dataclasses import FrozenInstanceError
@@ -315,7 +316,7 @@ def test_tracking_failure_does_not_repeat_fit(tmp_path, monkeypatch):
 def test_training_guide_real_workflow():
     from pathlib import Path
     import re
-    guide = Path(__file__).resolve().parents[1] / "docs/guides/performance-training-timing.md"
+    guide = example_fixture('docs/guides/performance-training-timing.md')
     namespace = {}
     for block in re.findall(r"```python\n(.*?)```", guide.read_text(encoding="utf-8"), re.S):
         exec(compile(block, str(guide), "exec"), namespace)

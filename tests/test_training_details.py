@@ -1,4 +1,5 @@
 """Real CPU P20/P22, exact triple replay, failures and generic storage."""
+from fixture_support import example_fixture
 import copy
 import json
 from pathlib import Path
@@ -260,7 +261,7 @@ def test_deterministic_stage_clock_arithmetic(monkeypatch):
 
 def test_breakdown_guide():
     import re
-    path=Path(__file__).resolve().parents[1]/'docs/guides/performance-training-breakdown-throughput.md'
+    path=example_fixture('docs/guides/performance-training-breakdown-throughput.md')
     namespace={}
     for block in re.findall(r'```python\n(.*?)```',path.read_text(encoding='utf-8'),re.S):
         exec(compile(block,str(path),'exec'),namespace)

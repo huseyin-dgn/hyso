@@ -83,7 +83,7 @@ def test_failure_aborts_and_no_successful_max(failure,status,code):
     p=plan((2,3))
     if failure=='timeout':
         p=BatchSearchProtocol(candidates=(2,3),maximum_batch=3,cpu_memory_limit_bytes=3*1024**3,
-                              input_limit_bytes=8*1024**2,timeout_seconds=15,measure_iterations=1)
+                              input_limit_bytes=8*1024**2,timeout_seconds=30,measure_iterations=1)
     d=find_max_batch_size(recipe(failure=failure),protocol=p).to_dict()
     rows=d['raw_evidence']['candidates']
     assert rows[0]['status']==status and rows[1]['status']=='not_run'

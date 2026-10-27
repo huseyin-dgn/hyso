@@ -69,7 +69,10 @@ class NestedWorkerTests(unittest.TestCase):
             self.assertIsNone(cold._owned_worker_launcher.get())
 
     def run_transport(self,action,corrupt=None):
-        with tempfile.TemporaryDirectory() as temporary:
+        # This is a stdlib-only PID/Job contract. Avoid Windows venv redirector
+        # PIDs, matching the actual-interpreter admission used in production.
+        with tempfile.TemporaryDirectory() as temporary, patch.object(sys,'executable',
+                getattr(sys,'_base_executable',sys.executable)):
             root=Path(temporary);manifest,seal=make_root(root)
             helper=root/'source/hyso/performance/_training_process.py';helper.parent.mkdir(parents=True)
             helper.write_bytes((ROOT/'hyso/performance/_training_process.py').read_bytes())

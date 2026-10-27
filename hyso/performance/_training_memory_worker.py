@@ -39,6 +39,8 @@ def main():
             result["status"]="oom"
         elif type(error).__name__=="ResourceLimitError" and type(error).__module__=="hyso.performance._training_process":
             result["status"]="resource_limit"
+        elif type(error).__name__=="TrainingMemoryError" and type(error).__module__=="hyso.performance.training_memory":
+            result["status"]="measurement_error"
         result["reason"]=(type(error).__name__+": "+str(error))[:2000]
     try:
         _publish(root/"result.json",result,request["protocol"]["max_result_bytes"])

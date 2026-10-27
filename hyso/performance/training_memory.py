@@ -269,7 +269,9 @@ class _MemoryRecorder(_Recorder):
         super().attempt_end(updates, samples)
 
     def stage_begin(self, name):
-        pass
+        if name in ("forward", "backward", "scaler_step_attempt", "zero_grad"):
+            self.capture({"forward": "pre_forward", "backward": "pre_backward",
+                          "scaler_step_attempt": "pre_scaler_step", "zero_grad": "pre_zero_grad"}[name])
 
     def stage_end(self, name):
         if name in ("forward", "backward", "scaler_step_attempt", "zero_grad"):
@@ -284,6 +286,7 @@ class _MemoryRecorder(_Recorder):
         pass
 
     def zero_grad(self, optimizer):
+        self.capture("pre_zero_grad")
         optimizer.zero_grad()
         self.capture("post_zero_grad")
 
@@ -315,6 +318,27 @@ def _digest(data):
     return hashlib.sha256(json.dumps(data, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")).hexdigest()
 
 
+def _validate_stage_pairs(rows):
+    pairs = (("pre_forward", "post_forward"), ("pre_backward", "post_backward"),
+             ("pre_scaler_step", "post_scaler_step"), ("pre_zero_grad", "post_zero_grad"))
+    if not any(r["boundary"] in {p[0] for p in pairs} for r in rows):
+        return  # Legacy v1 artifacts contain only post-stage observations.
+    for before, after in pairs:
+        pending = None
+        for row in rows:
+            if row["boundary"] == before:
+                if pending is not None:
+                    raise ValueError("incomplete memory stage boundary pair")
+                pending = row
+            elif row["boundary"] == after:
+                if (pending is None or pending["query_end_ns"] > row["query_start_ns"] or
+                        any(pending[k] != row[k] for k in ("epoch_id", "microbatch_id", "window_id", "attempt_id"))):
+                    raise ValueError("incomplete or unordered memory stage boundary pair")
+                pending = None
+        if pending is not None:
+            raise ValueError("incomplete memory stage boundary pair")
+
+
 def _validate(data):
     required = {"schema_version", "format", "feature_ids", "source_p19", "source_sha256", "source_segment_id",
                 "protocol", "status", "reason", "observations", "rss", "cuda", "activation", "worker_rss",
@@ -343,7 +367,8 @@ def _validate(data):
     source_micro = {r["microbatch_id"]: r for r in source["observations"] if r["kind"] == "microbatch"}
     source_attempts = {r["attempt_id"]: r for r in source["observations"] if r["kind"] == "attempt"}
     allowed = {"ready", "epoch_ready", "pre_microbatch", "post_forward", "post_backward", "pre_attempt",
-               "post_scaler_step", "post_zero_grad", "post_attempt", "epoch_end", "segment_end"}
+               "post_scaler_step", "post_zero_grad", "post_attempt", "epoch_end", "segment_end",
+               "pre_forward", "pre_backward", "pre_scaler_step", "pre_zero_grad"}
     count, end, previous_cuda = 0, 0, None
     for row in rows:
         if set(row) != {"boundary", "epoch_id", "microbatch_id", "window_id", "attempt_id", "fields", "logical",
@@ -420,6 +445,7 @@ def _validate(data):
         expected = [r[kind + "_id"] for r in source["observations"] if r["kind"] == kind]
         if actual != expected:
             raise ValueError("boundary IDs disagree with training ledger")
+    _validate_stage_pairs(rows)
     rss = data["rss"]
     samples = rss["observations"]
     if len(samples) > protocol.max_samples:
@@ -457,6 +483,51 @@ def _cuda_summary(rows, device):
                 sampled_peak_reserved_bytes=max(r["cuda"]["reserved_bytes"] for r in rows))
 
 
+def _memory_diagnostics(rows, rss, device, *, isolated=False, windows=(), activation=None):
+    """Derive changes within each domain; never add logical/RSS/allocator bytes.
+
+    Sample extrema are lower-coverage observations, never stage/window peaks.
+    This function reads verified artifacts only; no live model or device calls.
+    """
+    def changes(values, reason=None):
+        valid = bool(values) and reason is None and all(v is not None for v in values)
+        return dict(status="derived" if valid else "unsupported", reason=reason if not valid else None,
+            baseline_bytes=values[0] if valid else None, end_bytes=values[-1] if valid else None,
+            delta_bytes=values[-1]-values[0] if valid else None,
+            sampled_min_bytes=min(values) if valid else None, sampled_max_bytes=max(values) if valid else None,
+            sampled_range_bytes=max(values)-min(values) if valid else None)
+
+    logical = {component: changes([r["logical"]["summary"][component]["logical_bytes"] for r in rows],
+                    None if all(r["logical"]["summary"][component]["status"] == "measured" for r in rows)
+                    else "unsupported_tensor_or_optimizer_representation")
+               for component in ("parameter", "frozen_parameter", "buffer", "gradient", "optimizer")}
+    rss_change = changes([r["rss_bytes"] for r in rss["observations"]], rss["reason"])
+    cuda = (_unsupported("CPU_training") if device == "cpu" else
+            {kind: changes([r["cuda"][kind+"_bytes"] for r in rows]) for kind in ("allocated", "reserved")})
+    logical_timeline = [dict(boundary=r["boundary"], epoch_id=r["epoch_id"],
+        microbatch_id=r["microbatch_id"], window_id=r["window_id"], attempt_id=r["attempt_id"],
+        query_start_ns=r["query_start_ns"], query_end_ns=r["query_end_ns"],
+        logical_bytes={k:r["logical"]["summary"][k]["logical_bytes"] for k in logical}, cuda=r["cuda"])
+        for r in rows]
+    return dict(core_status="complete" if rss_change["status"] == "derived" and
+                    all(logical[k]["status"] == "derived" for k in ("parameter", "gradient", "optimizer")) else "partial",
+        scope="isolated_recipe_fit" if isolated else "in_process_fit",
+        resource_policy="advisory_unless_explicit_limits_requested", logical=logical,
+        rss=rss_change, cuda_allocator=cuda, boundary_observations=logical_timeline,
+        rss_observations=rss["observations"],
+        peaks=dict(rss=_unsupported("sampled_RSS_maximum_is_not_a_training_peak"),
+            cuda_training_windows=list(windows) if isolated else _unsupported("in_process_peak_reset_not_permitted"),
+            stage_peaks=_unsupported("boundary_samples_are_not_stage_peaks")),
+        activation=activation if activation is not None else _unsupported("saved_tensor_lifetime_adapter_unvalidated"),
+        limitations=["logical components can alias; frozen parameters are a subset of parameters",
+            "logical bytes, storage extents, RSS and CUDA allocator bytes must not be added",
+            "RSS includes observer/runtime/main-process activity and excludes DataLoader workers",
+            "sampled extrema can miss transients; boundary queries do not synchronize each stage",
+            "allocator counters cover the process/device, not physical or other-process VRAM",
+            "ready/end exclude construction and include fit finalization; phase scopes differ from P19",
+            "query costs are included; total instrumentation overhead is not separately calibrated"])
+
+
 @dataclass(frozen=True, init=False)
 class TrainingMemoryResult:
     """Immutable canonical evidence; constructors and exports validate integrity."""
@@ -475,6 +546,12 @@ class TrainingMemoryResult:
         data = _plain(self.to_dict())
         _validate(data)
         return data
+
+    def diagnostics(self):
+        """Changes and boundary samples by memory domain; v1 exports unchanged."""
+        data = self._export_data()
+        return _memory_diagnostics(data["observations"], data["rss"], data["protocol"]["device"],
+                                   activation=data["activation"])
 
     def to_json(self, path, *, overwrite=False):
         _write_export(path, json.dumps(self._export_data(), ensure_ascii=False, sort_keys=True,

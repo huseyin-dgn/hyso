@@ -1,4 +1,5 @@
 """Native single-process DataLoader training, exact state and artifact contracts."""
+from fixture_support import example_fixture
 import copy
 import csv
 import json
@@ -149,6 +150,8 @@ def test_resume_early_stop_and_completed(tmp_path):
     assert [e['epoch_id'] for e in r.timing.to_dict()['epochs']]==[3,4,5]
     t,train,val=build(CRITICAL);done=measure_training_with_loader(t,train,val,epochs=5,resume_from=tmp_path/'done.pth')
     assert done.loader.to_dict()['observations']==[]
+    assert done.loader.core_metrics()['status']=='not_executed'
+    assert done.loader.core_metrics()['summaries']==[]
     assert done.throughput.to_dict()['segment']['rates']['samples_per_second']['value'] is None
     states=[]
     for observed in (False,True):
@@ -206,8 +209,62 @@ def test_exact_loader_budget(cap,success):
 
 def test_dataloader_guide():
     import re
-    guide=Path(__file__).resolve().parents[1]/'docs/guides/performance-dataloader.md'
+    guide=example_fixture('docs/guides/performance-dataloader.md')
     namespace={'__name__':'p21_guide_test'}
     for block in re.findall(r'```python\n(.*?)```',guide.read_text(encoding='utf-8'),re.S):
         exec(compile(block,str(guide),'exec'),namespace)
     assert namespace['data']['summaries'][0]['samples']==5
+
+
+def test_core_metrics_preserve_legacy_exports_and_do_not_initialize_cuda(tmp_path, monkeypatch):
+    def forbidden(*a, **kw):
+        raise AssertionError('CPU loader analysis must not initialize CUDA')
+    monkeypatch.setattr(torch.cuda, '_lazy_init', forbidden)
+    result=measure_training_with_loader(trainer(1),loader(),loader(),epochs=1,stages=False).loader
+    original=result.to_dict()
+    core=result.core_metrics()
+    assert core['status']=='complete'
+    assert core['resource_policy']=='advisory_only_no_resource_quotas'
+    for summary in core['summaries']:
+        assert summary['batches']==3 and summary['samples']==5
+        assert summary['delivery_gap']['count']==2
+        assert summary['throughput']['samples_per_second']>summary['throughput']['batches_per_second']>0
+        assert summary['phase_wall_s']*1000>=summary['iterator_init_ms']+summary['next_wait_ms']
+    assert core['summaries'][1]['training_wall_wait_fraction']['value'] is None
+    core['configurations']['training']['num_workers']=900
+    assert result.to_dict()==original
+    result.to_json(tmp_path/'legacy.json');result.to_csv(tmp_path/'legacy.csv')
+    assert json.loads((tmp_path/'legacy.json').read_text())==original
+    assert DataLoaderAnalysisResult(original).core_metrics()==result.core_metrics()
+    with (tmp_path/'legacy.csv').open(newline='') as stream:
+        assert next(csv.reader(stream))==['source_segment_id','kind','phase','epoch_id','batch_index',
+            'microbatch_id','window_id','attempt_id','samples','start_ns','end_ns','delivery_ns','host_ms']
+
+
+def test_standard_loader_survives_unsupported_task_adapter(monkeypatch):
+    import hyso.performance._loader_task_trace as adapter
+    monkeypatch.setattr(adapter.torch,'__version__','2.99.0')
+    result=measure_training_with_loader(trainer(1),loader(),epochs=1)
+    assert result.loader.core_metrics()['status']=='complete'
+    with pytest.raises(RuntimeError,match='unsupported PyTorch task adapter'):
+        adapter.WorkerTaskDataLoader(loader().dataset,num_workers=2)
+
+
+def test_standard_loader_import_without_private_multiprocessing_iterator():
+    import subprocess
+    import sys
+    script='''
+import torch.utils.data.dataloader as loader_module
+del loader_module._MultiProcessingDataLoaderIter
+from hyso.performance import measure_training_with_loader
+from hyso.training import Trainer
+import torch
+model=torch.nn.Linear(3,2)
+trainer=Trainer(model,optimizer=torch.optim.SGD(model.parameters(),lr=.01),loss_fn=torch.nn.CrossEntropyLoss())
+loader=loader_module.DataLoader(torch.utils.data.TensorDataset(torch.ones(3,3),torch.tensor([0,1,0])),batch_size=2)
+assert measure_training_with_loader(trainer,loader,epochs=1).loader.core_metrics()['status']=='complete'
+assert not torch.cuda.is_initialized()
+'''
+    outcome=subprocess.run([sys.executable,'-c',script],capture_output=True,text=True,timeout=90,
+                           cwd=Path(__file__).resolve().parents[1])
+    assert outcome.returncode==0,outcome.stdout+outcome.stderr

@@ -13,6 +13,7 @@ def _ready(path, **fields):
 
 
 def _memory_guard(limit):
+    """Single-process ownership Job; a private-commit quota is optional."""
     if os.name!='nt': raise NotImplementedError('hard private-commit guard currently supports Windows only')
     import ctypes as c
     from ctypes import wintypes as w
@@ -33,8 +34,9 @@ def _memory_guard(limit):
     api.CloseHandle.argtypes=[w.HANDLE];api.CloseHandle.restype=w.BOOL
     handle=api.CreateJobObjectW(None,None)
     if not handle: raise OSError(c.get_last_error(),'CreateJobObjectW')
-    info=Extended();info.basic.flags=0x100|0x200|0x8
-    info.basic.process_count=1;info.process_memory=limit;info.job_memory=limit
+    info=Extended();info.basic.flags=0x8 if limit is None else 0x100|0x200|0x8
+    info.basic.process_count=1
+    if limit is not None:info.process_memory=limit;info.job_memory=limit
     if not api.SetInformationJobObject(handle,9,c.byref(info),c.sizeof(info)) or not api.AssignProcessToJobObject(handle,api.GetCurrentProcess()):
         error=c.get_last_error();api.CloseHandle(handle);raise OSError(error,'worker memory guard unavailable')
     return api,handle

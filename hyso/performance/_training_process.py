@@ -40,8 +40,14 @@ class _Job:
         self.api,self.Accounting,self.Extended = api,Accounting,Extended
         self.handle = api.CreateJobObjectW(None,None)
         if not self.handle:raise OSError(c.get_last_error(),"CreateJobObjectW")
-        info=Extended();info.basic.flags=0x2000|0x100|0x200|0x8
-        info.basic.processes=processes;info.process_memory=process_bytes;info.job_memory=job_bytes
+        info=Extended();info.basic.flags=0x2000
+        if processes is not None:
+            info.basic.flags|=0x8;info.basic.processes=processes
+        # Ownership/cleanup remain mandatory; memory quotas are caller opt-in.
+        if process_bytes is not None:
+            info.basic.flags|=0x100;info.process_memory=process_bytes
+        if job_bytes is not None:
+            info.basic.flags|=0x200;info.job_memory=job_bytes
         if not api.SetInformationJobObject(self.handle,9,c.byref(info),c.sizeof(info)):
             error=c.get_last_error();self.close();raise OSError(error,"SetInformationJobObject")
 
@@ -74,6 +80,11 @@ def _bounded_read(path, limit):
         data=handle.read(limit+1)
     if len(data)>limit:raise ValueError("worker receipt exceeds byte limit")
     return json.loads(data.decode("utf-8"))
+
+
+def _size_if_present(path):
+    try:return path.stat().st_size
+    except FileNotFoundError:return 0  # Atomic worker publication can rename .tmp.
 
 
 def _launch(root, request, protocol):
@@ -117,7 +128,7 @@ def _launch(root, request, protocol):
             if time.monotonic()-start>=protocol.timeout_seconds:
                 monitor_reason="timeout";break
             if exceeded.is_set():monitor_reason="resource_limit";break
-            if any(p.exists() and p.stat().st_size>protocol.max_result_bytes for p in
+            if any(_size_if_present(p)>protocol.max_result_bytes for p in
                    (paths["result"],root/"result.tmp")):
                 monitor_reason="resource_limit";break
             time.sleep(.01)

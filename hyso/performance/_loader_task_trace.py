@@ -8,12 +8,9 @@ import hashlib
 import inspect
 import os
 import time
-import uuid
 
 import torch
-from torch.utils.data import DataLoader, Dataset, IterableDataset, get_worker_info
-from torch.utils.data.dataloader import _MultiProcessingDataLoaderIter
-from torch.utils.data._utils.collate import default_collate
+from torch.utils.data import DataLoader, Dataset, IterableDataset, get_worker_info, default_collate
 
 from ._loader_dataset_trace import TracedDataset
 from ._loader_worker_trace import WorkerTimingRecorder
@@ -25,10 +22,17 @@ SOURCE_HASH = "e59741680fd0aeaba408f39f5b560bca47d3c3759fabd6d6c428e4f165e5acf3"
 
 
 def check_adapter():
-    digest = hashlib.sha256("".join(inspect.getsource(getattr(
-        _MultiProcessingDataLoaderIter, n)) for n in
-        ("_reset", "_try_put_index", "_next_data", "_get_data")).encode()).hexdigest()
-    if torch.__version__.split("+")[0] != "2.5.1" or digest != SOURCE_HASH:
+    # Private APIs are required only by the explicit, version-gated adapter.
+    if torch.__version__.split("+")[0] != "2.5.1":
+        raise RuntimeError("unsupported PyTorch task adapter: exact 2.5.1 source required")
+    try:
+        from torch.utils.data.dataloader import _MultiProcessingDataLoaderIter
+        digest = hashlib.sha256("".join(inspect.getsource(getattr(
+            _MultiProcessingDataLoaderIter, n)) for n in
+            ("_reset", "_try_put_index", "_next_data", "_get_data")).encode()).hexdigest()
+    except (ImportError, AttributeError, OSError, TypeError) as exc:
+        raise RuntimeError("unsupported PyTorch task adapter: source unavailable") from exc
+    if digest != SOURCE_HASH:
         raise RuntimeError("unsupported PyTorch task adapter: exact 2.5.1 source required")
 
 
@@ -143,43 +147,6 @@ class _QueueProbe:
         return getattr(self.queue, name)
 
 
-class _TaskIterator(_MultiProcessingDataLoaderIter):
-    def __init__(self, loader):
-        self.trace_loader = loader
-        super().__init__(loader)
-
-    def _reset(self, loader, first_iter=False):
-        if first_iter:
-            self._index_queues = [_QueueProbe(q, loader, i)
-                                  for i, q in enumerate(self._index_queues)]
-        super()._reset(loader, first_iter)
-
-    def _next_index(self):
-        indices = super()._next_index()
-        loader = self.trace_loader
-        return _Task(loader.execution_id, loader.trace_epoch, self._send_idx + 1,
-                     uuid.uuid4().hex, indices)
-
-    def _get_data(self):
-        index, data = super()._get_data()
-        if type(data) is _Batch:
-            self.trace_loader._record("receive", dict(receipt=data.receipt,
-                                                       at_ns=time.perf_counter_ns()))
-        return index, data
-
-    def _next_data(self):
-        # This is PyTorch's actual ordered-result buffer, not Queue.qsize().
-        ready = len(self._task_info.get(self._rcvd_idx, ())) == 2
-        demand = time.perf_counter_ns()
-        batch = super()._next_data()
-        if type(batch) is not _Batch:
-            raise RuntimeError("missing worker result identity")
-        self.trace_loader._record("deliver", dict(receipt=batch.receipt,
-            demand_ns=demand, at_ns=time.perf_counter_ns(), ordered_buffer_hit=ready,
-            observation=None))
-        return batch.value
-
-
 class WorkerTaskDataLoader(DataLoader):
     """Explicit task/collate tracing for existing map-style dataset operations.
 
@@ -237,6 +204,7 @@ class WorkerTaskDataLoader(DataLoader):
     def _get_iterator(self):
         if self.trace_epoch is None:
             raise RuntimeError("use measure_training_with_loader for explicit epoch identity")
+        from ._loader_task_iterator import _TaskIterator
         iterator = _TaskIterator(self)
         self.trace_iterator = iterator
         self.trace_processes.append((self.trace_epoch, list(iterator._workers)))

@@ -16,6 +16,7 @@ from typing import Iterator
 
 STAGES = frozenset({
     "dataset_fetch",
+    "load",
     "decode",
     "transform",
     "collate",

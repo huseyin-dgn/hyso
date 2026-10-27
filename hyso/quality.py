@@ -275,7 +275,7 @@ def measure_time_to_quality(factory,cohort, *, seeds, target, epochs=3,cadence=1
     finally:_restore_rng(rng)
 
 
-def _bundle(model,cohort,precision,iterations):
+def _bundle(model,cohort,precision,iterations,memory_metric='logical_model_bytes',memory_protocol=None):
     from .benchmark.runner import _profile,_descriptor,_bits
     adapter,proof=_precision(model,precision)
     if precision not in ('fp32','fp64'):raise NotImplementedError('P29 resident timing supports fp32/fp64')
@@ -295,22 +295,39 @@ def _bundle(model,cohort,precision,iterations):
     evaluation=_precision_evaluation(adapter,proof,cohort,batch_size=len(x))
     performance=BenchmarkRunner(adapter.model,device='cpu',precision=precision,example_input=x,
         warmup_iterations=1,measure_iterations=iterations,repeats=2,seed=0).run().to_dict()
-    return dict(evaluation=evaluation,performance=performance,precision=proof,
+    bundle=dict(evaluation=evaluation,performance=performance,precision=proof,
         benchmark_model_sha256=digest,state_witness=witness,host_id=platform.node())
+    from ._quality_memory import capture
+    bundle['memory']=capture(bundle,cohort.to_dict(),adapter.model,x,memory_metric,memory_protocol)
+    return bundle
 
 
 def compare_performance_quality(baseline,candidate,cohort, *, precision='fp32',iterations=5,
-        metric='accuracy',min_quality=0.,max_quality_drop=.01,max_latency_regression=.05,independent_samples=False):
+        metric='accuracy',min_quality=0.,max_quality_drop=.01,max_latency_regression=.05,independent_samples=False,
+        memory_metric='logical_model_bytes',max_memory_regression=.05,memory_protocol=None):
+    """Observed quality/latency/memory, same CPU FP32/64 protocol.
+
+    Memory defaults to P11 registered logical bytes. Opt-in process RSS executes
+    one separate guarded forward per model; it is neither model-only nor exact peak.
+    CUDA/physical domains stay unsupported, and absent memory cannot select a 3D winner.
+    """
+    from dataclasses import asdict
+    from ._quality_memory import MEMORY_METRICS
+    from .performance.memory import MemoryProtocol
     if type(cohort) is not EvaluationCohort:raise TypeError('explicit cohort required')
+    if memory_metric not in MEMORY_METRICS:raise ValueError('unsupported P29 memory metric')
+    if memory_protocol is not None and (memory_metric!='cpu_rss_sampled_peak_bytes' or type(memory_protocol) is not MemoryProtocol):
+        raise TypeError('MemoryProtocol applies only to explicit CPU RSS measurement')
     _integer(iterations,2,50)
-    for v in (min_quality,max_quality_drop,max_latency_regression):_fraction(v)
+    for v in (min_quality,max_quality_drop,max_latency_regression,max_memory_regression):_fraction(v)
     if metric not in ('accuracy','macro_f1') or type(independent_samples) is not bool:raise ValueError('invalid comparison policy')
     rng=_rng_state()
     try:
-        return _result('P29',dict(cohort=cohort.to_dict(),baseline=_bundle(baseline,cohort,precision,iterations),
-            candidate=_bundle(candidate,cohort,precision,iterations),policy=dict(metric=metric,min_quality=min_quality,
+        return _result('P29',dict(comparison_version=2,cohort=cohort.to_dict(),baseline=_bundle(baseline,cohort,precision,iterations,memory_metric,memory_protocol),
+            candidate=_bundle(candidate,cohort,precision,iterations,memory_metric,memory_protocol),policy=dict(metric=metric,min_quality=min_quality,
             max_quality_drop=max_quality_drop,max_latency_regression=max_latency_regression,
-            independent_samples=independent_samples)))
+            independent_samples=independent_samples,memory_metric=memory_metric,max_memory_regression=max_memory_regression,
+            memory_protocol=asdict(memory_protocol or MemoryProtocol()) if memory_metric=='cpu_rss_sampled_peak_bytes' else None)))
     finally:_restore_rng(rng)
 
 
@@ -436,6 +453,11 @@ def _derive(feature,s):
             reached_sample_variance_seconds2=statistics.variance(times) if len(times)>=2 else None,
             variance_scope='reached_runs_only_not_censor_adjusted',timing_scope='sum_P19_training_s_excludes_evaluation')
     if feature=='P29':
+        version=s.get('comparison_version',1)
+        if type(version) is not int or version not in (1,2):raise ValueError('invalid P29 comparison version')
+        if version==1 and (any('memory' in s[k] for k in ('baseline','candidate'))
+                or any(k in s['policy'] for k in ('memory_metric','memory_protocol','max_memory_regression'))):
+            raise ValueError('memory-aware evidence requires P29 comparison_version=2')
         c=s['cohort'];_cohort(c);policy=s['policy']
         for k in ('min_quality','max_quality_drop','max_latency_regression'):_fraction(policy[k])
         if type(policy['independent_samples']) is not bool:raise ValueError('explicit independence policy required')
@@ -459,11 +481,15 @@ def _derive(feature,s):
         if policy['metric']=='accuracy' and policy['independent_samples'] and n>=10:
             pvalue=min(1.,2*sum(math.comb(n,k) for k in range(min(wins,losses)+1))/2**n)
             significant=pvalue<.05;status='exact_paired_mcnemar_caller_attested_independence'
-        return dict(status='measured',quality=_delta(qa,qb),latency_relative_change=(lb-la)/la,
+        result=dict(status='measured',quality=_delta(qa,qb),latency_relative_change=(lb-la)/la,
             pareto_dominates=dominance,quality_constraint_met=qb>=policy['min_quality'],
             quality_regression=qa-qb>policy['max_quality_drop'],latency_regression=(lb-la)/la>policy['max_latency_regression'],
             quality_significance=dict(status=status,p_value=pvalue,significant=significant,discordant_pairs=n,alpha=.05),
             timing_significance=dict(status='unsupported_no_independent_timing_experiments',p_value=None),compatibility=comparison)
+        if version==2:
+            from ._quality_memory import compare
+            return compare(a,b,c,policy,qa,la,qb,lb,result)
+        return result
     raise ValueError('unsupported quality feature')
 
 
@@ -524,6 +550,10 @@ class QualityExperimentResult:
                     walk(dict(run_id=s[key]['performance']['identity']['run_id'],precision=s[key]['precision'],
                               model_sha256=s[key]['benchmark_model_sha256'],host_id=s[key]['host_id']),
                          'provenance.'+key+'.benchmark')
+                    if s.get('comparison_version')==2:
+                        walk(dict(binding=s[key]['memory']['binding'],metric=s[key]['memory']['metric'],
+                                  source_result_id=s[key]['memory']['source']['result_id'] if s[key]['memory']['source'] else None),
+                             'provenance.'+key+'.memory')
         if feature=='P29':walk(s['policy'],'provenance.policy')
         _write_export(path,_csv_text(['feature_id','experiment_id','source_sha256','field','value'],rows),overwrite)
 

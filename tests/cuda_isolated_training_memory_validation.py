@@ -34,7 +34,7 @@ def run_case(root,optimizer,amp,nondefault,overflow,reset=True,activation=False,
     path=root/(name+'.state.json')
     recipe=TrainingMemoryRecipe('training_memory_factories:tiny',device='cuda:0',factory_search_path=Path(__file__).parent,
         seed=71,epochs=epochs,kwargs=dict(optimizer=optimizer,amp=amp,nondefault=nondefault,overflow=overflow,state_path=str(path),**extra))
-    protocol=IsolatedTrainingMemoryProtocol(timeout_seconds=60,allow_peak_reset=reset,saved_activation_lifetime=activation,memory_protocol=TrainingMemoryProtocol(device='cuda:0'))
+    protocol=IsolatedTrainingMemoryProtocol(process_memory_bytes=4*1024**3,job_memory_bytes=8*1024**3,cuda_memory_fraction=.15,timeout_seconds=60,allow_peak_reset=reset,saved_activation_lifetime=activation,memory_protocol=TrainingMemoryProtocol(device='cuda:0'))
     result=measure_training_memory_isolated(recipe,protocol=protocol);d=result.to_dict()
     assert d['outcome']=='success',d
     assert before==dict(torch.cuda.memory_stats())
@@ -74,7 +74,7 @@ def activation_extras(root):
     cases=[]
     for profile,amp,overflow in (('modular',False,False),('modular',True,True),('early',False,False),('tied',False,False)):
         cases.append(run_case(root,'adamw',amp,True,overflow,activation=True,profile=profile))
-    p=IsolatedTrainingMemoryProtocol(timeout_seconds=60,allow_peak_reset=True,saved_activation_lifetime=True,
+    p=IsolatedTrainingMemoryProtocol(process_memory_bytes=4*1024**3,job_memory_bytes=8*1024**3,cuda_memory_fraction=.15,timeout_seconds=60,allow_peak_reset=True,saved_activation_lifetime=True,
         memory_protocol=TrainingMemoryProtocol(device='cuda:0'))
     for failure in ('after_forward','backward',None):
         path=root/('lifetime-'+str(failure)+'.json')
@@ -114,7 +114,12 @@ def main():
     torch.backends.cuda.matmul.allow_tf32=False;torch.backends.cudnn.allow_tf32=False
     root=Path(a.output).parent/(Path(a.output).stem+'-cases');root.mkdir()
     cases=[];activation=a.case=='activation'
-    if a.case=='smoke':cases.append(run_case(root,'adamw',False,False,False))
+    if a.case=='smoke':
+        # One small allocator-only acceptance run; never enter saved hooks.
+        from cuda_training_memory_validation import paired
+        core=paired(torch.optim.AdamW,False,False,False)
+        cases.append(dict(id='in-process-core',exact_state_rng=core['exact_state_rng'],p23=core['p23']))
+        cases.append(run_case(root,'adamw',False,False,False))
     else:
         for optimizer in ('sgd','adam','adamw'):
             for amp in (False,True):
@@ -126,7 +131,7 @@ def main():
             recipe=TrainingMemoryRecipe('training_memory_factories:tiny',device='cuda:0',factory_search_path=Path(__file__).parent,
                 epochs=2,kwargs=dict(failure=failure))
             before=dict(torch.cuda.memory_stats());rng=torch.cuda.get_rng_state().clone()
-            result=measure_training_memory_isolated(recipe,protocol=IsolatedTrainingMemoryProtocol(timeout_seconds=25 if failure=='timeout' else 60,
+            result=measure_training_memory_isolated(recipe,protocol=IsolatedTrainingMemoryProtocol(process_memory_bytes=4*1024**3,job_memory_bytes=8*1024**3,cuda_memory_fraction=.15,timeout_seconds=25 if failure=='timeout' else 60,
                 allow_peak_reset=True,saved_activation_lifetime=activation,memory_protocol=TrainingMemoryProtocol(device='cuda:0')))
             d=result.to_dict();assert d['outcome']==outcome,d
             assert before==dict(torch.cuda.memory_stats()) and torch.equal(rng,torch.cuda.get_rng_state())

@@ -242,9 +242,9 @@ def _validate_resume_progress(progress, plan):
         if any(type(value) not in (int, float) for value in history[key]):
             raise TrainingCheckpointError("resume history values must be numeric: " + key)
 
-# -------------------------
+
 # CBAM Block
-# -------------------------
+
 class CBAMBlock(nn.Module):
     def __init__(self, channels, reduction=16, kernel_size=7):
         super().__init__()
@@ -270,9 +270,9 @@ class CBAMBlock(nn.Module):
         return x * spatial_scale
 
 
-# -------------------------
+
 # Bottleneck Residual Block + CBAM (depthwise optional)
-# -------------------------
+
 def _find_group_count(channels, preferred=8):
     g = min(preferred, channels)
     while g > 1:
@@ -358,9 +358,9 @@ class BottleneckResidualBlock(nn.Module):
         return F.silu(out)
 
 
-# -------------------------
+
 # CNN + Residual + CBAM
-# -------------------------
+
 class ELO(nn.Module):
     def __init__(self, input_channels=3, num_classes=10,
                  conv_channels=[64,128,256,512], residual_per_block=2,
@@ -405,9 +405,9 @@ class ELO(nn.Module):
         return self.head(x)
 
 
-# -------------------------
+
 # BCAMWithFit + Callbacks
-# -------------------------
+
 class EBO(nn.Module):
     def __init__(self, input_channels=3, num_classes=10,
                  conv_channels=[32,64,128,256], residual_per_block=2,
@@ -434,9 +434,9 @@ class EBO(nn.Module):
     def forward(self, x):
         return self.model(x)
 
-    # -------------------------
+
     # Callbacks & Optimizer
-    # -------------------------
+
     def callbacks(self, optimizer="Adam", optimizer_params=None,
                   scheduler=None, scheduler_params=None,
                   model_checkpoint=False, earlystop=None,
@@ -494,9 +494,9 @@ class EBO(nn.Module):
             )
             self._callbacks.append(self.early_stopping)
 
-    # -------------------------
+
     # Improved Fit Fonksiyonu (AMP, AdamW, OneCycle, grad_clip, accum_steps)
-    # -------------------------
+
     def fit(self, train_loader, val_loader=None, epochs=10, lr=1e-3,
             optimizer_name="adamw", weight_decay=1e-4, use_ema=False,
             use_amp=True, grad_clip=None, accum_steps=1,

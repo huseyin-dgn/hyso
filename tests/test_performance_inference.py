@@ -1,4 +1,5 @@
 """P01/P02 arithmetic, completion evidence, lifetime and manual tracking."""
+from fixture_support import example_fixture
 from dataclasses import FrozenInstanceError
 import csv
 import gc
@@ -368,7 +369,7 @@ def test_reentrant_measurement_fails_cleanly():
 
 def test_executable_guide_artifact_reopen(tmp_path,monkeypatch):
     monkeypatch.chdir(tmp_path)
-    guide=Path(__file__).resolve().parents[1]/'docs/guides/performance-inference.md'
+    guide=example_fixture('docs/guides/performance-inference.md')
     namespace={}
     for block in re.findall(r'```python\n(.*?)```',guide.read_text(encoding='utf-8'),re.S):
         exec(compile(block,str(guide),'exec'),namespace)

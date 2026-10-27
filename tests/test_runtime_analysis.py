@@ -24,6 +24,10 @@ from trainer_replay_support import equal
 HERE=str(Path(__file__).parent.resolve())
 
 
+def bounded_stability(**kwargs):
+    return StabilityProtocol(process_memory_bytes=4*1024**3,job_memory_bytes=6*1024**3,max_processes=4,**kwargs)
+
+
 def recipe(mode='normal',delay=.005):
     return WorkloadRecipe('runtime_support:make_cpu',dict(mode=mode,delay=delay),search_path=HERE)
 
@@ -39,20 +43,20 @@ def save(result,name):
 @pytest.fixture(scope='module')
 def normal(tmp_path_factory):
     root=tmp_path_factory.mktemp('runtime-normal')/'journal'
-    result=measure_stability(recipe(),root,protocol=StabilityProtocol(duration_seconds=.25,interval_seconds=.02,chunk_rows=2))
+    result=measure_stability(recipe(),root,protocol=bounded_stability(duration_seconds=.25,interval_seconds=.02,chunk_rows=2))
     return save(result,'p31-cpu-smoke'),root
 
 
 @pytest.fixture(scope='module')
 def retained(tmp_path_factory):
     return save(measure_stability(recipe('retain'),tmp_path_factory.mktemp('runtime-retained')/'journal',
-        protocol=StabilityProtocol(duration_seconds=.3,interval_seconds=.02,chunk_rows=2)),'p31-retained')
+        protocol=bounded_stability(duration_seconds=.3,interval_seconds=.02,chunk_rows=2)),'p31-retained')
 
 
 @pytest.fixture(scope='module')
 def released(tmp_path_factory):
     return save(measure_stability(recipe('release'),tmp_path_factory.mktemp('runtime-release')/'journal',
-        protocol=StabilityProtocol(duration_seconds=.2,interval_seconds=.02,chunk_rows=2)),'p31-released')
+        protocol=bounded_stability(duration_seconds=.2,interval_seconds=.02,chunk_rows=2)),'p31-released')
 
 
 def test_real_cpu_duration_chunks_reopen(normal):
@@ -69,7 +73,7 @@ def test_real_cpu_duration_chunks_reopen(normal):
 @pytest.mark.parametrize('mode',['exception','hang','crash','close_exception','close_hang'])
 def test_failure_timeout_and_bounded_process_cleanup(mode,tmp_path):
     started=time.monotonic()
-    r=measure_stability(recipe(mode),tmp_path/'journal',protocol=StabilityProtocol(
+    r=measure_stability(recipe(mode),tmp_path/'journal',protocol=bounded_stability(
         duration_seconds=.12,interval_seconds=.02,step_timeout_seconds=.4,chunk_rows=1))
     a=r.to_dict()['analysis'];assert a['status']=='aborted' and a['completed_per_second'] is None
     assert time.monotonic()-started<50
@@ -269,7 +273,7 @@ def test_immutable_roundtrip_csv_json_no_clobber_tamper(feature,stream,normal,re
 def test_protocol_budgets_and_no_clobber_run(normal):
     for kwargs in (dict(duration_seconds=0),dict(interval_seconds=0),dict(duration_seconds=86401),dict(max_samples=3)):
         with pytest.raises(ValueError):StabilityProtocol(**kwargs)
-    with pytest.raises(FileExistsError):measure_stability(recipe(),normal[1],protocol=StabilityProtocol(duration_seconds=.1,interval_seconds=.02))
+    with pytest.raises(FileExistsError):measure_stability(recipe(),normal[1],protocol=bounded_stability(duration_seconds=.1,interval_seconds=.02))
     with pytest.raises(ValueError):StreamProtocol(queue_capacity=0)
     with pytest.raises(NotImplementedError):StreamSource('synthetic','anything','not-camera')
 
@@ -277,8 +281,8 @@ def test_protocol_budgets_and_no_clobber_run(normal):
 @pytest.mark.skipif(not os.environ.get('HYSO_NATIVE_GPU_UUID'),reason='NOT_RUN: explicit native physical GPU budget not enabled')
 def test_native_gpu_power_thermal_energy(tmp_path):
     gpu=os.environ['HYSO_NATIVE_GPU_UUID']
-    r=save(measure_stability(WorkloadRecipe('runtime_support:make_gpu',dict(gpu_uuid=gpu),search_path=HERE,gpu_uuid=gpu),
-        tmp_path/'native-gpu',protocol=StabilityProtocol(duration_seconds=2.,idle_seconds=.9,interval_seconds=.2,chunk_rows=2)),
+    r=save(measure_stability(WorkloadRecipe('runtime_support:make_gpu',dict(gpu_uuid=gpu,cuda_memory_fraction=.1),search_path=HERE,gpu_uuid=gpu),
+        tmp_path/'native-gpu',protocol=bounded_stability(duration_seconds=2.,idle_seconds=.9,interval_seconds=.2,chunk_rows=2)),
         'p31-native-gpu-smoke')
     assert r.to_dict()['analysis']['status']=='completed',r.to_dict()
     result=save(analyze_energy(r,max_gap_seconds=2.),'p33-native-gpu-energy').to_dict()['analysis']
@@ -292,7 +296,7 @@ def test_native_gpu_power_thermal_energy(tmp_path):
 def test_native_allocator_cache_growth_is_not_leak(tmp_path):
     gpu=os.environ['HYSO_NATIVE_GPU_UUID']
     r=save(measure_stability(WorkloadRecipe('runtime_support:make_gpu_cache',dict(gpu_uuid=gpu),search_path=HERE,gpu_uuid=gpu),
-        tmp_path/'cache',protocol=StabilityProtocol(duration_seconds=.8,interval_seconds=.1,chunk_rows=2)),
+        tmp_path/'cache',protocol=bounded_stability(duration_seconds=.8,interval_seconds=.1,chunk_rows=2)),
         'p31-native-cache-probe')
     assert r.to_dict()['analysis']['status']=='completed',r.to_dict()['analysis']
     result=save(analyze_memory_trend(r,plateau_range_bytes=1024**2),'p32-native-cache-growth').to_dict()['analysis']
@@ -318,7 +322,7 @@ def test_atomic_publication_transient_and_bounded_failure(monkeypatch,tmp_path):
 
 
 def test_real_sampling_gap_is_reported_not_interpolated(tmp_path):
-    r=save(measure_stability(recipe(delay=.07),tmp_path/'gap',protocol=StabilityProtocol(
+    r=save(measure_stability(recipe(delay=.07),tmp_path/'gap',protocol=bounded_stability(
         duration_seconds=.21,interval_seconds=.01,chunk_rows=1)),'p31-real-sampling-gap')
     a=r.to_dict()['analysis'];assert a['status']=='completed'
     assert a['gap_count']>=2 and all(g['gap_ns']>20000000 for g in a['gaps'])

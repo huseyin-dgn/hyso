@@ -178,6 +178,37 @@ cython_debug/
 #  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
-.cursorindexingignore# Internal HYSo development files
+.cursorindexingignore
+# Internal HYSo development files
 /docs/audit/
 /docs/design/
+
+# Local credentials; never blanket-ignore JSON fixtures or Python sources.
+.env.*
+!.env.example
+!.env.sample
+*.key
+*.pem
+*.pfx
+*.p12
+*.crt
+*.cer
+
+# Local results and large artifacts, scoped to dedicated output directories.
+/evidence/
+/outputs/
+/checkpoints/
+/weights/
+/profiling/
+/debug/
+/tmp/
+/cuda-logs/
+/native-logs/
+/*.pt
+/*.pth
+/*.ckpt
+/*.onnx
+/profile*.json
+/trace*.json
+/.optional-runtime/
+/scratch_p21_*.py

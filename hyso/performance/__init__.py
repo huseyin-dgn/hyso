@@ -23,6 +23,8 @@ from .dataloader import (DataLoaderAnalysisProtocol, DataLoaderAnalysisResult, L
 from .worker_trace_result import WorkerTraceAnalysisResult, analyze_worker_traces
 from ._loader_task_trace import WorkerTaskDataLoader
 from .worker_task_result import WorkerTaskAnalysisResult, analyze_worker_tasks
+from ._loader_dataset_trace import TracedDataset
+from ._loader_stage_trace import trace_data_stage
 from .training_memory import (TrainingMemoryProtocol, TrainingMemoryResult, TrainingMemoryError,
                               measure_training_memory)
 from .gradients import (GradientDiagnosticsProtocol, GradientDiagnosticsResult, GradientDiagnosticsError,
@@ -34,6 +36,14 @@ from .stability import (WorkloadRecipe, StabilityProtocol, InferenceWorkload, me
 from .streaming import (StreamSource, StreamProtocol, FrameInferenceProcessor, measure_streaming)
 from .memory_trend import RetentionTracker, analyze_memory_trend
 from .energy import observe_nvidia_power, analyze_energy
+from .devices import DeviceProtocol, compare_devices
+from .providers import ProviderProtocol, profile_execution_providers
+from .roofline import RooflineProtocol,RooflineReference,analyze_roofline,measure_roofline
+from .roofline_counters import read_ncu_counters,analyze_counter_roofline,plot_counter_roofline
+from .result import RooflineResult,LayerOverheadResult
+from .layer_overhead import LayerOverheadProtocol,measure_layer_overhead
+from .profiling import layer_profiling_capabilities
+from .profiling import analyze_nsys_operators
 
 __all__ = ["TailPolicy", "ThroughputProtocol", "analyze_latency", "measure_throughput",
            "LatencyAnalysis", "ThroughputResult", "MemoryProtocol", "measure_memory", "measure_footprint",
@@ -52,9 +62,14 @@ __all__ = ["TailPolicy", "ThroughputProtocol", "analyze_latency", "measure_throu
            "DataLoaderAnalysisResult", "LoaderTrainingResult", "measure_training_with_loader",
            "WorkerTraceAnalysisResult", "analyze_worker_traces",
            "WorkerTaskDataLoader", "WorkerTaskAnalysisResult", "analyze_worker_tasks",
+           "TracedDataset", "trace_data_stage",
            "TrainingMemoryProtocol", "TrainingMemoryResult", "TrainingMemoryError", "measure_training_memory",
            "GradientDiagnosticsProtocol", "GradientDiagnosticsResult", "GradientDiagnosticsError", "measure_gradient_diagnostics",
     "TrainingMemoryRecipe", "IsolatedTrainingMemoryProtocol", "IsolatedTrainingMemoryResult", "measure_training_memory_isolated",
     "RuntimeResult", "WorkloadRecipe", "StabilityProtocol", "InferenceWorkload", "measure_stability", "reopen_stability",
     "StreamSource", "StreamProtocol", "FrameInferenceProcessor", "measure_streaming", "RetentionTracker",
-    "analyze_memory_trend", "observe_nvidia_power", "analyze_energy"]
+    "analyze_memory_trend", "observe_nvidia_power", "analyze_energy",
+    "DeviceProtocol", "compare_devices", "ProviderProtocol", "profile_execution_providers",
+    "layer_profiling_capabilities", "analyze_nsys_operators", "LayerOverheadResult", "LayerOverheadProtocol", "measure_layer_overhead",
+    "RooflineProtocol", "RooflineReference", "RooflineResult", "analyze_roofline", "measure_roofline",
+    "read_ncu_counters", "analyze_counter_roofline", "plot_counter_roofline"]

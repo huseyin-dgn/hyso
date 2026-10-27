@@ -22,6 +22,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'tools/forensics'))
 import gpu_scenario_runner as runner
 import native_scenario_runner as legacy
+from offline_test_isolation import offline_test
+from supervisor_contract import assert_supervisor_contract
 
 
 @contextmanager
@@ -211,6 +213,9 @@ class P02RunnerExtensionTests(unittest.TestCase):
         old = ast.parse(Path(legacy.__file__).read_text())
         new = ast.parse(Path(runner.__file__).read_text())
         for name in ('job_class','expected_limits','validate_gate','await_gate','supervise'):
+            if name=='supervise':
+                assert_supervisor_contract(self,legacy,runner)
+                continue
             a = next(n for n in old.body if isinstance(n, ast.FunctionDef) and n.name==name)
             b = next(n for n in new.body if isinstance(n, ast.FunctionDef) and n.name==name)
             self.assertEqual(ast.dump(ast.parse(ast.unparse(a).replace('native_scenario_runner.py','gpu_scenario_runner.py'))),
@@ -228,6 +233,7 @@ class P02RunnerExtensionTests(unittest.TestCase):
             self.assertNotIn('p02_protocol', manifest)
             runner.verify(root, seal['manifest_sha256'])
 
+    @offline_test
     def test_11_no_execution_without_approval(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -240,6 +246,7 @@ class P02RunnerExtensionTests(unittest.TestCase):
             self.assertFalse((root/'execution-consumed.json').exists())
         self.assertNotIn('torch', sys.modules)
 
+    @offline_test
     def test_12_gpu_context_remains_warning_only(self):
         result = runner.admission.evaluate(None, {'gpu_processes':[{'pid':42,'category':'unknown'}]},
                     run_id='offline-only', manifest_sha256='a'*64)

@@ -1,4 +1,5 @@
 """P25 deterministic reduction, real one-fit diagnostics and lifecycle evidence."""
+from fixture_support import example_fixture
 import gc
 import hashlib
 import json
@@ -323,7 +324,7 @@ def test_exact_tensor_record_budget(budget,passes):
 
 def test_gradient_guide():
     import re
-    path=Path(__file__).resolve().parents[1]/'docs/guides/performance-gradient-amp.md'
+    path=example_fixture('docs/guides/performance-gradient-amp.md')
     namespace={'__name__':'p25_guide'}
     for block in re.findall(r'```python\n(.*?)```',path.read_text(encoding='utf-8'),re.S):
         exec(compile(block,str(path),'exec'),namespace)
