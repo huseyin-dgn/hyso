@@ -1,9 +1,28 @@
 # P18 acceptance: scoped empirical Roofline
 
-**COMPLETED for the original P18 scope:** saved native FP32 compute/DRAM
+**IMPLEMENTED for scoped empirical-session analysis:** saved native FP32 compute/DRAM
 evidence, matching work and memory hierarchy, empirical session references,
 Roofline plotting and bounded interpretation. This does not certify absolute
 GPU capacity, a causal kernel bottleneck or an achievable speedup.
+
+The separate three-sample calibration protocol **FAILS** its predeclared 10%
+compute-rate spread screen: **10.518334% > 10%**. Its qualified stable two-roof
+acceptance remains **PARTIAL**, with a qualified compute roof still missing.
+The valid native measurements and DRAM reference remain usable in their stated
+scopes. The later five-sample compute session does not replace or repair that
+experiment. No samples or failed records are discarded and no screen is relaxed.
+
+| Acceptance scope | Status | Limit |
+|---|---|---|
+| Scoped empirical-session analysis | IMPLEMENTED | Separate observed session bands and conditional reference-model interpretation |
+| Three-sample 10% calibration protocol | FAIL | Compute spread 10.518334%; predeclared screen not met |
+| Qualified stable two-roof experiment | PARTIAL | Qualified compute roof missing; no stable two-roof acceptance claim |
+
+These scopes must remain distinct. The generic reader has no library-wide 10%
+admission rule; it reports observations without certifying reference qualification.
+When a reference is absent or unqualified, omit it to retain the measured target
+in a `partial` result. No two-roof model is derived until both references are
+supplied. Adding this partial API does not complete the failed calibration.
 
 ## Measured target
 
@@ -51,10 +70,19 @@ theoretical maximum and speedup remain **unsupported/null**.
 - The optional adapter reads saved CSV/receipts only. No new GPU capture or
   calibration was run to complete this integration. Ordinary HYSo use does not
   require Nsight Compute or a new resource quota/benchmark.
-- **45 CPU/protocol tests passed** across `tests/test_roofline.py` and
+- The earlier full-reference verification recorded **45 CPU/protocol tests passed**
+  across `tests/test_roofline.py` and
   `tests/test_roofline_counters.py`: existing behavior, native arithmetic,
   separate sessions, attribution/unit/source checks, missing evidence, tamper
   rejection, JSON/CSV roundtrips and CPU plotting.
+- Partial-reference integration: **54 CPU/protocol tests passed** across the
+  same two files, including all three missing-reference combinations, invalid
+  supplied references, partial JSON/CSV roundtrips, derived-evidence tampering
+  and explicit partial-plot rejection. A separate saved-native compatibility
+  check passed against pre-existing schema-1 JSON/CSV exports: full-reference
+  derived fields are unchanged, and partial exports retain the same target.
+  These are **55 passing checks** in this integration run, with CUDA uninitialized;
+  they do not constitute a new calibration or qualified stable-roof acceptance.
 - Native evidence and generated plots/exports remain local. No raw profiler
   reports, machine identifiers, personal paths or private logs accompany this
   summary. No exact hardware-capacity or acceleration claim is published.

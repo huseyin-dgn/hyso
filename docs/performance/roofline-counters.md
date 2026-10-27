@@ -136,6 +136,27 @@ hardware limits or automatic product acceptance rules. Short/variable samples
 retain their uncertainty; missing or invalid evidence is never turned into a
 measurement.
 
+An experiment can predeclare stricter qualification rules for its references.
+Keep a failed qualification visible; do not promote its observed maximum to a
+qualified roof by dropping samples or changing that experiment's rules afterward.
+The generic reader reports observations and does not decide whether a workload
+has established a stable reference. Reference qualification remains external.
+
+If a compute or memory reference is absent or has not qualified, omit it:
+
+```python
+partial = analyze_counter_roofline(target, memory_session=memory)
+assert partial.to_dict()["measurements"]["status"] == "partial"
+```
+
+Both reference arguments are optional. Measured target FLOPs, DRAM traffic,
+intensity and rates remain available. Missing memory has `unsupported` status
+and a null bandwidth; missing compute has an empty reference list. No two-roof
+model is derived until both references are supplied. Partial results support
+the same canonical JSON/CSV exports. `plot_counter_roofline` requires both
+references and raises `ValueError` for a partial result. Invalid **supplied**
+sessions still raise validation errors; they are never silently discarded.
+
 ## Compatibility
 
 `analyze_roofline` and `measure_roofline` keep their analytic work/payload

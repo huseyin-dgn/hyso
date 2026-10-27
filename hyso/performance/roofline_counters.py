@@ -283,8 +283,9 @@ def _summary(session):
 
 def _derive(raw):
     target, computes, memory = raw['target'], raw['compute_sessions'], raw['memory_session']
-    sessions = [target, *computes, memory]
-    if not computes or target['role'] != 'target' or memory['role'] != 'memory' or any(s['role'] != 'compute' for s in computes):
+    sessions = [target, *computes, *([memory] if memory is not None else [])]
+    if (target['role'] != 'target' or (memory is not None and memory['role'] != 'memory')
+            or any(s['role'] != 'compute' for s in computes)):
         raise ValueError('target, separate compute sessions and memory reference required')
     for s in sessions:
         _validate_session(s)
@@ -297,10 +298,14 @@ def _derive(raw):
     if len({x['uuid'] for s in sessions for x in s['snapshots'] if x['uuid']}) > 1:
         raise ValueError('reference sensor device mismatch')
     point = _sample(target['samples'][0])
-    mem = _summary(memory)
+    partial = not computes or memory is None
+    mem = _summary(memory) if memory is not None else dict(
+        status='unsupported', value=None, reason='saved_device_DRAM_reference_not_supplied')
     refs = [_summary(s) for s in computes]
     models = []
     for ref in refs:
+        if memory is None:
+            break
         intensity = point['flops_per_byte']
         branch = ('DRAM_reference' if mem['observed_max'] * intensity < ref['observed_min'] else
                   'compute_reference' if mem['observed_min'] * intensity > ref['observed_max'] else 'overlapping_reference_bands')
@@ -308,25 +313,32 @@ def _derive(raw):
             at_target_observed_model_band_gflops=[min(ref['observed_min'], mem['observed_min'] * intensity),
                                                  min(ref['observed_max'], mem['observed_max'] * intensity)]))
     unsupported = dict(status='unsupported', value=None, reason='reference geometry is not causal performance or counterfactual speedup evidence')
-    measurements = dict(status='derived_with_observed_session_variability', target=dict(
+    measurements = dict(status='partial' if partial else 'derived_with_observed_session_variability', target=dict(
         **point, status='derived_from_native_counters', flop_definition='FADD+FMUL+2*FFMA',
         analytic_work_reference=dict(status='analytic_reference_only', value=target['receipt'].get('logical_reference_flops'))),
         compute_references=refs, memory_reference=mem, reference_models=models,
-        empirical_memory_max_gbytes_per_second=mem['observed_max'],
+        empirical_memory_max_gbytes_per_second=mem['observed_max'] if memory is not None else None,
         theoretical_maximum=unsupported, bottleneck=unsupported, hardware_headroom=unsupported, speedup=unsupported)
     return dict(measurements=measurements,
         provenance=dict(model=dict(kernel=target['kernel']), input=dict(dtype='float32', scope='single_saved_kernel_interval'),
                         environment=dict(device=target['device'], source='Nsight Compute raw CSV exports')),
-        requested=dict(target=target['session_id'], compute_sessions=[s['session_id'] for s in computes], memory_session=memory['session_id']),
-        actual=dict(target_kernels=1, compute_samples=[len(s['samples']) for s in computes], memory_samples=len(memory['samples'])),
-        diagnostics=dict(warnings=['Target conditions are not assumed equal to reference sessions; inspect saved clocks/snapshots.'], limitations=_LIMITATIONS))
+        requested=dict(target=target['session_id'], compute_sessions=[s['session_id'] for s in computes],
+                       memory_session=memory['session_id'] if memory is not None else None),
+        actual=dict(target_kernels=1, compute_samples=[len(s['samples']) for s in computes],
+                    memory_samples=len(memory['samples']) if memory is not None else 0),
+        diagnostics=dict(warnings=['Target conditions are not assumed equal to reference sessions; inspect saved clocks/snapshots.']
+            + (['Independent compute and device-DRAM references are required for a two-roof comparison.'] if partial else []),
+            limitations=_LIMITATIONS))
 
 
-def analyze_counter_roofline(target, *, compute_sessions, memory_session):
+def analyze_counter_roofline(target, *, compute_sessions=(), memory_session=None):
     """Offline empirical comparison, preserving every sample and session.
 
     No spread, traffic-ratio, minimum-duration policy or resource quota. Missing
     counters/units/attribution fail closed; variation is reported, never hidden.
+    Omit unqualified references to retain measured target values in a partial
+    result without manufacturing a two-roof comparison. Invalid supplied
+    sessions still raise rather than silently disappearing from the evidence.
     """
     raw = dict(target=target, compute_sessions=list(compute_sessions), memory_session=memory_session)
     derived = _derive(raw)
@@ -352,6 +364,8 @@ def plot_counter_roofline(result, path, *, overwrite=False):
     data = RooflineResult(result.to_dict()).to_dict()
     if data['protocol']['id'] != _PROTOCOL['id']:
         raise ValueError('native counter result required')
+    if data['measurements']['status'] == 'partial':
+        raise ValueError('independent compute and device-DRAM references required for a Roofline plot')
     path = Path(path)
     if path.suffix.lower() not in ('.png', '.svg'):
         raise ValueError('choose .png or .svg')

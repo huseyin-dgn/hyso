@@ -184,3 +184,63 @@ def test_reference_sensor_uuid_mismatch_rejected(tmp_path):
     raw['memory_session']['snapshots'] = [dict(uuid='fake-B')]
     with pytest.raises(ValueError, match='sensor device'):
         analyze_counter_roofline(raw['target'], compute_sessions=raw['compute_sessions'], memory_session=raw['memory_session'])
+
+
+@pytest.mark.parametrize('keep_compute,keep_memory', [(False, True), (True, False), (False, False)])
+def test_unqualified_references_can_be_omitted_without_losing_measured_target(tmp_path, monkeypatch, keep_compute, keep_memory):
+    raw = result(tmp_path).to_dict()['raw_evidence']
+    def forbidden(*args, **kwargs):
+        raise AssertionError('missing references must not trigger calibration or GPU work')
+    monkeypatch.setattr(torch.cuda, '_lazy_init', forbidden)
+    monkeypatch.setattr(subprocess, 'run', forbidden)
+    kwargs = {}
+    if keep_compute:
+        kwargs['compute_sessions'] = raw['compute_sessions']
+    if keep_memory:
+        kwargs['memory_session'] = raw['memory_session']
+    r = analyze_counter_roofline(raw['target'], **kwargs)
+    m = r.to_dict()['measurements']
+    assert m['status'] == 'partial'
+    assert m['target']['flops_per_byte'] == pytest.approx(.1)
+    assert m['target']['gflops_per_second'] == pytest.approx(2)
+    assert m['target']['hardware_flops'] == 8
+    assert m['target']['dram_bytes'] == 80
+    assert m['reference_models'] == []
+    if keep_memory:
+        assert m['empirical_memory_max_gbytes_per_second'] == pytest.approx(2400/9)
+    else:
+        assert m['memory_reference']['status'] == 'unsupported'
+        assert m['empirical_memory_max_gbytes_per_second'] is None
+    assert len(m['compute_references']) == (2 if keep_compute else 0)
+    assert all(m[k]['status'] == 'unsupported' and m[k]['value'] is None
+               for k in ['theoretical_maximum', 'bottleneck', 'hardware_headroom', 'speedup'])
+    r.to_json(tmp_path/'partial.json')
+    r.to_csv(tmp_path/'partial.csv')
+    assert RooflineResult.from_json(tmp_path/'partial.json').to_dict() == r.to_dict()
+    assert RooflineResult.from_csv(tmp_path/'partial.csv').to_dict() == r.to_dict()
+    with pytest.raises(ValueError, match='references required'):
+        plot_counter_roofline(r, tmp_path/'partial.svg')
+    assert not (tmp_path/'partial.svg').exists()
+
+
+@pytest.mark.parametrize('role', ['compute', 'memory'])
+def test_partial_analysis_still_rejects_invalid_supplied_reference(tmp_path, role):
+    raw = result(tmp_path).to_dict()['raw_evidence']
+    session = raw['memory_session'] if role == 'memory' else raw['compute_sessions'][0]
+    session['samples'][0]['counters']['dram__bytes_read.sum']['unit'] = 'MiB'
+    kwargs = dict(memory_session=session) if role == 'memory' else dict(compute_sessions=[session])
+    with pytest.raises(ValueError, match='unit'):
+        analyze_counter_roofline(raw['target'], **kwargs)
+
+
+@pytest.mark.parametrize('field', ['status', 'target', 'reference_models', 'memory_max'])
+def test_partial_derived_evidence_tampering_rejected(tmp_path, field):
+    raw = result(tmp_path).to_dict()['raw_evidence']
+    data = analyze_counter_roofline(raw['target']).to_dict()
+    m = data['measurements']
+    if field == 'status': m['status'] = 'derived_with_observed_session_variability'
+    elif field == 'target': m['target']['hardware_flops'] += 1
+    elif field == 'reference_models': m['reference_models'] = [dict(session_id='invented')]
+    else: m['empirical_memory_max_gbytes_per_second'] = 1
+    with pytest.raises(ValueError, match='derived evidence mismatch'):
+        RooflineResult(data)
