@@ -12,6 +12,7 @@ from .resolver import (EvidenceEligibility, MetricResolution, NativeMetric,
 from .engine import advise, validate_advisor_report
 from .goals import evaluate_goal, evaluate_goals, goal_context
 from .planning import DecisionPlan, PlannedFinding
+from .comparison import ComparisonContract, ComparisonReason, ComparisonResult, ComparisonStatus, compare_records
 
 __all__ = [
     'AdvisorError', 'AdvisorReport', 'AdvisorRequest', 'Consistency',
@@ -24,4 +25,5 @@ __all__ = [
     'NativeObservation',
     'evaluate_goal', 'evaluate_goals', 'goal_context',
     'DecisionPlan', 'PlannedFinding',
+    'ComparisonContract', 'ComparisonReason', 'ComparisonResult', 'ComparisonStatus', 'compare_records',
 ]
