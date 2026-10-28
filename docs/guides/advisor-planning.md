@@ -1,5 +1,8 @@
 # Evidence-based experiment planning — Stage 3B.3B
 
+Stage 3B.3C adds [Turkish/English presentation views](advisor-reporting.md)
+without changing any planning rule, canonical report field or evidence identity.
+
 `advise(source, request=...)` now returns read-only, deterministic decision plans
 alongside the existing native observations and record-local GoalEvaluations.
 Nothing is executed, authorized, reserved, moved, trained or benchmarked.

@@ -545,7 +545,20 @@ class AdvisorReport(Contract):
     def report_id(self):
         return self.content_sha256
 
-    def to_markdown(self, path=None):
+    def to_markdown(self, path=None, *, language=None, audience=None):
         """Explicit readable export of this same report; never run analysis."""
+        if language is not None or audience is not None:
+            from .presentation import to_markdown
+            return to_markdown(self, path, language='en' if language is None else language,
+                               audience='summary' if audience is None else audience)
         from .render import render_markdown
         return render_markdown(self, path)
+
+    def to_display_dict(self, *, language='en', audience='summary'):
+        """Presentation-only localized JSON data; never canonical evidence."""
+        from .presentation import to_display_dict
+        return to_display_dict(self, language=language, audience=audience)
+
+    def to_display_json(self, path=None, *, language='en', audience='summary'):
+        from .presentation import to_display_json
+        return to_display_json(self, path, language=language, audience=audience)
