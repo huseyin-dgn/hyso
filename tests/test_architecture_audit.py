@@ -1,4 +1,4 @@
-"""3B.5A: actual static CPU capture -> versioned audit -> validated reader."""
+"""Frozen 3B.5A v1 semantics, explicitly selected after the v2 introduction."""
 from collections import OrderedDict
 from contextlib import contextmanager
 import copy
@@ -38,7 +38,7 @@ def audit_only(monkeypatch):
 def run(monkeypatch, model):
     with metadata_only(monkeypatch): snapshot = capture_model_structure(model)
     before = snapshot.to_json()
-    with audit_only(monkeypatch): result = audit_model_architecture(snapshot)
+    with audit_only(monkeypatch): result = audit_model_architecture(snapshot, policy_version=1)
     assert snapshot.to_json() == before
     return result
 
@@ -70,7 +70,7 @@ def test_real_cnn_capture_audit_json_reader_end_to_end(monkeypatch, tmp_path):
         result.to_json(path)
         reopened = ModelArchitectureAudit.from_json(path)
         assert reopened.to_json() == result.to_json()
-        assert audit_model_architecture(ModelStructureSnapshot.from_json(snapshot_path)).to_json() == result.to_json()
+        assert audit_model_architecture(ModelStructureSnapshot.from_json(snapshot_path), policy_version=1).to_json() == result.to_json()
     assert not issues(result)
     assert result.audit_policy.id == 'registered_static_architecture_v1' and result.audit_policy.version == 1
     assert [r.id for r in result.audit_policy.rules] == ['linear_shapes', 'convolution_shapes',
@@ -329,7 +329,7 @@ def test_frozen_detached_canonical_and_exclusive_export(monkeypatch, tmp_path):
     result.summary['total_findings'] = 0
     fact = result.findings[0].observations[0]; fact.value['value'] = 0
     assert raw == result.to_json()
-    with audit_only(monkeypatch): assert audit_model_architecture(result.source_snapshot).to_json() == raw
+    with audit_only(monkeypatch): assert audit_model_architecture(result.source_snapshot, policy_version=1).to_json() == raw
     path = tmp_path / 'audit.json'; result.to_json(path)
     with pytest.raises(FileExistsError): result.to_json(path)
     assert path.read_text(encoding='utf-8') == raw

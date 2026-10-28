@@ -6,10 +6,12 @@ import json
 from .analysis._codec import canonical, export, plain, read_json
 from .structure import ModelStructureError, ModelStructureSnapshot
 from ._architecture_rules import _MAX_BYTES, _MAX_ENTRIES, build_audit
+from ._architecture_coverage import build_audit_v2
 
 __all__ = ['audit_model_architecture', 'ModelArchitectureAudit', 'ModelArchitectureAuditError',
     'ArchitectureFindingClass', 'ArchitectureAuditFinding', 'AuditEvidence', 'AuditDerivedValue',
-    'ArchitectureAuditRule', 'ArchitectureAuditPolicy', 'ArchitectureModuleAssessment', 'ArchitectureAuditCheck']
+    'ArchitectureAuditRule', 'ArchitectureAuditPolicy', 'ArchitectureModuleAssessment', 'ArchitectureAuditCheck',
+    'ArchitectureCoverageStatus', 'ArchitectureRuleApplicability', 'ArchitectureUnassessedArea', 'ArchitectureEvidenceGap']
 
 
 class ModelArchitectureAuditError(ModelStructureError):
@@ -19,6 +21,13 @@ class ModelArchitectureAuditError(ModelStructureError):
 class ArchitectureFindingClass(str, Enum):
     STATIC_INCONSISTENCY = 'STATIC_INCONSISTENCY'
     OBSERVATION = 'OBSERVATION'
+    COVERAGE_GAP = 'COVERAGE_GAP'
+
+
+class ArchitectureCoverageStatus(str, Enum):
+    APPLICABLE = 'APPLICABLE'
+    NOT_APPLICABLE = 'NOT_APPLICABLE'
+    UNASSESSED_BY_RULESET = 'UNASSESSED_BY_RULESET'
     COVERAGE_GAP = 'COVERAGE_GAP'
 
 
@@ -100,6 +109,40 @@ class ArchitectureModuleAssessment:
     checks: tuple
 
 
+@dataclass(frozen=True)
+class ArchitectureRuleApplicability:
+    module_id: str
+    path: str
+    rule_id: str
+    rule_version: int
+    status: ArchitectureCoverageStatus
+    reason: str
+    observations: tuple
+    source_snapshot_sha256: str
+
+
+@dataclass(frozen=True)
+class ArchitectureUnassessedArea:
+    module_id: str
+    path: str
+    area: str
+    status: ArchitectureCoverageStatus
+    reason: str
+    observations: tuple
+    source_snapshot_sha256: str
+    limitation: str
+
+
+@dataclass(frozen=True)
+class ArchitectureEvidenceGap:
+    finding_id: str
+    status: ArchitectureCoverageStatus
+    code: str
+    required_by_rule_id: str
+    module_ids: tuple
+    source_fields: tuple
+
+
 def _derived(d):
     return None if d is None else AuditDerivedValue(d['method'], tuple(d['source_fields']), canonical(d['value']))
 
@@ -117,7 +160,10 @@ class ModelArchitectureAudit:
             # The source constructor verifies the closed producer schema, all
             # derived counts/paths and its hash before any audit assumptions.
             source = ModelStructureSnapshot(d['source_snapshot'])
-            expected = build_audit(source.to_dict())
+            version = d.get('schema_version')
+            if type(version) is not int or version not in (1, 2):
+                raise ModelArchitectureAuditError('unsupported_architecture_audit_version')
+            expected = (build_audit if version == 1 else build_audit_v2)(source.to_dict())
             if raw != canonical(expected):
                 raise ModelArchitectureAuditError('architecture_audit_derivation_or_integrity_mismatch')
         except ModelArchitectureAuditError:
@@ -149,6 +195,32 @@ class ModelArchitectureAudit:
             c['code'], c['status'], tuple(c['source_fields']), _derived(c['expected'])) for c in d['checks'])))
             for d in self.to_dict()['coverage']['module_assessments'])
 
+    def _v2_coverage(self):
+        if self.schema_version != 2:
+            raise ModelArchitectureAuditError('v2_coverage_required')
+        return self.to_dict()['coverage']
+
+    @property
+    def rule_applicability(self):
+        return tuple(ArchitectureRuleApplicability(**dict(d, status=ArchitectureCoverageStatus(d['status']),
+            observations=tuple(AuditEvidence(f['field'], f['status'], canonical(f['value'])) for f in d['observations'])))
+            for d in self._v2_coverage()['rule_applicability'])
+
+    @property
+    def unassessed_areas(self):
+        return tuple(ArchitectureUnassessedArea(**dict(d, status=ArchitectureCoverageStatus(d['status']),
+            observations=tuple(AuditEvidence(f['field'], f['status'], canonical(f['value'])) for f in d['observations'])))
+            for d in self._v2_coverage()['unassessed_areas'])
+
+    @property
+    def evidence_gaps(self):
+        return tuple(ArchitectureEvidenceGap(**dict(d, status=ArchitectureCoverageStatus(d['status']),
+            module_ids=tuple(d['module_ids']), source_fields=tuple(d['source_fields'])))
+            for d in self._v2_coverage()['evidence_gaps'])
+
+    @property
+    def schema_version(self): return self.to_dict()['schema_version']
+
     @property
     def summary(self): return self.to_dict()['summary']
 
@@ -174,21 +246,25 @@ class ModelArchitectureAudit:
         return cls(d)
 
 
-def audit_model_architecture(snapshot, *, max_entries=_MAX_ENTRIES, max_bytes=_MAX_BYTES):
-    """Assess one validated static snapshot under the complete v1 rule catalog.
+def audit_model_architecture(snapshot, *, policy_version=2, max_entries=_MAX_ENTRIES, max_bytes=_MAX_BYTES):
+    """Assess one validated static snapshot; v2 is the creation default.
 
+    policy_version=1 reproduces the original v1 bytes/semantics. Readers select
+    only the explicit retained schema/policy and never migrate an old result.
     Accepts no live model, model factory, filename or checkpoint. Consistency is
     limited to named recorded fields, with explicit observations and coverage
     gaps. No runtime behavior or model-wide correctness verdict is inferred.
     """
     if type(snapshot) is not ModelStructureSnapshot:
         raise ModelArchitectureAuditError('validated_structure_snapshot_required')
+    if type(policy_version) is not int or policy_version not in (1, 2):
+        raise ModelArchitectureAuditError('unsupported_architecture_audit_policy')
     if (type(max_entries) is not int or not 1 <= max_entries <= _MAX_ENTRIES
             or type(max_bytes) is not int or not 1 <= max_bytes <= _MAX_BYTES):
         raise ModelArchitectureAuditError('invalid_architecture_audit_limit')
     try:
         source = ModelStructureSnapshot(snapshot.to_dict())
-        data = build_audit(source.to_dict(), max_entries)
+        data = (build_audit if policy_version == 1 else build_audit_v2)(source.to_dict(), max_entries)
         if len(canonical(data).encode('utf-8')) > max_bytes:
             raise ModelArchitectureAuditError('architecture_audit_byte_limit')
         return ModelArchitectureAudit(data)

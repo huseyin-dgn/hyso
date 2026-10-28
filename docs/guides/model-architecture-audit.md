@@ -1,4 +1,4 @@
-# Static Model Architecture Audit — 3B.5A
+# Static Model Architecture Audit — 3B.5A / 3B.5B
 
 `audit_model_architecture(snapshot)` reads a single validated
 `ModelStructureSnapshot`. It does not accept a live model, factory, path or
@@ -11,7 +11,7 @@ from hyso import (
 
 # An existing trusted, quiescent object; no external model code is loaded.
 snapshot = capture_model_structure(model)
-audit = audit_model_architecture(snapshot)
+audit = audit_model_architecture(snapshot)  # v2 creation default since 3B.5B
 for finding in audit.findings:
     code = finding.code
     kind = finding.classification.value
@@ -29,7 +29,73 @@ and a reader that rederives results from retained source evidence. There is no
 Advisor severity score, confidence probability, model-wide PASS/FAIL or automatic
 optimization recommendation.
 
-## Version and closed rule catalog
+## V2 coverage and diagnostic precision (3B.5B)
+
+New creation defaults to `policy_version=2`, wire format
+`hyso.model_architecture_audit`, **schema 2**, policy
+`registered_static_architecture_v2`, version **2**. Use
+`audit_model_architecture(snapshot, policy_version=1)` to reproduce the original
+v1 contract and canonical bytes. This default-version change is explicit;
+importing an old result never migrates or reinterprets it.
+
+| Disposition | Meaning | Representation |
+|---|---|---|
+| `NOT_APPLICABLE` | A particular rule's type preconditions do not apply to this module | `rule_applicability` |
+| `UNASSESSED_BY_RULESET` | The catalog does not assess this registered area | `unassessed_areas` |
+| `COVERAGE_GAP` | An applicable check needs unavailable/unsupported native evidence | Diagnostic finding and linked `evidence_gaps` entry |
+
+`APPLICABLE` means the rule's exact module type matches; evidence sufficiency
+and the check result are assessed separately. It is not a successful check.
+
+Sequential, ReLU, pooling and Flatten receive `NOT_APPLICABLE` for individual
+Linear/Conv rules. Their shape semantics remain `UNASSESSED_BY_RULESET`; lacking
+a shape rule does not itself produce a missing-evidence finding. Custom/subclass
+and transposed Conv semantics are likewise unassessed. A lazy/custom tensor can
+still produce a genuine gap for global parameter inventory or storage aliases
+even when its owner has no applicable shape rule.
+
+Unavailable configuration fields unused by implemented checks become unassessed
+areas with their original missing/unsupported statuses. Unavailable Conv padding
+mode does not prevent checking weight shape. Missing channels/groups/kernel
+metadata does prevent the applicable shape expectation and remains a gap. No
+evidence status is upgraded.
+
+A known invalid shape prerequisite makes its dependent expectation
+`not_applicable`, including when that parameter registration is absent. It does
+not require additional evidence for an undefined shape. Independent inventory,
+alias or bias-shape evidence gaps remain visible.
+
+Linear/Conv shape, inventory and relationship rules retain version 1 and their
+diagnostic content/IDs. The v2 `coverage_gaps` rule reports evidence required by
+applicable shape/inventory/alias checks. `coverage_classification` version 2
+records applicability and unassessed areas. Genuine gap IDs use coverage rule
+version 2. The reader rederives all dispositions, observations and links.
+
+Typed accessors `.rule_applicability`, `.unassessed_areas` and `.evidence_gaps`
+return frozen records using `ArchitectureCoverageStatus`. Coverage separately
+counts applicable/nonapplicable rule evaluations, unassessed modules/areas,
+evidence gaps, and modules with insufficient checks. Modules with no shape rule
+have assessment status `unassessed_by_ruleset`, never `consistent`. A known
+contradiction does not hide a separate missing check.
+
+V2 coverage status is `evidence_gaps_present` or
+`scoped_static_evidence_assessed`. Zero gaps can coexist with unassessed areas;
+neither status certifies full correctness. The normal six-module CNN has two
+applicable shape rules, ten nonapplicable rule/type pairs, four unassessed modules,
+three observations and **zero** coverage-gap findings.
+
+The new reader dispatches only on explicit schema 1 or 2 and checks the complete
+corresponding policy/result. Old v1 JSON/hashes remain identical; the old reader
+accepts them and rejects v2. New typed coverage accessors raise
+`v2_coverage_required` on v1 instead of relabeling old warnings. Reading and
+re-exporting v1 preserves its four historical CNN gap findings.
+
+Existing engine entry/byte limits remain. V2 additionally bounds all derived
+JSON containers outside the separately bounded source snapshot, including new
+coverage records and nested observations, by `max_entries`. No record is silently
+dropped to meet a limit. Auditing executes no model code and uses no RNG.
+
+## Original v1 policy and closed rule catalog (3B.5A)
 
 The wire format is `hyso.model_architecture_audit`, schema **1**. Policy
 `registered_static_architecture_v1`, version **1**, admits only structure schema
@@ -109,7 +175,7 @@ sharing, distinct tensor objects sharing storage, and registered cycles are
 separate observations. Local IDs never identify objects in other snapshots.
 Storage sharing proves neither byte-range overlap nor physical memory usage.
 
-## Programmatic evidence and coverage
+## Common evidence and original v1 coverage
 
 The JSON contains `source_snapshot`, `audit_policy`, `summary`, `findings`,
 `coverage`, `limitations` and `content_sha256`. The immutable source is embedded
@@ -142,7 +208,7 @@ source/check traversal. Duplicate findings are rejected rather than hidden.
 ## Reader, limits and compatibility
 
 The reader validates the embedded snapshot through its existing constructor,
-reruns the complete audit and compares the entire rederived canonical result:
+reruns the explicitly versioned audit and compares the entire rederived canonical result:
 policy, observed/expected values, source identities, finding IDs/order, coverage,
 summary, limitations and hash. Rehashing an invented finding cannot validate it.
 Malformed snapshots, duplicate JSON keys, extra fields and unsupported versions
@@ -164,7 +230,7 @@ forward operations may be absent.
 
 ## Acceptance checks
 
-`tests/test_architecture_audit.py` uses actual owned synthetic CPU modules and
+`tests/test_architecture_audit.py` explicitly selects v1 and uses synthetic CPU modules and
 the real structure producer. Its CNN has 122 parameter elements (120 trainable,
 2 frozen): two modules receive consistent shape checks and four explicitly have
 no applicable shape rule. This produces observations and coverage gaps, without
