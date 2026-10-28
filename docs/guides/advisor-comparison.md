@@ -22,7 +22,8 @@ Invalid API arguments/schema versions raise AdvisorError rather than minting an
 extra comparison outcome. Invalid native reports fail the existing resolver's
 validation boundary.
 
-V1 deliberately supports native P01 resident-forward P50/P95/P99 only. Metric,
+V1 supports native P01 resident-forward P50/P95/P99 and the scalar identities
+listed below, when all required native capture conditions are present. Metric,
 quantile, unit, scope and native validator come from the existing resolver. Both
 native eligibility and contract sample/tail requirements must pass. Same record,
 payload/artifact or underlying source run reuse is incompatible, even with a new
@@ -75,6 +76,63 @@ incoherent conditions yield incompatible, even if another field is missing.
 COMPARABLE means suitable recorded conditions **for the explicitly allowed axes**;
 it does not imply per-request latency equivalence across batch sizes, quality
 preservation or deployment acceptance. Numerical effects belong to 3B.4B.
+
+## Descriptive differences (3B.4B)
+
+`compare_performance(left_resolver, left_id, right_resolver, right_id,
+contract=policy)` reruns `compare_records`; it never accepts a caller's
+COMPARABLE assertion. A `PerformanceComparison` contains the complete contract,
+eligibility result and, only for an eligible safe calculation, a
+`MetricDifference`. Both resolved metrics retain their native EvidenceRefs,
+unit, protocol, scope and descriptive limitations. Frozen versioned contracts
+use the existing deterministic JSON/hash utilities. Deserialization checks
+integrity/arithmetic but is not fresh source certification.
+
+Supported numerical semantics are resident-forward P50/P95/P99 (ms, lower),
+completed resident images/s (higher), baseline/current/sampled-peak process RSS
+(byte, lower), logical tensor/artifact bytes (lower), and test accuracy/macro F1
+(fraction, higher). Lifetime HWM, pipeline and sweep-point metrics remain
+unsupported for this comparison policy. Each metric requires its own contract
+and pair of records; results are not aggregated into a model-wide verdict.
+
+For non-P01 records, capture `run_id` binds to native `result_id` or
+`evaluation_id`; `sample_sha256` hashes the complete native `raw_evidence` or
+classification `raw` object. Source capture identities must be distinct;
+identical throughput windows/RSS observations are rejected as reused captures.
+The same strict native model/input/environment/configuration identities remain
+required. Overlapping native configuration declarations must agree. No caller
+scope repairs are made. Sample counts come from native sample/observation/batch
+counts, never a caller declaration; tail minimums apply to quantiles only.
+Logical/artifact byte captures currently lack an observation count and remain
+insufficient rather than inventing repeated evidence. Existing MNIST records
+are not upgraded to eligible captures. No producer/collector is added.
+The current native P26 classification schema cannot carry the required capture
+metadata and model/input identities: its end-to-end comparisons remain
+INSUFFICIENT_EVIDENCE. Quality arithmetic is implemented and tested separately;
+it does not bypass that eligibility gate. Schema/producer support is future work.
+
+`difference = candidate - baseline` is a signed absolute-unit difference.
+`percent_change = 100 * difference / baseline`, or null for zero baseline.
+For quality fractions, `percentage_point_change = 100 * difference` is separate:
+0.80 to 0.90 is +10 percentage points and +12.5 percent relative change.
+Decimal arithmetic with fixed precision avoids ordinary binary cancellation;
+nonfinite outputs are withheld. Negative/nonfinite values, wrong units/domains,
+metric identities or measurement scopes cannot produce a numerical comparison.
+A zero baseline still permits an absolute difference, never a relative percent.
+
+For 10 ms to 7 ms the observed latency decrease is 3 ms / 30 percent.
+`metric_effect=favorable` describes only that metric under the recorded allowed
+axes. Batch/precision/model permissions are retained in the contract and warning
+codes; they do not demonstrate quality preservation, per-request equivalence or
+causal optimization success. Multiple metric results may show a speed/quality
+tradeoff; no overall success is inferred.
+
+Every result explicitly retains missing paired quality acceptance, independent
+acceptance and uncertainty evidence. Statistical independence, significance,
+causality and optimization success remain uncertified. P29 independent
+validation remains incomplete. No VERIFIED_IMPROVEMENT is produced. Existing
+canonical Advisor reports, Turkish/English presentation and serializers are
+unchanged. No benchmark, model inference or training is performed.
 
 Focused checks (synthetic JSON samples, no workloads):
 
