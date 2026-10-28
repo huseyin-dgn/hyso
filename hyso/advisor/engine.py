@@ -1,4 +1,4 @@
-"""Deterministic observations only; no optimization or execution engine."""
+"""Deterministic observations and record-local goals; no execution engine."""
 import hashlib
 
 from ._json import AdvisorError, canonical
@@ -6,6 +6,7 @@ from .contracts import (AdvisorReport, AdvisorRequest, EvidenceSupport, Finding,
                         FindingKind, Priority, RuleVersion)
 from .resolver import NativeMetric, NativeMetricResolver, NativeObservation
 from .validation import validate_request
+from .goals import evaluate_goals as _evaluate_goals, GOAL_RULE_ID, GOAL_RULE_VERSION
 
 RULE_ID = 'native-observation'
 RULE_VERSION = '1'
@@ -27,13 +28,18 @@ def _identity(*values):
 def advise(report, request=None):
     """Explain eligible existing native measurements without running a workload.
 
-    Advanced requests are retained but receive no evidence-based goal assessment.
+    Advanced goals are assessed within single matching native captures only.
     Priority changes order only. Each observation is local to its source capture.
     """
     request = AdvisorRequest() if request is None else request
     if type(request) is not AdvisorRequest:
         raise AdvisorError('typed_request_required')
     resolver = NativeMetricResolver(report)
+    return _advise_validated(resolver, request)
+
+
+def _advise_validated(resolver, request, *, evaluate_goals=True):
+    """Internal snapshot reuse; legacy rule reproduction never changes v1 data."""
     source = resolver.report
     observations = []; actions = []; limitations = [
         'Supported means eligible for a local descriptive observation, not complete provenance or joint deployment acceptance.',
@@ -41,7 +47,10 @@ def advise(report, request=None):
         'Original artifact bytes are not automatically reread; integrity is relative to this validated source report.',
         'Resolver v1 supports P01/P02/P03/P08/P10/P11/P26 only; other features remain outside metric-resolution coverage.',
     ]
-    if request.goals or request.budgets:
+    active_goals = evaluate_goals and bool(request.goals)
+    if active_goals:
+        limitations.append('Goal results describe single retained records only; deployment acceptance and future feasibility are not established. Resource-budget assessment/enforcement remains NOT IMPLEMENTED.')
+    elif request.goals or request.budgets:
         limitations.append('Advanced goal and resource-budget assessment is NOT IMPLEMENTED (3B.3); only static request validation is included.')
     for record in source['index']['records']:
         rid = record['record_id']; feature = record['feature_id']; n = record['native_payload']
@@ -111,23 +120,41 @@ def advise(report, request=None):
     risks = list(source['analysis']['risks'])
     risks.extend(name + '=' + value for name, value in source['analysis']['claims'].items())
     validation = validate_request(request)
+    evaluations = validation.goals
+    rule_versions = (RuleVersion(RULE_ID, RULE_VERSION),)
+    if active_goals:
+        evaluations = _evaluate_goals(resolver, request)
+        rule_versions += (RuleVersion(GOAL_RULE_ID, GOAL_RULE_VERSION),)
+        goals_by_id = {g.goal_id: g for g in request.goals}
+        for evaluation in evaluations:
+            if evaluation.evidence_support != EvidenceSupport.SUPPORTED:
+                actions.append(Finding(
+                    _identity(goals_by_id[evaluation.goal_id].content_sha256, evaluation.goal_id, GOAL_RULE_VERSION), FindingKind.MEASURE_NEXT,
+                    'Goal ' + evaluation.goal_id + ': clarify the requested scope/protocol and inspect retained native evidence. '
+                    'If the required capability or evidence is absent, obtain an explicitly scoped, separately authorized capture. '
+                    'No measurement is started.', evidence=evaluation.evidence, limitations=evaluation.reasons,
+                    rule_id=GOAL_RULE_ID, rule_version=GOAL_RULE_VERSION,
+                    evidence_support=EvidenceSupport.INSUFFICIENT_EVIDENCE))
+        if validation.conflicting_goal_ids:
+            limitations.append('Hard goal intervals are logically inconsistent for the same scope/protocol. Individual observed outcomes are not joint acceptance.')
     return AdvisorReport(
         resolver.source_report_id, resolver.source_report_sha256, request,
         findings=tuple(f for _, f in observations) + tuple(actions),
-        goal_evaluations=validation.goals, request_validation=validation,
+        goal_evaluations=evaluations, request_validation=validation,
         evidence_limitations=tuple(dict.fromkeys(limitations)), risks=tuple(dict.fromkeys(risks)),
-        rule_versions=(RuleVersion(RULE_ID, RULE_VERSION),),
+        rule_versions=rule_versions,
         evidence_status=EvidenceSupport.SUPPORTED if observations else EvidenceSupport.INSUFFICIENT_EVIDENCE,
-        evaluation_status='observations_only')
+        evaluation_status='goals_evaluated' if active_goals else 'observations_only')
 
 
 def validate_advisor_report(result, source):
     """Reproduce engine output against the actual source, not merely JSON hashes."""
     if type(result) is not AdvisorReport:
         raise AdvisorError('typed_advisor_report_required')
-    if result.evaluation_status != 'observations_only':
+    if result.evaluation_status not in ('observations_only', 'goals_evaluated'):
         raise AdvisorError('not_an_observation_engine_report')
-    expected = advise(source, request=result.request)
+    expected = _advise_validated(NativeMetricResolver(source), result.request,
+                                evaluate_goals=result.evaluation_status == 'goals_evaluated')
     if expected.to_dict() != result.to_dict():
         raise AdvisorError('advisor_derivation_mismatch')
     return True

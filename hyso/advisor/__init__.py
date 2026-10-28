@@ -10,6 +10,7 @@ from .validation import validate_request
 from .resolver import (EvidenceEligibility, MetricResolution, NativeMetric,
                        NativeMetricResolver, NativeObservation, ResolvedMetric)
 from .engine import advise, validate_advisor_report
+from .goals import evaluate_goal, evaluate_goals, goal_context
 
 __all__ = [
     'AdvisorError', 'AdvisorReport', 'AdvisorRequest', 'Consistency',
@@ -20,4 +21,5 @@ __all__ = [
     'EvidenceEligibility', 'MetricResolution', 'NativeMetric', 'NativeMetricResolver',
     'ResolvedMetric', 'advise', 'validate_advisor_report',
     'NativeObservation',
+    'evaluate_goal', 'evaluate_goals', 'goal_context',
 ]

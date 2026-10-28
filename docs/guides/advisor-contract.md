@@ -5,6 +5,9 @@ Markdown rendering; see [native evidence](advisor-native-evidence.md). The text
 below describes the preserved 3B.1 baseline. Its no-engine statements refer to
 that stage. Existing data fields/defaults and contract roundtrips remain valid;
 the new observations_only status and NativeObservation format are additive.
+Stage 3B.3A further adds [record-local goals](advisor-goals.md), a goals_evaluated
+report status and explicit process/static request scopes without changing old
+serialized fields/defaults or source analysis contracts.
 
 `hyso.advisor` supplies immutable, typed request/report data and static interval
 validation. It has **no `advise()`**, evidence resolver, eligibility engine,

@@ -145,7 +145,7 @@ class MetricScope(Contract):
     model_id: str | None = None
 
     def __post_init__(self):
-        _choice(self, 'phase', ('inference', 'training', 'evaluation'))
+        _choice(self, 'phase', ('inference', 'training', 'evaluation', 'process', 'static'))
         for name in ('device', 'backend', 'precision', 'workload_id', 'dataset_id',
                      'split', 'preprocessing_id', 'clock_id', 'model_id'):
             _text(getattr(self, name), name, optional=True)
@@ -486,7 +486,17 @@ class AdvisorReport(Contract):
         for name in ('evidence_limitations', 'risks'):
             _strings(self, name)
         _enum(self, 'evidence_status', EvidenceSupport, optional=True)
-        _choice(self, 'evaluation_status', ('not_evaluated', 'unavailable', 'caller_supplied', 'observations_only'))
+        _choice(self, 'evaluation_status', ('not_evaluated', 'unavailable', 'caller_supplied', 'observations_only', 'goals_evaluated'))
+        if self.evaluation_status == 'goals_evaluated':
+            object.__setattr__(self, 'assessment_authority', 'native_goal_rules_v1; record_local_only')
+            if not self.request.goals or len(self.goal_evaluations) != len(self.request.goals):
+                raise AdvisorError('complete_goal_evaluations_required')
+            if any(f.kind not in (FindingKind.OBSERVATION, FindingKind.MEASURE_NEXT) for f in self.findings):
+                raise AdvisorError('unsupported_goal_engine_finding_kind')
+            if any(g.feasibility != Feasibility.UNKNOWN for g in self.goal_evaluations):
+                raise AdvisorError('future_feasibility_not_evaluated')
+            if any(g.observed != ObservedGoal.UNKNOWN and len(g.evidence) != 1 for g in self.goal_evaluations):
+                raise AdvisorError('single_record_goal_evidence_required')
         if self.evaluation_status == 'observations_only':
             object.__setattr__(self, 'assessment_authority', 'native_observation_rules_v1; not_independent_verification')
             if any(f.kind not in (FindingKind.OBSERVATION, FindingKind.MEASURE_NEXT) for f in self.findings):
@@ -511,7 +521,7 @@ class AdvisorReport(Contract):
             raise AdvisorError('source_report_reference_mismatch')
         assessed = any(g.evidence_support is not None or g.observed != ObservedGoal.UNKNOWN
                        or g.feasibility != Feasibility.UNKNOWN for g in self.goal_evaluations)
-        if self.evaluation_status not in ('caller_supplied', 'observations_only') and (assessed or self.evidence_status is not None
+        if self.evaluation_status not in ('caller_supplied', 'observations_only', 'goals_evaluated') and (assessed or self.evidence_status is not None
                 or any(f.evidence_support is not None for f in self.findings)):
             raise AdvisorError('assessment_status_mismatch')
 

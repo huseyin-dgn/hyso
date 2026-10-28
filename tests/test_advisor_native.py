@@ -278,11 +278,11 @@ class NativeAdvisorTests(unittest.TestCase):
         self.assertTrue(variants[1].findings[0].statement.startswith('P10'))
         self.assertTrue(variants[2].findings[0].statement.startswith('P26'))
 
-    def test_advanced_goals_not_assessed(self):
+    def test_incomplete_advanced_goal_remains_unknown(self):
         request = AdvisorRequest(goals=[UserGoal('hard', Metric.RESIDENT_FORWARD_P95, '<=', 1e-20, 'ms')], priority='speed')
         result = advise(self.source, request=request)
         self.assertEqual(result.request, request)
-        self.assertIsNone(result.goal_evaluations[0].evidence_support)
+        self.assertEqual(result.goal_evaluations[0].evidence_support, 'insufficient_evidence')
         self.assertEqual(result.goal_evaluations[0].observed, 'unknown')
         self.assertEqual(result.goal_evaluations[0].feasibility, 'unknown')
 

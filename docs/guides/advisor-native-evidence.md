@@ -33,9 +33,9 @@ first. `balanced` retains the default source order without a score. Finding IDs,
 values, evidence, risks and verification status do not change. Request/report
 hashes naturally change when priority or serialized order changes.
 
-Advanced requests remain accepted. They receive 3B.1 static validation, but their
-observed goal, feasibility and evidence-support assessments remain unknown/not
-evaluated. No engine rule evaluates user goals or deployment/experiment budgets.
+Stage 3B.3A adds [record-local goal evaluation](advisor-goals.md) for supported
+explicit goals. Historical observations_only reports keep the 3B.2 behavior.
+Deployment/experiment resource budgets remain unevaluated and unenforced.
 
 ## Closed resolver v1
 
@@ -135,7 +135,7 @@ recipe input is not called a real dataset image. P18 qualified roof limitations,
 P29 noncertified improvement, P31 noncertified 7200-second acceptance and B4 OPEN
 remain in risks. No raw CPU self-time or utilization becomes a causal diagnosis.
 
-NOT IMPLEMENTED: goal acceptance (3B.3), optimization/experiment-candidate rules,
+NOT IMPLEMENTED: deployment acceptance, optimization/experiment-candidate rules,
 causal hypotheses/diagnosis, benefit estimates, scores/confidence percentages,
 verified improvement, hardware enforcement, model mutation or execution.
 
