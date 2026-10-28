@@ -106,10 +106,13 @@ counts, never a caller declaration; tail minimums apply to quantiles only.
 Logical/artifact byte captures currently lack an observation count and remain
 insufficient rather than inventing repeated evidence. Existing MNIST records
 are not upgraded to eligible captures. No producer/collector is added.
-The current native P26 classification schema cannot carry the required capture
-metadata and model/input identities: its end-to-end comparisons remain
-INSUFFICIENT_EVIDENCE. Quality arithmetic is implemented and tested separately;
-it does not bypass that eligibility gate. Schema/producer support is future work.
+P26 schema 1 cannot carry the required capture metadata and model/input
+identities. [3B.4C.1 producer capture](p26-native-evidence.md) adds opt-in schema 2
+with observed model-state/checkpoint and ordered input/target content evidence.
+This is a separate partial-evidence contract, not the complete comparison
+capture above. P26 end-to-end comparisons remain INSUFFICIENT_EVIDENCE. Quality
+arithmetic does not bypass that eligibility gate; comparison-policy integration
+and verified split/preprocessing/origin associations remain future work.
 
 `difference = candidate - baseline` is a signed absolute-unit difference.
 `percent_change = 100 * difference / baseline`, or null for zero baseline.

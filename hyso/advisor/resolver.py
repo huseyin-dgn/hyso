@@ -294,10 +294,12 @@ class NativeMetricResolver:
             value = _at(n, path); unit, domain, status = 'fraction', 'quality', 'derived'
             if not 0 <= value <= 1:
                 return _insufficient('quality_fraction_out_of_range')
-            p = config; protocol_ref = 'hyso.evaluation.classification:schema1'
+            p = config; protocol_ref = 'hyso.evaluation.classification:schema' + str(n['schema_version'])
             context.update(split='test', task=config['task'], sample_count=n['metrics']['sample_count'],
                            averaging='macro' if metric == NativeMetric.TEST_MACRO_F1 else 'sample_accuracy')
             notes.append('Quality is descriptive of this recorded test cohort; it is not automatically paired with another performance capture.')
+            if n['schema_version'] == 2:
+                notes.append('The test split is caller-declared. Ordered tensor content does not verify dataset origin or preprocessing code.')
         else:
             return _unsupported()
         expected_unit = ('ms' if metric in _FORWARD or metric in _E2E else 'byte' if metric in _RSS or metric in _FOOTPRINT else unit)

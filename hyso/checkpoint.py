@@ -7,6 +7,7 @@ stored. Modes, gradients, loaders and callback state are caller responsibilities
 
 from collections import OrderedDict
 import copy
+import hashlib
 import os
 from pathlib import Path
 import pickle
@@ -297,16 +298,49 @@ def save_training_checkpoint(path, model, *, optimizer=None, scheduler=None,
 
 def load_training_checkpoint(path, model, *, optimizer=None, scheduler=None,
                              scaler=None, ema=None, map_location="cpu", restore_rng=False,
-                             validate_metadata=None):
+                             validate_metadata=None, capture_evidence=False):
     """Strictly restore caller-created components and return epoch/history/metrics.
 
     Presence, component types, model tensor schemas and optimizer parameter order
     must match. RNG restoration is opt-in. Never retries with unsafe pickle.
     An optional caller validator receives epoch/history/metrics and the scheduler
     record before any target/RNG mutation.
+    capture_evidence=True hashes a private snapshot of the exact bytes loaded
+    with weights_only=True. A process-local receipt binds the restored CPU model
+    state to that artifact for opt-in P26 evidence. No path/hash declaration is
+    accepted. Snapshot memory is bounded; large artifacts spill to a temp file.
     """
+    if type(capture_evidence) is not bool:
+        raise TrainingCheckpointError("capture_evidence must be bool")
+    artifact_sha256 = None
     try:
-        payload = torch.load(path, map_location=map_location, weights_only=True)
+        if capture_evidence:
+            # Deserialize the same snapshot that was hashed, avoiding a second
+            # path read and any file replacement race between hash and load.
+            with tempfile.SpooledTemporaryFile(max_size=8*1024**2, mode="w+b") as snapshot:
+                digest = hashlib.sha256()
+                def snapshot_from(stream):
+                    while True:
+                        chunk = stream.read(1024**2)
+                        if not chunk:
+                            break
+                        digest.update(chunk); snapshot.write(chunk)
+                if isinstance(path, (str, os.PathLike)):
+                    with open(path, "rb") as stream:
+                        snapshot_from(stream)
+                else:
+                    # Match torch.load's seekable-stream contract; restore the
+                    # caller's cursor even if reading/deserialization fails.
+                    position = path.tell()
+                    try:
+                        snapshot_from(path)
+                    finally:
+                        path.seek(position)
+                snapshot.seek(0)
+                payload = torch.load(snapshot, map_location=map_location, weights_only=True)
+                artifact_sha256 = digest.hexdigest()
+        else:
+            payload = torch.load(path, map_location=map_location, weights_only=True)
         payload = _safe(payload, "checkpoint")
     except (OSError, RuntimeError, ValueError, EOFError, pickle.UnpicklingError) as error:
         raise TrainingCheckpointError("cannot read weights-only training checkpoint: " + str(error)) from error
@@ -327,6 +361,11 @@ def load_training_checkpoint(path, model, *, optimizer=None, scheduler=None,
     backups = [(name, target, copy.deepcopy(target.state_dict())) for name, target in targets]
     decay_before = ema.decay if ema is not None else None
     rng_before = _rng_state() if restore_rng else None
+    from ._evaluation_evidence import forget_checkpoint, remember_checkpoint, checkpoint_state_fingerprints
+    loaded_fingerprints = (checkpoint_state_fingerprints(payload["model"]["state_dict"])
+                           if artifact_sha256 is not None else None)
+    # A later restore (even without capture) must invalidate an earlier receipt.
+    forget_checkpoint(model)
     try:
         for name, target in targets:
             if name == "scheduler":
@@ -348,6 +387,8 @@ def load_training_checkpoint(path, model, *, optimizer=None, scheduler=None,
         except Exception as rollback_error:
             raise TrainingCheckpointError("load failed and rollback failed; targets may be partially restored") from rollback_error
         raise TrainingCheckpointError("component restore failed; previous state restored: " + str(error)) from error
+    if artifact_sha256 is not None:
+        remember_checkpoint(model, artifact_sha256, loaded_fingerprints)
     return {"completed_epochs": payload["completed_epochs"], "history": payload["history"],
             "metrics": payload["metrics"], "rng_state": payload["rng_state"], "rng_restored": bool(restore_rng)}
 

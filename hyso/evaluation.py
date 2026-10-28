@@ -12,6 +12,8 @@ from torch.utils.data import DataLoader, Dataset, IterableDataset, SequentialSam
 
 from .benchmark.result import _plain, _csv_text, _write_export
 from .checkpoint import _rng_state, _restore_rng
+from ._evaluation_evidence import (model_hash, EvaluationStreamCapture, producer_evidence,
+                                   validate_producer_evidence)
 
 __all__ = ["EvaluationResult", "evaluate_predictions", "evaluate_classification", "evaluation_capabilities"]
 
@@ -122,9 +124,13 @@ class EvaluationResult:
     @staticmethod
     def _check(data):
         try:
-            if (type(data) is not dict or set(data) != {"schema_version", "format", "feature_ids", "evaluation_id",
+            version = data.get("schema_version") if type(data) is dict else None
+            fields = {"schema_version", "format", "feature_ids", "evaluation_id",
                     "configuration", "raw", "source", "provenance", "accounting", "training_source", "status", "metrics", "source_sha256"}
-                    or type(data["schema_version"]) is not int or data["schema_version"] != 1
+            if version == 2:
+                fields.add("producer_evidence")
+            if (type(data) is not dict or set(data) != fields
+                    or type(version) is not int or version not in (1, 2)
                     or data["format"] != "hyso.evaluation.classification" or data["feature_ids"] != ["P26"]
                     or str(uuid.UUID(data["evaluation_id"])) != data["evaluation_id"] or data["training_source"] is not None):
                 raise ValueError("invalid evaluation schema")
@@ -159,6 +165,8 @@ class EvaluationResult:
                 raise ValueError("invalid source identity")
             if set(data["provenance"]) != {"python", "torch", "platform"} or any(type(v) is not str or not v for v in data["provenance"].values()):
                 raise ValueError("invalid evaluation provenance")
+            if version == 2:
+                validate_producer_evidence(data["producer_evidence"], source, c, derived["sample_count"])
             if data["source_sha256"] != _hash({k:v for k,v in data.items() if k not in ("source_sha256", "metrics", "status")}):
                 raise ValueError("evaluation source hash mismatch")
         except (TypeError, KeyError, RuntimeError, OverflowError) as exc:
@@ -191,12 +199,14 @@ class EvaluationResult:
         _write_export(path, _csv_text(columns,[{k:dict(row,**metadata).get(k) for k in columns} for row in rows]), overwrite)
 
 
-def _result(raw, config, source, accounting):
+def _result(raw, config, source, accounting, evidence=None):
     metrics = _metrics(raw, config)
     data = dict(schema_version=1, format="hyso.evaluation.classification", feature_ids=["P26"],
         evaluation_id=str(uuid.uuid4()), configuration=config, raw=raw, source=source,
         provenance=dict(python=platform.python_version(), torch=str(torch.__version__), platform=platform.platform()),
         accounting=accounting, training_source=None)
+    if evidence is not None:
+        data.update(schema_version=2, producer_evidence=evidence)
     return EvaluationResult(dict(data, source_sha256=_hash(data), metrics=metrics,
         status="complete" if metrics["sample_count"] else "empty"))
 
@@ -229,24 +239,24 @@ def evaluate_predictions(targets, predictions, *, class_names, split, task="mult
 
 
 def _model_hash(model):
-    digest = hashlib.sha256()
-    for name, tensor in list(model.named_parameters()) + list(model.named_buffers()):
-        if tensor.device.type != "cpu" or tensor.layout != torch.strided or tensor.is_complex():
-            raise NotImplementedError("dense real CPU model tensors required")
-        digest.update(json.dumps([name, str(tensor.dtype), list(tensor.shape)]).encode())
-        digest.update(tensor.detach().contiguous().reshape(-1).view(torch.uint8).numpy().tobytes())
-    return digest.hexdigest()
+    return model_hash(model)
 
 
 def evaluate_classification(model, loader, *, class_names, split, task="multiclass", zero_division=0,
-                            source_id=None, max_samples=1000000):
+                            source_id=None, max_samples=1000000, capture_evidence=False):
     """Opt-in CPU inference on an isolated deepcopy; never trains or moves model.
 
     Finite standard sequential map-style loaders, num_workers=0, no drop-last.
     RNG and loader generator are restored on success and every failure path.
     User-defined non-tensor Python state/external side effects are not sandboxed.
+    capture_evidence=True emits schema 2 producer evidence v1 using this same
+    iteration. Hashes identify ordered post-collation tensors independently of
+    batch partitioning; they do not verify origin, split or preprocessing code.
+    The default retains schema 1 and does not hash dataset content.
     """
     config = _metadata(task, class_names, split, zero_division)
+    if type(capture_evidence) is not bool:
+        raise ValueError("capture_evidence must be bool")
     if type(max_samples) is not int or not 1 <= max_samples <= 1000000:
         raise ValueError("invalid finite sample budget")
     if not isinstance(model, nn.Module) or type(loader) is not DataLoader:
@@ -275,6 +285,9 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
             raise ValueError("model copy aliases original storage")
         candidate.eval()
         baseline = _model_hash(candidate)
+        if capture_evidence and baseline != state_hash:
+            raise ValueError("isolated model state differs from original")
+        stream = EvaluationStreamCapture() if capture_evidence else None
         targets, predictions, sizes = [], [], []
         with torch.inference_mode():
             for batch_index, batch in enumerate(loader):
@@ -298,6 +311,8 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
                     if labels.shape != (n,) or labels.dtype != torch.long:raise ValueError("multiclass targets require long (B,)")
                     normalized = labels.tolist()
                 _labels(normalized,len(class_names))
+                if stream is not None:
+                    stream.update(inputs, labels)
                 logits = candidate(inputs.clone())
                 if (not isinstance(logits,torch.Tensor) or logits.device.type != "cpu"
                         or logits.dtype not in (torch.float32,torch.float64) or not torch.isfinite(logits).all()):
@@ -315,7 +330,8 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
             dict(kind="model_inference",source_id=source_id,model_type=type(model).__module__+"."+type(model).__qualname__,
                  model_state_sha256=state_hash,device="cpu",execution="isolated_deepcopy_eval_inference_mode",
                  dataset_type=type(loader.dataset).__module__+"."+type(loader.dataset).__qualname__,
-                 sampler="sequential",num_workers=0),dict(expected_samples=expected,batch_sizes=sizes))
+                 sampler="sequential",num_workers=0),dict(expected_samples=expected,batch_sizes=sizes),
+            evidence=producer_evidence(model, state_hash, stream, config, source_id) if stream is not None else None)
     finally:
         _restore_rng(rng)
         if generator is not None:loader.generator.set_state(generator)
