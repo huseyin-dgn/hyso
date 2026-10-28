@@ -292,12 +292,19 @@ def run_sweep(model, input_factory, *, axis, points, input_shape=(1,1,5,7), prot
                     row.update(status='measured',reason=None,result_id=measured['result_id'],result=measured,
                         measurement_refs=_refs(measured))
                 except StateMutationError: raise
-                except torch.cuda.OutOfMemoryError as error:
+                except (torch.cuda.OutOfMemoryError, MemoryError) as error:
                     row.update(status='failed',reason='out_of_memory: '+str(error)); stopped=True
                 except (_Unsupported,NotImplementedError) as error:
                     row.update(status='unsupported',reason=str(error)); stopped=not protocol.continue_on_error
                 except (ValueError,RuntimeError) as error:
-                    row.update(status='failed',reason=type(error).__name__+': '+str(error)); stopped=not protocol.continue_on_error
+                    # CPU tensor/input allocation can report an ordinary RuntimeError
+                    # rather than the typed CUDA OOM. Do not admit another point
+                    # after this known allocator failure, even with continuation.
+                    message=str(error).lower()
+                    cpu_oom=(isinstance(error,RuntimeError) and 'defaultcpuallocator' in message
+                             and any(text in message for text in ('not enough memory', "can't allocate memory", 'cannot allocate memory')))
+                    row.update(status='failed',reason=('out_of_memory: ' if cpu_oom else type(error).__name__+': ')+str(error))
+                    stopped=cpu_oom or not protocol.continue_on_error
                 _context_check(device,stream)
                 if stream is not None: torch.cuda.synchronize(device)
                 snapshot.check(full=True)
