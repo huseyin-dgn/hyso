@@ -418,7 +418,7 @@ validate_request(AdvisorRequest(priority='speed', goals=[UserGoal(
     'g', Metric.RESIDENT_FORWARD_P95, '<=', 1, 'ms',
     scope=MetricScope('inference', model_id='untrusted_model_factories:build'),
 )]))
-assert not hasattr(advisor, 'advise')
+assert callable(advisor.advise)  # Added in 3B.2; it must still perform no work on import.
 assert not any(name.startswith('untrusted_model_factories') for name in set(sys.modules) - before)
 assert not torch.cuda.is_initialized()
 print('contract/import compatibility PASS')

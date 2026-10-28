@@ -113,7 +113,8 @@ def _sha(value, name):
 
 def _sequence(obj, name, cls, unique=None):
     values = getattr(obj, name)
-    if type(values) not in (tuple, list) or len(values) > 1024 or any(type(v) is not cls for v in values):
+    allowed = cls if type(cls) is tuple else (cls,)
+    if type(values) not in (tuple, list) or len(values) > 1024 or any(type(v) not in allowed for v in values):
         raise AdvisorError('invalid_' + name)
     values = tuple(values)
     if unique and len({getattr(v, unique) for v in values}) != len(values):
@@ -478,13 +479,21 @@ class AdvisorReport(Contract):
             raise AdvisorError('typed_request_required')
         object.__setattr__(self, 'request_id', self.request.request_id)
         object.__setattr__(self, 'request_sha256', self.request.content_sha256)
-        _sequence(self, 'findings', Finding, 'finding_id')
+        from .resolver import NativeObservation
+        _sequence(self, 'findings', (Finding, NativeObservation), 'finding_id')
         _sequence(self, 'goal_evaluations', GoalEvaluation, 'goal_id')
         _sequence(self, 'rule_versions', RuleVersion, 'rule_id')
         for name in ('evidence_limitations', 'risks'):
             _strings(self, name)
         _enum(self, 'evidence_status', EvidenceSupport, optional=True)
-        _choice(self, 'evaluation_status', ('not_evaluated', 'unavailable', 'caller_supplied'))
+        _choice(self, 'evaluation_status', ('not_evaluated', 'unavailable', 'caller_supplied', 'observations_only'))
+        if self.evaluation_status == 'observations_only':
+            object.__setattr__(self, 'assessment_authority', 'native_observation_rules_v1; not_independent_verification')
+            if any(f.kind not in (FindingKind.OBSERVATION, FindingKind.MEASURE_NEXT) for f in self.findings):
+                raise AdvisorError('unsupported_observation_finding_kind')
+            if any(g.evidence_support is not None or g.observed != ObservedGoal.UNKNOWN
+                   or g.feasibility != Feasibility.UNKNOWN for g in self.goal_evaluations):
+                raise AdvisorError('advanced_goal_evaluation_not_implemented')
         goals = {g.goal_id: g for g in self.request.goals}
         if self.request_validation is not None:
             from .validation import validate_request
@@ -502,10 +511,15 @@ class AdvisorReport(Contract):
             raise AdvisorError('source_report_reference_mismatch')
         assessed = any(g.evidence_support is not None or g.observed != ObservedGoal.UNKNOWN
                        or g.feasibility != Feasibility.UNKNOWN for g in self.goal_evaluations)
-        if self.evaluation_status != 'caller_supplied' and (assessed or self.evidence_status is not None
+        if self.evaluation_status not in ('caller_supplied', 'observations_only') and (assessed or self.evidence_status is not None
                 or any(f.evidence_support is not None for f in self.findings)):
             raise AdvisorError('assessment_status_mismatch')
 
     @property
     def report_id(self):
         return self.content_sha256
+
+    def to_markdown(self, path=None):
+        """Explicit readable export of this same report; never run analysis."""
+        from .render import render_markdown
+        return render_markdown(self, path)

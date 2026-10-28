@@ -1,4 +1,4 @@
-"""Immutable Advisor contracts and static request validation; no advise engine."""
+"""Advisor contracts and read-only native observations; no workload execution."""
 from ._json import AdvisorError
 from .contracts import (
     AdvisorReport, AdvisorRequest, Consistency, EvaluationProtocol,
@@ -7,6 +7,9 @@ from .contracts import (
     ObservedGoal, Priority, RequestValidation, ResourceBudget, RuleVersion, UserGoal,
 )
 from .validation import validate_request
+from .resolver import (EvidenceEligibility, MetricResolution, NativeMetric,
+                       NativeMetricResolver, NativeObservation, ResolvedMetric)
+from .engine import advise, validate_advisor_report
 
 __all__ = [
     'AdvisorError', 'AdvisorReport', 'AdvisorRequest', 'Consistency',
@@ -14,4 +17,7 @@ __all__ = [
     'Feasibility', 'Finding', 'FindingKind', 'GoalEvaluation', 'InputValidity',
     'Metric', 'MetricScope', 'ObservedGoal', 'Priority', 'RequestValidation',
     'ResourceBudget', 'RuleVersion', 'UserGoal', 'validate_request',
+    'EvidenceEligibility', 'MetricResolution', 'NativeMetric', 'NativeMetricResolver',
+    'ResolvedMetric', 'advise', 'validate_advisor_report',
+    'NativeObservation',
 ]
