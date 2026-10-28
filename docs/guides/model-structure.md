@@ -179,7 +179,9 @@ A future producer integration would need to capture structure on the same
 actual model object used for a measurement, bind method/version/hash inside
 that measurement's hashed native evidence, and check the model/structure at
 the measurement boundaries. A user-provided matching string is insufficient.
-This stage creates neither that bridge nor the 3B.4D.2 snapshot-difference engine.
+This producer stage creates no automatic evidence bridge. The separate
+[3B.4D.2 snapshot comparison](model-structure-comparison.md) compares only the
+recorded structures and does not add that bridge or runtime/architecture audits.
 
 Focused tests: `tests/test_model_structure.py`. They prohibit forward/backward,
 mode changes, value reads/copies, hooks, state_dict, deepcopy, device moves and
