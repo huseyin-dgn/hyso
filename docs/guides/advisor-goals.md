@@ -1,5 +1,9 @@
 # Record-local goal evaluation — Stage 3B.3A
 
+Stage 3B.3B adds [conditional experiment planning](advisor-planning.md) while
+preserving these GoalEvaluation outcomes. Legacy goals_evaluated reports remain
+readable and reproducible; new advise() results use planning_only.
+
 `advise(report, request=...)` now evaluates explicit goals against **one eligible
 native capture at a time**. No training, inference, device query, optimization,
 factory import, runtime budget enforcement or independent improvement is added.

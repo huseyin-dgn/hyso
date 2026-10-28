@@ -265,7 +265,7 @@ class NativeAdvisorTests(unittest.TestCase):
         self.assertTrue(all(f.kind in (FindingKind.OBSERVATION, FindingKind.MEASURE_NEXT) for f in self.result.findings))
         self.assertFalse(any(f.verification == 'verified' for f in self.result.findings))
         self.assertEqual(self.result.request.goals, ())
-        self.assertEqual(self.result.evaluation_status, 'observations_only')
+        self.assertEqual(self.result.evaluation_status, 'planning_only')
 
     def test_priority_changes_order_only(self):
         variants = [advise(self.source, request=AdvisorRequest(priority=p))

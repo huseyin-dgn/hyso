@@ -11,6 +11,7 @@ from .resolver import (EvidenceEligibility, MetricResolution, NativeMetric,
                        NativeMetricResolver, NativeObservation, ResolvedMetric)
 from .engine import advise, validate_advisor_report
 from .goals import evaluate_goal, evaluate_goals, goal_context
+from .planning import DecisionPlan, PlannedFinding
 
 __all__ = [
     'AdvisorError', 'AdvisorReport', 'AdvisorRequest', 'Consistency',
@@ -22,4 +23,5 @@ __all__ = [
     'ResolvedMetric', 'advise', 'validate_advisor_report',
     'NativeObservation',
     'evaluate_goal', 'evaluate_goals', 'goal_context',
+    'DecisionPlan', 'PlannedFinding',
 ]

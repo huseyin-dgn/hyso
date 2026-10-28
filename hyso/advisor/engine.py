@@ -35,10 +35,10 @@ def advise(report, request=None):
     if type(request) is not AdvisorRequest:
         raise AdvisorError('typed_request_required')
     resolver = NativeMetricResolver(report)
-    return _advise_validated(resolver, request)
+    return _advise_validated(resolver, request, plan_experiments=True)
 
 
-def _advise_validated(resolver, request, *, evaluate_goals=True):
+def _advise_validated(resolver, request, *, evaluate_goals=True, plan_experiments=False):
     """Internal snapshot reuse; legacy rule reproduction never changes v1 data."""
     source = resolver.report
     observations = []; actions = []; limitations = [
@@ -137,7 +137,7 @@ def _advise_validated(resolver, request, *, evaluate_goals=True):
                     evidence_support=EvidenceSupport.INSUFFICIENT_EVIDENCE))
         if validation.conflicting_goal_ids:
             limitations.append('Hard goal intervals are logically inconsistent for the same scope/protocol. Individual observed outcomes are not joint acceptance.')
-    return AdvisorReport(
+    result = AdvisorReport(
         resolver.source_report_id, resolver.source_report_sha256, request,
         findings=tuple(f for _, f in observations) + tuple(actions),
         goal_evaluations=evaluations, request_validation=validation,
@@ -145,16 +145,21 @@ def _advise_validated(resolver, request, *, evaluate_goals=True):
         rule_versions=rule_versions,
         evidence_status=EvidenceSupport.SUPPORTED if observations else EvidenceSupport.INSUFFICIENT_EVIDENCE,
         evaluation_status='goals_evaluated' if active_goals else 'observations_only')
+    if plan_experiments:
+        from .planning import _add_plans
+        return _add_plans(resolver, result)
+    return result
 
 
 def validate_advisor_report(result, source):
     """Reproduce engine output against the actual source, not merely JSON hashes."""
     if type(result) is not AdvisorReport:
         raise AdvisorError('typed_advisor_report_required')
-    if result.evaluation_status not in ('observations_only', 'goals_evaluated'):
+    if result.evaluation_status not in ('observations_only', 'goals_evaluated', 'planning_only'):
         raise AdvisorError('not_an_observation_engine_report')
     expected = _advise_validated(NativeMetricResolver(source), result.request,
-                                evaluate_goals=result.evaluation_status == 'goals_evaluated')
+                                evaluate_goals=result.evaluation_status != 'observations_only',
+                                plan_experiments=result.evaluation_status == 'planning_only')
     if expected.to_dict() != result.to_dict():
         raise AdvisorError('advisor_derivation_mismatch')
     return True

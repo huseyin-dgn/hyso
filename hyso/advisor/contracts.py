@@ -480,13 +480,29 @@ class AdvisorReport(Contract):
         object.__setattr__(self, 'request_id', self.request.request_id)
         object.__setattr__(self, 'request_sha256', self.request.content_sha256)
         from .resolver import NativeObservation
-        _sequence(self, 'findings', (Finding, NativeObservation), 'finding_id')
+        from .planning import PlannedFinding
+        _sequence(self, 'findings', (Finding, NativeObservation, PlannedFinding), 'finding_id')
         _sequence(self, 'goal_evaluations', GoalEvaluation, 'goal_id')
         _sequence(self, 'rule_versions', RuleVersion, 'rule_id')
         for name in ('evidence_limitations', 'risks'):
             _strings(self, name)
         _enum(self, 'evidence_status', EvidenceSupport, optional=True)
-        _choice(self, 'evaluation_status', ('not_evaluated', 'unavailable', 'caller_supplied', 'observations_only', 'goals_evaluated'))
+        _choice(self, 'evaluation_status', ('not_evaluated', 'unavailable', 'caller_supplied', 'observations_only', 'goals_evaluated', 'planning_only'))
+        if self.evaluation_status == 'planning_only':
+            object.__setattr__(self, 'assessment_authority', 'native_planning_rules_v1; not_authorized')
+            if len(self.goal_evaluations) != len(self.request.goals):
+                raise AdvisorError('complete_goal_evaluations_required')
+            if any(f.kind not in (FindingKind.OBSERVATION, FindingKind.MEASURE_NEXT, FindingKind.EXPERIMENT_CANDIDATE, FindingKind.HYPOTHESIS) for f in self.findings):
+                raise AdvisorError('unsupported_planner_finding_kind')
+            if any(g.feasibility != Feasibility.UNKNOWN for g in self.goal_evaluations):
+                raise AdvisorError('future_feasibility_not_evaluated')
+            for finding in self.findings:
+                if finding.kind == FindingKind.EXPERIMENT_CANDIDATE and type(finding) is not PlannedFinding:
+                    raise AdvisorError('typed_experiment_plan_required')
+                if type(finding) is PlannedFinding and not set(finding.plan.goal_ids) <= {g.goal_id for g in self.request.goals}:
+                    raise AdvisorError('plan_goal_reference_mismatch')
+                if type(finding) is PlannedFinding and not set(finding.plan.budget_ids) <= {b.budget_id for b in self.request.budgets}:
+                    raise AdvisorError('plan_budget_reference_mismatch')
         if self.evaluation_status == 'goals_evaluated':
             object.__setattr__(self, 'assessment_authority', 'native_goal_rules_v1; record_local_only')
             if not self.request.goals or len(self.goal_evaluations) != len(self.request.goals):
@@ -521,7 +537,7 @@ class AdvisorReport(Contract):
             raise AdvisorError('source_report_reference_mismatch')
         assessed = any(g.evidence_support is not None or g.observed != ObservedGoal.UNKNOWN
                        or g.feasibility != Feasibility.UNKNOWN for g in self.goal_evaluations)
-        if self.evaluation_status not in ('caller_supplied', 'observations_only', 'goals_evaluated') and (assessed or self.evidence_status is not None
+        if self.evaluation_status not in ('caller_supplied', 'observations_only', 'goals_evaluated', 'planning_only') and (assessed or self.evidence_status is not None
                 or any(f.evidence_support is not None for f in self.findings)):
             raise AdvisorError('assessment_status_mismatch')
 
