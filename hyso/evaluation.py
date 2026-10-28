@@ -14,6 +14,7 @@ from .benchmark.result import _plain, _csv_text, _write_export
 from .checkpoint import _rng_state, _restore_rng
 from ._evaluation_evidence import (model_hash, EvaluationStreamCapture, producer_evidence,
                                    validate_producer_evidence)
+from ._evaluation_structure import build_structure_binding, validate_structure_binding
 
 __all__ = ["EvaluationResult", "evaluate_predictions", "evaluate_classification", "evaluation_capabilities"]
 
@@ -127,10 +128,12 @@ class EvaluationResult:
             version = data.get("schema_version") if type(data) is dict else None
             fields = {"schema_version", "format", "feature_ids", "evaluation_id",
                     "configuration", "raw", "source", "provenance", "accounting", "training_source", "status", "metrics", "source_sha256"}
-            if version == 2:
+            if version in (2, 3):
                 fields.add("producer_evidence")
+            if version == 3:
+                fields.add("structure_binding")
             if (type(data) is not dict or set(data) != fields
-                    or type(version) is not int or version not in (1, 2)
+                    or type(version) is not int or version not in (1, 2, 3)
                     or data["format"] != "hyso.evaluation.classification" or data["feature_ids"] != ["P26"]
                     or str(uuid.UUID(data["evaluation_id"])) != data["evaluation_id"] or data["training_source"] is not None):
                 raise ValueError("invalid evaluation schema")
@@ -165,8 +168,11 @@ class EvaluationResult:
                 raise ValueError("invalid source identity")
             if set(data["provenance"]) != {"python", "torch", "platform"} or any(type(v) is not str or not v for v in data["provenance"].values()):
                 raise ValueError("invalid evaluation provenance")
-            if version == 2:
+            if version in (2, 3):
                 validate_producer_evidence(data["producer_evidence"], source, c, derived["sample_count"])
+            if version == 3:
+                validate_structure_binding(data['structure_binding'], evaluation_id=data['evaluation_id'],
+                    source=source, evidence=data['producer_evidence'], accounting=a, provenance=data['provenance'])
             if data["source_sha256"] != _hash({k:v for k,v in data.items() if k not in ("source_sha256", "metrics", "status")}):
                 raise ValueError("evaluation source hash mismatch")
         except (TypeError, KeyError, RuntimeError, OverflowError) as exc:
@@ -174,6 +180,15 @@ class EvaluationResult:
 
     def to_dict(self):
         return json.loads(self._payload)
+
+    @property
+    def structure_snapshot(self):
+        """Validated structure of the isolated receiver, or None for schema 1/2."""
+        data = self.to_dict(); self._check(data)
+        if data['schema_version'] != 3:
+            return None
+        from .structure import ModelStructureSnapshot
+        return ModelStructureSnapshot(data['structure_binding']['snapshot'])
 
     def to_json(self, path, *, overwrite=False):
         data = self.to_dict(); self._check(data)
@@ -199,7 +214,7 @@ class EvaluationResult:
         _write_export(path, _csv_text(columns,[{k:dict(row,**metadata).get(k) for k in columns} for row in rows]), overwrite)
 
 
-def _result(raw, config, source, accounting, evidence=None):
+def _result(raw, config, source, accounting, evidence=None, structure=None):
     metrics = _metrics(raw, config)
     data = dict(schema_version=1, format="hyso.evaluation.classification", feature_ids=["P26"],
         evaluation_id=str(uuid.uuid4()), configuration=config, raw=raw, source=source,
@@ -207,6 +222,10 @@ def _result(raw, config, source, accounting, evidence=None):
         accounting=accounting, training_source=None)
     if evidence is not None:
         data.update(schema_version=2, producer_evidence=evidence)
+    if structure is not None:
+        data.update(schema_version=3, structure_binding=build_structure_binding(structure,
+            evaluation_id=data['evaluation_id'], source=source, evidence=evidence,
+            accounting=accounting, provenance=data['provenance']))
     return EvaluationResult(dict(data, source_sha256=_hash(data), metrics=metrics,
         status="complete" if metrics["sample_count"] else "empty"))
 
@@ -243,7 +262,7 @@ def _model_hash(model):
 
 
 def evaluate_classification(model, loader, *, class_names, split, task="multiclass", zero_division=0,
-                            source_id=None, max_samples=1000000, capture_evidence=False):
+                            source_id=None, max_samples=1000000, capture_evidence=False, capture_structure=False):
     """Opt-in CPU inference on an isolated deepcopy; never trains or moves model.
 
     Finite standard sequential map-style loaders, num_workers=0, no drop-last.
@@ -253,10 +272,18 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
     iteration. Hashes identify ordered post-collation tensors independently of
     batch partitioning; they do not verify origin, split or preprocessing code.
     The default retains schema 1 and does not hash dataset content.
+    capture_structure=True additionally requires capture_evidence=True and
+    nonempty evaluation. Schema 3 binds matching pre/post structure snapshots
+    of the actual isolated forward receiver, without extra inference or any
+    assertion of original/copy behavior or architecture equivalence.
     """
     config = _metadata(task, class_names, split, zero_division)
     if type(capture_evidence) is not bool:
         raise ValueError("capture_evidence must be bool")
+    if type(capture_structure) is not bool:
+        raise ValueError("capture_structure must be bool")
+    if capture_structure and not capture_evidence:
+        raise ValueError("capture_structure requires capture_evidence=True")
     if type(max_samples) is not int or not 1 <= max_samples <= 1000000:
         raise ValueError("invalid finite sample budget")
     if not isinstance(model, nn.Module) or type(loader) is not DataLoader:
@@ -275,6 +302,8 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
         expected_batches = len(loader)
         if not 0 <= expected <= max_samples or expected_batches > 100000:
             raise ValueError("finite evaluation budget exceeded")
+        if capture_structure and expected == 0:
+            raise ValueError('structure binding requires nonempty evaluation')
         state_hash = _model_hash(model)
         candidate = copy.deepcopy(model)
         original_objects = {id(m) for m in model.modules()} | {id(t) for t in model.parameters()} | {id(t) for t in model.buffers()}
@@ -287,6 +316,10 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
         baseline = _model_hash(candidate)
         if capture_evidence and baseline != state_hash:
             raise ValueError("isolated model state differs from original")
+        structure_before = None
+        if capture_structure:
+            from .structure import capture_model_structure
+            structure_before = capture_model_structure(candidate)
         stream = EvaluationStreamCapture() if capture_evidence else None
         targets, predictions, sizes = [], [], []
         with torch.inference_mode():
@@ -324,6 +357,15 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
                 targets.extend(normalized); predictions.extend(logits.reshape(n).tolist() if task=="binary" else logits.tolist()); sizes.append(n)
         if len(sizes) != expected_batches or len(targets) != expected or len(loader.dataset) != expected:
             raise ValueError("incomplete evaluation coverage")
+        structure = None
+        if capture_structure:
+            structure_after = capture_model_structure(candidate)
+            post_state = _model_hash(candidate)
+            if structure_before.content_sha256 != structure_after.content_sha256:
+                raise ValueError('evaluated model structure changed during evaluation')
+            if post_state != baseline:
+                raise ValueError('evaluated model state changed during structure capture')
+            structure = (structure_before, structure_after, baseline, post_state)
         if _model_hash(model) != state_hash:
             raise ValueError("original model changed during evaluation")
         return _result(dict(targets=targets,predictions=predictions,prediction_type="logits"),config,
@@ -331,7 +373,8 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
                  model_state_sha256=state_hash,device="cpu",execution="isolated_deepcopy_eval_inference_mode",
                  dataset_type=type(loader.dataset).__module__+"."+type(loader.dataset).__qualname__,
                  sampler="sequential",num_workers=0),dict(expected_samples=expected,batch_sizes=sizes),
-            evidence=producer_evidence(model, state_hash, stream, config, source_id) if stream is not None else None)
+            evidence=producer_evidence(model, state_hash, stream, config, source_id) if stream is not None else None,
+            structure=structure)
     finally:
         _restore_rng(rng)
         if generator is not None:loader.generator.set_state(generator)

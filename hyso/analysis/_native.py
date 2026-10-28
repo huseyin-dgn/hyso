@@ -17,7 +17,7 @@ def validate_native(payload):
     """Reuse native pure constructors, including their original version rules."""
     d = plain(payload)
     if (type(d) is not dict or type(d.get('schema_version')) is not int
-            or d['schema_version'] not in ((1, 2) if d.get('format') == 'hyso.evaluation.classification' else (1,))):
+            or d['schema_version'] not in ((1, 2, 3) if d.get('format') == 'hyso.evaluation.classification' else (1,))):
         raise EvidenceError('unsupported_source_version')
     fmt = d.get('format')
     try:
@@ -111,9 +111,10 @@ def native_scope(d, feature):
                       training=p.get('training'),optimizer=p.get('optimizer'))) if protocol else None,
                   clock_id=protocol.get('clock_id'), split=at(d, 'configuration.split'),
                   backend=env.get('backend') if type(env.get('backend')) is str else None, input_kind=None)
-    if feature == 'P26' and d.get('schema_version') == 2:
+    if feature == 'P26' and d.get('schema_version') in (2, 3):
         # Schema 1 projections are immutable historical contracts. Only schema
-        # 2 carries the new producer semantics; split remains caller-declared.
+        # 2/3 carry producer semantics; split remains caller-declared. Structure
+        # identity stays in the native binding, never a model-state/file SHA.
         values.pop('split', None)
         evidence = d['producer_evidence']
         values['model_state_sha256'] = evidence['model_state']['sha256']

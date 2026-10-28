@@ -11,6 +11,10 @@ No general latency, throughput, RSS, batch or precision condition is relaxed.
 The new contract rejects every metric except `NativeMetric.TEST_ACCURACY` and
 `NativeMetric.TEST_MACRO_F1` and permits only the explicit `model` change axis.
 
+[P26 schema 3 structure binding](p26-structure-binding.md) is separate. This
+policy v1 stays schema-2-only; binding validity does not silently grant comparison
+eligibility to schema 3 or combine structure with a quality/performance verdict.
+
 ```python
 from hyso.advisor import (
     P26QualityComparisonContract, NativeMetric, compare_records,

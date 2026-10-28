@@ -298,8 +298,14 @@ class NativeMetricResolver:
             context.update(split='test', task=config['task'], sample_count=n['metrics']['sample_count'],
                            averaging='macro' if metric == NativeMetric.TEST_MACRO_F1 else 'sample_accuracy')
             notes.append('Quality is descriptive of this recorded test cohort; it is not automatically paired with another performance capture.')
-            if n['schema_version'] == 2:
+            if n['schema_version'] in (2, 3):
                 notes.append('The test split is caller-declared. Ordered tensor content does not verify dataset origin or preprocessing code.')
+            if n['schema_version'] == 3:
+                from hyso._evaluation_structure import resolved_structure_context
+                context['structure_binding'] = resolved_structure_context(n['structure_binding'])
+                notes.append('Structure is bound to the isolated forward receiver at pre/post evaluation boundaries; original-model architecture/behavior equivalence is not certified.')
+                notes.append('Imported binding validation proves consistency, not cryptographic live-model origin or the executed operator graph.')
+                notes.append('Individual snapshot fields retain their unsupported/missing statuses; a native association does not upgrade their coverage.')
         else:
             return _unsupported()
         expected_unit = ('ms' if metric in _FORWARD or metric in _E2E else 'byte' if metric in _RSS or metric in _FOOTPRINT else unit)

@@ -172,14 +172,15 @@ malformed registries, detected mutations and exceeded limits raise
 `ModelStructureError`; the producer never returns a silently truncated profile.
 Shared-path expansion is bounded independently of unique module count.
 
-P26 schema 2, P11, EvidenceRecord adapters, Advisor contracts and existing
-canonical reports are unchanged. A structure snapshot is not automatically
-imported as a P11/P26 measurement or joined by a matching caller model name.
-A future producer integration would need to capture structure on the same
-actual model object used for a measurement, bind method/version/hash inside
-that measurement's hashed native evidence, and check the model/structure at
-the measurement boundaries. A user-provided matching string is insufficient.
-This producer stage creates no automatic evidence bridge. The separate
+P26 schemas 1/2, P11, Advisor contracts and existing canonical reports are
+unchanged. A standalone structure snapshot is not automatically imported as a
+P11/P26 measurement or joined by a matching caller model name.
+[3B.4E.1](p26-structure-binding.md) explicitly captures structure on the actual
+isolated P26 forward receiver at pre/post evaluation boundaries and binds it
+inside new P26 schema 3. This does not certify original/copy architecture or
+behavior equivalence. Other measurement bridges still require their own actual
+producer observations and hashed references; matching caller strings are
+insufficient. This standalone capture API creates no automatic bridge. The separate
 [3B.4D.2 snapshot comparison](model-structure-comparison.md) compares only the
 recorded structures and does not add that bridge or runtime/architecture audits.
 

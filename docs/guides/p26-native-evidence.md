@@ -1,5 +1,10 @@
 # P26 producer evidence — 3B.4C.1
 
+[3B.4E.1](p26-structure-binding.md) adds a separately selected
+`capture_structure=True` option requiring `capture_evidence=True`. Only that
+combination emits schema 3 with a verified pre/post structure association to
+the actual isolated forward receiver. The schema-1/2 behavior below is unchanged.
+
 `evaluate_classification(..., capture_evidence=True)` opts into classification
 schema **2**, containing `producer_evidence` version **1**. It runs the existing
 isolated CPU evaluation once. No training, benchmark, data reread, model edit,

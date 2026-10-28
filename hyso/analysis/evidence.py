@@ -62,7 +62,7 @@ def _scope(data, feature, declared):
             if key == 'shape': varying.add('batch')
     values, bindings = {}, {}
     declarations = declared.to_dict()
-    if feature == 'P26' and data.get('schema_version') == 2:
+    if feature == 'P26' and data.get('schema_version') in (2, 3):
         split = data['configuration']['split']
         if declarations['split'] is not None and declarations['split'] != split:
             raise EvidenceError('declared_split_mismatch')
