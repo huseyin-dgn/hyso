@@ -8,7 +8,8 @@ import math
 
 from ._json import AdvisorError, Contract, register
 from .contracts import _enum, _strings
-from .comparison import ComparisonContract, ComparisonResult, ComparisonStatus, compare_records
+from .comparison import (ComparisonContract, P26QualityComparisonContract,
+                         ComparisonResult, ComparisonStatus, compare_records)
 from .resolver import NativeMetric, ResolvedMetric
 
 
@@ -96,12 +97,17 @@ _LIMITS = ('single_metric_only', 'allowed_changes_limit_interpretation',
            'causality_not_established', 'optimization_success_not_certified',
            'P29_independent_validation_incomplete', 'producer_authenticity_external')
 _MISSING = ('paired_quality_acceptance', 'independent_acceptance_evidence', 'uncertainty_estimate')
+_P26_LIMITS = _LIMITS + ('exact_observed_ordered_stream_only', 'dataset_origin_not_verified',
+    'split_and_source_id_are_caller_declared', 'preprocessing_implementation_not_verified',
+    'checkpoint_artifact_not_required_or_inferred_from_model_state', 'model_behavior_may_differ')
+_P26_MISSING = _MISSING + ('verified_dataset_origin', 'verified_split_membership',
+                         'preprocessing_implementation_identity')
 
 
 @register
 @dataclass(frozen=True)
 class PerformanceComparison(Contract):
-    contract: ComparisonContract
+    contract: ComparisonContract | P26QualityComparisonContract
     eligibility: ComparisonResult
     difference: MetricDifference | None
     warnings: tuple
@@ -109,7 +115,7 @@ class PerformanceComparison(Contract):
     missing_evidence: tuple = _MISSING
 
     def __post_init__(self):
-        if type(self.contract) is not ComparisonContract or type(self.eligibility) is not ComparisonResult:
+        if type(self.contract) not in (ComparisonContract, P26QualityComparisonContract) or type(self.eligibility) is not ComparisonResult:
             raise AdvisorError('typed_comparison_required')
         if self.eligibility.contract_sha256 != self.contract.content_sha256:
             raise AdvisorError('comparison_contract_mismatch')
@@ -121,7 +127,8 @@ class PerformanceComparison(Contract):
                     d.candidate.reference != self.eligibility.right):
                 raise AdvisorError('difference_evidence_mismatch')
         _strings(self, 'warnings'); _strings(self, 'limitations'); _strings(self, 'missing_evidence')
-        if self.limitations != _LIMITS or self.missing_evidence != _MISSING:
+        p26 = type(self.contract) is P26QualityComparisonContract
+        if self.limitations != (_P26_LIMITS if p26 else _LIMITS) or self.missing_evidence != (_P26_MISSING if p26 else _MISSING):
             raise AdvisorError('performance_boundaries_required')
 
 
@@ -131,6 +138,8 @@ def compare_performance(left_resolver, left_record_id, right_resolver, right_rec
     Returns no difference for ineligible pairs or unsafe arithmetic. A favorable
     direction is an observation for this metric/scope, not verified improvement.
     Multiple calls retain separate effects; no model-wide aggregate is inferred.
+    P26QualityComparisonContract restricts eligibility to the exact observed
+    ordered P26 stream and retains its additional origin/preprocessing limits.
     """
     contract = ComparisonContract() if contract is None else contract
     eligible = compare_records(left_resolver, left_record_id, right_resolver, right_record_id, contract=contract)
@@ -147,4 +156,6 @@ def compare_performance(left_resolver, left_record_id, right_resolver, right_rec
             warnings += ('zero_baseline_percent_undefined',)
     else:
         warnings += ('comparison_not_eligible',)
+    if type(contract) is P26QualityComparisonContract:
+        return PerformanceComparison(contract, eligible, difference, warnings, _P26_LIMITS, _P26_MISSING)
     return PerformanceComparison(contract, eligible, difference, warnings)

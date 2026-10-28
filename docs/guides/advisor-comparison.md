@@ -110,9 +110,12 @@ P26 schema 1 cannot carry the required capture metadata and model/input
 identities. [3B.4C.1 producer capture](p26-native-evidence.md) adds opt-in schema 2
 with observed model-state/checkpoint and ordered input/target content evidence.
 This is a separate partial-evidence contract, not the complete comparison
-capture above. P26 end-to-end comparisons remain INSUFFICIENT_EVIDENCE. Quality
-arithmetic does not bypass that eligibility gate; comparison-policy integration
-and verified split/preprocessing/origin associations remain future work.
+capture above. With the general v1 contract P26 comparisons remain
+INSUFFICIENT_EVIDENCE. [3B.4C.2](p26-quality-comparison.md) adds the separately
+selected `P26QualityComparisonContract` policy `p26_exact_observed_stream_v1`
+for accuracy/macro-F1 on identical observed ordered tensor streams. It requires
+explicit model permission and never authenticates split, dataset origin or
+preprocessing implementation. Quality arithmetic does not bypass either gate.
 
 `difference = candidate - baseline` is a signed absolute-unit difference.
 `percent_change = 100 * difference / baseline`, or null for zero baseline.

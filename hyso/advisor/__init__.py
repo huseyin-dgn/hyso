@@ -12,7 +12,8 @@ from .resolver import (EvidenceEligibility, MetricResolution, NativeMetric,
 from .engine import advise, validate_advisor_report
 from .goals import evaluate_goal, evaluate_goals, goal_context
 from .planning import DecisionPlan, PlannedFinding
-from .comparison import ComparisonContract, ComparisonReason, ComparisonResult, ComparisonStatus, compare_records
+from .comparison import (ComparisonContract, P26QualityComparisonContract,
+                         ComparisonReason, ComparisonResult, ComparisonStatus, compare_records)
 from .performance import MetricDifference, PerformanceComparison, compare_performance
 
 __all__ = [
@@ -27,5 +28,6 @@ __all__ = [
     'evaluate_goal', 'evaluate_goals', 'goal_context',
     'DecisionPlan', 'PlannedFinding',
     'ComparisonContract', 'ComparisonReason', 'ComparisonResult', 'ComparisonStatus', 'compare_records',
+    'P26QualityComparisonContract',
     'MetricDifference', 'PerformanceComparison', 'compare_performance',
 ]

@@ -1,4 +1,4 @@
-"""Comparison eligibility v1: recorded conditions only, no effect calculation."""
+"""General v1 and explicit P26 observed-quality eligibility; no effects."""
 from dataclasses import dataclass
 from enum import Enum
 from fractions import Fraction
@@ -42,6 +42,28 @@ class ComparisonContract(Contract):
         for value in (self.min_samples, self.min_tail_samples):
             if type(value) is not int or value < 1:
                 raise AdvisorError('invalid_sample_requirement')
+
+
+@register
+@dataclass(frozen=True)
+class P26QualityComparisonContract(Contract):
+    """Explicit observed-stream quality policy; never general performance v1."""
+    metric: NativeMetric = NativeMetric.TEST_ACCURACY
+    allowed_changes: tuple = ()
+    min_samples: int = 1
+    policy: str = 'p26_exact_observed_stream_v1'
+
+    def __post_init__(self):
+        _enum(self, 'metric', NativeMetric)
+        if self.metric not in (NativeMetric.TEST_ACCURACY, NativeMetric.TEST_MACRO_F1):
+            raise AdvisorError('p26_policy_requires_quality_metric')
+        _strings(self, 'allowed_changes')
+        if self.allowed_changes not in ((), ('model',)):
+            raise AdvisorError('p26_policy_only_allows_model_change')
+        if type(self.min_samples) is not int or self.min_samples < 1:
+            raise AdvisorError('invalid_sample_requirement')
+        if self.policy != 'p26_exact_observed_stream_v1':
+            raise AdvisorError('unsupported_p26_comparison_policy')
 
 
 @register
@@ -194,8 +216,13 @@ def compare_records(left_resolver, left_record_id, right_resolver, right_record_
     Resolvers validate native records using unchanged 3A constructors. Optional
     comparison capture metadata is a producer schema, not a caller-scope repair.
     Its authenticity is external, just as for existing native result artifacts.
+    P26QualityComparisonContract explicitly selects its separate schema-2
+    observed-stream policy; it never changes the default general v1 contract.
     """
     contract = ComparisonContract() if contract is None else contract
+    if type(contract) is P26QualityComparisonContract:
+        from ._p26_comparison import compare_p26_records
+        return compare_p26_records(left_resolver, left_record_id, right_resolver, right_record_id, contract)
     if type(contract) is not ComparisonContract:
         raise AdvisorError('typed_comparison_contract_required')
     if type(left_resolver) is not NativeMetricResolver or type(right_resolver) is not NativeMetricResolver:

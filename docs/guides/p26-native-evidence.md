@@ -138,14 +138,14 @@ projection, not a lossless carrier of new evidence; use canonical JSON.
 
 Advisor resolves schema-2 quality metrics descriptively, references schema 2
 explicitly and retains the declared-split limitation. 3B.4A/B contracts remain
-unchanged: these partial captures still yield `INSUFFICIENT_EVIDENCE`, with no
-numerical performance comparison or `VERIFIED_IMPROVEMENT`. Stream hashes do
-not fill absent comparison metadata.
+unchanged: the general v1 contract still yields `INSUFFICIENT_EVIDENCE`. Stream
+hashes do not fill absent comparison metadata. [3B.4C.2](p26-quality-comparison.md)
+provides an explicit, separate quality-only observed-stream policy with its own
+eligibility requirements. It does not certify split/origin/preprocessing or
+produce `VERIFIED_IMPROVEMENT`.
 
-3B.4C.2 still needs explicit comparison-policy integration for these ordered
-stream semantics and verified split/origin/preprocessing identities where
-available. External checkpoint loaders, Trainer/EMA identity propagation and
-cross-process receipts remain outside 3B.4C.1.
+Verified split/origin/preprocessing identities, external checkpoint loaders,
+Trainer/EMA identity propagation and cross-process receipts remain unimplemented.
 
 ## Focused verification
 
