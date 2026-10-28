@@ -1,10 +1,11 @@
-"""Read-only eligibility for exact observed P26 schema-2 quality streams.
+"""Read-only eligibility under separate schema-2 and bound schema-3 policies.
 
 No scope declarations repair evidence. Equality here is of recorded ordered
 tensor content and configured metric semantics, not lineage or preprocessing.
 """
 from ._json import AdvisorError
-from .comparison import ComparisonReason, ComparisonResult, ComparisonStatus
+from .comparison import (ComparisonReason, ComparisonResult, ComparisonStatus,
+                         P26BoundQualityComparisonContract)
 from .resolver import NativeMetricResolver
 
 
@@ -17,10 +18,16 @@ def _capture(resolver, record_id, contract, side):
         missing('record_not_found', 'record_id')
         return None, None, reasons
     n = record['native_payload']
+    schema = 3 if type(contract) is P26BoundQualityComparisonContract else 2
     if (record['feature_id'] != 'P26' or record['validation']['status'] != 'native_validated'
-            or not n or n.get('format') != 'hyso.evaluation.classification' or n.get('schema_version') != 2):
-        missing('p26_schema2_producer_evidence_required', 'native_payload')
+            or not n or n.get('format') != 'hyso.evaluation.classification' or n.get('schema_version') != schema):
+        missing('p26_schema%d_producer_evidence_required' % schema, 'native_payload')
         return None, None, reasons
+    if schema == 3:
+        # Recheck the complete native constructor, including the bound snapshot
+        # and all stream/state/run peer links, before admitting schema 3.
+        from hyso.evaluation import EvaluationResult
+        EvaluationResult(n)
     # The immutable resolver already reran the native constructor, including
     # source SHA, derived metric, stream method/version/scope and status checks.
     e = n['producer_evidence']; s = e['evaluated_stream']

@@ -133,7 +133,9 @@ quality/latency/memory/structure verdict is generated.
 
 The existing `P26QualityComparisonContract` policy v1 remains schema-2-only.
 It does not silently admit schema-3 records; they remain insufficient under
-that policy until a separately scoped comparison integration is implemented.
+that policy. [3B.4E.2](p26-model-profile-comparison.md) provides a separate
+schema-3 policy and unified result; it preserves independent structure/quality
+eligibility and never silently extends this schema-2 policy.
 The general v1 comparison contract likewise retains its original requirements.
 Binding validation is not comparison eligibility, statistical independence or
 `VERIFIED_IMPROVEMENT`.

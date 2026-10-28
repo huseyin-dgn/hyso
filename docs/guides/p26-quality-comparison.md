@@ -15,6 +15,12 @@ The new contract rejects every metric except `NativeMetric.TEST_ACCURACY` and
 policy v1 stays schema-2-only; binding validity does not silently grant comparison
 eligibility to schema 3 or combine structure with a quality/performance verdict.
 
+[3B.4E.2 model profile comparison](p26-model-profile-comparison.md) adds the
+separate `P26BoundQualityComparisonContract` / `p26_bound_exact_observed_stream_v1`
+policy for validated schema-3 bindings and an immutable unified result with
+independent structure, accuracy and macro-F1 eligibility. This schema-2 policy
+and its existing JSON/hash semantics remain unchanged.
+
 ```python
 from hyso.advisor import (
     P26QualityComparisonContract, NativeMetric, compare_records,

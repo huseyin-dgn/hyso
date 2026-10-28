@@ -68,6 +68,28 @@ class P26QualityComparisonContract(Contract):
 
 @register
 @dataclass(frozen=True)
+class P26BoundQualityComparisonContract(Contract):
+    """Schema-3 only: exact observed stream plus validated receiver binding.
+
+    A separate format/policy leaves schema-2 contract bytes and meaning intact.
+    Equal state/structure metadata does not certify equal forward behavior.
+    """
+    metric: NativeMetric = NativeMetric.TEST_ACCURACY
+    allowed_changes: tuple = ()
+    min_samples: int = 1
+    policy: str = 'p26_bound_exact_observed_stream_v1'
+
+    def __post_init__(self):
+        # Reuse the closed schema-2 requirements, without changing its policy.
+        old = P26QualityComparisonContract(self.metric, self.allowed_changes, self.min_samples)
+        object.__setattr__(self, 'metric', old.metric)
+        object.__setattr__(self, 'allowed_changes', old.allowed_changes)
+        if self.policy != 'p26_bound_exact_observed_stream_v1':
+            raise AdvisorError('unsupported_p26_bound_comparison_policy')
+
+
+@register
+@dataclass(frozen=True)
 class ComparisonReason(Contract):
     code: str
     field: str
@@ -218,9 +240,11 @@ def compare_records(left_resolver, left_record_id, right_resolver, right_record_
     Its authenticity is external, just as for existing native result artifacts.
     P26QualityComparisonContract explicitly selects its separate schema-2
     observed-stream policy; it never changes the default general v1 contract.
+    P26BoundQualityComparisonContract selects schema 3 with a valid native
+    structure binding and otherwise reuses the same observed-stream gate.
     """
     contract = ComparisonContract() if contract is None else contract
-    if type(contract) is P26QualityComparisonContract:
+    if type(contract) in (P26QualityComparisonContract, P26BoundQualityComparisonContract):
         from ._p26_comparison import compare_p26_records
         return compare_p26_records(left_resolver, left_record_id, right_resolver, right_record_id, contract)
     if type(contract) is not ComparisonContract:

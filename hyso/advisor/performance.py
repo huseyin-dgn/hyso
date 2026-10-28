@@ -8,7 +8,7 @@ import math
 
 from ._json import AdvisorError, Contract, register
 from .contracts import _enum, _strings
-from .comparison import (ComparisonContract, P26QualityComparisonContract,
+from .comparison import (ComparisonContract, P26QualityComparisonContract, P26BoundQualityComparisonContract,
                          ComparisonResult, ComparisonStatus, compare_records)
 from .resolver import NativeMetric, ResolvedMetric
 
@@ -107,7 +107,7 @@ _P26_MISSING = _MISSING + ('verified_dataset_origin', 'verified_split_membership
 @register
 @dataclass(frozen=True)
 class PerformanceComparison(Contract):
-    contract: ComparisonContract | P26QualityComparisonContract
+    contract: ComparisonContract | P26QualityComparisonContract | P26BoundQualityComparisonContract
     eligibility: ComparisonResult
     difference: MetricDifference | None
     warnings: tuple
@@ -115,7 +115,7 @@ class PerformanceComparison(Contract):
     missing_evidence: tuple = _MISSING
 
     def __post_init__(self):
-        if type(self.contract) not in (ComparisonContract, P26QualityComparisonContract) or type(self.eligibility) is not ComparisonResult:
+        if type(self.contract) not in (ComparisonContract, P26QualityComparisonContract, P26BoundQualityComparisonContract) or type(self.eligibility) is not ComparisonResult:
             raise AdvisorError('typed_comparison_required')
         if self.eligibility.contract_sha256 != self.contract.content_sha256:
             raise AdvisorError('comparison_contract_mismatch')
@@ -127,7 +127,7 @@ class PerformanceComparison(Contract):
                     d.candidate.reference != self.eligibility.right):
                 raise AdvisorError('difference_evidence_mismatch')
         _strings(self, 'warnings'); _strings(self, 'limitations'); _strings(self, 'missing_evidence')
-        p26 = type(self.contract) is P26QualityComparisonContract
+        p26 = type(self.contract) in (P26QualityComparisonContract, P26BoundQualityComparisonContract)
         if self.limitations != (_P26_LIMITS if p26 else _LIMITS) or self.missing_evidence != (_P26_MISSING if p26 else _MISSING):
             raise AdvisorError('performance_boundaries_required')
 
@@ -140,6 +140,8 @@ def compare_performance(left_resolver, left_record_id, right_resolver, right_rec
     Multiple calls retain separate effects; no model-wide aggregate is inferred.
     P26QualityComparisonContract restricts eligibility to the exact observed
     ordered P26 stream and retains its additional origin/preprocessing limits.
+    P26BoundQualityComparisonContract additionally requires schema-3 binding
+    validation under its distinct policy; old schema-2 semantics are unchanged.
     """
     contract = ComparisonContract() if contract is None else contract
     eligible = compare_records(left_resolver, left_record_id, right_resolver, right_record_id, contract=contract)
@@ -156,6 +158,6 @@ def compare_performance(left_resolver, left_record_id, right_resolver, right_rec
             warnings += ('zero_baseline_percent_undefined',)
     else:
         warnings += ('comparison_not_eligible',)
-    if type(contract) is P26QualityComparisonContract:
+    if type(contract) in (P26QualityComparisonContract, P26BoundQualityComparisonContract):
         return PerformanceComparison(contract, eligible, difference, warnings, _P26_LIMITS, _P26_MISSING)
     return PerformanceComparison(contract, eligible, difference, warnings)

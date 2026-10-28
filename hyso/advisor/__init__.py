@@ -12,9 +12,11 @@ from .resolver import (EvidenceEligibility, MetricResolution, NativeMetric,
 from .engine import advise, validate_advisor_report
 from .goals import evaluate_goal, evaluate_goals, goal_context
 from .planning import DecisionPlan, PlannedFinding
-from .comparison import (ComparisonContract, P26QualityComparisonContract,
+from .comparison import (ComparisonContract, P26QualityComparisonContract, P26BoundQualityComparisonContract,
                          ComparisonReason, ComparisonResult, ComparisonStatus, compare_records)
 from .performance import MetricDifference, PerformanceComparison, compare_performance
+from .profiles import (BoundEvaluationReference, P26ModelProfileComparisonContract,
+                       UnifiedModelComparison, compare_p26_model_profiles)
 
 __all__ = [
     'AdvisorError', 'AdvisorReport', 'AdvisorRequest', 'Consistency',
@@ -29,5 +31,8 @@ __all__ = [
     'DecisionPlan', 'PlannedFinding',
     'ComparisonContract', 'ComparisonReason', 'ComparisonResult', 'ComparisonStatus', 'compare_records',
     'P26QualityComparisonContract',
+    'P26BoundQualityComparisonContract',
     'MetricDifference', 'PerformanceComparison', 'compare_performance',
+    'BoundEvaluationReference', 'P26ModelProfileComparisonContract',
+    'UnifiedModelComparison', 'compare_p26_model_profiles',
 ]
