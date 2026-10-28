@@ -2,3 +2,4 @@ from . import models, callbacks, augmentation
 from .evaluation import EvaluationResult, evaluate_predictions, evaluate_classification, evaluation_capabilities
 from .quality import (EvaluationCohort, QualityExperimentResult, measure_time_to_quality,
                       evaluate_robustness, evaluate_precision_quality, compare_performance_quality)
+from .structure import ModelStructureSnapshot, ModelStructureError, capture_model_structure
