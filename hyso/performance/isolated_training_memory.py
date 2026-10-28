@@ -41,6 +41,18 @@ class TrainingMemoryRecipe:
 
     def __init__(self,factory,*,device="cpu",kwargs=None,factory_search_path=None,seed=0,epochs=1,
                  save_last_to=None,resume_from=None):
+        self._initialize(True,factory,device=device,kwargs=kwargs,factory_search_path=factory_search_path,
+                         seed=seed,epochs=epochs,save_last_to=save_last_to,resume_from=resume_from)
+
+    @classmethod
+    def _from_saved(cls,data):
+        """Validate stored metadata without admitting factory execution or resolving paths."""
+        recipe=object.__new__(cls)
+        recipe._initialize(False,**data)
+        return recipe
+
+    def _initialize(self,execution,/,factory,*,device="cpu",kwargs=None,factory_search_path=None,
+                    seed=0,epochs=1,save_last_to=None,resume_from=None):
         if type(factory) is not str or not re.fullmatch(r"[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*:[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*",factory) or factory.startswith("__main__:"):
             raise ValueError("trusted importable module:qualified_factory required")
         if type(device) is not str or not re.fullmatch(r"cpu|cuda:\d+",device):
@@ -61,8 +73,12 @@ class TrainingMemoryRecipe:
         if type(kwargs) is not dict or "device" in kwargs:raise ValueError("plain kwargs without reserved device required")
         check(kwargs)
         if factory_search_path is not None:
-            factory_search_path=str(Path(factory_search_path).resolve())
-            if not Path(factory_search_path).is_dir():raise ValueError("factory search directory missing")
+            if execution:
+                factory_search_path=str(Path(factory_search_path).resolve())
+                if not Path(factory_search_path).is_dir():raise ValueError("factory search directory missing")
+            elif (type(factory_search_path) is not str or "\x00" in factory_search_path
+                  or not Path(factory_search_path).is_absolute()):
+                raise ValueError("stored factory search path must be an absolute path string")
         for path in (save_last_to,resume_from):
             if path is not None and type(path) is not str:raise TypeError("checkpoint paths must be explicit strings")
         data=dict(factory=factory,device=device,kwargs=kwargs,factory_search_path=factory_search_path,
@@ -338,7 +354,7 @@ def _validate(data):
               "receipt","worker_receipt","measurement","limitations","sha256"}
     if set(data)!=required or type(data["schema_version"]) is not int or data["schema_version"]!=1 or data["feature_ids"]!=["P23"] or data["format"]!="hyso.performance.isolated_training_memory":raise ValueError("invalid isolated P23 schema")
     if data["sha256"]!=_hash({k:v for k,v in data.items() if k!="sha256"}):raise ValueError("isolated P23 checksum mismatch")
-    uuid.UUID(data["probe_id"]);recipe=TrainingMemoryRecipe(**data["recipe"]).to_dict();protocol=_protocol(data["protocol"])
+    uuid.UUID(data["probe_id"]);recipe=TrainingMemoryRecipe._from_saved(data["recipe"]).to_dict();protocol=_protocol(data["protocol"])
     if recipe["device"]!=protocol.memory_protocol.device:raise ValueError("recipe/protocol device mismatch")
     outcome=data["outcome"]
     if outcome not in ("success","unsupported","workload_exception","measurement_error","resource_limit","timeout","oom","native_crash","invalid_receipt"):
