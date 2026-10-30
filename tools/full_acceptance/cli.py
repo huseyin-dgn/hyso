@@ -305,13 +305,14 @@ def main(argv=None):
     p.add_argument('--ncu-plan',type=Path);p.add_argument('--ort-cpu',type=Path);p.add_argument('--ort-cuda',type=Path)
     p.add_argument('--approval-text');p.add_argument('--stage-output',type=Path,help=argparse.SUPPRESS)
     p.add_argument('--cuda-subtasks',action='store_true',help='opt-in isolated 04.cuda diagnostic; never legacy PASS')
+    p.add_argument('--cuda-probe-task',choices=('04.cuda.A.latency','04.cuda.B.latency'),default='04.cuda.A.latency',help='single CUDA latency probe selection; never full acceptance')
     a=p.parse_args(argv)
     if not a.preflight and a.manifest is None:p.error('--manifest is required')
     try:
         if a.cuda_single_probe:
             from .cuda_single_probe import probe
             if a.manifest is None:raise ValueError('probe requires --manifest')
-            outcome=probe(a.manifest,a.approved_sha256)
+            outcome=probe(a.manifest,a.approved_sha256,task_id=a.cuda_probe_task)
             print(json.dumps(outcome,ensure_ascii=False))
             return 0 if outcome['status']=='DIAGNOSTIC_PASS' else 1
         if a.worker:return worker(a)

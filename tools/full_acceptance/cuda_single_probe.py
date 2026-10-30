@@ -7,7 +7,7 @@ from .cuda_supervisor_adapter import WindowsJobCudaAdapter, check_admission
 ONLY_TASK_ID = '04.cuda.A.latency'
 
 
-def probe(manifest_path, approved_sha256, *, adapter_factory=WindowsJobCudaAdapter):
+def probe(manifest_path, approved_sha256, *, task_id=ONLY_TASK_ID, adapter_factory=WindowsJobCudaAdapter):
     if not isinstance(approved_sha256, str) or len(approved_sha256) != 64:
         raise ValueError('exact approved manifest SHA256 is required')
     manifest_path = Path(manifest_path).resolve()
@@ -21,7 +21,9 @@ def probe(manifest_path, approved_sha256, *, adapter_factory=WindowsJobCudaAdapt
         raise FileExistsError('existing execution started; use new manifest')
     if (root / 'stop-request.json').exists():
         raise PermissionError('stop already requested; use fresh manifest')
-    task = TASK_BY_ID[ONLY_TASK_ID]
+    if task_id not in ('04.cuda.A.latency', '04.cuda.B.latency'):
+        raise ValueError('single probe only permits Model A/B latency')
+    task = TASK_BY_ID[task_id]
     check_admission(m, task, dispatch_installed=True)
     evidence = root / 'cuda-subtasks' / task.task_id
     if evidence.exists():
