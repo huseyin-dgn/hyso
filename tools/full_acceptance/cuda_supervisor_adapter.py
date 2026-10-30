@@ -92,11 +92,13 @@ class WindowsJobCudaAdapter:
     this class authorizes CUDA work or overrides the immutable source snapshot.
     """
     def __init__(self, manifest: Mapping, manifest_sha256: str, *,
-                 dispatch_installed: bool = False, supervise: Callable = None):
+                 dispatch_installed: bool = False, supervise: Callable = None,
+                 verify_native_evidence: bool = False):
         self.manifest = manifest
         self.manifest_sha256 = manifest_sha256
         self.dispatch_installed = dispatch_installed
         self._supervise = supervise
+        self.verify_native_evidence = verify_native_evidence
 
     def __call__(self, task: CudaTask) -> dict:
         check_admission(self.manifest, task, dispatch_installed=self.dispatch_installed)
@@ -111,4 +113,8 @@ class WindowsJobCudaAdapter:
         else:
             supervise_fn = self._supervise
         observed = supervise_fn(self.manifest, experiment, operation='inference_cuda_subtask', output=root)
-        return receipt_from_supervisor(task, observed, manifest_sha256=self.manifest_sha256)
+        terminal = receipt_from_supervisor(task, observed, manifest_sha256=self.manifest_sha256)
+        if self.verify_native_evidence and terminal['status'] == 'PASS':
+            from .cuda_evidence_integrity import verify_native_pass
+            verify_native_pass(task.task_id, self.manifest_sha256, observed, root)
+        return terminal

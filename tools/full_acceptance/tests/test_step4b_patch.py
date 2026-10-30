@@ -26,11 +26,20 @@ class PatchChecks(unittest.TestCase):
         self.assertIn("'inference_cuda','inference_cuda_subtask'",src)
 
     def test_worker_fails_closed(self):
-        from full_acceptance.cuda_subtask_worker import run
-        from full_acceptance.cuda_tasks import TASKS
         from types import SimpleNamespace
-        task=TASKS[0];r=run({},None,SimpleNamespace(task_id=task.task_id,arm=task.arm))
-        self.assertEqual(r['status'],'UNSUPPORTED')
-        self.assertEqual(r['metrics'],[])
+        from full_acceptance.cuda_tasks import TASKS
+        from full_acceptance.cuda_subtask_worker import run
+
+        task = TASKS[0]
+
+        route = SimpleNamespace(
+            task_id=task.task_id,
+            arm=task.arm,
+            measurement="invalid_measurement",
+            operation="inference_cuda_subtask",
+        )
+
+        with self.assertRaises(ValueError):
+            run({}, None, route)
 
 if __name__=='__main__':unittest.main()

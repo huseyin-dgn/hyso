@@ -249,7 +249,12 @@ def execute(args):
                 current_experiment=e['id'],manifest_sha256=sha(args.manifest),suite_complete=False,updated_at=now()))
             if status=='READY':
                 verify(args.manifest,expected=args.approved_sha256,live=True)
-                value=supervise(m,e,stop_file=stopfile);rows[e['id']]=dict(value,id=e['id'],stage=e['stage'])
+                if e['id']=='04.cuda' and args.cuda_subtasks:
+                    from .cuda_execution import run_diagnostic
+                    value=run_diagnostic(m,manifest_path=args.manifest,stop_file=stopfile)
+                else:
+                    value=supervise(m,e,stop_file=stopfile)
+                rows[e['id']]=dict(value,id=e['id'],stage=e['stage'])
                 if value['status'] in ('FAIL','ABORTED'):
                     stopped=True
             else:rows[e['id']].update(status=status,reason=reason,readiness=missing)
@@ -298,6 +303,7 @@ def main(argv=None):
     p.add_argument('--python',type=Path,default=DEFAULT_PYTHON);p.add_argument('--gpu-uuid');p.add_argument('--camera-config',type=Path)
     p.add_argument('--ncu-plan',type=Path);p.add_argument('--ort-cpu',type=Path);p.add_argument('--ort-cuda',type=Path)
     p.add_argument('--approval-text');p.add_argument('--stage-output',type=Path,help=argparse.SUPPRESS)
+    p.add_argument('--cuda-subtasks',action='store_true',help='opt-in isolated 04.cuda diagnostic; never legacy PASS')
     a=p.parse_args(argv)
     if not a.preflight and a.manifest is None:p.error('--manifest is required')
     try:
