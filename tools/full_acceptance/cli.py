@@ -120,8 +120,22 @@ def worker(args):
     m=verify(args.manifest,expected=request['manifest_sha256'],live=True)
     if request['manifest']!=str(args.manifest.resolve()) or request['experiment_id']!=args.worker or Path(request['output']).resolve()!=root:
         raise ValueError('worker request binding mismatch')
+    # An independent CUDA subtask is NOT a manifest experiment entry. Only a
+    # verified owned Job, a parent-authorized 04.cuda and a pinned snapshot may
+    # admit it. This branch cannot fall through to the legacy inference handler.
+    subtask=request.get('operation') == 'inference_cuda_subtask'
+    if subtask:
+        from .cuda_dispatch import resolve_subtask_route
+        bound=dict(m, _verified_manifest_sha256=sha(args.manifest))
+        route=resolve_subtask_route(bound,request,admitted=True)
+        if route.task_id != args.worker:
+            raise PermissionError('CUDA subtask worker identity mismatch')
     operation=request['operation'];internal={'__environment':'environment','__smoke_cpu':'smoke_cpu','__cpu_benchmark_check':'cpu_benchmark_check','__cuda_benchmark_check':'cuda_benchmark_check'}
-    if args.worker in internal:
+    if subtask:
+        # The parent admission was verified above; do not attempt to look the
+        # subtask up in the legacy manifest experiment list.
+        pass
+    elif args.worker in internal:
         if operation!=internal[args.worker]:raise PermissionError('invalid safe preparation operation')
         if operation=='cuda_benchmark_check' and not next(e for e in m['experiments'] if e['id']=='04.cuda')['authorization']['approved']:
             raise PermissionError('04.cuda NOT_AUTHORIZED')
@@ -141,8 +155,11 @@ def worker(args):
     status=None
     try:
         from . import handlers as h
+        if subtask:
+            from .cuda_subtask_worker import run as cuda_subtask_run
         dispatch={'environment':h.environment,'smoke_cpu':h.smoke_cpu,'cpu_benchmark_check':h.cpu_benchmark_check,'cuda_benchmark_check':h.cuda_benchmark_check,'regression':h.regression,
             'inference_cpu':lambda m,r:h.inference(m,r,'cpu'),'inference_cuda':lambda m,r:h.inference(m,r,'cuda:0'),
+            'inference_cuda_subtask':lambda m,r:cuda_subtask_run(m,r,route),
             'training':h.training,'layer':h.layer,'roofline':h.roofline,'energy':lambda m,r:h.stability(m,r,energy=True),
             'devices':h.devices,'video':lambda m,r:h.camera(m,r,live=False),'camera':lambda m,r:h.camera(m,r,live=True),
             'provider_cpu':lambda m,r:h.provider(m,r,cuda=False),'provider_cuda':lambda m,r:h.provider(m,r,cuda=True),

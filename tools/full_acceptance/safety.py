@@ -68,13 +68,24 @@ def supervise(manifest,experiment,*,operation=None,output=None,stop_file=None):
     request=dict(token=token,snapshot=str(snapshot),manifest=str(Path(manifest['output'])/'manifest.json'),
         manifest_sha256=sha(Path(manifest['output'])/'manifest.json'),experiment_id=experiment['id'],
         operation=operation or experiment['handler'],output=str(root))
+    if request['operation'] == 'inference_cuda_subtask':
+        from .cuda_job_binding import validate_subtask_job_request
+        request.update(parent_id=experiment.get('parent_id'),arm=experiment.get('arm'),
+                       measurement=experiment.get('measurement'),
+                       gpu_uuid=manifest['hardware'].get('gpu_uuid'),
+                       source_tree_sha256=manifest['source_snapshot']['tree_sha256'])
+        validate_subtask_job_request(manifest,experiment,request,route_installed=True)
+        # The child requires all admission guard modules in its sealed snapshot.
+        for item in ('cuda_tasks.py','cuda_dispatch.py','cuda_subtask_worker.py'):
+            if not (snapshot/'tools/full_acceptance'/item).is_file():
+                raise FileNotFoundError('missing pinned CUDA subtask module: '+item)
     publish(root/'request.json',request,new=True)
     argv=[manifest['runtime']['python']['path'],'-I','-S','-B',str(snapshot/'tools/run_full_acceptance.py'),
         '--worker',experiment['id'],'--manifest',request['manifest'],'--stage-output',str(root)]
     env=dict(os.environ,PYTHONUTF8='1',PYTHONDONTWRITEBYTECODE='1',PYTHONUNBUFFERED='1',MPLBACKEND='Agg')
     # Native descendants inherit only the explicit physical device for CUDA ops.
     env['CUDA_VISIBLE_DEVICES']=manifest['hardware']['gpu_uuid'] if request['operation'] in (
-        'inference_cuda','cuda_benchmark_check','energy','devices','provider_cuda','roofline') and manifest['hardware']['gpu_uuid'] else '-1'
+        'inference_cuda','inference_cuda_subtask','cuda_benchmark_check','energy','devices','provider_cuda','roofline') and manifest['hardware']['gpu_uuid'] else '-1'
     env.pop('HYSO_NATIVE_GPU_UUID',None)
     module=load_file(snapshot/'hyso/performance/_training_process.py','acceptance_owned_job')
     resource_module=load_file(snapshot/'hyso/performance/_stream_resources.py','acceptance_low_memory')
