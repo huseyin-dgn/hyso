@@ -1,5 +1,6 @@
 """P17 finite worker admission; timing/forward probes reuse the P06/P08 core."""
 from dataclasses import asdict, dataclass
+import errno
 import json
 import os
 from pathlib import Path
@@ -64,11 +65,18 @@ def _row(batch,recipe):
 
 
 def _candidate(recipe,plan,batch,root):
+    from ._batch_worker import _admission
+    row=_row(batch,recipe)
+    admission=_admission(row['shape'],recipe['precision'],recipe['device'],
+        plan.input_limit_bytes,plan.cpu_memory_limit_bytes)
+    if admission['reason']:
+        row.update(status='resource_limit',reason=admission['reason'],
+            memory=dict(admission=admission))
+        return row  # unknown, no worker/factory/forward; caller stops admission.
     from .cold import _owned_worker_launcher
     launcher = _owned_worker_launcher.get()
     if launcher is not None:
         return launcher('capacity', recipe, plan, batch, root)
-    row=_row(batch,recipe)
     item=root/str(batch);item.mkdir()
     request=item/'request.json';output=item/'result.json';ready=item/'ready.json'
     request.write_text(json.dumps(dict(recipe=recipe,protocol=_configuration(plan),batch=batch)),encoding='utf-8')
@@ -80,9 +88,21 @@ def _candidate(recipe,plan,batch,root):
     with tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
         try:
             try:
-                worker=subprocess.Popen(command,stdout=stdout,stderr=stderr,
-                    env=dict(os.environ,PYTHONDONTWRITEBYTECODE='1'),
-                    creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
+                try:
+                    worker=subprocess.Popen(command,stdout=stdout,stderr=stderr,
+                        env=dict(os.environ,PYTHONDONTWRITEBYTECODE='1'),
+                        creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
+                except OSError as error:
+                    # No process handle was returned. Preserve earlier candidate
+                    # evidence without calling this a forward OOM or native crash.
+                    winerror=getattr(error,'winerror',None)
+                    resource=(winerror in (8,14,1450,1455) if winerror is not None
+                              else error.errno==errno.ENOMEM)
+                    row.update(status='resource_limit' if resource else 'failed',
+                        reason=f'worker launch failed (errno={error.errno}, winerror={winerror}): {error}',
+                        execution_seconds=time.perf_counter()-start)
+                    row['classification']=_classification(row['status'])
+                    return row
                 row['launcher_pid']=worker.pid
                 try: worker.wait(timeout=plan.timeout_seconds)
                 except subprocess.TimeoutExpired: timed_out=True

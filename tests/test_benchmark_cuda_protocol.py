@@ -250,8 +250,11 @@ def test_batch_worker_probe_oom_vs_unknown(protocol, monkeypatch, tmp_path, oom)
         return runner.run()
     monkeypatch.setattr(sweeps, "_point", point)
     closed = []
-    monkeypatch.setattr(_batch_worker, "_memory_guard",
-                        lambda limit: (SimpleNamespace(CloseHandle=closed.append), "owned-test-job"))
+    def memory_guard(limit, *, capture=False):
+        assert limit == 3*1024**3 and capture is True
+        return (SimpleNamespace(CloseHandle=closed.append), "owned-test-job",
+                {"known_commit_ceiling_bytes": limit})
+    monkeypatch.setattr(_batch_worker, "_memory_guard", memory_guard)
     # Execute the actual worker exception/publication/close path inline. OS Job
     # admission is doubled here; existing owned-worker tests cover real Jobs.
     recipe = ColdStartRecipe("torch.nn:Identity").to_dict()

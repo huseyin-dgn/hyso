@@ -63,6 +63,13 @@ başarılı termination/maximum yayımlanmaz ve sonraki aday başlamaz. Job, inp
 allocator sınırları değişmez. Bu Python deadline'ları OS-level outer watchdog
 değildir; process creation ve filesystem çağrıları bunlarla kesilemez.
 
+Worker process handle dönmeden `Popen` bir `OSError` üretirse errno/winerror
+korunur: bilinen process-start kaynak hataları `resource_limit/unknown`, diğer
+launch hataları `failed/unknown` olur. Bu bir forward OOM veya native crash
+kanıtı değildir. Arama aborted olur; önceki başarılı adaylar raw satırlarda ve
+`prior_observed_feasible_batch` içinde korunur. Başlamayan worker için PID ve
+exit code null kalır. Çalışan worker'ın cleanup hataları bu kuralla bastırılmaz.
+
 `maximum_observed_feasible_batch` yalnız tamamlanmış forward'lardan türetilir.
 `maximum_proven_within_range`, ancak 1..maximum_batch bütün integer noktaları
 feasible/infeasible_oom olarak gözlendiğinde değer alır; sonuç yalnız bu recipe,
@@ -86,6 +93,29 @@ factory child process açılmasını engeller. Guard kurulamazsa çalışmaya de
 working set'i değildir. CPU private-commit sınırı resident RSS veya fiziksel RAM
 değildir. Mevcut P10 RSS/HWM sorguları ölçümün öncesinde/sonrasında alınır; exact
 inference-window peak olarak sunulmaz. Linux/diğer OS resource guard unsupported.
+
+Hard commit kotası, native allocator'ın her ret durumunu Python exception olarak
+döndüreceği garantisi değildir. Runtime, model, input kopyaları ve backend workspace
+için pay gerekir; yalnız input byte veya model parameter byte sayısı yeterli bütçe
+tahmini değildir. Quota−peak farkı anlık allocation headroom'u sayılmaz. Native
+access violation OOM'a çevrilmez; worker'ın kaybı parent'ta `crashed/unknown`
+olarak saklanır. Bütçe kaynaklı ret ve fiziksel bellek sınırı ayrı yorumlanmalıdır.
+
+P17 artık launch öncesinde tek input bütçesini ve native protokolün zorunlu canlı
+input kopyalarının alt sınırını kontrol eder. Worker, factory/forward öncesinde
+kendi Job limitini readback ile doğrular; okunabilen immediate inherited Job
+limitini de hesaba katar. Daha üst ancestor ve ortak Job'ın kalan headroom'u
+doğrulanamıyorsa bu sınır açıkça kaydedilir. Factory/load sonrasında model snapshot
+payload'ı, en büyük owned tensor için muhafazakâr alt sınır ve current private
+commit gözlemi eklenir. Current commit'e payload ekleyip tamamını yeni commit
+varsaymaz. CUDA allocator bütçesi host commit'ten ayrı kontrol edilir.
+
+Kanıtlanmış bir alt sınır bütçeyi aşıyorsa `resource_limit/unknown` döner; forward
+başlamaz. Aşmaması bütün çalışma belleğinin sığdığını kanıtlamaz:
+`memory.admission` içinde karar `not_rejected_peak_unknown`, total/workspace peak
+null ve `fit_guaranteed=False` kalır. Bunlar yeni batch sınırı veya güvenlik
+katsayısı değildir; native clone/snapshot/hash işlemlerinin gerekli payload'ıdır.
+Timing, caller model state, result schema version ve export sözleşmesi değişmez.
 
 `cuda_memory_fraction` yalnız child PyTorch allocator bütçesidir; context/driver,
 diğer process'ler ve fiziksel VRAM sınırı değildir. P09 allocator peak ayrı probe
