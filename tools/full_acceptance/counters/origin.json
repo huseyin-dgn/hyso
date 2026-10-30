@@ -1,0 +1,17 @@
+{
+  "scope": "Retained verified reference kernel source/PTX only. New native captures are independent; no old timings reused.",
+  "files": {
+    "reference_kernels.cu": {
+      "original": "C:\\Users\\hdgn5\\hyso-private-evidence\\p18-ncu-native-20261026\\calibration-preparation\\reference_kernels.cu",
+      "sha256": "fde21172d929737da20c687694c226e0b1dc15cc6928be7728b70c8883620ee7"
+    },
+    "reference_kernels.ptx": {
+      "original": "C:\\Users\\hdgn5\\hyso-private-evidence\\p18-ncu-native-20261026\\calibration-preparation\\reference_kernels.ptx",
+      "sha256": "4b3b5b6ab44c0f705f1157b53096b3be77057a7a0380958aabe39879881709ac"
+    },
+    "calibration_worker.py": {
+      "original": "C:\\Users\\hdgn5\\hyso-private-evidence\\p18-ncu-native-20261026\\calibration-preparation\\calibration_worker.py",
+      "sha256": "0285dd39fdca9c613980692435aa6df1de0cd25579b2ceb126fe4dd16e8b03ec"
+    }
+  }
+}
