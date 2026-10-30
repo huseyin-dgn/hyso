@@ -18,13 +18,15 @@ _SCOPES = {
 
 def binding(bundle, cohort):
     p = bundle['performance']
-    return dict(benchmark_run_id=p['identity']['run_id'], model_sha256=p['model']['weights_sha256'],
+    record=dict(benchmark_run_id=p['identity']['run_id'], model_sha256=p['model']['weights_sha256'],
         structure_sha256=_hash(p['model']['structural_descriptor']), cohort_sha256=_hash(cohort),
         input_sha256=p['input']['content_sha256'], device=p['environment']['device'],
         runtime={k:p['environment'][k] for k in ('python_version','torch_version','platform')},
         precision=p['configuration']['precision'], host_id=bundle['host_id'],
         protocol_sha256=_hash(dict(configuration=p['configuration'], timing={k:p['timing'][k]
             for k in ('timing_method','timing_scope','synchronization_policy')})))
+    if 'inference_batch' in bundle:record['inference_batch_sha256']=_hash(bundle['inference_batch'])
+    return record
 
 
 def capture(bundle, cohort, model, x, metric, protocol):

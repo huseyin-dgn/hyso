@@ -140,3 +140,39 @@ P12 remains isolated in its separate worktree. Existing private evidence and use
 changes are protected. No GPU workload, long test, global dependency change,
 commit or push was performed. P31's 7200-second acceptance remains deferred to the
 final validation after feature development; P34/P35 are outside this change.
+
+## 2026-10-29 trained-model completion
+
+The historical 377-test acceptance above is retained. The roadmap's old PARTIAL
+entry predates this accepted CPU implementation. Full trained MNIST evaluation
+exposed an additional operational gap: the original adapter submitted the entire
+cohort as one evaluation/timing/RSS batch.
+
+An additive `batch_size` argument now streams all quality samples, including the
+tail, and benchmarks the same explicitly identified first ordered batch for both
+models. Large encoded cohorts require this explicit choice; no automatic giant
+batch, new RAM quota or artificial batch ceiling is introduced. This resident
+batch latency is not full-test-set latency or throughput. Memory capture uses
+the identical resident batch when a forward is needed.
+
+Top-level schema_version remains 1. Explicit batching uses comparison_version 3,
+with requested/effective batch size, selected sample IDs and content identity.
+Model/state/runtime/precision/input/cohort/protocol binding remains mandatory;
+the memory binding additionally includes the batch selection hash. Existing
+version 1/2 analysis and archived JSON/CSV bytes retain their original semantics.
+Version 3 reports accuracy and macro-F1 deltas independently, alongside the
+existing selected-quality regression, latency and same-domain memory decisions.
+
+The [completion report](../../outputs/p29-tradeoff-completion-20261029/final-report.md)
+records the two trained checkpoints, the full ordered 10,000-sample test cohort,
+three fresh CPU process pairs per precision, raw latency repeats, selected P11
+logical model bytes, descriptive three-axis Pareto and seeded paired resampling.
+The audit's conditional intervals are distinct from the API's unsupported
+population/timing significance fields; no winner is inferred. Fixed A-then-B
+measurement order and shared machine activity remain limitations. Prior data
+from other timing protocols is not substituted into these comparisons.
+
+CPU FP32/FP64 remains the verified scope. RSS, logical object bytes, CUDA
+allocated/reserved and physical VRAM are distinct domains; selecting logical
+bytes does not certify an RSS or GPU saving. No new CUDA workload or inherited
+GPU authorization is used. B4 and the separate CPU65536 native issue remain OPEN.

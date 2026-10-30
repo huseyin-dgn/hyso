@@ -9,11 +9,14 @@ import random
 import statistics
 import time
 import uuid
+import base64
+import zlib
+from contextvars import ContextVar
 
 import numpy as np
 import torch
 from torch import nn
-from torch.utils.data import DataLoader, TensorDataset, SequentialSampler, BatchSampler
+from torch.utils.data import DataLoader, Dataset, TensorDataset, SequentialSampler, BatchSampler
 from torch.utils.data._utils.collate import default_collate
 
 from .evaluation import (EvaluationResult, evaluate_classification, _metadata, _model_hash,
@@ -44,6 +47,74 @@ def _seed(seed):
     random.seed(seed);np.random.seed(seed);torch.random.default_generator.manual_seed(seed)
 
 
+def _input_chunks(data):
+    """Decode at most one encoded slab; legacy nested-list cohorts still work."""
+    dtype={'torch.float32':torch.float32,'torch.float64':torch.float64}[data['dtype']]
+    value=data['inputs']
+    if type(value) is list:
+        yield torch.tensor(value,dtype=dtype)
+        return
+    if (type(value) is not dict or set(value)!={'encoding','shape','chunks'}
+            or value['encoding']!='zlib_base64_tensor_chunks_v1'
+            or type(value['shape']) is not list or len(value['shape'])<2
+            or any(type(n) is not int or n<1 for n in value['shape'])
+            or type(value['chunks']) is not list or not value['chunks']):
+        raise ValueError('invalid encoded cohort')
+    count=0;sample_bytes=math.prod(value['shape'][1:])*torch.empty((),dtype=dtype).element_size()
+    for row in value['chunks']:
+        if (type(row) is not dict or set(row)!={'samples','data','sha256'}
+                or type(row['samples']) is not int or not 1<=row['samples']<=min(value['shape'][0]-count,max(1,1024**2//sample_bytes))):
+            raise ValueError('invalid cohort chunk coverage')
+        expected=row['samples']*sample_bytes
+        decoder=zlib.decompressobj()
+        try:raw=decoder.decompress(base64.b64decode(row['data'],validate=True),expected+1)
+        except zlib.error as error:raise ValueError('invalid cohort compression') from error
+        if (len(raw)!=expected or not decoder.eof or decoder.unused_data or decoder.unconsumed_tail
+                or hashlib.sha256(raw).hexdigest()!=row['sha256']):
+            raise ValueError('invalid cohort chunk content')
+        chunk=torch.frombuffer(bytearray(raw),dtype=dtype).reshape(row['samples'],*value['shape'][1:])
+        if not torch.isfinite(chunk).all():raise ValueError('nonfinite cohort chunk')
+        count+=len(chunk)
+        yield chunk
+    if count!=value['shape'][0]:raise ValueError('incomplete cohort chunks')
+
+
+def _input_shape(data):
+    return data['inputs']['shape'] if type(data['inputs']) is dict else list(torch.tensor(data['inputs']).shape)
+
+
+def _batch_input_hashes(data,sizes):
+    chunks=iter(_input_chunks(data));chunk=next(chunks);offset=0
+    for size in sizes:
+        digest=hashlib.sha256();remaining=size
+        while remaining:
+            if offset==len(chunk):chunk=next(chunks);offset=0
+            take=min(remaining,len(chunk)-offset)
+            digest.update(chunk[offset:offset+take].contiguous().numpy().tobytes())
+            offset+=take;remaining-=take
+        yield digest.hexdigest()
+
+
+def _autocast_state(device):
+    try:return torch.is_autocast_enabled(device),str(torch.get_autocast_dtype(device))
+    except (TypeError,AttributeError):
+        return ((torch.is_autocast_enabled(),str(torch.get_autocast_gpu_dtype())) if device=='cuda'
+                else (torch.is_autocast_cpu_enabled(),str(torch.get_autocast_cpu_dtype())))
+
+
+class _CohortDataset(Dataset):
+    """Sequential evaluation keeps one decompressed slab, not Python image lists."""
+    def __init__(self,data):
+        self.data=data;self.iterator=iter(_input_chunks(data));self.chunk=None;self.start=0
+    def __len__(self):return len(self.data['targets'])
+    def __getitem__(self,index):
+        if self.chunk is not None and index<self.start:raise ValueError('cohort requires sequential order')
+        while self.chunk is None or index>=self.start+len(self.chunk):
+            if self.chunk is not None:self.start+=len(self.chunk)
+            self.chunk=next(self.iterator)
+        return self.chunk[index-self.start],self.data['targets'][index]
+
+
 @dataclass(frozen=True, init=False)
 class EvaluationCohort:
     """Explicit paired IDs, labels, order, split, preprocessing and input content."""
@@ -54,8 +125,7 @@ class EvaluationCohort:
         _name(preprocessing_id)
         config=_metadata(task,class_names,split,0)
         if (type(inputs) is not torch.Tensor or inputs.device.type!='cpu' or inputs.dtype not in (torch.float32,torch.float64)
-                or inputs.ndim<2 or not 1 <= len(inputs) <= 4096 or inputs.numel()>1000000
-                or not torch.isfinite(inputs).all()): raise ValueError("bounded nonempty finite CPU cohort required")
+                or inputs.ndim<2 or len(inputs)<1): raise ValueError("nonempty finite CPU cohort required")
         y=targets.detach().tolist() if isinstance(targets,torch.Tensor) else _plain(targets)
         if task=='binary' and type(y) is list:
             y=[int(v) if type(v) in (int,float) and v in (0,1) else v for v in y]
@@ -65,7 +135,18 @@ class EvaluationCohort:
         if (type(ids) is not list or len(ids)!=len(inputs) or len(y)!=len(inputs)
                 or any(type(i) is not str or not i for i in ids) or len(set(ids))!=len(ids)):
             raise ValueError("unique ordered sample IDs and exact labels required")
-        data=dict(inputs=inputs.tolist(),dtype=str(inputs.dtype),targets=y,sample_ids=ids,
+        # Preserve the legacy representation for old small cohorts. Large inputs
+        # use lossless slabs, avoiding millions of Python float objects in JSON.
+        encoded=[];slab=max(1,1024**2//(inputs[0].numel()*inputs.element_size()))
+        for part in inputs.split(slab):
+            if not torch.isfinite(part).all():raise ValueError('nonfinite cohort input')
+            if len(inputs)>4096 or inputs.numel()>1000000:
+                raw=part.detach().contiguous().numpy().tobytes()
+                encoded.append(dict(samples=len(part),data=base64.b64encode(zlib.compress(raw)).decode('ascii'),
+                    sha256=hashlib.sha256(raw).hexdigest()))
+        payload=(dict(encoding='zlib_base64_tensor_chunks_v1',shape=list(inputs.shape),chunks=encoded)
+                 if encoded else inputs.tolist())
+        data=dict(inputs=payload,dtype=str(inputs.dtype),targets=y,sample_ids=ids,
                   configuration=config,preprocessing_id=preprocessing_id)
         object.__setattr__(self,'_payload',json.dumps(data,allow_nan=False))
 
@@ -76,13 +157,25 @@ class EvaluationCohort:
 
     def tensors(self):
         d=self.to_dict()
-        return torch.tensor(d['inputs'],dtype={'torch.float32':torch.float32,'torch.float64':torch.float64}[d['dtype']]), torch.tensor(d['targets'])
+        return torch.cat(list(_input_chunks(d))),torch.tensor(d['targets'])
 
 
 def _cohort(data):
     if type(data) is not dict or set(data)!={'inputs','dtype','targets','sample_ids','configuration','preprocessing_id'}:
         raise ValueError('invalid cohort fields')
     c=data['configuration']
+    if type(data['inputs']) is dict:
+        shape=_input_shape(data);count=sum(len(chunk) for chunk in _input_chunks(data))
+        c=data['configuration'];ids=data['sample_ids'];targets=data['targets']
+        if (count!=shape[0] or len(targets)!=count or len(ids)!=count
+                or any(type(i) is not str or not i for i in ids) or len(set(ids))!=count
+                or c!=_metadata(c['task'],c['class_names'],c['split'],c['zero_division'])):
+            raise ValueError('invalid encoded cohort identity')
+        from .evaluation import _labels
+        _labels(targets,len(c['class_names']));_name(data['preprocessing_id'])
+        result=object.__new__(EvaluationCohort)
+        object.__setattr__(result,'_payload',json.dumps(data,allow_nan=False))
+        return result
     x=torch.tensor(data['inputs'],dtype={'torch.float32':torch.float32,'torch.float64':torch.float64}[data['dtype']])
     result=EvaluationCohort(x,data['targets'],sample_ids=data['sample_ids'],class_names=c['class_names'],
         split=c['split'],preprocessing_id=data['preprocessing_id'],task=c['task'])
@@ -93,15 +186,21 @@ def _cohort(data):
 def _paired(a,b, *, same_inputs):
     for key in ('sample_ids','targets','configuration','preprocessing_id','dtype'):
         if a[key]!=b[key]:raise ValueError('paired cohort mismatch: '+key)
-    if torch.tensor(a['inputs']).shape!=torch.tensor(b['inputs']).shape:raise ValueError('paired shape mismatch')
+    if _input_shape(a)!=_input_shape(b):raise ValueError('paired shape mismatch')
     if same_inputs and a['inputs']!=b['inputs']:raise ValueError('input content mismatch')
 
 
-def _evaluate(model,cohort,batch_size=16):
-    x,y=cohort.tensors();c=cohort.to_dict()['configuration']
-    if c['task']=='binary':y=y.float()
-    return evaluate_classification(model,DataLoader(TensorDataset(x,y),batch_size=batch_size),
-        class_names=c['class_names'],split=c['split'],task=c['task'],source_id=cohort.sha256)
+def _evaluate(model,cohort,batch_size=16,device='cpu'):
+    data=cohort.to_dict();c=data['configuration']
+    dataset=_CohortDataset(data)
+    if type(data['inputs']) is list:
+        x,y=cohort.tensors()
+        dataset=TensorDataset(x,y.float() if c['task']=='binary' else y)
+    def collate(rows):
+        x,y=default_collate(rows)
+        return x,y.float() if c['task']=='binary' else y.long()
+    return evaluate_classification(model,DataLoader(dataset,batch_size=batch_size,collate_fn=collate),
+        class_names=c['class_names'],split=c['split'],task=c['task'],source_id=cohort.sha256,device=device)
 
 
 def _evaluation(data,cohort):
@@ -154,28 +253,74 @@ class _PrecisionAdapter(nn.Module):
             if out.dtype!=torch.float32:raise ValueError('unexpected quantized output dtype')
             if _quant_digest(self.model)!=expected:raise ValueError('quantized weights changed')
             return out
-        with torch.autocast('cpu',dtype=torch.bfloat16,enabled=self.policy=='bf16'):
-            out=self.model(x.double() if self.policy=='fp64' else x.float())
-        expected=torch.bfloat16 if self.policy=='bf16' else torch.float64 if self.policy=='fp64' else torch.float32
+        device=x.device;enabled=self.policy in ('bf16','amp_fp16')
+        low=torch.float16 if self.policy=='amp_fp16' else torch.bfloat16
+        expected=low if enabled else torch.float64 if self.policy=='fp64' else torch.float32
+        records=[];handles=[];collector=_PRECISION_EXECUTION.get()
+        def hook(name):
+            def observe(module,args,out):
+                active,dtype=_autocast_state(device.type)
+                records.append(dict(name=name,operator=type(module).__name__,input_dtype=str(args[0].dtype),
+                    weight_dtype=str(module.weight.dtype),output_dtype=str(out.dtype),device=str(out.device),
+                    autocast_enabled=active,autocast_dtype=dtype if active else None))
+            return observe
+        if collector is not None:
+            for name,module in self.model.named_modules():
+                if isinstance(module,(nn.Conv2d,nn.Linear)):handles.append(module.register_forward_hook(hook(name)))
+        try:
+            with torch.autocast(device.type,dtype=low,enabled=enabled):
+                out=self.model(x.double() if self.policy=='fp64' else x.float())
+        finally:
+            for handle in handles:handle.remove()
         if out.dtype!=expected:raise ValueError('precision fallback forbidden')
-        return out.float() if self.policy=='bf16' else out
+        if collector is not None:
+            if enabled and not records:raise NotImplementedError('no supported precision operator execution observed')
+            master=torch.float64 if self.policy=='fp64' else torch.float32
+            if any(r['output_dtype']!=str(expected) or r['weight_dtype']!=str(master)
+                   or r['device']!=str(device) or r['autocast_enabled']!=enabled
+                   or r['autocast_dtype']!=(str(low) if enabled else None) for r in records):
+                raise ValueError('precision operator fallback forbidden')
+            if out.device!=device or not torch.isfinite(out).all():raise ValueError('invalid native precision output')
+            raw=x.detach().cpu().contiguous().numpy().tobytes()
+            collector['input_hash'].update(raw)
+            collector['batches'].append(dict(input_shape=list(x.shape),input_dtype=str(x.dtype),device=str(device),
+                input_sha256=hashlib.sha256(raw).hexdigest(),
+                output_shape=list(out.shape),native_output_dtype=str(out.dtype),finite=True,
+                autocast_enabled=enabled,autocast_dtype=str(low) if enabled else None,
+                operators=records,completion='output materialized by evaluation'))
+        return out.float() if enabled else out
 
 
-def _precision(model,policy):
-    if policy not in ('fp32','fp64','bf16','int8_dynamic'):raise NotImplementedError('CPU precision recipe unsupported')
+_PRECISION_EXECUTION=ContextVar('hyso_precision_quality_execution',default=None)
+
+
+def _precision(model,policy,device='cpu'):
+    device=torch.device(device)
+    allowed=('fp32','fp64','bf16','int8_dynamic') if device.type=='cpu' else ('fp32','amp_fp16','bf16')
+    if device.type not in ('cpu','cuda') or policy not in allowed:raise NotImplementedError('precision recipe unsupported on selected device')
+    if device.type=='cuda':
+        if not torch.cuda.is_available():raise NotImplementedError('CUDA unavailable; no CPU fallback')
+        device=torch.device('cuda',torch.cuda.current_device() if device.index is None else device.index)
     from .performance.sweeps import _prepare
-    owned,proof=_prepare(model,policy,torch.device('cpu'))
-    adapter=_PrecisionAdapter(owned,policy)
-    return adapter,dict(policy=policy,p08_recipe=proof,source_master_sha256=_model_hash(model),adapter_state_sha256=_model_hash(adapter),
+    owned,proof=_prepare(model,policy,device)
+    adapter=_PrecisionAdapter(owned,policy).to(device)
+    return adapter,dict(policy=policy,p08_recipe=proof,source_master_sha256=_model_hash(model),adapter_state_sha256=_model_hash(adapter,allow_device=device.type=='cuda'),
                         execution_guard='per_batch_dtype' if policy!='int8_dynamic' else 'per_batch_quantized::linear_dynamic')
 
 
-def _precision_evaluation(adapter,proof,cohort,*,batch_size=16):
-    result=_evaluate(adapter,cohort,batch_size=batch_size).to_dict()
+def _precision_evaluation(adapter,proof,cohort,*,batch_size=16,device='cpu',strict=False):
+    records=dict(batches=[],input_hash=hashlib.sha256())
+    token=_PRECISION_EXECUTION.set(records if strict and proof['policy']!='int8_dynamic' else None)
+    try:result=_evaluate(adapter,cohort,batch_size=batch_size,device=device).to_dict()
+    finally:_PRECISION_EXECUTION.reset(token)
     # Success means every isolated inference batch passed the forward guards.
     proof['verified_execution']=dict(batches=len(result['accounting']['batch_sizes']),
-        native_output_dtype={'fp32':'torch.float32','fp64':'torch.float64','bf16':'torch.bfloat16','int8_dynamic':'torch.float32'}[proof['policy']],
+        native_output_dtype={'fp32':'torch.float32','fp64':'torch.float64','bf16':'torch.bfloat16','amp_fp16':'torch.float16','int8_dynamic':'torch.float32'}[proof['policy']],
         operators=['quantized::linear_dynamic'] if proof['policy']=='int8_dynamic' else [])
+    if strict and proof['policy']!='int8_dynamic':
+        if len(records['batches'])!=len(result['accounting']['batch_sizes']):raise ValueError('missing precision batch proof')
+        proof.update(execution_version=2,device=result['source']['device'],batch_observations=records['batches'],
+            observed_input_stream_sha256=records['input_hash'].hexdigest())
     return result
 
 
@@ -204,15 +349,25 @@ def evaluate_robustness(model,cohort,perturbation, *, corruption_id, severity, s
     finally:_restore_rng(rng)
 
 
-def evaluate_precision_quality(model,cohort, *, candidate='int8_dynamic'):
+def evaluate_precision_quality(model,cohort, *, candidate='int8_dynamic',device='cpu',batch_size=16):
+    """Paired labeled quality against a fresh same-device FP32 master copy.
+
+    CPU: FP32/FP64/BF16/dynamic Linear INT8. CUDA opt-in: FP32/AMP FP16/BF16.
+    Large cohorts stream lossless encoded slabs; metrics retain all labels/logits.
+    No performance benchmark, training, fallback or statistical claim is made.
+    """
     if type(cohort) is not EvaluationCohort:raise TypeError('explicit cohort required')
     rng=_rng_state()
     try:
         master=_model_hash(model)
-        baseline,bproof=_precision(model,'fp32');owned,proof=_precision(model,candidate)
-        return _result('P28',dict(cohort=cohort.to_dict(),master_state_sha256=master,
-            baseline=_precision_evaluation(baseline,bproof,cohort),candidate=_precision_evaluation(owned,proof,cohort),
+        if type(batch_size) is not int or batch_size<1:raise ValueError('positive integer batch_size required')
+        baseline,bproof=_precision(model,'fp32',device);owned,proof=_precision(model,candidate,device)
+        result=_result('P28',dict(cohort=cohort.to_dict(),master_state_sha256=master,
+            baseline=_precision_evaluation(baseline,bproof,cohort,batch_size=batch_size,device=device,strict=True),
+            candidate=_precision_evaluation(owned,proof,cohort,batch_size=batch_size,device=device,strict=True),
             baseline_precision=bproof,candidate_precision=proof))
+        if _model_hash(model)!=master:raise ValueError('original precision master changed')
+        return result
     finally:_restore_rng(rng)
 
 
@@ -275,11 +430,29 @@ def measure_time_to_quality(factory,cohort, *, seeds, target, epochs=3,cadence=1
     finally:_restore_rng(rng)
 
 
-def _bundle(model,cohort,precision,iterations,memory_metric='logical_model_bytes',memory_protocol=None):
+def _timing_input(data,precision,batch_size):
+    if batch_size is None:
+        x,_=_cohort(data).tensors()
+    else:
+        remaining=min(batch_size,len(data['targets']));parts=[]
+        for chunk in _input_chunks(data):
+            parts.append(chunk[:remaining]);remaining-=len(parts[-1])
+            if not remaining:break
+        x=torch.cat(parts)
+    return x.double() if precision=='fp64' else x.float()
+
+
+def _inference_batch(data,x,batch_size):
+    return dict(requested_batch_size=batch_size,selection='first_ordered_evaluation_batch',
+        sample_start=0,sample_count=len(x),sample_ids=data['sample_ids'][:len(x)],
+        input_sha256=hashlib.sha256(x.contiguous().numpy().tobytes()).hexdigest())
+
+
+def _bundle(model,cohort,precision,iterations,memory_metric='logical_model_bytes',memory_protocol=None,batch_size=None):
     from .benchmark.runner import _profile,_descriptor,_bits
     adapter,proof=_precision(model,precision)
     if precision not in ('fp32','fp64'):raise NotImplementedError('P29 resident timing supports fp32/fp64')
-    x,_=cohort.tensors();x=x.double() if precision=='fp64' else x.float()
+    data=cohort.to_dict();x=_timing_input(data,precision,batch_size)
     if x.ndim!=4:raise ValueError('P29 BenchmarkRunner requires NCHW cohort')
     modules,entries=_profile(adapter.model,x.dtype,torch.device('cpu'))
     descriptor,digest=_descriptor(modules,entries)
@@ -292,11 +465,12 @@ def _bundle(model,cohort,precision,iterations,memory_metric='logical_model_bytes
              for (kind,name,t),meta in zip(entries,descriptor['tensors'])]
     adapter.register_buffer('benchmark_structure_witness',torch.tensor(list(bytes.fromhex(_hash(descriptor))),dtype=torch.uint8))
     proof['adapter_state_sha256']=_model_hash(adapter)
-    evaluation=_precision_evaluation(adapter,proof,cohort,batch_size=len(x))
+    evaluation=_precision_evaluation(adapter,proof,cohort,batch_size=batch_size or len(x))
     performance=BenchmarkRunner(adapter.model,device='cpu',precision=precision,example_input=x,
         warmup_iterations=1,measure_iterations=iterations,repeats=2,seed=0).run().to_dict()
     bundle=dict(evaluation=evaluation,performance=performance,precision=proof,
         benchmark_model_sha256=digest,state_witness=witness,host_id=platform.node())
+    if batch_size is not None:bundle['inference_batch']=_inference_batch(data,x,batch_size)
     from ._quality_memory import capture
     bundle['memory']=capture(bundle,cohort.to_dict(),adapter.model,x,memory_metric,memory_protocol)
     return bundle
@@ -304,17 +478,23 @@ def _bundle(model,cohort,precision,iterations,memory_metric='logical_model_bytes
 
 def compare_performance_quality(baseline,candidate,cohort, *, precision='fp32',iterations=5,
         metric='accuracy',min_quality=0.,max_quality_drop=.01,max_latency_regression=.05,independent_samples=False,
-        memory_metric='logical_model_bytes',max_memory_regression=.05,memory_protocol=None):
+        memory_metric='logical_model_bytes',max_memory_regression=.05,memory_protocol=None,batch_size=None):
     """Observed quality/latency/memory, same CPU FP32/64 protocol.
 
     Memory defaults to P11 registered logical bytes. Opt-in process RSS executes
     one separate guarded forward per model; it is neither model-only nor exact peak.
     CUDA/physical domains stay unsupported, and absent memory cannot select a 3D winner.
+    Explicit batch_size streams the full quality cohort, and times/probes its
+    first ordered batch separately. Large encoded cohorts require this choice;
+    they are never automatically submitted as one inference batch.
     """
     from dataclasses import asdict
     from ._quality_memory import MEMORY_METRICS
     from .performance.memory import MemoryProtocol
     if type(cohort) is not EvaluationCohort:raise TypeError('explicit cohort required')
+    if batch_size is not None and (type(batch_size) is not int or batch_size<1):raise ValueError('positive integer batch_size required')
+    if batch_size is None and type(cohort.to_dict()['inputs']) is dict:
+        raise ValueError('large cohort requires explicit batch_size; no automatic full-cohort inference')
     if memory_metric not in MEMORY_METRICS:raise ValueError('unsupported P29 memory metric')
     if memory_protocol is not None and (memory_metric!='cpu_rss_sampled_peak_bytes' or type(memory_protocol) is not MemoryProtocol):
         raise TypeError('MemoryProtocol applies only to explicit CPU RSS measurement')
@@ -323,26 +503,44 @@ def compare_performance_quality(baseline,candidate,cohort, *, precision='fp32',i
     if metric not in ('accuracy','macro_f1') or type(independent_samples) is not bool:raise ValueError('invalid comparison policy')
     rng=_rng_state()
     try:
-        return _result('P29',dict(comparison_version=2,cohort=cohort.to_dict(),baseline=_bundle(baseline,cohort,precision,iterations,memory_metric,memory_protocol),
-            candidate=_bundle(candidate,cohort,precision,iterations,memory_metric,memory_protocol),policy=dict(metric=metric,min_quality=min_quality,
+        policy=dict(metric=metric,min_quality=min_quality,
             max_quality_drop=max_quality_drop,max_latency_regression=max_latency_regression,
             independent_samples=independent_samples,memory_metric=memory_metric,max_memory_regression=max_memory_regression,
-            memory_protocol=asdict(memory_protocol or MemoryProtocol()) if memory_metric=='cpu_rss_sampled_peak_bytes' else None)))
+            memory_protocol=asdict(memory_protocol or MemoryProtocol()) if memory_metric=='cpu_rss_sampled_peak_bytes' else None)
+        if batch_size is not None:policy['batch_size']=batch_size
+        return _result('P29',dict(comparison_version=3 if batch_size is not None else 2,cohort=cohort.to_dict(),
+            baseline=_bundle(baseline,cohort,precision,iterations,memory_metric,memory_protocol,batch_size),
+            candidate=_bundle(candidate,cohort,precision,iterations,memory_metric,memory_protocol,batch_size),policy=policy))
     finally:_restore_rng(rng)
 
 
 def _precision_binding(evaluation,proof):
-    if (proof['policy'] not in ('fp32','fp64','bf16','int8_dynamic')
+    if (proof['policy'] not in ('fp32','fp64','bf16','amp_fp16','int8_dynamic')
             or evaluation['source']['model_state_sha256']!=proof['adapter_state_sha256']):raise ValueError('precision/source mismatch')
     recipe=proof['p08_recipe']
     expected=dict(batches=len(evaluation['accounting']['batch_sizes']),
-        native_output_dtype={'fp32':'torch.float32','fp64':'torch.float64','bf16':'torch.bfloat16','int8_dynamic':'torch.float32'}[proof['policy']],
+        native_output_dtype={'fp32':'torch.float32','fp64':'torch.float64','bf16':'torch.bfloat16','amp_fp16':'torch.float16','int8_dynamic':'torch.float32'}[proof['policy']],
         operators=['quantized::linear_dynamic'] if proof['policy']=='int8_dynamic' else [])
     if _hash(proof['verified_execution'])!=_hash(expected):raise ValueError('missing/mismatched precision execution evidence')
     if proof['policy']=='int8_dynamic':
         if (recipe['quantization_recipe']!='dynamic_qint8_Linear' or recipe['execution_proof']['weight_dtype']!='torch.qint8'
                 or proof['execution_guard']!='per_batch_quantized::linear_dynamic'):raise ValueError('missing quantized execution guard')
     elif proof['execution_guard']!='per_batch_dtype':raise ValueError('missing dtype execution guard')
+    if proof.get('execution_version')==2:
+        rows=proof['batch_observations'];device=proof['device'];low=proof['policy'] in ('bf16','amp_fp16')
+        if device!=evaluation['source']['device'] or len(rows)!=expected['batches']:raise ValueError('precision device/batch mismatch')
+        for row,n in zip(rows,evaluation['accounting']['batch_sizes']):
+            shape=row['output_shape'];classes=len(evaluation['configuration']['class_names'])
+            valid_shape=(shape in ([n],[n,1]) if evaluation['configuration']['task']=='binary' else shape==[n,classes])
+            if (row['input_shape'][0]!=n or not valid_shape or row['native_output_dtype']!=expected['native_output_dtype']
+                    or row['device']!=device or row['finite'] is not True or row['autocast_enabled']!=low
+                    or row['autocast_dtype']!=(expected['native_output_dtype'] if low else None)
+                    or (low and not row['operators'])):raise ValueError('invalid precision batch proof')
+            master='torch.float64' if proof['policy']=='fp64' else 'torch.float32'
+            if any(op['operator'] not in ('Conv2d','Linear') or op['device']!=device
+                   or op['output_dtype']!=expected['native_output_dtype'] or op['weight_dtype']!=master
+                   or op['autocast_enabled']!=low or op['autocast_dtype']!=(expected['native_output_dtype'] if low else None)
+                   for op in row['operators']):raise ValueError('invalid precision operator proof')
 
 
 def _performance_binding(bundle,evaluation,cohort):
@@ -350,10 +548,16 @@ def _performance_binding(bundle,evaluation,cohort):
     policy=bundle['precision']['policy']
     if policy not in ('fp32','fp64') or p['configuration']['precision']!=policy:
         raise ValueError('unsupported/mismatched timing precision')
-    x,_=_cohort(cohort).tensors();x=x.double() if policy=='fp64' else x.float()
+    selection=bundle.get('inference_batch')
+    batch_size=selection['requested_batch_size'] if selection is not None else None
+    if batch_size is not None and (type(batch_size) is not int or batch_size<1):raise ValueError('invalid inference batch size')
+    x=_timing_input(cohort,policy,batch_size)
+    if selection is not None and selection!=_inference_batch(cohort,x,batch_size):raise ValueError('invalid benchmark subset identity')
+    count=len(cohort['targets']);step=batch_size or len(x)
+    sizes=[min(step,count-start) for start in range(0,count,step)]
     expected=hashlib.sha256(x.contiguous().numpy().tobytes()).hexdigest()
     if (p['input']['content_sha256']!=expected or p['input']['shape']!=list(x.shape)
-            or p['input']['dtype']!=str(x.dtype) or evaluation['accounting']['batch_sizes']!=[len(x)]):
+            or p['input']['dtype']!=str(x.dtype) or evaluation['accounting']['batch_sizes']!=sizes):
         raise ValueError('performance input differs from labeled cohort')
     if any(evaluation['provenance'][e]!=p['environment'][b] for e,b in
            (('python','python_version'),('torch','torch_version'),('platform','platform'))):
@@ -406,8 +610,25 @@ def _derive(feature,s):
         if s['baseline_precision']['policy']!='fp32':raise ValueError('FP32 quality baseline required')
         if any(s[k]['source_master_sha256']!=s['master_state_sha256'] for k in ('baseline_precision','candidate_precision')):
             raise ValueError('precision master source mismatch')
-        return dict(status='measured',accuracy=_delta(_score(a,'accuracy'),_score(b,'accuracy')),
+        if a['source']['device']!=b['source']['device']:raise ValueError('precision baseline device mismatch')
+        input_hash=hashlib.sha256()
+        for chunk in _input_chunks(c):input_hash.update(chunk.numpy().tobytes())
+        for key in ('baseline_precision','candidate_precision'):
+            proof=s[key]
+            if proof.get('execution_version')==2:
+                if proof['observed_input_stream_sha256']!=input_hash.hexdigest():raise ValueError('precision input stream mismatch')
+                ev=s['baseline'] if key=='baseline_precision' else s['candidate']
+                expected_hashes=list(_batch_input_hashes(c,ev['accounting']['batch_sizes']))
+                if [row['input_sha256'] for row in proof['batch_observations']]!=expected_hashes:raise ValueError('precision batch input mismatch')
+                if any(row['input_dtype']!=c['dtype'] or row['input_shape'][1:]!=_input_shape(c)[1:]
+                       for row in proof['batch_observations']):raise ValueError('precision input contract mismatch')
+        result=dict(status='measured',accuracy=_delta(_score(a,'accuracy'),_score(b,'accuracy')),
             macro_f1=_delta(_score(a,'macro_f1'),_score(b,'macro_f1')),candidate_precision=s['candidate_precision']['policy'])
+        if s['baseline_precision'].get('execution_version')==2:
+            pa=_predicted(a['raw'],a['configuration']);pb=_predicted(b['raw'],b['configuration'])
+            changes=[dict(sample_id=i,target=y,baseline=x,candidate=z) for i,y,x,z in zip(c['sample_ids'],c['targets'],pa,pb) if x!=z]
+            result.update(paired_samples=len(pa),changed_predictions=len(changes),prediction_changes=changes,device=a['source']['device'])
+        return result
     if feature=='P24':
         from .performance.training import TrainingPerformanceResult
         c=s['cohort'];_cohort(c);_fraction(s['target']);_integer(s['epochs'],1,10);_integer(s['cadence'],1,s['epochs'])
@@ -454,7 +675,9 @@ def _derive(feature,s):
             variance_scope='reached_runs_only_not_censor_adjusted',timing_scope='sum_P19_training_s_excludes_evaluation')
     if feature=='P29':
         version=s.get('comparison_version',1)
-        if type(version) is not int or version not in (1,2):raise ValueError('invalid P29 comparison version')
+        if type(version) is not int or version not in (1,2,3):raise ValueError('invalid P29 comparison version')
+        if version<3 and ('batch_size' in s['policy'] or any('inference_batch' in s[k] for k in ('baseline','candidate'))):
+            raise ValueError('batched evidence requires P29 comparison_version=3')
         if version==1 and (any('memory' in s[k] for k in ('baseline','candidate'))
                 or any(k in s['policy'] for k in ('memory_metric','memory_protocol','max_memory_regression'))):
             raise ValueError('memory-aware evidence requires P29 comparison_version=2')
@@ -462,6 +685,14 @@ def _derive(feature,s):
         for k in ('min_quality','max_quality_drop','max_latency_regression'):_fraction(policy[k])
         if type(policy['independent_samples']) is not bool:raise ValueError('explicit independence policy required')
         a,b=s['baseline'],s['candidate'];ea,eb=_evaluation(a['evaluation'],c),_evaluation(b['evaluation'],c)
+        if version==3:
+            size=policy.get('batch_size')
+            if type(size) is not int or size<1:raise ValueError('invalid comparison batch size')
+            if any(type(bundle.get('inference_batch')) is not dict for bundle in (a,b)):
+                raise ValueError('missing comparison inference batch')
+            if any(bundle['inference_batch']['requested_batch_size']!=size for bundle in (a,b)):
+                raise ValueError('comparison batch policy mismatch')
+            if a['inference_batch']!=b['inference_batch']:raise ValueError('model timing subsets differ')
         for bundle,evaluation in ((a,ea),(b,eb)):
             _precision_binding(evaluation,bundle['precision'])
             _performance_binding(bundle,evaluation,c)
@@ -486,9 +717,15 @@ def _derive(feature,s):
             quality_regression=qa-qb>policy['max_quality_drop'],latency_regression=(lb-la)/la>policy['max_latency_regression'],
             quality_significance=dict(status=status,p_value=pvalue,significant=significant,discordant_pairs=n,alpha=.05),
             timing_significance=dict(status='unsupported_no_independent_timing_experiments',p_value=None),compatibility=comparison)
-        if version==2:
+        if version in (2,3):
             from ._quality_memory import compare
-            return compare(a,b,c,policy,qa,la,qb,lb,result)
+            result=compare(a,b,c,policy,qa,la,qb,lb,result)
+        if version==3:
+            result.update(comparison_version=3,accuracy=_delta(_score(ea,'accuracy'),_score(eb,'accuracy')),
+                macro_f1=_delta(_score(ea,'macro_f1'),_score(eb,'macro_f1')),
+                latency=dict(baseline_mean_ms=la,candidate_mean_ms=lb,delta_ms=lb-la,relative_change=(lb-la)/la),
+                inference_protocol=dict(requested_batch_size=policy['batch_size'],quality_samples=len(c['targets']),
+                    timed_batch_samples=a['inference_batch']['sample_count'],timing_scope='resident_first_ordered_evaluation_batch'))
         return result
     raise ValueError('unsupported quality feature')
 
@@ -550,10 +787,12 @@ class QualityExperimentResult:
                     walk(dict(run_id=s[key]['performance']['identity']['run_id'],precision=s[key]['precision'],
                               model_sha256=s[key]['benchmark_model_sha256'],host_id=s[key]['host_id']),
                          'provenance.'+key+'.benchmark')
-                    if s.get('comparison_version')==2:
+                    if s.get('comparison_version') in (2,3):
                         walk(dict(binding=s[key]['memory']['binding'],metric=s[key]['memory']['metric'],
                                   source_result_id=s[key]['memory']['source']['result_id'] if s[key]['memory']['source'] else None),
                              'provenance.'+key+'.memory')
+                    if s.get('comparison_version')==3:
+                        walk(s[key]['inference_batch'],'provenance.'+key+'.inference_batch')
         if feature=='P29':walk(s['policy'],'provenance.policy')
         _write_export(path,_csv_text(['feature_id','experiment_id','source_sha256','field','value'],rows),overwrite)
 

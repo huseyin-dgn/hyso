@@ -157,7 +157,8 @@ class EvaluationResult:
             fields = {"kind", "source_id"}
             if source["kind"] == "model_inference":
                 fields |= {"model_type", "model_state_sha256", "device", "execution", "dataset_type", "sampler", "num_workers"}
-                if (source["device"] != "cpu" or source["sampler"] != "sequential" or type(source["num_workers"]) is not int
+                valid_device=(source['device']=='cpu' or (type(source['device']) is str and source['device'].startswith('cuda:') and source['device'][5:].isdigit()))
+                if (not valid_device or source["sampler"] != "sequential" or type(source["num_workers"]) is not int
                         or source["num_workers"] != 0 or source["execution"] != "isolated_deepcopy_eval_inference_mode"
                         or len(source["model_state_sha256"]) != 64
                         or any(c not in "0123456789abcdef" for c in source["model_state_sha256"])):
@@ -257,17 +258,28 @@ def evaluate_predictions(targets, predictions, *, class_names, split, task="mult
                    dict(expected_samples=n, batch_sizes=[n] if n else []))
 
 
-def _model_hash(model):
-    return model_hash(model)
+def _model_hash(model,*,allow_device=False):
+    if not allow_device:return model_hash(model)
+    # Explicit CUDA evaluation uses the same historical byte encoding, with
+    # completed tensor transfers. Default CPU evidence capture is unchanged.
+    digest=hashlib.sha256()
+    for name,tensor in list(model.named_parameters())+list(model.named_buffers()):
+        if tensor.device.type not in ('cpu','cuda') or tensor.layout!=torch.strided or tensor.is_complex():
+            raise NotImplementedError('dense real CPU/CUDA model tensors required')
+        digest.update(json.dumps([name,str(tensor.dtype),list(tensor.shape)]).encode())
+        digest.update(tensor.detach().cpu().contiguous().reshape(-1).view(torch.uint8).numpy().tobytes())
+    return digest.hexdigest()
 
 
 def evaluate_classification(model, loader, *, class_names, split, task="multiclass", zero_division=0,
-                            source_id=None, max_samples=1000000, capture_evidence=False, capture_structure=False):
-    """Opt-in CPU inference on an isolated deepcopy; never trains or moves model.
+                            source_id=None, max_samples=1000000, capture_evidence=False, capture_structure=False,device='cpu'):
+    """Inference on an isolated deepcopy; default CPU, explicit device opt-in.
 
     Finite standard sequential map-style loaders, num_workers=0, no drop-last.
     RNG and loader generator are restored on success and every failure path.
     User-defined non-tensor Python state/external side effects are not sandboxed.
+    CUDA moves only the isolated copy and materializes completed logits on CPU;
+    producer/structure capture remains CPU-only. The caller model is not moved.
     capture_evidence=True emits schema 2 producer evidence v1 using this same
     iteration. Hashes identify ordered post-collation tensors independently of
     batch partitioning; they do not verify origin, split or preprocessing code.
@@ -278,6 +290,12 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
     assertion of original/copy behavior or architecture equivalence.
     """
     config = _metadata(task, class_names, split, zero_division)
+    execution_device=torch.device(device)
+    if execution_device.type not in ('cpu','cuda'):raise NotImplementedError('evaluation device unsupported')
+    if execution_device.type=='cuda':
+        if capture_evidence or capture_structure:raise NotImplementedError('CUDA producer/structure capture unsupported')
+        if not torch.cuda.is_available():raise NotImplementedError('CUDA unavailable; no CPU fallback')
+        execution_device=torch.device('cuda',torch.cuda.current_device() if execution_device.index is None else execution_device.index)
     if type(capture_evidence) is not bool:
         raise ValueError("capture_evidence must be bool")
     if type(capture_structure) is not bool:
@@ -304,7 +322,8 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
             raise ValueError("finite evaluation budget exceeded")
         if capture_structure and expected == 0:
             raise ValueError('structure binding requires nonempty evaluation')
-        state_hash = _model_hash(model)
+        def state_hash_of(value):return _model_hash(value,allow_device=execution_device.type=='cuda')
+        state_hash = state_hash_of(model)
         candidate = copy.deepcopy(model)
         original_objects = {id(m) for m in model.modules()} | {id(t) for t in model.parameters()} | {id(t) for t in model.buffers()}
         if any(id(obj) in original_objects for obj in [*candidate.modules(), *candidate.parameters(), *candidate.buffers()]):
@@ -313,7 +332,8 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
         if any(t.numel() and t.untyped_storage().data_ptr() in original_storage for t in [*candidate.parameters(), *candidate.buffers()]):
             raise ValueError("model copy aliases original storage")
         candidate.eval()
-        baseline = _model_hash(candidate)
+        if execution_device.type=='cuda':candidate.to(execution_device)
+        baseline = state_hash_of(candidate)
         if capture_evidence and baseline != state_hash:
             raise ValueError("isolated model state differs from original")
         structure_before = None
@@ -346,13 +366,15 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
                 _labels(normalized,len(class_names))
                 if stream is not None:
                     stream.update(inputs, labels)
-                logits = candidate(inputs.clone())
-                if (not isinstance(logits,torch.Tensor) or logits.device.type != "cpu"
+                logits = candidate(inputs.clone().to(execution_device))
+                if (not isinstance(logits,torch.Tensor) or logits.device != execution_device
                         or logits.dtype not in (torch.float32,torch.float64) or not torch.isfinite(logits).all()):
                     raise ValueError("finite CPU tensor logits required")
+                # Materialization waits for real CUDA completion before recording.
+                logits=logits.detach().cpu()
                 raw = dict(targets=normalized, predictions=logits.tolist(), prediction_type="logits")
                 _predicted(raw,config)
-                if _model_hash(candidate) != baseline or any(m.training for m in candidate.modules()):
+                if state_hash_of(candidate) != baseline or any(m.training for m in candidate.modules()):
                     raise ValueError("model mutated during evaluation")
                 targets.extend(normalized); predictions.extend(logits.reshape(n).tolist() if task=="binary" else logits.tolist()); sizes.append(n)
         if len(sizes) != expected_batches or len(targets) != expected or len(loader.dataset) != expected:
@@ -360,17 +382,17 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
         structure = None
         if capture_structure:
             structure_after = capture_model_structure(candidate)
-            post_state = _model_hash(candidate)
+            post_state = state_hash_of(candidate)
             if structure_before.content_sha256 != structure_after.content_sha256:
                 raise ValueError('evaluated model structure changed during evaluation')
             if post_state != baseline:
                 raise ValueError('evaluated model state changed during structure capture')
             structure = (structure_before, structure_after, baseline, post_state)
-        if _model_hash(model) != state_hash:
+        if state_hash_of(model) != state_hash:
             raise ValueError("original model changed during evaluation")
         return _result(dict(targets=targets,predictions=predictions,prediction_type="logits"),config,
             dict(kind="model_inference",source_id=source_id,model_type=type(model).__module__+"."+type(model).__qualname__,
-                 model_state_sha256=state_hash,device="cpu",execution="isolated_deepcopy_eval_inference_mode",
+                 model_state_sha256=state_hash,device=str(execution_device),execution="isolated_deepcopy_eval_inference_mode",
                  dataset_type=type(loader.dataset).__module__+"."+type(loader.dataset).__qualname__,
                  sampler="sequential",num_workers=0),dict(expected_samples=expected,batch_sizes=sizes),
             evidence=producer_evidence(model, state_hash, stream, config, source_id) if stream is not None else None,
