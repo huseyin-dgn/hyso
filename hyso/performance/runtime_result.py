@@ -92,12 +92,24 @@ class RuntimeResult:
         from .providers import _diagnostics
         return _diagnostics(data['evidence'],data['analysis'])
 
+    def device_diagnostics(self, *, baseline_device=None):
+        """P34 offline pairwise comparisons; never launches inference or sensors."""
+        data=RuntimeResult(self.to_dict()).to_dict()
+        if data['feature_id']!='P34':raise TypeError('P34 result required')
+        from ._device_diagnostics import _diagnostics
+        return _diagnostics(data['evidence'],data['analysis'],baseline_device=baseline_device)
+
     def to_json(self, path, *, overwrite=False):
         _write_export(path, json.dumps(self.to_dict(), indent=2, allow_nan=False)+'\n', overwrite)
 
     def to_csv(self, path, *, overwrite=False):
         data=self.to_dict();rows=[]
-        if data['feature_id'] in ('P34','P35'):
+        if data['feature_id'] in ('P34','P35') or (data['feature_id']=='P33' and
+                data['evidence'].get('energy_version')==2) or (data['feature_id']=='P32' and
+                data['evidence'].get('trend_version')==2) or (data['feature_id']=='P31' and
+                ((data['evidence']['header'] is not None and data['evidence']['header'].get('stability_version')==2)
+                 or 'resource_monitor' in data['evidence']['controller'])) or (data['feature_id']=='P30'
+                and 'max_journal_bytes' in data['evidence']['request']['protocol']):
             # A canonical envelope preserves types, empty collections and raw events.
             _write_export(path,_csv_text(['feature_id','result_id','source_sha256','payload'],
                 [dict(feature_id=data['feature_id'],result_id=data['result_id'],
@@ -129,7 +141,7 @@ class RuntimeResult:
             with open(path,encoding='utf-8',newline='') as source:
                 reader=csv.DictReader(source)
                 if reader.fieldnames!=['feature_id','result_id','source_sha256','payload']:
-                    raise ValueError('lossless P34/P35 evidence CSV required')
+                    raise ValueError('lossless runtime evidence CSV required')
                 rows=list(reader)
         finally:csv.field_size_limit(previous)
         if len(rows)!=1:raise ValueError('one evidence envelope required')

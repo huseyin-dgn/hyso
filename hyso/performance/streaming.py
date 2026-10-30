@@ -29,6 +29,7 @@ class StreamSource:
 
 @dataclass(frozen=True)
 class StreamProtocol:
+    """Finite experiment plan. Defaults describe a smoke run, not hardware limits."""
     max_frames: int = 16
     queue_capacity: int = 2
     queue_policy: str = 'block'
@@ -37,13 +38,12 @@ class StreamProtocol:
     startup_timeout_seconds: float = 45.
     heartbeat_timeout_seconds: float = 5.
     max_runtime_seconds: float = 30.
+    max_journal_bytes: int = 128*1024**2
 
     def __post_init__(self):
-        _int(self.max_frames,1,10000);_int(self.queue_capacity,1,16)
+        _int(self.max_frames,1);_int(self.queue_capacity,1);_int(self.max_journal_bytes,65536)
         for v in (self.late_after_seconds,self.startup_timeout_seconds,self.heartbeat_timeout_seconds,self.max_runtime_seconds):_number(v,.001)
         if self.queue_policy not in ('block','drop_newest') or type(self.pace_video) is not bool:raise ValueError('unknown stream queue/pacing policy')
-        if self.startup_timeout_seconds>120 or self.heartbeat_timeout_seconds>60 or self.max_runtime_seconds>3600:
-            raise ValueError('bounded stream deadlines required')
 
 
 def measure_streaming(source, processor_recipe, directory, *, protocol=StreamProtocol()):
@@ -53,7 +53,7 @@ def measure_streaming(source, processor_recipe, directory, *, protocol=StreamPro
     p=protocol
     root=_run_owned(directory,'streaming',dict(source=asdict(source),recipe=asdict(processor_recipe),protocol=asdict(p)),
         startup_timeout=p.startup_timeout_seconds,heartbeat_timeout=p.heartbeat_timeout_seconds,
-        max_runtime=p.max_runtime_seconds,max_bytes=128*1024**2)
+        max_runtime=p.max_runtime_seconds,max_bytes=p.max_journal_bytes)
     return _result('P30',_read_journal(root))
 
 
@@ -65,11 +65,28 @@ def _analyze_stream(e):
         raise ValueError('stream controller association/cleanup mismatch')
     if header is None:
         if rows or e['chunks'] or terminal:raise ValueError('stream rows without capture header')
-        return dict(status='aborted',reason=c['reason'] or 'capture_or_processor_setup_failed',received=0,processed=0,dropped=0,pending=0)
+        analysis=dict(status='aborted',reason=c['reason'] or 'capture_or_processor_setup_failed',received=0,processed=0,dropped=0,pending=0)
+        if 'max_journal_bytes' in e['request']['protocol']:
+            from ._stream_diagnostics import _diagnostics
+            analysis.update(processed_per_second=None,late_processed=0,terminal_accounting_complete=False)
+            analysis.update(_diagnostics(e,analysis))
+        return analysis
     if header['run_id']!=c['token'] or header['pid']!=c['launcher_pid']:raise ValueError('stream run identity mismatch')
+    if header['clock_id']!=c['token']+':perf_counter_ns':raise ValueError('stream clock domain mismatch')
+    if 'lifecycle_version' in header and header['lifecycle_version']!=2:raise ValueError('unsupported lifecycle version')
     if any(header['capture'][k]!=e['request']['source'][k] for k in ('kind','location','provenance')):
         raise ValueError('capture source association mismatch')
-    _int(header['target_frames'],1,p.max_frames)
+    source=e['request']['source']
+    expected_target=p.max_frames
+    if source['kind']=='video_file':
+        _digest(header['capture']['file_sha256']);_int(header['capture']['declared_frames'],1)
+        expected_target=min(p.max_frames,header['capture']['declared_frames'])
+    _int(header['target_frames'],1)
+    if header['target_frames']!=expected_target:raise ValueError('stream target association mismatch')
+    source_recipe=header['processor_source'];requested_recipe=e['request']['recipe']
+    if any(source_recipe[k]!=requested_recipe[k] for k in ('factory','configuration')):
+        raise ValueError('stream processor recipe association mismatch')
+    if source_recipe['module_sha256'] is not None:_digest(source_recipe['module_sha256'])
     previous=_hash(header);cursor=0
     for i,chunk in enumerate(e['chunks']):
         n=chunk['rows'];_int(n,1,64)
@@ -77,49 +94,77 @@ def _analyze_stream(e):
         previous=_hash(body);cursor+=n
         if chunk['name']!=f'chunk-{i:06d}.json' or chunk['sha256']!=previous:raise ValueError('stream journal hash mismatch')
     if cursor!=len(rows):raise ValueError('stream chunk accounting mismatch')
-    states={};pending_ids=set();queue=deque();inflight=None;received=processed=dropped=late=0;last_ns=0;max_queue=0;blocks={};blocked_ns=0;errors=[];latencies=[]
+    states={};pending_ids=set();queue=deque();inflight=None;received=processed=dropped=late=0;last_ns=0;max_queue=0;blocks={};blocked_ns=0;errors=[];latencies=[];read_end=0
+    unadmitted=None;producer_ready_ns=0
     for i,r in enumerate(rows):
+        _int(r['index']);_int(r['queue_depth'])
         if r['index']!=i:raise ValueError('stream sequence mismatch')
         stamp=r['timestamp_ns'];_int(stamp,last_ns);last_ns=stamp;kind=r['event'];frame=r.get('frame_id')
+        if r.get('clock_id',header['clock_id'])!=header['clock_id']:raise ValueError('mixed stream clock domains')
         if kind=='received':
+            if unadmitted is not None:raise ValueError('next capture before prior frame admission/drop')
             if frame!=str(received) or frame in states:raise ValueError('duplicate/reordered frame ID')
-            _digest(r['content_sha256']);_int(r['read_start_ns']);_int(r['read_end_ns'],r['read_start_ns'])
+            _digest(r['content_sha256']);_int(r['read_start_ns'],max(read_end,producer_ready_ns));_int(r['read_end_ns'],r['read_start_ns'])
             if r['read_end_ns']>stamp:raise ValueError('read completion after receive')
+            read_end=r['read_end_ns']
+            assigned=r['frame_assigned_ns'] if header.get('lifecycle_version')==2 else r.get('frame_assigned_ns',stamp)
+            _int(assigned,read_end)
+            if assigned>stamp:raise ValueError('frame assignment after receive')
+            if 'frame_shape' in r:
+                shape=r['frame_shape']
+                if type(shape) is not list or len(shape)!=3 or shape[2]!=3:raise ValueError('invalid BGR frame shape')
+                for dimension in shape:_int(dimension,1)
+                _int(r['frame_nbytes'],1)
+                if r['frame_nbytes']!=math.prod(shape):raise ValueError('frame byte evidence mismatch')
             pts=r['media_pts_ms']
             if pts is not None:_number(pts)
-            received+=1;pending_ids.add(frame);states[frame]=dict(state='received',receive_ns=stamp,read_start_ns=r['read_start_ns'])
+            received+=1;pending_ids.add(frame);unadmitted=frame
+            states[frame]=dict(state='received',receive_ns=stamp,read_start_ns=r['read_start_ns'])
         elif kind=='enqueued':
             if frame not in states or states[frame]['state']!='received' or len(queue)>=p.queue_capacity:raise ValueError('invalid queue admission')
-            queue.append(frame);states[frame]['state']='queued'
+            if frame in blocks:raise ValueError('queue admission before backpressure end')
+            queue.append(frame);states[frame]['state']='queued';states[frame]['enqueued_ns']=stamp
+            unadmitted=None;producer_ready_ns=stamp
         elif kind=='dequeued':
             if not queue or queue.popleft()!=frame or inflight is not None:raise ValueError('invalid queue dispatch')
-            states[frame]['state']='processing';inflight=frame
+            states[frame]['state']='processing';states[frame]['dequeued_ns']=stamp;inflight=frame
         elif kind=='processed':
             if frame!=inflight or states[frame]['state']!='processing':raise ValueError('invalid/duplicate processing completion')
-            _int(r['process_start_ns'],states[frame]['receive_ns']);_int(r['process_end_ns'],r['process_start_ns'])
+            _int(r['process_start_ns'],states[frame]['dequeued_ns']);_int(r['process_end_ns'],r['process_start_ns'])
             if r['process_end_ns']>stamp:raise ValueError('processing after completion event')
-            stages=r['stages'];last=r['process_start_ns']
+            stages=r['stages'];last=r['process_start_ns'];stage_names=set()
             for stage in stages:
                 _name(stage['name']);_int(stage['start_ns'],last);_int(stage['end_ns'],stage['start_ns'])
+                if stage['name'] in stage_names:raise ValueError('duplicate processing stage')
+                stage_names.add(stage['name'])
                 if stage['end_ns']>r['process_end_ns']:raise ValueError('stage outside processing window')
                 last=stage['end_ns']
+            if header['processor'].get('kind')=='frame_model_inference':
+                if not {'preprocess','inference'}<=stage_names:raise ValueError('missing model inference stages')
+                if [s['name'] for s in stages if s['name'] in ('preprocess','inference','postprocess')] not in (
+                        ['preprocess','inference'],['preprocess','inference','postprocess']):
+                    raise ValueError('invalid model stage order')
             elapsed=stamp-states[frame]['receive_ns'];late+=elapsed>p.late_after_seconds*1e9
             latencies.append(elapsed/1e6);processed+=1;states[frame]['state']='processed';pending_ids.remove(frame);inflight=None
         elif kind=='dropped':
             if frame not in states or states[frame]['state'] in ('processed','dropped'):raise ValueError('invalid/duplicate drop')
+            if frame in blocks:raise ValueError('drop before backpressure end')
+            if r['reason']=='queue_full' and (states[frame]['state']!='received' or p.queue_policy!='drop_newest' or len(queue)!=p.queue_capacity):
+                raise ValueError('unsupported queue-full drop evidence')
+            if r['reason']=='processing_error' and frame!=inflight:raise ValueError('processing error without dispatch')
             if states[frame]['state']=='queued':
                 if not queue or queue.popleft()!=frame:raise ValueError('drop queue order mismatch')
             if frame==inflight:inflight=None
-            if r['reason']=='queue_full' and (p.queue_policy!='drop_newest' or len(queue)!=p.queue_capacity):
-                raise ValueError('unsupported queue-full drop evidence')
             if r['reason'] not in ('queue_full','aborted','processing_error'):raise ValueError('unknown drop disposition')
             if r['reason']!='queue_full':errors.append('drop: '+r['reason'])
+            if frame==unadmitted:unadmitted=None;producer_ready_ns=stamp
             states[frame]['state']='dropped';pending_ids.remove(frame);dropped+=1
         elif kind=='backpressure_start':
-            if frame in blocks or len(queue)!=p.queue_capacity or p.queue_policy!='block':raise ValueError('invalid backpressure boundary')
+            if blocks or frame not in states or states[frame]['state']!='received' or len(queue)!=p.queue_capacity or p.queue_policy!='block':raise ValueError('invalid backpressure boundary')
             blocks[frame]=stamp
         elif kind=='backpressure_end':
             if frame not in blocks:raise ValueError('unpaired backpressure boundary')
+            if len(queue)>=p.queue_capacity:raise ValueError('backpressure ended while FIFO remains full')
             blocked_ns+=stamp-blocks.pop(frame)
         elif kind=='failure':_name(r['reason']);errors.append(r['reason'])
         else:raise ValueError('unknown stream event')
@@ -129,13 +174,17 @@ def _analyze_stream(e):
     if received>p.max_frames:raise ValueError('capture budget exceeded')
     complete=False
     if terminal is not None:
+        for key in ('received','processed','dropped','rows'):_int(terminal[key])
+        if terminal['status'] not in ('completed','failed') or type(terminal['closed']) is not bool:raise ValueError('invalid stream terminal')
         if (terminal['chunks']!=e['chunks'] or terminal['last_chunk_sha256']!=previous or terminal['rows']!=len(rows)
                 or terminal['received']!=received or terminal['processed']!=processed or terminal['dropped']!=dropped):
             raise ValueError('stream terminal ledger mismatch')
+        if terminal['status']=='completed' and (pending_ids or blocks or inflight is not None):
+            raise ValueError('completed terminal with incomplete frame lifecycle')
         complete=(terminal['status']=='completed' and terminal['closed'] is True and received==header['target_frames']
             and not errors and not blocks and received==processed+dropped and c['reason'] is None and c['exit_code']==0 and not e['incomplete_tail'])
     elapsed=(last_ns-rows[0]['read_start_ns'])/1e9 if rows and rows[0]['event']=='received' else None
-    return dict(status='completed' if complete else 'aborted',reason=None if complete else c['reason'] or
+    analysis=dict(status='completed' if complete else 'aborted',reason=None if complete else c['reason'] or
         ((terminal['reason'] or 'incomplete_frame_coverage') if terminal else 'missing_terminal'),received=received,processed=processed,dropped=dropped,
         pending=received-processed-dropped,late_processed=late,max_queue_depth=max_queue,backpressure_seconds=blocked_ns/1e9,
         elapsed_seconds=elapsed,processed_per_second=processed/elapsed if elapsed and complete else None,
@@ -144,6 +193,11 @@ def _analyze_stream(e):
         terminal_accounting_complete=complete,accounting_scope='full_run' if complete else 'committed_prefix_uncommitted_tail_unknown',
         capture_clock='host_read_brackets_not_sensor_exposure',media_clock='separate_no_cross_clock_duration',
         conservation='received=processed+dropped+pending')
+    # Preserve the derived schema of previously saved P30 envelopes.
+    if header.get('lifecycle_version')==2:
+        from ._stream_diagnostics import _diagnostics
+        analysis.update(_diagnostics(e,analysis))
+    return analysis
 
 
 class FrameInferenceProcessor:
@@ -153,7 +207,7 @@ class FrameInferenceProcessor:
         import torch
         from hyso.benchmark.runner import _profile,_descriptor,_Snapshot,_output
         if len(size)!=2:raise ValueError('explicit H,W required')
-        for v in size:_int(v,1,4096)
+        for v in size:_int(v,1)
         self.torch=torch;self.size=tuple(size);self.model=copy.deepcopy(model).cpu().float().eval()
         placeholder=torch.empty(0);modules,entries=_profile(self.model,torch.float32,torch.device('cpu'))
         descriptor,digest=_descriptor(modules,entries);self.guard=_Snapshot(modules,entries,placeholder);self.output_check=_output
@@ -193,7 +247,7 @@ def _worker_stream(root,request):
         capture.release();processor.close();raise ValueError('video pacing requires declared positive FPS')
     target=min(p.max_frames,int(count)) if source.kind=='video_file' else p.max_frames
     digest=_file_hash(source.location) if source.kind=='video_file' else None
-    header=dict(run_id=request['token'],pid=os.getpid(),clock_id=request['token']+':perf_counter_ns',
+    header=dict(run_id=request['token'],pid=os.getpid(),clock_id=request['token']+':perf_counter_ns',lifecycle_version=2,
         target_frames=target,capture=dict(kind=source.kind,location=source.location,provenance=source.provenance,
             file_sha256=digest,backend=capture.getBackendName(),opencv_version=cv2.__version__,declared_fps=fps if math.isfinite(fps) and fps>0 else None,
             declared_frames=int(count) if source.kind=='video_file' else None),processor=processor.identity,processor_source=processor_source)
@@ -214,12 +268,14 @@ def _worker_stream(root,request):
                     if state['stop']:break
                 a=time.perf_counter_ns();ok,frame=capture.read();b=time.perf_counter_ns()
                 if not ok:raise RuntimeError('capture ended before target; decode/device failure')
-                if frame.dtype.name!='uint8' or frame.ndim!=3 or frame.shape[2]!=3 or frame.nbytes>16*1024**2:
-                    raise ValueError('bounded uint8 BGR frame required')
+                if frame.dtype.name!='uint8' or frame.ndim!=3 or frame.shape[2]!=3 or not frame.size:
+                    raise ValueError('nonempty uint8 BGR frame required')
                 pts=capture.get(cv2.CAP_PROP_POS_MSEC);frame_id=str(index)
+                assigned=time.perf_counter_ns()
                 with condition:
                     state['received']+=1
-                    event('received',frame_id,read_start_ns=a,read_end_ns=b,content_sha256=hashlib.sha256(frame.tobytes()).hexdigest(),
+                    event('received',frame_id,read_start_ns=a,read_end_ns=b,frame_assigned_ns=assigned,
+                        frame_shape=list(frame.shape),frame_nbytes=int(frame.nbytes),content_sha256=hashlib.sha256(frame.tobytes()).hexdigest(),
                         media_pts_ms=pts if math.isfinite(pts) and pts>=0 else None)
                     if p.queue_policy=='drop_newest' and len(queue)==p.queue_capacity:
                         state['dropped']+=1;event('dropped',frame_id,reason='queue_full');continue

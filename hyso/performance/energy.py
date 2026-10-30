@@ -10,6 +10,7 @@ from .runtime_result import RuntimeResult, _result, _int, _number, _name
 
 
 def _parse_power(text, *, device_id, clock_id, start_ns, end_ns):
+    _name(clock_id);_int(start_ns);_int(end_ns,start_ns)
     rows=list(csv.reader(text.strip().splitlines(),skipinitialspace=True))
     if len(rows)!=1 or len(rows[0])!=6:raise ValueError('one physical device / six sensor fields required')
     identity,pci,name,watts,temp,thermal=[v.strip() for v in rows[0]]
@@ -24,7 +25,8 @@ def _parse_power(text, *, device_id, clock_id, start_ns, end_ns):
     return dict(status='measured' if power is not None else 'unsupported',reason=None if power is not None else 'power_sensor_unavailable',
         device_id=identity,pci_bus_id=pci,device_name=name,clock_id=clock_id,query_start_ns=start_ns,query_end_ns=end_ns,
         timestamp_ns=(start_ns+end_ns)//2,watts=power,unit='W',temperature_c=temperature,thermal_slowdown=thermal,
-        backend='nvidia-smi.power.draw.instant',scope='physical_board',sensor_accuracy_watts=5.,
+        backend='nvidia-smi.power.draw.instant',scope='physical_board',sensor_accuracy_watts=None,
+        sensor_accuracy_reason='query_does_not_report_device_specific_accuracy_or_calibration',
         time_association='host_query_midpoint_bracket_sensor_refresh_latency_unknown')
 
 
@@ -57,16 +59,18 @@ def _validate_power_sample(row, device_id, clock_id, *, require_power=True):
     if not row['query_start_ns']<=row['timestamp_ns']<=row['query_end_ns']:raise ValueError('power timestamp outside query bracket')
     if row['watts'] is not None:_number(row['watts'])
     elif require_power:raise ValueError('missing measured power')
-    _number(row['sensor_accuracy_watts'])
+    if row['sensor_accuracy_watts'] is not None:_number(row['sensor_accuracy_watts'])
+    else:_name(row.get('sensor_accuracy_reason'))
     if row['temperature_c'] is not None:_number(row['temperature_c'],-273.15)
 
 
 def _integral(samples,start_ns,end_ns,max_gap_ns):
     """Piecewise-linear trapezoid of measured samples, clipped to exact host boundaries."""
     _int(start_ns);_int(end_ns,start_ns+1);_number(max_gap_ns,1)
-    if len(samples)<2:return None,'insufficient_samples'
+    for sample in samples:_int(sample['timestamp_ns']);_number(sample['watts'])
     times=[s['timestamp_ns'] for s in samples]
     if any(b<=a for a,b in zip(times,times[1:])):raise ValueError('duplicate/nonmonotonic sensor timestamps')
+    if len(samples)<2:return None,'insufficient_samples'
     if times[0]>start_ns or times[-1]<end_ns:return None,'unbracketed_window'
     pieces=[];covered=0
     for a,b in zip(samples,samples[1:]):
@@ -84,10 +88,14 @@ def _integral(samples,start_ns,end_ns,max_gap_ns):
 def analyze_energy(stability_result, *, max_gap_seconds=2., idle_max_age_seconds=60.):
     if type(stability_result) is not RuntimeResult or stability_result.to_dict()['feature_id']!='P31':raise TypeError('P31 RuntimeResult required')
     _number(max_gap_seconds,.001);_number(idle_max_age_seconds,.001)
-    return _result('P33',dict(stability=stability_result.to_dict(),max_gap_seconds=max_gap_seconds,idle_max_age_seconds=idle_max_age_seconds))
+    return _result('P33',dict(energy_version=2,stability=stability_result.to_dict(),max_gap_seconds=max_gap_seconds,idle_max_age_seconds=idle_max_age_seconds))
 
 
 def _analyze_energy(e):
+    if 'energy_version' in e:
+        if type(e['energy_version']) is not int or e['energy_version']!=2:raise ValueError('unsupported energy evidence version')
+        from ._energy_diagnostics import _analyze
+        return _analyze(e)
     source=RuntimeResult(e['stability']).to_dict()
     if source['feature_id']!='P31':raise ValueError('P33 requires P31 completion/clock source')
     _number(e['max_gap_seconds'],.001);_number(e['idle_max_age_seconds'],.001)

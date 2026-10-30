@@ -43,6 +43,8 @@ def _retention(snapshot):
 
 
 def _fit(points):
+    for t,y in points:_int(t);_int(y)
+    if any(b[0]<=a[0] for a,b in zip(points,points[1:])):raise ValueError('nonmonotonic memory timestamps')
     if len(points)<3:return dict(status='insufficient_samples',n=len(points),slope_bytes_per_second=None,standard_error=None)
     origin=points[0][0];xs=[(t-origin)/1e9 for t,y in points];ys=[y for t,y in points]
     if any(b<=a for a,b in zip(xs,xs[1:])):raise ValueError('nonmonotonic memory timestamps')
@@ -60,11 +62,15 @@ def _fit(points):
 def analyze_memory_trend(stability_result, *, warmup_seconds=0., plateau_range_bytes=1024**2,slope_tolerance_bytes_per_second=1024.):
     if type(stability_result) is not RuntimeResult or stability_result.to_dict()['feature_id']!='P31':raise TypeError('P31 RuntimeResult required')
     for v in (warmup_seconds,plateau_range_bytes,slope_tolerance_bytes_per_second):_number(v)
-    return _result('P32',dict(stability=stability_result.to_dict(),warmup_seconds=warmup_seconds,
+    return _result('P32',dict(trend_version=2,stability=stability_result.to_dict(),warmup_seconds=warmup_seconds,
         plateau_range_bytes=plateau_range_bytes,slope_tolerance_bytes_per_second=slope_tolerance_bytes_per_second))
 
 
 def _analyze_trend(e):
+    if 'trend_version' in e:
+        if type(e['trend_version']) is not int or e['trend_version']!=2:raise ValueError('unsupported memory trend version')
+        from ._memory_trend_diagnostics import _analyze
+        return _analyze(e)
     source=RuntimeResult(e['stability']).to_dict()
     if source['feature_id']!='P31':raise ValueError('P32 requires P31 source')
     for k in ('warmup_seconds','plateau_range_bytes','slope_tolerance_bytes_per_second'):_number(e[k])

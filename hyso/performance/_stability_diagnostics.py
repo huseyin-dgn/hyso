@@ -141,7 +141,7 @@ def _diagnostics(evidence, analysis):
     elif controller['exit_code']!=0:
         interruption='abnormal_native_exit' if controller['exit_code']<0 or controller['exit_code']&0xffffffff>=0x80000000 else 'worker_exit_without_terminal'
     else:interruption=None
-    return dict(core_status='complete' if analysis['status']=='completed' else 'partial',advanced_status='partial',
+    result=dict(core_status='complete' if analysis['status']=='completed' else 'partial',advanced_status='partial',
         observed_work_seconds=analysis['duration_seconds'],requested_work_seconds=analysis['requested_duration_seconds'],
         verified_sample_span_seconds=(rows[-1]['timestamp_ns']-rows[0]['timestamp_ns'])/1e9 if len(rows)>1 else None,
         controller_elapsed_seconds=controller['elapsed_seconds'],completed=analysis['completed'],successful_steps=analysis['steps'],
@@ -169,3 +169,7 @@ def _diagnostics(evidence, analysis):
             'Boundary allocator/RSS samples can miss transients; memory deltas do not establish a leak or slowdown cause.',
             'Drift excludes gap/idle intervals without filling missing data; population step dispersion is not a latency quantile.',
             'Thermal pairs use host query brackets; sensor refresh latency is unknown; association is not causation.'])
+    if header.get('stability_version')==2:
+        from ._stability_windows import _window_diagnostics
+        result.update(_window_diagnostics(evidence,analysis))
+    return result

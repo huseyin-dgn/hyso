@@ -128,24 +128,33 @@ def _run_owned(root, mode, request, *, startup_timeout, heartbeat_timeout, max_r
                 runtime_paths=[p for p in sys.path if Path(p).is_dir() and Path(p).name in ('site-packages','dist-packages')])
     if not config['runtime_paths']:raise RuntimeError('cannot reproduce runtime site paths')
     (root/'request.json').write_text(json.dumps(config,allow_nan=False),encoding='utf-8')
-    # P31/P34/P35 quotas are opt-in; unrelated runtime adapters retain their policy.
+    # P30 observes OS resource pressure; no implicit RAM quota is a hardware limit.
     limits=((request['protocol'].get('process_memory_bytes'),request['protocol'].get('job_memory_bytes'))
-            if mode in ('stability','devices','providers') else (4*1024**3,6*1024**3))
+            if mode in ('stability','devices','providers','streaming') else (4*1024**3,6*1024**3))
     process_limit=request['protocol'].get('max_processes') if mode in ('stability','devices','providers') else 4
     job=_Job(*limits,process_limit);process=None;cleanup=None;reason=None;interrupted=None
     started=time.monotonic();ready_seen=None;last_beat=None;last_mtime=None
+    controller_start_ns=time.perf_counter_ns();process_started_ns=None
     stdout=root/'stdout.txt';stderr=root/'stderr.txt'
+    resources=None
     try:
+        if mode in ('streaming','stability'):
+            from ._stream_resources import _StreamResources
+            resources=_StreamResources(token)
         with stdout.open('wb') as out,stderr.open('wb') as err:
             env=dict(os.environ,PYTHONDONTWRITEBYTECODE='1',PYTHONIOENCODING='utf-8')
+            if mode=='streaming' or (mode=='stability' and not request.get('recipe',{}).get('gpu_uuid')):
+                env['CUDA_VISIBLE_DEVICES']='-1'
             gpu=request.get('recipe',{}).get('gpu_uuid')
             if gpu:env['CUDA_VISIBLE_DEVICES']=gpu
             process=subprocess.Popen([getattr(sys,'_base_executable',sys.executable),'-I','-S','-B',
                 str(Path(__file__).with_name('_runtime_worker.py')),str(root)],stdout=out,stderr=err,
                 env=env,creationflags=subprocess.CREATE_NO_WINDOW)
             job.assign(process)
+            process_started_ns=time.perf_counter_ns()
             _atomic(root/'admit.json',dict(token=token,pid=process.pid))
             while process.poll() is None:
+                if resources is not None and resources.sample(job):reason='os_low_memory';break
                 now=time.monotonic()
                 if (root/'ready.json').is_file() and ready_seen is None:ready_seen=last_beat=now
                 beat=root/'heartbeat.json'
@@ -160,7 +169,7 @@ def _run_owned(root, mode, request, *, startup_timeout, heartbeat_timeout, max_r
                         or stdout.stat().st_size+stderr.stat().st_size>65536):reason='resource_limit';break
                 time.sleep(.02)
     except BaseException as error:
-        if mode!='stability':raise
+        if mode not in ('stability','streaming'):raise
         reason='controller_interrupted' if isinstance(error,(KeyboardInterrupt,SystemExit)) else 'controller_error'
         interrupted=error
     finally:
@@ -174,7 +183,9 @@ def _run_owned(root, mode, request, *, startup_timeout, heartbeat_timeout, max_r
                 cleanup=job.observation()
                 if cleanup['active_processes']==0 or time.monotonic()>=deadline:break
                 time.sleep(.01)
-        finally:job.close()
+        finally:
+            job.close()
+            if resources is not None:resources.close()
     if cleanup is None or cleanup['active_processes']!=0:raise RuntimeError('owned process tree cleanup failed')
     if interrupted is not None and process is None:raise interrupted
     controller=dict(token=token,launcher_pid=process.pid,exit_code=process.returncode,reason=reason,
@@ -182,6 +193,14 @@ def _run_owned(root, mode, request, *, startup_timeout, heartbeat_timeout, max_r
         stderr_tail=stderr.read_bytes()[-4096:].decode('utf-8',errors='replace'))
     if mode in ('stability','devices','providers'):controller['memory_limits']=dict(process_memory_bytes=limits[0],job_memory_bytes=limits[1])
     if mode in ('stability','devices','providers'):controller['process_limit']=process_limit
+    if mode=='streaming':
+        controller['memory_limits']=dict(process_memory_bytes=None,job_memory_bytes=None)
+        controller['process_limit']=process_limit
+        controller['resource_monitor']=resources.summary if resources is not None else None
+    if mode=='stability':
+        controller['resource_monitor']=resources.summary if resources is not None else None
+        controller['lifecycle']=dict(clock_id=token+':controller_perf_counter_ns',controller_start_ns=controller_start_ns,
+            process_started_ns=process_started_ns,cleanup_observed_ns=time.perf_counter_ns())
     _atomic(root/'controller.json',controller)
     if interrupted is not None:raise interrupted
     return root
@@ -203,7 +222,7 @@ def _read_journal(root):
         p=StabilityProtocol(**request['protocol']);row_limit=p.max_samples;byte_limit=p.max_journal_bytes
     else:
         from .streaming import StreamProtocol
-        p=StreamProtocol(**request['protocol']);row_limit=p.max_frames*8+16;byte_limit=128*1024**2
+        p=StreamProtocol(**request['protocol']);row_limit=p.max_frames*8+16;byte_limit=p.max_journal_bytes
     header=_load(root/'header.json') if (root/'header.json').exists() else None
     terminal=_load(root/'terminal.json') if (root/'terminal.json').exists() else None
     rows=[];chunks=[];previous=_hash(header) if header else None
@@ -331,6 +350,9 @@ def _analyze_stability(e):
     from .utilization import _cpu_intervals
     from ._stability_diagnostics import _validate_extensions
     _validate_extensions(rows,terminal,header)
+    if header.get('stability_version')==2:
+        from ._stability_windows import _validate_windows
+        _validate_windows(e)
     cpu_intervals=_cpu_intervals(cpu,header['runtime']['logical_cores'],int(p.interval_seconds*1e9))
     return dict(status='completed' if complete else 'aborted',reason=None if complete else c['reason'] or
         ((terminal['reason'] or 'duration_or_completion_coverage_not_met') if terminal else 'missing_terminal'),completed=last_completed,steps=last_steps,
@@ -407,16 +429,20 @@ def _worker_stability(root, request):
     import random
     p=StabilityProtocol(**request['protocol']);seed=p.seed
     random.seed(seed);np.random.seed(seed);torch.random.default_generator.manual_seed(seed);torch.set_num_threads(1)
+    factory_start_ns=time.perf_counter_ns()
     workload,source=_factory(request['recipe']);identity=workload.identity
     _name(identity['device_id']);_name(identity['unit'])
-    header=dict(run_id=request['token'],pid=os.getpid(),clock_id=request['token']+':perf_counter_ns',
-        workload=identity,source=source,protocol=asdict(p),runtime=dict(python=platform.python_version(),
+    header=dict(run_id=request['token'],pid=os.getpid(),clock_id=request['token']+':perf_counter_ns',stability_version=2,
+        workload=identity,source=source,protocol=asdict(p),
+        lifecycle=dict(factory_start_ns=factory_start_ns,factory_end_ns=time.perf_counter_ns()),runtime=dict(python=platform.python_version(),
         torch=str(torch.__version__),platform=platform.platform(),logical_cores=os.cpu_count() or 1))
     journal=_Journal(root,header,p.chunk_rows,p.max_samples)
     _atomic(root/'ready.json',dict(pid=os.getpid(),token=request['token']))
     completed=steps=work_ns=attempted=0;last_completion=None;failure=None;closed=False;start=end=0
     mean_ns=m2_ns2=0.;minimum=maximum=None;failure_kind=None;stage='telemetry'
+    window_steps=[];step_evidence_bytes=0;failed_step=None
     def sample(phase, error=None):
+        nonlocal window_steps
         try:rss=_observe()
         except (OSError,RuntimeError):rss=None
         try:cpu=_telemetry.cpu_observe()
@@ -432,44 +458,56 @@ def _worker_stability(root, request):
                          else dict(status='not_requested'))
         tracker=getattr(workload,'retention_tracker',None)
         retention=tracker.snapshot() if tracker is not None else None
-        journal.append(dict(timestamp_ns=time.perf_counter_ns(),phase=phase,completed=completed,steps=steps,work_ns=work_ns,
+        from ._stability_windows import _observe_commit
+        commit=_observe_commit()
+        stamp=time.perf_counter_ns()
+        journal.append(dict(timestamp_ns=stamp,phase=phase,completed=completed,steps=steps,work_ns=work_ns,
             last_completion_ns=last_completion,rss=rss,cpu=cpu,allocator=allocator,gpu=gpu,retention=retention,failure=error,
             attempted_steps=attempted,failure_kind=failure_kind,
             step_timing=dict(count=steps,mean_ns=mean_ns if steps else None,m2_ns2=m2_ns2,min_ns=minimum,max_ns=maximum),
-            gpu_utilization=gpu_utilization))
+            gpu_utilization=gpu_utilization,window_steps=window_steps,process_commit=commit,failed_step=failed_step))
+        window_steps=[]
         _atomic(root/'heartbeat.json',dict(sequence=journal.count))
+        return stamp
     try:
         idle_deadline=time.perf_counter()+p.idle_seconds
         while time.perf_counter()<idle_deadline:
             sample('idle');time.sleep(min(p.interval_seconds,max(0,idle_deadline-time.perf_counter())))
-        start=time.perf_counter_ns();due=start
-        sample('work');due+=int(p.interval_seconds*1e9)
-        while time.perf_counter_ns()-start<p.duration_seconds*1e9:
+        start=sample('work');due=start+int(p.interval_seconds*1e9)
+        while last_completion is None or last_completion-start<p.duration_seconds*1e9:
             stage='step';attempted+=1
             a=time.perf_counter_ns();count=workload.step();b=time.perf_counter_ns()
             _int(count,1);completed+=count;steps+=1;work_ns+=b-a;last_completion=b
+            # Exact evidence is bounded by the caller's journal budget, not a RAM
+            # quota or artificial inference/batch ceiling. Stop rather than omit.
+            record=[a,b,count];window_steps.append(record)
+            step_evidence_bytes+=len(json.dumps(record))
             duration=b-a;delta=duration-mean_ns;mean_ns+=delta/steps;m2_ns2+=delta*(duration-mean_ns)
             minimum=duration if minimum is None else min(minimum,duration)
             maximum=duration if maximum is None else max(maximum,duration)
             stage='telemetry'
-            if b>=due:
+            if step_evidence_bytes>p.max_journal_bytes:raise ValueError('step evidence exceeds journal byte budget')
+            if b>=due and b-start<p.duration_seconds*1e9:
                 sample('work');due=time.perf_counter_ns()+int(p.interval_seconds*1e9)
-        end=time.perf_counter_ns();sample('terminal')
+        end=last_completion;sample('terminal')
     except Exception as exc:
         failure=type(exc).__name__+': '+str(exc)[:1024];end=time.perf_counter_ns()
         kind=_failure_kind(exc)
         failure_kind=kind if stage=='step' or kind in ('oom','device_error') else 'measurement_error'
+        if stage=='step' and attempted>steps:failed_step=dict(start_ns=a,end_ns=end,kind=failure_kind)
         if start==0:start=end
         try:sample('failure',failure)
         except Exception:pass
     finally:
+        close_start_ns=time.perf_counter_ns()
         try:workload.close();closed=True
         except Exception as exc:
             failure=failure or 'close: '+str(exc)[:1024];failure_kind=failure_kind or _failure_kind(exc)
-        journal.flush()
+        close_end_ns=time.perf_counter_ns();journal.flush()
         terminal=dict(status='completed' if failure is None else 'failed',reason=failure,closed=closed,
             work_start_ns=start,work_end_ns=end,completed=completed,steps=steps,rows=journal.count,
-            chunks=journal.chunks,last_chunk_sha256=journal.previous,attempted_steps=attempted,failure_kind=failure_kind)
+            chunks=journal.chunks,last_chunk_sha256=journal.previous,attempted_steps=attempted,failure_kind=failure_kind,
+            close_start_ns=close_start_ns,close_end_ns=close_end_ns)
         _atomic(root/'terminal.json',terminal)
 
 

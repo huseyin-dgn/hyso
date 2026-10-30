@@ -36,16 +36,39 @@ def make_cpu(mode='normal', delay=.005):
 
 
 def make_frames(delay=.03,mode='normal'):
-    model=nn.Sequential(nn.AdaptiveAvgPool2d(1),nn.Flatten(),nn.Linear(3,2))
+    if mode=='capture_failure':
+        # Worker-local fault injection: real decode for two frames, then read failure.
+        import cv2
+        real_capture=cv2.VideoCapture
+        class FailingCapture:
+            def __init__(self,*args):self.capture=real_capture(*args);self.reads=0
+            def __getattr__(self,name):return getattr(self.capture,name)
+            def read(self):
+                self.reads+=1
+                return self.capture.read() if self.reads<=2 else (False,None)
+        cv2.VideoCapture=FailingCapture
+    with torch.random.fork_rng(devices=[]):
+        torch.random.default_generator.manual_seed(30)
+        model=nn.Sequential(nn.AdaptiveAvgPool2d(1),nn.Flatten(),nn.Linear(3,2))
     base=FrameInferenceProcessor(model)
     class Processor:
-        identity=base.identity
+        identity=dict(base.identity,training_status='untrained_technical_fixture',
+            input_contract='BGR_uint8_HWC_to_RGB_float32_N3x32x32',output_contract='float32_logits_Nx2')
         def process(self,frame):
             if mode=='exception':raise RuntimeError('intentional frame processing failure')
             if mode=='hang':time.sleep(60)
+            if mode=='crash':os._exit(17)  # Controlled exit, not a native fault.
+            if mode=='child_hang':
+                import subprocess
+                import sys
+                subprocess.Popen([sys.executable,'-c','import time; time.sleep(60)'],creationflags=subprocess.CREATE_NO_WINDOW)
+                time.sleep(60)
             a=time.perf_counter_ns();time.sleep(delay);b=time.perf_counter_ns()
             return [dict(name='controlled_service_wait',start_ns=a,end_ns=b)]+base.process(frame)
-        def close(self):base.close()
+        def close(self):
+            if mode=='close_exception':raise RuntimeError('intentional frame close failure')
+            if mode=='close_hang':time.sleep(60)
+            base.close()
     return Processor()
 
 
