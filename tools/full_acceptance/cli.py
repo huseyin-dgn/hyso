@@ -298,6 +298,7 @@ def main(argv=None):
     mode=p.add_mutually_exclusive_group(required=True)
     for name in ('preflight','execute','smoke','cpu-benchmark-check','cuda-benchmark-check','status','stop'):mode.add_argument('--'+name,action='store_true')
     mode.add_argument('--package',type=Path);mode.add_argument('--authorize',help='explicit comma-separated experiment IDs; creates new manifest only')
+    mode.add_argument('--cuda-single-probe',action='store_true')
     mode.add_argument('--worker',help=argparse.SUPPRESS)
     p.add_argument('--manifest',type=Path);p.add_argument('--output',type=Path);p.add_argument('--approved-sha256')
     p.add_argument('--python',type=Path,default=DEFAULT_PYTHON);p.add_argument('--gpu-uuid');p.add_argument('--camera-config',type=Path)
@@ -307,6 +308,12 @@ def main(argv=None):
     a=p.parse_args(argv)
     if not a.preflight and a.manifest is None:p.error('--manifest is required')
     try:
+        if a.cuda_single_probe:
+            from .cuda_single_probe import probe
+            if a.manifest is None:raise ValueError('probe requires --manifest')
+            outcome=probe(a.manifest,a.approved_sha256)
+            print(json.dumps(outcome,ensure_ascii=False))
+            return 0 if outcome['status']=='DIAGNOSTIC_PASS' else 1
         if a.worker:return worker(a)
         if a.preflight:return preflight(a)
         if a.smoke:return smoke(a)
