@@ -23,6 +23,7 @@ import math
 import os
 from pathlib import Path
 import sys
+import time
 
 from .runtime_result import _result, _hash, _int, _number, _name, _digest
 from .stability import WorkloadRecipe, _factory, _atomic
@@ -87,6 +88,7 @@ def profile_execution_providers(recipe, directory, *, providers=None, expected=N
     run=_launch(recipe,directory,'providers',dict(providers=providers,expected=expected,
         optimization=optimization,runtime_search_path=runtime_search_path,provider_options=provider_options),protocol)
     run['graph_analysis_version']=2
+    run['provider_analysis_version']=2
     return _result('P35',run)
 
 
@@ -170,6 +172,16 @@ def _decode_model(encoded,*,optimized=False):
 
 
 def _analyze_providers(e):
+    version=e.get('provider_analysis_version',1)
+    if type(version) is not int or version not in (1,2):raise ValueError('invalid provider evidence analysis version')
+    analysis=_analyze_providers_legacy(e)
+    if version==2:
+        from ._provider_diagnostics import _assessment
+        analysis['evidence_assessment']=_assessment(e,analysis,strict=True)
+    return analysis
+
+
+def _analyze_providers_legacy(e):
     ProviderProtocol(**e['protocol']);WorkloadRecipe(**e['recipe'])
     graph_version=e.get('graph_analysis_version',1)
     if type(graph_version) is not int or graph_version not in (1,2):raise ValueError('invalid provider graph analysis version')
@@ -180,7 +192,7 @@ def _analyze_providers(e):
     if report is None:
         result=dict(status='unavailable',reason=reason,fallback_detected=None,
             session_fallback=None,node_assignment=dict(status='unknown',reason='no completed execution'),events=[])
-        if (e.get('report') or {}).get('observation_schema')==2:
+        if (e.get('report') or {}).get('observation_schema')==2 and 'failure_kind' in e['report']:
             kind=e['report']['failure_kind']
             if kind not in ('oom','missing_dependency','unsupported_provider','cuda_error','workload_error','ort_error'):
                 raise ValueError('invalid provider failure category')
@@ -283,9 +295,9 @@ def _failure_kind(error, phase):
             ('out of memory','failed to allocate memory','cudaerrormemoryallocation')):
         return 'oom'
     if phase=='dependencies' and isinstance(error,(ImportError,ModuleNotFoundError)):return 'missing_dependency'
-    if isinstance(error,NotImplementedError):return 'unsupported_provider'
+    if isinstance(error,NotImplementedError) and phase=='provider_selection':return 'unsupported_provider'
     if 'cuda' in text or 'cudnn' in text or 'cublas' in text:return 'cuda_error'
-    return 'workload_error' if phase=='factory' else 'ort_error'
+    return 'workload_error' if phase in ('factory','input_validation') else 'ort_error'
 
 
 def _worker_providers(root, request):
@@ -295,6 +307,7 @@ def _worker_providers(root, request):
         return _collect_profile(root,request,details)
     except Exception as error:
         details['failure_kind']=_failure_kind(error,details['phase'])
+        details['error_type']=type(error).__name__
         raise _ProviderFailure(type(error).__name__+': '+str(error),details) from error
 
 
@@ -316,10 +329,12 @@ def _diagnostics(evidence, analysis):
             group['timed_events']+=1;group['total_host_node_us']+=event['duration_us']
     for group in operators.values():
         group['mean_host_node_us']=group['total_host_node_us']/group['timed_events'] if group['timed_events'] else None
-        if not group['timed_events']:group['total_host_node_us']=None
+        group['known_duration_sum_us']=group['total_host_node_us'] if group['timed_events'] else None
+        group['duration_coverage']='complete' if group['timed_events']==group['events'] else 'partial'
+        if group['timed_events']!=group['events']:group['total_host_node_us']=None
     session=report.get('session_providers');requested=report.get('requested_providers')
     missing=[x for x in requested if x not in session] if session is not None and requested is not None else None
-    return dict(core_status='observed' if observed else 'unavailable' if analysis['status']=='unavailable' else 'unknown',
+    result=dict(core_status='observed' if observed else 'unavailable' if analysis['status']=='unavailable' else 'unknown',
         advanced_status='partial',runtime=report.get('runtime'),available_providers=report.get('available_providers'),
         requested_providers=requested,enabled_session_providers=session,observed_execution_providers=observed,
         provider_options=report.get('provider_options'),requested_provider_options=evidence.get('provider_options'),
@@ -347,6 +362,10 @@ def _diagnostics(evidence, analysis):
             'Run-error retry is disabled and session provider loss aborts before inference; no automatic rebenchmark.',
             'Per-provider library versions and physical GPU UUID execution identity may be unavailable.',
             'Owned-worker capture is Windows-only; optional ORT/ONNX are not required for base HYSo imports.'])
+    from ._provider_diagnostics import _assessment
+    result['evidence_assessment']=analysis.get('evidence_assessment') or _assessment(evidence,analysis)
+    result['source_node_mapping']['coverage_status']=(result['evidence_assessment']['node_coverage'] or {}).get('status')
+    return result
 
 
 def _collect_profile(root, request, details):
@@ -368,11 +387,14 @@ def _collect_profile(root, request, details):
     encoded=base64.b64encode(raw).decode();_,model=_decode_model(encoded)
     if set(request['expected'])-{n.name for n in model.graph.node}-{'*'}:
         raise ValueError('expectation names not in source graph')
-    details['phase']='session_initialization'
+    details['phase']='input_validation'
     for value in feed.values():
         if not isinstance(value,np.ndarray) or value.dtype.hasobject or not np.isfinite(value).all():
             raise ValueError('finite numpy feeds required')
     if sum(v.nbytes for v in feed.values())>64*1024**2:raise ValueError('input budget exceeded')
+    def fingerprints():
+        return {k:dict(dtype=str(v.dtype),shape=list(v.shape),sha256=hashlib.sha256(v.tobytes()).hexdigest()) for k,v in feed.items()}
+    input_before=fingerprints()
     options=ort.SessionOptions();options.enable_profiling=True
     options.profile_file_prefix=str(root/'profile');options.optimized_model_filepath=str(root/'optimized.onnx')
     options.intra_op_num_threads=1;options.inter_op_num_threads=1
@@ -385,6 +407,7 @@ def _collect_profile(root, request, details):
         options.execution_mode=ort.ExecutionMode.ORT_SEQUENTIAL
     # ORT 1.23.2 exposes this constructor flag through **kwargs. No private session API.
     # Also reject configuration loss before executing anything; never silently benchmark CPU.
+    details['phase']='session_initialization'
     session=ort.InferenceSession(raw,sess_options=options,providers=selected,enable_fallback=False)
     session.disable_fallback()
     details['session_providers']=session.get_providers()
@@ -393,9 +416,13 @@ def _collect_profile(root, request, details):
         details['phase']='session_configuration_difference'
         raise RuntimeError('session did not enable all requested providers; no inference executed')
     details['phase']='execution'
+    intervals=[]
     for index in range(p.warmup+p.runs):
+        start=time.perf_counter_ns()
         outputs=session.run(None,feed)
+        end=time.perf_counter_ns()
         if any(not np.isfinite(value).all() for value in outputs):raise ValueError('nonfinite ONNX output')
+        intervals.append(dict(index=index,phase='warmup' if index<p.warmup else 'measured',start_ns=start,end_ns=end))
         details['completed_runs']=index+1
         _atomic(root/'heartbeat.json',dict(index=index))
     details['phase']='profile_publication'
@@ -403,10 +430,13 @@ def _collect_profile(root, request, details):
     if profile.parent!=root or profile.stat().st_size>16*1024**2:raise ValueError('unbounded/foreign profile')
     trace=json.loads(profile.read_text(encoding='utf-8'));trace_hash=_hash(trace)
     model_hash=hashlib.sha256(raw).hexdigest()
-    input_hash=_hash({k:dict(dtype=str(v.dtype),shape=list(v.shape),sha256=hashlib.sha256(v.tobytes()).hexdigest())
-                      for k,v in feed.items()})
+    input_after=fingerprints();input_hash=_hash(input_before)
     providers=session.get_providers()
     return dict(observation_schema=2,requested_provider_options=configured,
+        capture_context=dict(input_fingerprints=input_before,input_unchanged=input_before==input_after,
+            profile_clock=dict(name='ORT_JSON_profile_host_relative',unit='us',origin='runtime_private_uncorrelated_with_host_perf_counter'),
+            host_clock=dict(name='perf_counter_ns',unit='ns',instance_id=request['token']+':perf_counter_ns'),
+            run_intervals=intervals,method='session.run_return_host_interval;finite_output_validation_after_end'),
         device_selection=dict(gpu_uuid_request=request['recipe'].get('gpu_uuid'),cuda_visible_devices=os.environ.get('CUDA_VISIBLE_DEVICES'),
             scope='ORT provider options/default device; physical UUID execution association not observed'),
         session_id=request['token'],model_base64=encoded,model_sha256=model_hash,

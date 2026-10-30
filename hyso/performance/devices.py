@@ -95,7 +95,7 @@ def compare_devices(recipe, devices, directory, *, protocol=DeviceProtocol()):
         selected=WorkloadRecipe(recipe.factory,recipe.configuration,recipe.search_path,
                                 device if device!='cpu' else None)
         runs.append(_launch(selected,root/str(index),'devices',dict(device=device),protocol))
-    return _result('P34',dict(comparison_version=2,devices=list(devices),protocol=asdict(protocol),runs=runs))
+    return _result('P34',dict(comparison_version=3,devices=list(devices),protocol=asdict(protocol),runs=runs))
 
 
 def _valid_run(run):
@@ -176,8 +176,15 @@ _MEMORY_DOMAINS = {
 
 def _analyze_devices(e):
     version=e.get('comparison_version',1)
-    if type(version) is not int or version not in (1,2):raise ValueError('unsupported comparison version')
+    if type(version) is not int or version not in (1,2,3):raise ValueError('unsupported comparison version')
     if version==1:return _analyze_devices_legacy(e)
+    if version==3:
+        from ._device_diagnostics import _analyze_v3
+        return _analyze_v3(e)
+    return _analyze_devices_v2(e)
+
+
+def _analyze_devices_v2(e):
     p=DeviceProtocol(**e['protocol']);devices=e['devices'];runs=e['runs']
     if (not 1<=len(devices)<=8 or devices!=[_device_id(d) for d in devices]
             or len(set(devices))!=len(devices) or len(runs)!=len(devices)):
@@ -291,13 +298,15 @@ def _model_hash(model):
                       state={k:_tensor_hash(v) for k,v in model.state_dict().items()}))
 
 
-def _timed_forward(model, inputs, synchronize=None):
+def _timed_forward(model, inputs, synchronize=None, intervals=None):
     # Drain resident transfers/previous work outside the latency interval. The
     # terminal drain is inside it, so asynchronous launches cannot appear complete.
     if synchronize is not None:synchronize()
     start=time.perf_counter_ns();output=model(inputs)
     if synchronize is not None:synchronize()
-    return output,time.perf_counter_ns()-start
+    end=time.perf_counter_ns()
+    if intervals is not None:intervals.append(dict(index=len(intervals),start_ns=start,end_ns=end))
+    return output,end-start
 
 
 def _cpu_name():
@@ -336,7 +345,10 @@ def _worker_devices(root, request):
     torch.backends.cudnn.allow_tf32=False;torch.backends.cudnn.benchmark=False;torch.backends.cudnn.deterministic=True
     torch.use_deterministic_algorithms(True)
     random.seed(p.seed);np.random.seed(p.seed);torch.manual_seed(p.seed)
-    (model,inputs),source=_factory(request['recipe'])
+    built,source=_factory(request['recipe'])
+    if type(built) not in (tuple,list) or len(built) not in (2,3):
+        raise TypeError('factory must return (module,tensor[,origin])')
+    model,inputs=built[:2]
     if not isinstance(model,torch.nn.Module) or not isinstance(inputs,torch.Tensor):
         raise TypeError('factory must return module and tensor')
     if inputs.device.type!='cpu' or inputs.ndim!=4 or not inputs.is_floating_point():
@@ -354,6 +366,8 @@ def _worker_devices(root, request):
     target=torch.device('cuda:0' if cuda else 'cpu');dtype=getattr(torch,p.precision)
     model=model.to(dtype=dtype).eval();inputs=inputs.detach().clone().to(dtype=dtype).contiguous()
     before=_model_hash(model);input_hash=_tensor_hash(inputs)
+    from ._device_diagnostics import _capture_origin,_state_hash,_checkpoint_unchanged
+    origin=_capture_origin(built[2] if len(built)==3 else None,model,source)
     identity=dict(model_sha256=before,input_sha256=input_hash,factory_sha256=source['module_sha256'],
         device_id=device,device_name=hardware['name'],hardware=hardware,worker_pid=os.getpid(),
         runtime=dict(torch=str(torch.__version__),python=platform.python_version(),cuda_build=torch.version.cuda,
@@ -377,9 +391,9 @@ def _worker_devices(root, request):
         rss_before=_observe()['rss_bytes']
         if cuda:synchronize()
         if cuda:torch.cuda.reset_peak_memory_stats(0)
-        samples=[];start=time.perf_counter_ns()
+        samples=[];intervals=[];start=time.perf_counter_ns()
         for index in range(p.samples):
-            output,elapsed=_timed_forward(model,inputs,synchronize);validate(output)
+            output,elapsed=_timed_forward(model,inputs,synchronize,intervals);validate(output)
             samples.append(elapsed)
             if index==p.samples-1:
                 output_signature=dict(device=str(output.device),dtype=str(output.dtype),shape=list(output.shape))
@@ -395,10 +409,16 @@ def _worker_devices(root, request):
             mkldnn_enabled=torch.backends.mkldnn.enabled)
     identity['execution']=dict(input_device=str(inputs.device),output_device=output_signature['device'],
         output_dtype=output_signature['dtype'],output_shape=output_signature['shape'],settings=settings)
+    identity['origin']=origin
+    loaded_state_unchanged=_state_hash(model)==origin['loaded_state_sha256']
+    _checkpoint_unchanged(origin)
     memory=dict(rss_before_bytes=rss_before,rss_after_bytes=_observe()['rss_bytes'],logical_model_bytes=logical,
         cuda_peak_allocated_bytes=torch.cuda.max_memory_allocated(0) if cuda else None,
         cuda_peak_reserved_bytes=torch.cuda.max_memory_reserved(0) if cuda else None)
     return dict(identity=identity,latency_ns=samples,window_ns=end-start,completed=p.samples*len(inputs),
+        loaded_state_unchanged=loaded_state_unchanged,
+        measurement_window=dict(start_ns=start,end_ns=end,clock='perf_counter_ns',
+            clock_instance_id=str(os.getpid())+':perf_counter_ns'),sample_intervals=intervals,
         model_unchanged=_model_hash(model)==before,input_unchanged=_tensor_hash(inputs)==input_hash,
         cuda_memory_fraction=p.cuda_memory_fraction if cuda else None,memory=memory,
         memory_domains={k:dict(unit='byte',scope=v) for k,v in _MEMORY_DOMAINS.items()})
