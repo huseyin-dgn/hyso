@@ -6,7 +6,7 @@ from full_acceptance import handlers,workloads
 
 
 class InferenceDeviceTests(Fixture):
-    def exercise(self,device):
+    def exercise(self,device,*,checkpoint_changed=False,master_moved=False):
         case=self;gpu=device!='cpu';calls=[];masters=[];forward=threading.Event()
         class Tensor:
             def __init__(self,shape=(10000,1,28,28),device='cpu',dtype='float32'):
@@ -27,6 +27,8 @@ class InferenceDeviceTests(Fixture):
         class Model:
             def __init__(self,arm):self.arm=arm;self.device='cpu';self.dtype='float32';self.weights=[1,2,3]
             def to(self,device):self.device=device;return self
+            def parameters(self):return [types.SimpleNamespace(device=types.SimpleNamespace(type='cuda' if master_moved else self.device))]
+            def buffers(self):return []
             def __call__(self,inputs):
                 resident(self,inputs);calls.append(('utilization',self.arm));forward.set()
                 return Tensor((len(inputs),10),self.device)
@@ -119,7 +121,7 @@ class InferenceDeviceTests(Fixture):
         root=self.out/'inference';root.mkdir()
         with patch.dict(sys.modules,replacements),patch.object(workloads,'configure'),patch.object(workloads,'load_model',side_effect=load),\
              patch.object(workloads,'data',return_value=(Tensor(),Tensor((10000,),dtype='int64'))),\
-             patch.object(handlers,'save',return_value={}),patch.object(handlers,'sha',return_value='checkpoint-fixed'):
+             patch.object(handlers,'save',return_value={}),patch.object(handlers,'sha',return_value='changed' if checkpoint_changed else 'checkpoint-fixed'):
             outcome=handlers.inference(self.m,root,device)
         self.assertEqual(outcome['status'],'PASS')
         for model in masters:
@@ -136,3 +138,11 @@ class InferenceDeviceTests(Fixture):
 
     def test_all_cuda_submeasurements_respect_device_and_precision_contracts(self):self.exercise('cuda:0')
     def test_cpu_submeasurements_keep_full_protocol_and_master(self):self.exercise('cpu')
+
+    def test_cuda_rejects_checkpoint_changed_during_measurements(self):
+        with self.assertRaisesRegex(ValueError,'checkpoint changed during inference'):
+            self.exercise('cuda:0',checkpoint_changed=True)
+
+    def test_cuda_rejects_master_device_change_even_with_unchanged_state_hash(self):
+        with self.assertRaisesRegex(ValueError,'CPU master moved'):
+            self.exercise('cuda:0',master_moved=True)

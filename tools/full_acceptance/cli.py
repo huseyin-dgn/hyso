@@ -32,7 +32,15 @@ def preserve(m):
             for name in files:
                 rel=Path(base,name).relative_to(repo).as_posix()
                 if rel not in baseline_names:additions.append(rel)
-        unexpected_added=[x for x in additions if x!='tools/run_full_acceptance.py' and not x.startswith('tools/full_acceptance/')]
+        unexpected_added = [
+            x for x in additions
+            if x != 'tools/run_full_acceptance.py'
+            and not x.startswith('tools/full_acceptance/')
+            and not (
+                x.startswith('outputs/')
+                and '/source/' in x
+            )
+        ]
         result=dict(scope='pre-development full repository baseline',checked=len(before['files']),unexpected_changes=changed,
             all_readable_preserved=not changed,unreadable_baseline=unreadable,new_infrastructure_only=True,
             original_dirty_files_preserved=not changed,checkpoint_changes=0,new_infrastructure_files=additions,unexpected_added=unexpected_added)
@@ -233,15 +241,67 @@ def cuda_check(args):
     print(json.dumps(dict(check='cuda_benchmark_check',status=value['status'],suite_complete=False)))
     return 0 if value['status']=='PASS' else 1
 
+def _finalize_execution(m,rows,*,state,complete,preparation,manifest_sha256):
+    """Keep preservation/report failures from skipping the terminal status attempt.
+
+    FINALIZING makes slow scans observable. A killed interpreter or an unwritable
+    status destination can still prevent a terminal record; neither implies PASS.
+    """
+    out=Path(m['output']);errors=[];preservation_status='NOT_RUN'
+
+    def failure(phase,error):
+        nonlocal state,complete
+        details=dict(phase=phase,type=type(error).__name__,reason=str(error),at=now())
+        errors.append(details);complete=False
+        if isinstance(error,KeyboardInterrupt):state='ABORTED'
+        elif phase=='preservation':state='FAILED_PRESERVATION'
+        elif state not in ('FAILED_PRESERVATION','ABORTED'):state='FAILED_CONTROLLER'
+        name='preservation-error.json' if phase=='preservation' else 'controller-error.json'
+        try:publish(out/name,details)
+        except BaseException as diagnostic_error:
+            errors.append(dict(phase=phase+'_error_record',type=type(diagnostic_error).__name__,reason=str(diagnostic_error)))
+
+    def progress(phase):
+        publish(out/'run-status.json',dict(state='FINALIZING',suite_complete=False,controller_active=True,
+            controller_pid=os.getpid(),run_id=m['run_id'],manifest_sha256=manifest_sha256,
+            finalization_phase=phase,preservation_status=preservation_status,updated_at=now()))
+
+    try:
+        try:progress('preservation')
+        except BaseException as error:failure('preservation_progress',error)
+        try:
+            preserve(m);preservation_status='PASS'
+        except BaseException as error:
+            preservation_status='FAIL';failure('preservation',error)
+        try:progress('reports')
+        except BaseException as error:failure('reports_progress',error)
+        try:write_reports(m,rows,state=state,preparation=preparation)
+        except BaseException as error:failure('reports',error)
+    finally:
+        # Do not depend on reports, diagnostic files, or another manifest read
+        # to record the controller's terminal state.
+        try:
+            publish(out/'run-status.json',dict(state=state,suite_complete=complete,controller_active=False,
+                controller_pid=os.getpid(),run_id=m['run_id'],manifest_sha256=manifest_sha256,
+                preservation_status=preservation_status,finalization_errors=list(errors),updated_at=now()))
+        except BaseException as error:failure('terminal_status',error)
+    if errors:
+        try:print('controller finalization failed: '+json.dumps(errors,ensure_ascii=False),file=sys.stderr,flush=True)
+        except BaseException:pass  # A closed console must not mask the failed exit.
+    return state,complete,errors
+
+
 def execute(args):
     from .safety import supervise
     if args.approved_sha256 is None:raise ValueError('--execute requires exact --approved-sha256')
     m=verify(args.manifest,expected=args.approved_sha256);out=Path(m['output']);stopfile=out/'stop-request.json'
+    manifest_sha256=sha(args.manifest)
     if stopfile.exists():raise ValueError('stop request exists; prepare a fresh manifest, do not clear history')
     publish(out/'STARTED.json',dict(pid=os.getpid(),at=now(),manifest_sha256=sha(args.manifest),one_shot=True),new=True)
     rows=initial_results(m);stopped=False;state='RUNNING';complete=False
-    prep=read(out/'stage-results.json').get('preparation',{}) if (out/'stage-results.json').exists() else {}
+    prep={}
     try:
+        prep=read(out/'stage-results.json').get('preparation',{}) if (out/'stage-results.json').exists() else {}
         for e in m['experiments']:
             status,reason,missing=decision(m,e,rows,stopped=stopped)
             if stopfile.exists():status,reason='NOT_RUN_STOPPED','user stop before next experiment';stopped=True
@@ -268,14 +328,9 @@ def execute(args):
         for row in rows.values():
             if row['status']=='PENDING':row.update(status='NOT_RUN_STOPPED',reason='controller stopped; no retry')
     finally:
-        try:preserve(m)
-        except (OSError,ValueError) as error:
-            state='FAILED_PRESERVATION';complete=False
-            publish(out/'preservation-error.json',dict(reason=str(error),at=now()))
-        write_reports(m,rows,state=state,preparation=prep)
-        publish(out/'run-status.json',dict(state=state,suite_complete=complete,controller_active=False,controller_pid=os.getpid(),
-            run_id=m['run_id'],manifest_sha256=sha(args.manifest),updated_at=now()))
-    return 1 if any(r['status']=='FAIL' for r in rows.values()) else 0 if complete else 2
+        state,complete,finalization_errors=_finalize_execution(m,rows,state=state,complete=complete,
+            preparation=prep,manifest_sha256=manifest_sha256)
+    return 1 if finalization_errors or state.startswith('FAILED_') or any(r['status']=='FAIL' for r in rows.values()) else 0 if complete else 2
 
 def package(args):
     m=read(args.manifest);out=Path(m['output']);state=read(out/'run-status.json')

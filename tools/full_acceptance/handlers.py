@@ -210,6 +210,8 @@ def inference(m,root,device):
         del pipeline_model
         evidence.append(save(folder,'pipeline',pipeline));evidence.append(save(folder,'stages',analyze_stages(pipeline)))
         if model_hash(model)!=state:raise ValueError('master model mutated')
+        if sha(m['assets']['models'][arm]['path'])!=m['assets']['models'][arm]['sha256']:raise ValueError('checkpoint changed during inference')
+        if any(t.device.type!='cpu' for t in [*model.parameters(),*model.buffers()]):raise ValueError('CPU master moved')
         metrics.append(metric(arm+'.quality_accuracy',quality.to_dict()['metrics']['accuracy'],'ratio','derived','same official10000 MNIST test cohort'))
     save(root,'model-identities',identities)
     if not gpu:
