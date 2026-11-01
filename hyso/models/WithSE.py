@@ -1,6 +1,6 @@
-# -------------------------
+
 # Temel PyTorch ve yardımcı kütüphaneler
-# -------------------------
+
 # Temel PyTorch ve yardımcı kütüphaneler
 import torch
 import torch.nn as nn
@@ -12,9 +12,9 @@ from tqdm import tqdm
 # Callbacks
 from hyso.callbacks.callbacks import EarlyStopping, ModelCheckpoint, LRSchedulerCallback
 
-# -------------------------
+
 # EMA Wrapper
-# -------------------------
+
 __all__ = ["CNNSENormalWithFit", "EMA"]
 
 class EMA:
@@ -41,10 +41,15 @@ class EMA:
             # align params by name/zip
             for ema_p, model_p in zip(self.ema_model.parameters(), model.parameters()):
                 ema_p.data.mul_(self.decay).add_(model_p.data, alpha=1 - self.decay)
+            # Buffers are live state, not averaged parameters. Copy by name,
+            # including integer and non-persistent registered buffers.
+            model_buffers = dict(model.named_buffers())
+            for name, ema_buffer in self.ema_model.named_buffers():
+                ema_buffer.copy_(model_buffers[name])
 
-# -------------------------
+
 # SEBlock
-# -------------------------
+
 class SEBlock(nn.Module):
     def __init__(self, channels: int, reduction: int = 8):
         super().__init__()
@@ -60,9 +65,9 @@ class SEBlock(nn.Module):
         y = torch.sigmoid(self.fc2(y)).view(n, c, 1, 1)
         return x * y
 
-# -------------------------
+
 # Bottleneck + Depthwise + SE + StochasticDepth
-# -------------------------
+
 class BottleneckSEBlock(nn.Module):
     def __init__(
         self,
@@ -122,9 +127,9 @@ class BottleneckSEBlock(nn.Module):
         out = self.final_act(out)
         return out
 
-# -------------------------
+
 # CNNSENormalWithFit + EMA
-# -------------------------
+
 class CEMO(nn.Module):
     def __init__(
         self,
@@ -142,6 +147,7 @@ class CEMO(nn.Module):
         super().__init__()
         self.num_classes = num_classes
         self.use_ema = use_ema
+        self.ema_decay = ema_decay
         # set device but DO NOT move model here (we will ensure move in callbacks/fit)
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -195,9 +201,9 @@ class CEMO(nn.Module):
         x = self.dropout_fc(x)
         return self.fc(x)
 
-    # -------------------------
+
     # Model-level callbacks (so CEMO.callbacks(...) works)
-    # -------------------------
+
     def callbacks(self, optimizer="Adam", lr=1e-3, weight_decay=1e-4,
                   model_checkpoint=False, earlystop=None, scheduler=None, scheduler_params=None):
         # ensure model & submodules moved to desired device BEFORE creating optimizer
@@ -245,9 +251,9 @@ class CEMO(nn.Module):
                 restore_best_weights=True
             ))
 
-    # -------------------------
+
     # Fit metodu (güncellendi: cihaz senkronizasyonu)
-    # -------------------------
+
     def fit(self, train_loader, val_loader=None, epochs=5, lr=1e-3, weight_decay=1e-4, use_ema=False):
         # Ensure model is on right device
         try:
@@ -255,17 +261,13 @@ class CEMO(nn.Module):
         except Exception:
             pass
 
-        # ensure EMA model is also on device if available
-        if use_ema and hasattr(self, "ema"):
+        # The fit flag controls this call; create EMA before the first forward.
+        if use_ema:
+            if not hasattr(self, "ema"):
+                self.ema = EMA(self, decay=self.ema_decay, device=self.device)
             try:
                 self.ema.to(self.device)
                 self.ema.ema_model.eval()
-            except Exception:
-                pass
-        elif hasattr(self, "ema"):
-            # even if not using EMA for this run, keep ema_model on device to avoid mismatches later
-            try:
-                self.ema.to(self.device)
             except Exception:
                 pass
 
@@ -297,8 +299,8 @@ class CEMO(nn.Module):
                 loss.backward()
                 self.optimizer.step()
 
-                # EMA update (if available)
-                if hasattr(self, "ema"):
+                # EMA use is local to this fit call, including existing shadows.
+                if use_ema and hasattr(self, "ema"):
                     try:
                         self.ema.update(self)
                     except Exception:
@@ -326,7 +328,7 @@ class CEMO(nn.Module):
                 with torch.no_grad():
                     for x, y in loop_val:
                         x, y = x.to(self.device), y.to(self.device)
-                        if hasattr(self, "ema"):
+                        if use_ema and hasattr(self, "ema"):
                             try:
                                 self.ema.to(self.device)
                                 self.ema.ema_model.eval()

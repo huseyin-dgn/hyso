@@ -1,0 +1,176 @@
+{
+  "format": "hyso.performance.runtime",
+  "schema_version": 1,
+  "feature_id": "P34",
+  "result_id": "84b0f46f-13e4-42b0-a75e-3b934674bdb7",
+  "evidence": {
+    "devices": [
+      "cpu"
+    ],
+    "protocol": {
+      "warmup": 1,
+      "samples": 3,
+      "precision": "float32",
+      "seed": 0,
+      "startup_timeout_seconds": 45.0,
+      "step_timeout_seconds": 10.0,
+      "max_runtime_seconds": 60.0
+    },
+    "runs": [
+      {
+        "token": "a79307a6-8f23-42db-8349-db5f66e32d70",
+        "recipe": {
+          "factory": "legacy_fixture:cpu_model",
+          "configuration": {},
+          "search_path": null,
+          "gpu_uuid": null
+        },
+        "protocol": {
+          "warmup": 1,
+          "samples": 3,
+          "precision": "float32",
+          "seed": 0,
+          "startup_timeout_seconds": 45.0,
+          "step_timeout_seconds": 10.0,
+          "max_runtime_seconds": 60.0
+        },
+        "controller": {
+          "token": "a79307a6-8f23-42db-8349-db5f66e32d70",
+          "launcher_pid": 15840,
+          "exit_code": 0,
+          "reason": null,
+          "elapsed_seconds": 8.109000000000037,
+          "cleanup": {
+            "total_processes": 3,
+            "active_processes": 0,
+            "peak_process_commit_bytes": 1655971840,
+            "peak_job_commit_bytes": 1657253888
+          },
+          "kill_on_close": true,
+          "stderr_tail": ""
+        },
+        "report": {
+          "token": "a79307a6-8f23-42db-8349-db5f66e32d70",
+          "request_sha256": "3b2aeeca4f8e9ddc879b92eda1a32506df84b9aedf8108bac2eb434030014e00",
+          "identity": {
+            "model_sha256": "883d9ad8187d6c8260839c8b2f142c2eb3c0a64b50b0ffff764a5bc2d202b78d",
+            "input_sha256": "c6ce84bb2d41c7317237af9560d76e649284d4aa938607f33931807b04f06b6e",
+            "factory_sha256": "fe5532ffa4621428f6bdd07e1c926031e6642ad488da03dacb542d31d1853a79",
+            "device_id": "cpu",
+            "device_name": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
+            "runtime": {
+              "torch": "2.5.1+cu121",
+              "python": "3.10.18"
+            },
+            "backend": "pytorch_eager",
+            "precision": "float32",
+            "batch": 2,
+            "shape": [
+              2,
+              3,
+              2,
+              2
+            ],
+            "warmup": 1,
+            "measured_samples": 3,
+            "clock": "perf_counter_ns",
+            "scope": "resident forward + terminal device synchronization"
+          },
+          "latency_ns": [
+            92400,
+            72600,
+            55600
+          ],
+          "window_ns": 2320500,
+          "completed": 6,
+          "model_unchanged": true,
+          "memory": {
+            "rss_before_bytes": 588111872,
+            "rss_after_bytes": 588140544,
+            "cuda_peak_allocated_bytes": null
+          },
+          "status": "completed",
+          "reason": null
+        },
+        "device": "cpu"
+      }
+    ]
+  },
+  "source_sha256": "92686bf214df92023b22c429631b8d4a336efb020802b51e3964675fcdbd2b36",
+  "analysis": {
+    "status": "limited",
+    "devices": [
+      {
+        "device": "cpu",
+        "status": "measured",
+        "reason": null,
+        "identity": {
+          "model_sha256": "883d9ad8187d6c8260839c8b2f142c2eb3c0a64b50b0ffff764a5bc2d202b78d",
+          "input_sha256": "c6ce84bb2d41c7317237af9560d76e649284d4aa938607f33931807b04f06b6e",
+          "factory_sha256": "fe5532ffa4621428f6bdd07e1c926031e6642ad488da03dacb542d31d1853a79",
+          "device_id": "cpu",
+          "device_name": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
+          "runtime": {
+            "torch": "2.5.1+cu121",
+            "python": "3.10.18"
+          },
+          "backend": "pytorch_eager",
+          "precision": "float32",
+          "batch": 2,
+          "shape": [
+            2,
+            3,
+            2,
+            2
+          ],
+          "warmup": 1,
+          "measured_samples": 3,
+          "clock": "perf_counter_ns",
+          "scope": "resident forward + terminal device synchronization"
+        },
+        "latency": {
+          "status": "measured",
+          "reason": null,
+          "value": {
+            "mean_ms": 0.07353333333333333,
+            "median_ms": 0.0726,
+            "min_ms": 0.0556,
+            "max_ms": 0.0924,
+            "conditional_standard_error_ms": 0.010633490071990059
+          },
+          "uncertainty": "Descriptive samples; independence, thermal stability and confidence bounds unproven"
+        },
+        "throughput": {
+          "status": "measured",
+          "reason": null,
+          "value": 2585.649644473174,
+          "scope": "completed images / instrumented host wall including validation and heartbeat overhead"
+        },
+        "memory": {
+          "status": "measured",
+          "reason": null,
+          "value": {
+            "rss_before_bytes": 588111872,
+            "rss_after_bytes": 588140544,
+            "cuda_peak_allocated_bytes": null
+          },
+          "scope": "process RSS snapshots; CUDA owned-worker allocator peak, not model-only/physical VRAM"
+        },
+        "energy": {
+          "value": null,
+          "status": "unavailable",
+          "reason": "no power integration adapter in comparison window"
+        },
+        "quality": {
+          "value": null,
+          "status": "unavailable",
+          "reason": "no labeled evaluation protocol"
+        }
+      }
+    ],
+    "comparable": false,
+    "reason": "requires two successful devices with identical model/input/runtime/backend/precision/scope",
+    "ranking": null,
+    "confidence": "observed serial runs; cross-run environmental variation unquantified"
+  }
+}

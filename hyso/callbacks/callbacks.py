@@ -1,3 +1,5 @@
+import copy
+
 import torch
 
 class EarlyStopping:
@@ -15,7 +17,7 @@ class EarlyStopping:
         if val_loss < self.best_loss - self.delta:
             self.best_loss = val_loss
             self.counter = 0
-            self.best_state = model.state_dict()
+            self.best_state = copy.deepcopy(model.state_dict())
         else:
             self.counter += 1
             if self.verbose:
