@@ -29,6 +29,8 @@ class ProfilingProtocol:
     input_limit_bytes:int|None=None
     cuda_memory_fraction:float|None=None
     max_events:int=20000
+    max_cpu_witness_items:int=250000
+    max_cpu_result_bytes:int=128*1024**2
     max_trace_bytes:int=16*1024**2
     profile_memory:bool=False
     allocation_lifetimes:bool=False
@@ -49,6 +51,10 @@ class ProfilingProtocol:
         _integer(self.max_events,1);_integer(self.max_trace_bytes,1)
         if self.max_events>100000 or self.max_trace_bytes>64*1024**2:raise ValueError('evidence budget too large')
 
+        _integer(self.max_cpu_witness_items,1)
+        if self.max_cpu_witness_items>500000:raise ValueError('CPU witness evidence budget too large')
+        _integer(self.max_cpu_result_bytes,1)
+        if self.max_cpu_result_bytes>128*1024**2:raise ValueError('CPU result evidence budget too large')
 
 class ProfilingError(RuntimeError):
     def __init__(self,diagnostics):
@@ -80,6 +86,21 @@ def analyze_nsys_operators(sqlite_path,*,capture_path):
     return analyze(sqlite_path,capture_path)
 
 
+def _check_result_evidence_bytes(actual_bytes,protocol):
+    """Enforce result-file budget independently from exported trace budget.
+
+    CPU ownership includes repeated full boundary reference graphs; it is not
+    bounded by the trace's event count or serialized trace byte budget.
+    """
+    limit=(protocol.max_cpu_result_bytes if protocol.cpu_memory_ownership
+           else protocol.max_trace_bytes*2)
+    if actual_bytes>limit:
+        scope='cpu_memory_ownership' if protocol.cpu_memory_ownership else 'profiler'
+        raise ValueError('result exceeds evidence budget: '
+            f'scope={scope}, actual_bytes={actual_bytes}, limit_bytes={limit}')
+    return limit
+
+
 def _execute_profile(recipe,protocol,*,trace_path=None,experiment_mode=None):
     if type(recipe) is not ColdStartRecipe or type(protocol) is not ProfilingProtocol:
         raise TypeError('expected ColdStartRecipe and ProfilingProtocol')
@@ -109,7 +130,7 @@ def _execute_profile(recipe,protocol,*,trace_path=None,experiment_mode=None):
                 if receipt['status']!='timed_out':
                     if worker.returncode!=0:receipt.update(status='crashed',reason='unexpected worker exit; not OOM classification')
                     elif output.exists():
-                        if output.stat().st_size>protocol.max_trace_bytes*2:raise ValueError('result exceeds evidence budget')
+                        _check_result_evidence_bytes(output.stat().st_size,protocol)
                         body=_plain(json.loads(output.read_text(encoding='utf-8')))
                         if body['worker_pid']!=receipt['worker_pid']:raise ValueError('worker identity mismatch')
                         receipt.update(status=body['status'],reason=body['reason'],cleanup=body['cleanup'])

@@ -1,7 +1,7 @@
 """Strict stdlib manifests, content identities and exclusive source snapshots."""
 from pathlib import Path
 from datetime import datetime,timezone
-import hashlib,json,os,shutil,subprocess,sys,uuid
+import hashlib,json,os,shutil,subprocess,sys,time,uuid
 from .registry import STAGES,experiments,SAFE_TESTS
 
 SCHEMA=1
@@ -37,8 +37,24 @@ def publish(path,obj,*,new=False):
         with path.open('x',encoding='utf-8',newline='\n') as f:f.write(raw)
     else:
         tmp=path.with_name(path.name+'.'+uuid.uuid4().hex+'.tmp')
-        with tmp.open('x',encoding='utf-8',newline='\n') as f:f.write(raw)
-        os.replace(tmp,path)
+        try:
+            with tmp.open('x',encoding='utf-8',newline='\n') as f:f.write(raw)
+            # Windows/OneDrive can temporarily deny replacing a file monitored
+            # by sync/AV. Retry the SAME atomic rename, bounded to five seconds.
+            # Never report a successful heartbeat until the rename succeeds.
+            deadline=time.monotonic()+5.0
+            while True:
+                try:
+                    os.replace(tmp,path)
+                    break
+                except PermissionError:
+                    if time.monotonic()>=deadline:raise
+                    time.sleep(.05)
+        finally:
+            # On a permanent sharing/permission failure keep old destination
+            # intact and do not leave an accumulating orphaned temp file.
+            try:tmp.unlink(missing_ok=True)
+            except OSError:pass
 def record(path):
     p=Path(path).resolve();return dict(path=str(p),sha256=sha(p),bytes=p.stat().st_size)
 def git(*args):return subprocess.check_output(['git',*args],cwd=ROOT).decode('utf-8',errors='replace')
@@ -82,7 +98,8 @@ def runtime_inventory(python):
         expected=dict(torch='2.5.1+cu121',torchvision='0.20.1+cu121',python_major_minor='3.10'),
         tooling='existing local packages only; no install performed')
 
-def prepare(output,*,python=DEFAULT_PYTHON,gpu_uuid=None,camera_config=None,ncu_plan=None,ort_cpu=None,ort_cuda=None):
+def prepare(output,*,python=DEFAULT_PYTHON,gpu_uuid=None,camera_config=None,ncu_plan=None,ort_cpu=None,ort_cuda=None,continue_independent=False):
+    if type(continue_independent) is not bool:raise TypeError('continue_independent must be bool')
     out=Path(output).resolve();out.mkdir(parents=True,exist_ok=True)
     if (out/'manifest.json').exists() or (out/'source').exists():raise FileExistsError('use a new output directory; manifests are never overwritten')
     baseline=out/'preservation-before.json'
@@ -96,7 +113,7 @@ def prepare(output,*,python=DEFAULT_PYTHON,gpu_uuid=None,camera_config=None,ncu_
                 except OSError as error:row.update(sha256=None,read_error=str(error))
                 rows.append(row)
         publish(baseline,dict(head=git('rev-parse','HEAD').strip(),status=git('status','--porcelain=v1','--untracked-files=all'),
-            files=rows,excluded_output_directory=out.relative_to(ROOT).as_posix()),new=True)
+            files=rows,excluded_output_directory=(out.relative_to(ROOT).as_posix() if out.is_relative_to(ROOT) else None)),new=True)
     baseline_data=read(baseline)
     exclusions=[str(out)]
     if baseline_data.get('excluded_output_directory'):exclusions.append(str(ROOT/baseline_data['excluded_output_directory']))
@@ -177,7 +194,7 @@ def prepare(output,*,python=DEFAULT_PYTHON,gpu_uuid=None,camera_config=None,ncu_
             quality_batch=256,quality_samples=10000,robustness_samples=256,robustness_severity=.05,sweep_batches=[1,8,32],resolution_points=[[28,28],[32,32],[28,36]],precisions_cpu=['fp32','fp64','bf16'],precisions_cuda=['fp32','amp_fp16','bf16']),
             training=dict(epochs=2,train_samples=512,validation_samples=128,batch=64,seed=20261030,device='cpu',AMP=False,
                 description='fresh6-epoch trained Model B clone for each distinct observer fit; no original checkpoint writes',target_seeds=[11,29],target_accuracy=.99),
-            layer=dict(trials=5,warmup=2,priming=2,windows=5,max_cv=.25,max_relative_half_width=.5),
+            layer=dict(trials=5,warmup=2,priming=2,windows=5,max_cv=.25,max_relative_half_width=.5,max_cpu_witness_items=250000,max_cpu_result_bytes=128*1024**2),
             energy=dict(idle_seconds=5,active_seconds=30,interval_seconds=.5,max_gap_seconds=2.,idle_max_age_seconds=60.),
             device=dict(warmup=3,samples=1000,seed=20261030,precision='float32'),
             stability=dict(duration_seconds=7200.,interval_seconds=5.,idle_seconds=0.,startup_timeout_seconds=120.,
@@ -192,7 +209,8 @@ def prepare(output,*,python=DEFAULT_PYTHON,gpu_uuid=None,camera_config=None,ncu_
         forensic=dict(B4='OPEN_ROOT_CAUSE_UNRESOLVED',CPU65536='OPEN',automatic_reproducer=False,
             sections=[dict(id='B4.reproducer',authorization='NOT_AUTHORIZED',reason='separate source-pinned forensic manifest and explicit controlled approval required'),
                 dict(id='CPU65536.reproducer',authorization='NOT_AUTHORIZED',reason='high-memory crash experiment excluded from ordinary suite')]),
-        approval_history=[],automatic_retry=False)
+        approval_history=[],automatic_retry=False,
+        execution_policy='continue_independent' if continue_independent else 'fail_fast')
     publish(out/'manifest.json',manifest,new=True)
     (out/'manifest.sha256').write_text(sha(out/'manifest.json')+'\n',encoding='ascii')
     verify(out/'manifest.json',expected=sha(out/'manifest.json'),live=True)
@@ -203,6 +221,8 @@ def verify(path,*,expected=None,live=True,assets=True):
     if expected is None:expected=path.with_suffix('.sha256').read_text(encoding='ascii').strip()
     if not isinstance(expected,str) or len(expected)!=64 or sha(path)!=expected:raise ValueError('manifest SHA256 mismatch')
     m=read(path)
+    if m.get('execution_policy','fail_fast') not in ('fail_fast','continue_independent'):
+        raise ValueError('invalid sealed execution policy')
     if m.get('format')!='hyso.full_acceptance.manifest' or type(m.get('schema_version')) is not int or m['schema_version']!=SCHEMA:
         raise ValueError('unsupported manifest')
     if Path(m['output']).resolve()!=path.parent:raise ValueError('manifest output binding mismatch')

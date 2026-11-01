@@ -12,9 +12,12 @@ from ._layer_allocator import AllocationRecorder
 
 
 class CPUAllocationRecorder(AllocationRecorder):
-    def __init__(self,torch,device,budget,modules,inventory):
+    def __init__(self,torch,device,budget,modules,inventory,*,witness_budget=None):
         if device.type!='cpu':raise ValueError('CPU recorder requires CPU device')
         super().__init__(torch,device,budget)
+        self.witness_budget=budget if witness_budget is None else witness_budget
+        if type(self.witness_budget) is not int or not 1<=self.witness_budget<=500000:
+            raise ValueError('invalid CPU witness evidence budget')
         self.modules=modules;self.inventory=inventory;self.tensor_refs={};self.tensor_serial=0
         self.storage_serials={};self.storage_serial=0;self.cpu_points=[];self.input_edges={};self.witness_items=0
 
@@ -68,8 +71,14 @@ class CPUAllocationRecorder(AllocationRecorder):
             tensors.append(dict(tensor_uid=uid,storage_uid=storage_uid,shape=list(tensor.shape),
                 stride=list(tensor.stride()),storage_offset=int(tensor.storage_offset())))
         live={t['tensor_uid'] for t in tensors};edges=[e for e in edges if e['tensor_uid'] in live]
-        self.witness_items+=len(storages)+len(tensors)+len(edges)
-        if self.witness_items>self.budget:raise ValueError('CPU boundary witness evidence budget exceeded')
+        n_storage=len(storages);n_tensor=len(tensors);n_edges=len(edges)
+        projected=self.witness_items+n_storage+n_tensor+n_edges
+        if projected>self.witness_budget:
+            raise ValueError('CPU boundary witness evidence budget exceeded: '
+                f'invocation_id={index}, phase={phase}, storages={n_storage}, '
+                f'tensors={n_tensor}, edges={n_edges}, accumulated_before={self.witness_items}, '
+                f'projected={projected}, limit={self.witness_budget}')
+        self.witness_items=projected
         from .memory import _observe,_BackendUnavailable
         try:process=dict(status='measured',observation=_observe(),reason=None)
         except _BackendUnavailable as error:process=dict(status='unsupported',observation=None,reason=str(error))

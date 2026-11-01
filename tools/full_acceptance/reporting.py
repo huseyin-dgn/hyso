@@ -2,7 +2,7 @@
 from pathlib import Path
 import collections,csv,json,xml.etree.ElementTree as ET
 from .core import read,publish,record,now,sha
-from .registry import FEATURE_EXPERIMENTS
+from .registry import FEATURE_EXPERIMENTS, ADVISORY_DEPENDENCIES
 
 OBSERVED={'PASS','PARTIAL','FAIL','UNSUPPORTED'}
 MISSING_STATES={'NOT_AUTHORIZED','PENDING','BLOCKED_PREREQUISITE','BLOCKED_DEPENDENCY','NOT_RUN_STOPPED','ABORTED'}
@@ -37,8 +37,10 @@ def decision(m,e,rows,*,stopped=False):
     if not e['authorization']['approved']:return 'NOT_AUTHORIZED',e['authorization']['basis'],ready
     if stopped:return 'NOT_RUN_STOPPED','earlier experiment failed/stopped; no native continuation or retry',ready
     if ready:return 'BLOCKED_PREREQUISITE','; '.join(ready),ready
-    bad=[x for x in e['depends'] if rows[x]['status']!='PASS']
-    if bad:return 'BLOCKED_DEPENDENCY','required successful dependency: '+', '.join(bad),ready
+    policy=m.get('execution_policy','fail_fast')
+    bad=[x for x in e['depends'] if rows[x]['status']!='PASS' and
+         (policy!='continue_independent' or (e['id'],x) not in ADVISORY_DEPENDENCIES)]
+    if bad:return 'BLOCKED_DEPENDENCY','required successful data dependency: '+', '.join(bad),ready
     return 'READY',None,[]
 
 def validate_metrics(row):

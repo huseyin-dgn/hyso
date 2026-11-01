@@ -2,7 +2,7 @@
 from pathlib import Path
 import argparse,contextlib,hashlib,json,os,shutil,subprocess,sys,threading,time,uuid,zipfile
 from .core import (ROOT,DEFAULT_PYTHON,prepare,authorize,verify,read,publish,record,sha,now)
-from .registry import STAGES
+from .registry import STAGES,ADVISORY_DEPENDENCIES
 from .reporting import initial_results,write_reports,decision,prerequisites
 
 def preserve(m):
@@ -186,6 +186,7 @@ def worker(args):
 def preflight(args):
     from .safety import supervise
     if args.manifest:
+        if getattr(args,'continue_independent',False):raise ValueError('continuation policy must be sealed in a newly prepared manifest')
         if (args.manifest.resolve().parent/'STARTED.json').exists():raise FileExistsError('preflight cannot reset an execution report after STARTED; use --status')
         m=verify(args.manifest,expected=args.approved_sha256)
     else:
@@ -193,7 +194,8 @@ def preflight(args):
             from datetime import datetime,timezone,timedelta
             args.output=ROOT/'outputs'/('full-acceptance-'+datetime.now(timezone(timedelta(hours=3))).strftime('%Y%m%d-%H%M%S'))
         m=prepare(args.output,python=args.python,gpu_uuid=args.gpu_uuid,camera_config=args.camera_config,
-            ncu_plan=args.ncu_plan,ort_cpu=args.ort_cpu,ort_cuda=args.ort_cuda)
+            ncu_plan=args.ncu_plan,ort_cpu=args.ort_cpu,ort_cuda=args.ort_cuda,
+            continue_independent=getattr(args,"continue_independent",False))
     out=Path(m['output']);row=dict(id='__environment',handler='environment',output=None,outer_seconds=180)
     path=out/'preparation'/('preflight-'+uuid.uuid4().hex[:8]);p=supervise(m,row,operation='environment',output=path)
     payload=dict(status=p['status'],source_checkpoints_dataset_runtime='hash_verified_before_import',
@@ -291,6 +293,38 @@ def _finalize_execution(m,rows,*,state,complete,preparation,manifest_sha256):
     return state,complete,errors
 
 
+def _execution_order(m):
+    """Run independent diagnostics first; P31 then its dependent P32 last."""
+    experiments=list(m['experiments'])
+    if m.get('execution_policy','fail_fast')!='continue_independent':return experiments
+    last=('10.stability','11.memory')
+    ids={e['id']:e for e in experiments}
+    return [e for e in experiments if e['id'] not in last]+[ids[x] for x in last if x in ids]
+
+
+def _fatal_experiment_boundary(value):
+    """Hard safety stop despite opt-in independent continuation.
+
+    Ordinary worker FAIL with a verified clean owned Job can be isolated. A
+    native crash, user stop, low-memory signal, failed ownership cleanup, or
+    controller/supervisor error is never interpreted as safe to continue.
+    """
+    if value.get('status')=='ABORTED':return 'aborted_or_user_stop'
+    if value.get('status')!='FAIL':return None
+    receipt=value.get('supervisor')
+    if not isinstance(receipt,dict):return 'missing_supervisor_receipt'
+    if receipt.get('native_crash'):return 'native_crash'
+    if receipt.get('reason') in (
+        'user_stop','user_interrupt','Windows_OS_low_memory',
+        'OS_low_memory_before_launch','cleanup_failure','supervisor_error',
+        'startup_watchdog','heartbeat_watchdog',
+    ):return str(receipt['reason'])
+    cleanup=receipt.get('cleanup')
+    if not isinstance(cleanup,dict) or cleanup.get('active_processes')!=0:
+        return 'unverified_owned_job_cleanup'
+    return None
+
+
 def execute(args):
     from .safety import supervise
     if args.approved_sha256 is None:raise ValueError('--execute requires exact --approved-sha256')
@@ -298,13 +332,16 @@ def execute(args):
     manifest_sha256=sha(args.manifest)
     if stopfile.exists():raise ValueError('stop request exists; prepare a fresh manifest, do not clear history')
     publish(out/'STARTED.json',dict(pid=os.getpid(),at=now(),manifest_sha256=sha(args.manifest),one_shot=True),new=True)
-    rows=initial_results(m);stopped=False;state='RUNNING';complete=False
+    rows=initial_results(m);stopped=False;halt_reason=None;state='RUNNING';complete=False
+    policy=m.get('execution_policy','fail_fast')
     prep={}
     try:
         prep=read(out/'stage-results.json').get('preparation',{}) if (out/'stage-results.json').exists() else {}
-        for e in m['experiments']:
+        for e in _execution_order(m):
             status,reason,missing=decision(m,e,rows,stopped=stopped)
             if stopfile.exists():status,reason='NOT_RUN_STOPPED','user stop before next experiment';stopped=True
+            elif stopped and halt_reason is not None:reason=halt_reason
+            dependency_context={k:rows[k]['status'] for k in e['depends']}
             publish(out/'run-status.json',dict(state='RUNNING',run_id=m['run_id'],controller_pid=os.getpid(),controller_active=True,
                 current_experiment=e['id'],manifest_sha256=sha(args.manifest),suite_complete=False,updated_at=now()))
             if status=='READY':
@@ -316,8 +353,16 @@ def execute(args):
                     value=supervise(m,e,stop_file=stopfile)
                 rows[e['id']]=dict(value,id=e['id'],stage=e['stage'])
                 if value['status'] in ('FAIL','ABORTED'):
-                    stopped=True
+                    fatal=_fatal_experiment_boundary(value) if policy=='continue_independent' else 'legacy_fail_fast'
+                    if fatal is not None:
+                        stopped=True
+                        halt_reason=f'unsafe experiment boundary at {e["id"]}: {fatal}'
             else:rows[e['id']].update(status=status,reason=reason,readiness=missing)
+            rows[e['id']]['dependency_context']=dict(
+                observed=dependency_context,
+                advisory_unmet=[k for k,v in dependency_context.items() if v!='PASS' and
+                    policy=='continue_independent' and (e['id'],k) in ADVISORY_DEPENDENCIES],
+                scope='source_pinned_independent_work_not_upstream_evidence_reuse')
             write_reports(m,rows,state='RUNNING',preparation=prep)
             print(e['id'],rows[e['id']]['status'],flush=True)
         complete=all(r.get('attempted') and r['status'] in ('PASS','PARTIAL','FAIL','UNSUPPORTED') for r in rows.values())
@@ -359,10 +404,13 @@ def main(argv=None):
     p.add_argument('--python',type=Path,default=DEFAULT_PYTHON);p.add_argument('--gpu-uuid');p.add_argument('--camera-config',type=Path)
     p.add_argument('--ncu-plan',type=Path);p.add_argument('--ort-cpu',type=Path);p.add_argument('--ort-cuda',type=Path)
     p.add_argument('--approval-text');p.add_argument('--stage-output',type=Path,help=argparse.SUPPRESS)
+    p.add_argument('--continue-independent',action='store_true',help='new --preflight only: seal independent continuation in the manifest')
     p.add_argument('--cuda-subtasks',action='store_true',help='opt-in isolated 04.cuda diagnostic; never legacy PASS')
     p.add_argument('--cuda-probe-task',choices=('04.cuda.A.latency','04.cuda.B.latency'),default='04.cuda.A.latency',help='single CUDA latency probe selection; never full acceptance')
     a=p.parse_args(argv)
     if not a.preflight and a.manifest is None:p.error('--manifest is required')
+    if a.continue_independent and (not a.preflight or a.manifest is not None):
+        p.error('--continue-independent is permitted only with new --preflight --output, no --manifest')
     try:
         if a.cuda_single_probe:
             from .cuda_single_probe import probe

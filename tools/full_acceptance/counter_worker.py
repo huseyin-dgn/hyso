@@ -23,7 +23,7 @@ def target_case(output):
     a=torch.ones(n,device='cuda:0');b=torch.full_like(a,2.);out=torch.empty_like(a)
     for _ in range(2):torch.add(a,b,out=out);torch.cuda.synchronize(0)
     samples=[];runtime=torch.cuda.cudart()
-    for i in range(3):
+    for i in range(1):
         if int(runtime.cudaProfilerStart()):raise RuntimeError('profiler start')
         try:
             torch.cuda.nvtx.range_push('hyso_p18_roof_target')
@@ -35,7 +35,7 @@ def target_case(output):
         samples.append(dict(index=i,output_equal=True,terminal_completed=True))
     write_json(output/'capture.json',dict(pid=os.getpid(),device=0,gpu=torch.cuda.get_device_name(0),
         capability=list(torch.cuda.get_device_capability(0)),dtype='float32',nvtx_range='hyso_p18_roof_target',
-        targeted_launches=3,samples=samples,output_equal=True,terminal_completed=True,script_sha256=sha(__file__),
+        targeted_launches=1,samples=samples,output_equal=True,terminal_completed=True,script_sha256=sha(__file__),
         scope='new_controlled_vector_add_not_trained_CNN_DRAM',allocator_fraction=None))
 
 def run_case(case, output):

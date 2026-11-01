@@ -50,6 +50,25 @@ FEATURE_EXPERIMENTS={
  'P35':['09.provider_cpu','09.provider_cuda'],
 }
 
+# Only these edges are advisory in the explicit independent-continue mode:
+# the destination builds its *own* source-pinned input/checkpoint/worker.
+# All other/future edges remain strict data dependencies by default.
+ADVISORY_DEPENDENCIES = frozenset({
+    ('03.cpu', '02.regression'),
+    ('04.cuda', '03.cpu'),
+    ('05.training', '02.regression'),
+    ('06.layer', '02.regression'),
+    ('06.roofline', '02.regression'),
+    ('07.energy', '04.cuda'),
+    ('07.devices', '04.cuda'),
+    ('08.video', '02.regression'),
+    ('08.camera', '02.regression'),
+    ('09.provider_cpu', '03.cpu'),
+    ('09.provider_cuda', '09.provider_cpu'),
+    ('10.stability', '03.cpu'),
+})
+
+
 def experiments():
     result=[]
     for ident,stage,handler,approved,depends,requires,scope in EXPERIMENTS:

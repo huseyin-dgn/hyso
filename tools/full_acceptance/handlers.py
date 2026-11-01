@@ -269,7 +269,7 @@ def layer(m,root):
     recipe=ColdStartRecipe('full_acceptance.workloads:model_only',model_kwargs=dict(manifest_path=str(Path(m['output'])/'manifest.json'),arm='B'),
         input_shape=(1,1,28,28),device='cpu',factory_search_path=str(tools))
     capture=ProfilingProtocol(warmup_iterations=p['warmup'],measure_iterations=p['windows'],timeout_seconds=120,
-        profile_memory=True,allocation_lifetimes=True,cpu_memory_ownership=True)
+        profile_memory=True,allocation_lifetimes=True,cpu_memory_ownership=True,max_cpu_witness_items=p.get('max_cpu_witness_items',250000),max_cpu_result_bytes=p.get('max_cpu_result_bytes',128*1024**2))
     prof=profile_operators(recipe,protocol=capture,trace_path=root/'trained-trace.json')
     refs=[save(root,'operator-profile',prof),save(root,'layers',profile_layers(prof)),save(root,'operations',analyze_flops(prof))]
     shared=ColdStartRecipe('cpu_layer_factories:Shared',input_shape=(1,1,2,8),device='cpu',
@@ -283,9 +283,23 @@ def layer(m,root):
         evidence=refs,criteria=dict(real_profiler=True,ownership_estimate=d['measurements'].get('status')=='estimated'),
         metrics=[metric('calibration_pair_count',p['trials'],'pair','measured','fresh control/instrumented pairs; windows not independent pairs')])
 
+def _p18_capture_contract(role, ncu_plan):
+    """One target interval, three independent compute/memory reference samples.
+
+    The CSV number format is a source-pinned, explicitly provided plan choice.
+    Never infer it from ambiguous numbers or silently round integer counters.
+    """
+    if role not in ('target', 'compute', 'memory'):
+        raise ValueError('invalid P18 capture role')
+    number_format = ncu_plan.get('number_format')
+    if number_format not in ('decimal_point', 'decimal_comma'):
+        raise ValueError('P18 requires explicit ncu_plan.number_format: decimal_point or decimal_comma')
+    return (1 if role == 'target' else 3), number_format
+
+
 def roofline(m,root):
     from hyso.performance.roofline_counters import read_ncu_counters,analyze_counter_roofline,_sample,_summary
-    ncu=m['optional']['ncu_plan']['configuration']['tool'];script=Path(m['source_snapshot']['root'])/'tools/full_acceptance/counter_worker.py'
+    plan=m['optional']['ncu_plan']['configuration'];ncu=plan['tool'];script=Path(m['source_snapshot']['root'])/'tools/full_acceptance/counter_worker.py'
     if sha(ncu['path'])!=ncu['sha256']:raise ValueError('NCU tool changed')
     metrics=['gpu__time_duration.sum','dram__bytes_read.sum','dram__bytes_write.sum',
         'smsp__sass_thread_inst_executed_op_fadd_pred_on.sum','smsp__sass_thread_inst_executed_op_fmul_pred_on.sum',
@@ -294,9 +308,10 @@ def roofline(m,root):
         'device__attribute_pci_domain_id','device__attribute_pci_bus_id','device__attribute_pci_device_id','device__attribute_display_name']
     sessions={};refs=[];commands=[]
     for role in ('target','compute','memory'):
+        launch_count, number_format = _p18_capture_contract(role, plan)
         folder=root/role;folder.mkdir()
         cmd=[ncu['path'],'--devices','0','--target-processes','application-only','--profile-from-start','off','--nvtx','--nvtx-include',
-            'hyso_p18_roof_'+role+'/','--launch-count','3','--kill','no','--replay-mode','kernel','--clock-control','none',
+            'hyso_p18_roof_'+role+'/','--launch-count',str(launch_count),'--kill','no','--replay-mode','kernel','--clock-control','none',
             '--cache-control','all','--check-exit-code','yes','--metrics',','.join(metrics),'--page','raw','--csv','--print-units','base',
             '--export',str(folder/'capture'),m['runtime']['python']['path'],'-B',str(script),'--manifest',str(Path(m['output'])/'manifest.json'),
             '--case',role,'--output',str(folder)]
@@ -308,7 +323,7 @@ def roofline(m,root):
         parsed=list(csv.DictReader(lines[start:]));names={row['Kernel Name'] for row in parsed[1:]}
         if len(names)!=1:raise ValueError('ambiguous counter kernel')
         session=read_ncu_counters(folder/'raw.csv',receipt_path=folder/'capture.json',session_id=m['run_id']+':'+role,
-            role=role,kernel_name=next(iter(names)),source_paths={'worker':script})
+            role=role,kernel_name=next(iter(names)),number_format=number_format,source_paths={'worker':script})
         sessions[role]=session;refs.append(save(folder,'session',session))
     summary=_summary(sessions['compute']);spread=summary['range_over_median']*100
     independent=[_sample(s)['gflops_per_second'] for s in sessions['compute']['samples']]
@@ -396,6 +411,23 @@ def camera(m,root,*,live):
         metrics=[metric('processed_fps',a['completed_processing_fps'],'frame/s','derived','host application window; not nominal sensor FPS')],
         limits=['sensor/exposure/upstream driver drops unavailable unless adapter measures them','classification correctness needs its own appropriate labeled camera dataset'])
 
+def _trained_cpu_ort_execution_confirmed(value, diag):
+    """Only actual, covered, expected CPU ORT execution establishes acceptance.
+
+    The canonical provider analyzer returns 'expected_execution_observed' for a
+    fully covered, mapped real run; it never returns plain 'completed'.
+    A CPU session being available, or seeing some events, is not enough.
+    """
+    analysis = value.to_dict().get('analysis', {})
+    return (analysis.get('status') == 'expected_execution_observed'
+            and analysis.get('fallback_detected') is False
+            and analysis.get('reason') is None
+            and bool(diag.get('events'))
+            and diag.get('completed_runs') is not None
+            and diag.get('failure_kind') is None
+            and set(diag.get('observed_execution_providers') or ()) == {'CPUExecutionProvider'})
+
+
 def provider(m,root,*,cuda):
     from hyso.performance import WorkloadRecipe,ProviderProtocol,profile_execution_providers
     mp=str(Path(m['output'])/'manifest.json');tools=str(Path(m['source_snapshot']['root'])/'tools');refs=[]
@@ -407,7 +439,7 @@ def provider(m,root,*,cuda):
             value=profile_execution_providers(recipe,root/(arm+'-worker'),protocol=protocol,providers=['CPUExecutionProvider'],expected={'*':'CPUExecutionProvider'},
                 optimization='disabled',runtime_search_path=m['hardware']['ort_cpu'])
             refs.append(save(root,arm+'-provider',value));diag=value.provider_diagnostics();save(root,arm+'-diagnostics',diag)
-            if not diag['events'] or value.to_dict()['analysis']['status']!='completed':return result('FAIL',reason='no_real_trained_ORT_execution',evidence=refs)
+            if not _trained_cpu_ort_execution_confirmed(value,diag):return result('FAIL',reason='no_real_trained_ORT_execution',evidence=refs)
     else:
         tests=str(Path(m['source_snapshot']['root'])/'tests')
         for name,factory in (('relu','deployment_support:onnx_model'),('mixed','provider_acceptance_factories:partition_model')):

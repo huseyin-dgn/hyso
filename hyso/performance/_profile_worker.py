@@ -215,7 +215,7 @@ def main():
             from hyso.performance._layer_allocator import AllocationRecorder
             if p.get('cpu_memory_ownership'):
                 from hyso.performance._cpu_layer_memory import CPUAllocationRecorder
-                allocation=CPUAllocationRecorder(torch,device,p['max_events'],modules,inventory)
+                allocation=CPUAllocationRecorder(torch,device,p['max_events'],modules,inventory,witness_budget=p.get('max_cpu_witness_items',p['max_events']))
             else:allocation=AllocationRecorder(torch,device,p['max_events'])
         if request.get('experiment_mode')=='control':
             windows=[]
