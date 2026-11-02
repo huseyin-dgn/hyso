@@ -62,6 +62,46 @@ MODULES = {
     "hyso/models/WithSE.py", "hyso/models/fit.py",
     "hyso/augmentation/__init__.py", "hyso/augmentation/augmentation.py",
     "hyso/callbacks/__init__.py", "hyso/callbacks/callbacks.py",
+    "hyso/_architecture_coverage.py",
+    "hyso/_architecture_rules.py",
+    "hyso/_evaluation_evidence.py",
+    "hyso/_evaluation_structure.py",
+    "hyso/_structure_native.py",
+    "hyso/advisor/__init__.py",
+    "hyso/advisor/_json.py",
+    "hyso/advisor/_locales.py",
+    "hyso/advisor/_p26_comparison.py",
+    "hyso/advisor/comparison.py",
+    "hyso/advisor/contracts.py",
+    "hyso/advisor/engine.py",
+    "hyso/advisor/goals.py",
+    "hyso/advisor/performance.py",
+    "hyso/advisor/planning.py",
+    "hyso/advisor/presentation.py",
+    "hyso/advisor/profiles.py",
+    "hyso/advisor/render.py",
+    "hyso/advisor/resolver.py",
+    "hyso/advisor/validation.py",
+    "hyso/analysis/__init__.py",
+    "hyso/analysis/_codec.py",
+    "hyso/analysis/_isolated_worker.py",
+    "hyso/analysis/_native.py",
+    "hyso/analysis/_windows_job.py",
+    "hyso/analysis/evidence.py",
+    "hyso/analysis/feature_plan.py",
+    "hyso/analysis/isolated_bridge.py",
+    "hyso/analysis/native_bridge.py",
+    "hyso/analysis/report.py",
+    "hyso/architecture_audit.py",
+    "hyso/performance/_device_diagnostics.py",
+    "hyso/performance/_energy_diagnostics.py",
+    "hyso/performance/_memory_trend_diagnostics.py",
+    "hyso/performance/_provider_diagnostics.py",
+    "hyso/performance/_stability_windows.py",
+    "hyso/performance/_stream_diagnostics.py",
+    "hyso/performance/_stream_resources.py",
+    "hyso/structure.py",
+    "hyso/structure_comparison.py",
 }
 DEPENDENCIES = {"torch", "torchvision", "numpy", "matplotlib", "seaborn",
                 "scikit-learn", "tqdm", "torchsummary"}
@@ -103,7 +143,7 @@ def distributions(tmp_path_factory):
 
 def test_canonical_packaging_configuration():
     assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == MODULES
-    assert len(MODULES) == 80
+    assert len(MODULES) == 120
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
     assert not (ROOT / "hyso/setup.cfg").exists()

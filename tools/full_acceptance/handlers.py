@@ -356,8 +356,7 @@ def stability(m,root,*,energy=False):
     if reopen_stability(root/'journal').to_dict()['evidence']!=d['evidence']:raise ValueError('journal reopen mismatch')
     a=d['analysis'];c=d['evidence']['controller'];terminal=d['evidence']['terminal']
     complete=a['status']=='completed' and c['exit_code']==0 and c['cleanup']['active_processes']==0 and terminal is not None and terminal['closed']
-    actual=diagnostics.get('completion_window',{}).get('seconds')
-    if actual is None:actual=a.get('duration_seconds')
+    actual=a.get('duration_seconds')  # Verified terminal work_end_ns - work_start_ns; not first-to-last completion span.
     complete=complete and actual is not None and actual>=protocol.duration_seconds
     metrics=[metric('actual_work_seconds',actual,'s','derived','one worker actual completed work window'),
         metric('completed_images',a['completed'],'image','measured','same source completion ledger')]
