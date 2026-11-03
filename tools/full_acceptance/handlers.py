@@ -355,7 +355,7 @@ def roofline(m,root):
         launch_count, number_format = _p18_capture_contract(role, plan)
         folder=root/role;folder.mkdir()
         cmd=[ncu['path'],'--devices','0','--target-processes','application-only','--profile-from-start','off','--nvtx','--nvtx-include',
-            'hyso_p18_roof_'+role+'/','--launch-count',str(launch_count),'--kill','no','--replay-mode','kernel','--clock-control','none',
+            'hyso_p18_roof_'+role+'/','--launch-count',str(launch_count),'--kill','no','--replay-mode','kernel','--clock-control','base',
             '--cache-control','all','--check-exit-code','yes','--metrics',','.join(metrics),'--page','raw','--csv','--print-units','base',
             '--export',str(folder/'capture'),m['runtime']['python']['path'],'-B',str(script),'--manifest',str(Path(m['output'])/'manifest.json'),
             '--case',role,'--output',str(folder)]
