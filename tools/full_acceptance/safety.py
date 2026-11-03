@@ -109,7 +109,7 @@ def supervise(manifest,experiment,*,operation=None,output=None,stop_file=None):
     env=dict(os.environ,PYTHONUTF8='1',PYTHONDONTWRITEBYTECODE='1',PYTHONUNBUFFERED='1',MPLBACKEND='Agg')
     # Native descendants inherit only the explicit physical device for CUDA ops.
     env['CUDA_VISIBLE_DEVICES']=manifest['hardware']['gpu_uuid'] if request['operation'] in (
-        'inference_cuda','inference_cuda_subtask','cuda_benchmark_check','energy','devices','provider_cuda','roofline') and manifest['hardware']['gpu_uuid'] else '-1'
+        'inference_cuda','inference_cuda_subtask','cuda_benchmark_check','energy','devices','provider_cuda','roofline','p13_capture') and manifest['hardware']['gpu_uuid'] else '-1'
     env.pop('HYSO_NATIVE_GPU_UUID',None)
     module=load_file(snapshot/'hyso/performance/_training_process.py','acceptance_owned_job')
     resource_module=load_file(snapshot/'hyso/performance/_stream_resources.py','acceptance_low_memory')

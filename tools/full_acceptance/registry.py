@@ -18,6 +18,8 @@ EXPERIMENTS=(
  ('03.cpu','03','inference_cpu',True,('02.regression',),(), 'trained A/B CPU FP32; same declared resident batch and full test cohort'),
  ('04.cuda','04','inference_cuda',False,('03.cpu',),('gpu',), 'trained A/B native CUDA; no allocator fraction'),
  ('05.training','05','training',False,('02.regression',),(), 'fresh trained Model B clones; real train/validation split, separate fits'),
+ ('06.p13_capture','06','p13_capture',False,('02.regression',),('gpu','p13_nsys_plan'),
+  'P13 explicitly authorized Model B Nsight Systems capture; no automatic CUDA attribution promotion'),
  ('06.layer','06','layer',False,('02.regression',),(), 'real CPU ownership profile and5 paired calibration workers; no B4 replay'),
  ('06.roofline','06','roofline',False,('02.regression',),('ncu_plan',), 'independent native counter reference sessions; original10% spread screen'),
  ('07.energy','07','energy',False,('04.cuda',),('gpu',), 'trained Model B same UUID idle+active physical board samples'),

@@ -168,7 +168,8 @@ def worker(args):
         dispatch={'environment':h.environment,'smoke_cpu':h.smoke_cpu,'cpu_benchmark_check':h.cpu_benchmark_check,'cuda_benchmark_check':h.cuda_benchmark_check,'regression':h.regression,
             'inference_cpu':lambda m,r:h.inference(m,r,'cpu'),'inference_cuda':lambda m,r:h.inference(m,r,'cuda:0'),
             'inference_cuda_subtask':lambda m,r:cuda_subtask_run(m,r,route),
-            'training':h.training,'layer':h.layer,'roofline':h.roofline,'energy':lambda m,r:h.stability(m,r,energy=True),
+            'training':h.training,'layer':h.layer,'roofline':h.roofline,
+            'p13_capture':h.p13_capture,'energy':lambda m,r:h.stability(m,r,energy=True),
             'devices':h.devices,'video':lambda m,r:h.camera(m,r,live=False),'camera':lambda m,r:h.camera(m,r,live=True),
             'provider_cpu':lambda m,r:h.provider(m,r,cuda=False),'provider_cuda':lambda m,r:h.provider(m,r,cuda=True),
             'stability':h.stability,'memory':h.memory,'replay':h.replay}
@@ -197,6 +198,7 @@ def preflight(args):
             args.output=ROOT/'outputs'/('full-acceptance-'+datetime.now(timezone(timedelta(hours=3))).strftime('%Y%m%d-%H%M%S'))
         m=prepare(args.output,python=args.python,gpu_uuid=args.gpu_uuid,camera_config=args.camera_config,
             ncu_plan=args.ncu_plan,ort_cpu=args.ort_cpu,ort_cuda=args.ort_cuda,p13_evidence=getattr(args,'p13_evidence',None),
+            p13_nsys_plan=getattr(args,'p13_nsys_plan',None),
             continue_independent=getattr(args,"continue_independent",False))
     out=Path(m['output']);row=dict(id='__environment',handler='environment',output=None,outer_seconds=180)
     path=out/'preparation'/('preflight-'+uuid.uuid4().hex[:8]);p=supervise(m,row,operation='environment',output=path)
@@ -408,6 +410,7 @@ def main(argv=None):
     p.add_argument('--manifest',type=Path);p.add_argument('--output',type=Path);p.add_argument('--approved-sha256')
     p.add_argument('--python',type=Path,default=DEFAULT_PYTHON);p.add_argument('--gpu-uuid');p.add_argument('--camera-config',type=Path)
     p.add_argument('--ncu-plan',type=Path);p.add_argument('--ort-cpu',type=Path);p.add_argument('--ort-cuda',type=Path)
+    p.add_argument('--p13-nsys-plan',type=Path,help='explicit pinned native P13 tool; does not authorize GPU work')
     p.add_argument('--p13-evidence',type=Path,help='read-only pinned P13 Nsight evidence configuration; grants no native authorization')
     p.add_argument('--approval-text');p.add_argument('--stage-output',type=Path,help=argparse.SUPPRESS)
     p.add_argument('--continue-independent',action='store_true',help='new --preflight only: seal independent continuation in the manifest')

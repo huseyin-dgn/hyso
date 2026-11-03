@@ -27,6 +27,12 @@ def prerequisites(m,e):
         elif key=='video':
             cfg=m['optional'].get('camera_adapter',{}).get('configuration',{}).get('video',{})
             if not cfg.get('path') or not Path(cfg['path']).is_file():missing.append('real local video required')
+        elif key=='p13_nsys_plan':
+            cfg=m['optional'].get('p13_nsys_plan',{}).get('configuration',{})
+            tool=cfg.get('tool',{})
+            if (not isinstance(tool,dict) or not tool.get('path')
+                    or not Path(tool['path']).is_file() or cfg.get('protocol')!='trained_B_3_forward_module_nvtx'):
+                missing.append('explicit pinned Nsight Systems x64 and P13 protocol required')
         elif key=='ncu_plan':
             cfg=m['optional'].get('ncu_plan',{}).get('configuration',{})
             if not cfg.get('tool') or not Path(cfg['tool']['path']).is_file():missing.append('installed pinned Nsight Compute required; native counter privileges checked at capture')

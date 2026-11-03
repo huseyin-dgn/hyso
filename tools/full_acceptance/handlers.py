@@ -302,6 +302,10 @@ def layer(m,root):
             P13_verified_module_attribution=cuda['status']=='PASS'),
         metrics=[metric('calibration_pair_count',p['trials'],'pair','measured','fresh control/instrumented pairs; windows not independent pairs')])
 
+def p13_capture(m,root):
+    from .p13_capture_native import run
+    return run(m,root)
+
 def _p13_cuda_evidence(m,root):
     """Optional sealed-manifest evidence import; no new native capture permission."""
     from hyso.performance import analyze_nsys_modules

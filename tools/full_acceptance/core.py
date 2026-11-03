@@ -98,7 +98,7 @@ def runtime_inventory(python):
         expected=dict(torch='2.5.1+cu121',torchvision='0.20.1+cu121',python_major_minor='3.10'),
         tooling='existing local packages only; no install performed')
 
-def prepare(output,*,python=DEFAULT_PYTHON,gpu_uuid=None,camera_config=None,ncu_plan=None,ort_cpu=None,ort_cuda=None,continue_independent=False,p13_evidence=None):
+def prepare(output,*,python=DEFAULT_PYTHON,gpu_uuid=None,camera_config=None,ncu_plan=None,ort_cpu=None,ort_cuda=None,continue_independent=False,p13_evidence=None,p13_nsys_plan=None):
     if type(continue_independent) is not bool:raise TypeError('continue_independent must be bool')
     out=Path(output).resolve();out.mkdir(parents=True,exist_ok=True)
     if (out/'manifest.json').exists() or (out/'source').exists():raise FileExistsError('use a new output directory; manifests are never overwritten')
@@ -133,7 +133,7 @@ def prepare(output,*,python=DEFAULT_PYTHON,gpu_uuid=None,camera_config=None,ncu_
         if sha(path)!=row['artifact_sha256']:raise ValueError('replay artifact changed: '+str(path))
         replay_sources[str(path)]=row['artifact_sha256']
     extras={}
-    for key,val in (('camera_adapter',camera_config),('ncu_plan',ncu_plan),('p13_evidence',p13_evidence)):
+    for key,val in (('camera_adapter',camera_config),('ncu_plan',ncu_plan),('p13_evidence',p13_evidence),('p13_nsys_plan',p13_nsys_plan)):
         if val:extras[key]=dict(file=record(val),configuration=read(val))
     if ncu_plan is None:
         ncu=Path('C:/Program Files/NVIDIA Corporation/Nsight Compute 2026.3.1/target/windows-desktop-win7-x64/ncu.exe')
@@ -161,7 +161,7 @@ def prepare(output,*,python=DEFAULT_PYTHON,gpu_uuid=None,camera_config=None,ncu_
     runtime['optional_runtime_files']=optional_runtime
     exp=experiments()
     budgets={'environment':180,'regression':900,'inference_cpu':900,'inference_cuda':900,'training':1800,'layer':1500,
-        'roofline':600,'energy':300,'devices':1500,'video':330,'camera':330,'provider_cpu':900,'provider_cuda':900,
+        'roofline':600,'p13_capture':600,'energy':300,'devices':1500,'video':330,'camera':330,'provider_cpu':900,'provider_cuda':900,
         'stability':7440,'memory':300,'replay':900}
     for item in exp:
         item.update(output=str(out/'stages'/item['id']),device='cpu',model='A/B' if item['id'] in ('03.cpu','04.cuda','07.devices') else 'B',
@@ -171,9 +171,10 @@ def prepare(output,*,python=DEFAULT_PYTHON,gpu_uuid=None,camera_config=None,ncu_
         item['outer_seconds']=budgets[item['handler']]
         item['deadline_basis']='native producer maximum +120s startup and cleanup reserve; finite work counts fixed below; no hardware capacity inference'
         if item['handler']=='stability':item['deadline_basis']='existing reviewed P31 plan:7200s work +120s startup +120s cleanup/export reserve =7440s'
-        if item['handler'] in ('inference_cuda','energy','devices','provider_cuda','roofline'):item['device']=gpu_uuid
+        if item['handler'] in ('inference_cuda','energy','devices','provider_cuda','roofline','p13_capture'):item['device']=gpu_uuid
         if item['handler']=='stability':item['expected_work']='one Model B CPU FP32 batch256 actual uninterrupted7200s; no prefix concatenation'
         if item['handler'] in ('inference_cpu','inference_cuda'):item['expected_work']='each A/B:1000 latency forwards batch256 +40 completed throughput batches +10000-sample baseline/precision quality; declared finite sweeps/pipeline; CPU also paired robustness256 and matched P29 descriptions'
+        if item['handler']=='p13_capture':item['expected_work']='trained B batch1, two warmups, three NVTX CUDA forwards; Nsight report and SQLite export; post-Job finalization required'
         if item['handler']=='energy':item['expected_work']='5s inactive baseline +30s completed trained Model B CUDA inference; physical power samples every.5s'
         if item['handler']=='devices':item['expected_work']='A and B separately:CPU and physical GPU each3 warmups+1000 timed/completed forwards batch256'
         if item['handler']=='layer':item['expected_work']='trained B CPU trace2 warmups+5 measured; shared ownership5 pairs x2 arms x(2warmup+2priming+5analyzed) forwards'
@@ -246,6 +247,7 @@ def verify(path,*,expected=None,live=True,assets=True):
             cfg=m['optional']['p13_evidence']['configuration']
             refs.extend(cfg[k] for k in ('sqlite','report','capture') if cfg.get(k))
         if 'ncu_plan' in m['optional']:refs.append(m['optional']['ncu_plan']['configuration']['tool'])
+        if 'p13_nsys_plan' in m['optional']:refs.append(m['optional']['p13_nsys_plan']['configuration']['tool'])
         if 'camera_adapter' in m['optional']:
             camera=m['optional']['camera_adapter']['configuration']
             refs.extend(camera[x] for x in ('factory_source','checkpoint','video') if isinstance(camera.get(x),dict) and camera[x].get('path'))
