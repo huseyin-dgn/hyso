@@ -46,6 +46,30 @@ def verify_child_gate(gate,request):
 
 def native_exit(code):return code is not None and (code<0 or (code&0xffffffff)>=0x80000000)
 
+
+def capture_stop(data):
+    """Read current nested-capture receipts; never infer safety from outer exit0."""
+    pending=[data]
+    while pending:
+        item=pending.pop()
+        if isinstance(item,list):
+            pending.extend(v for v in item if isinstance(v,(dict,list)))
+        elif isinstance(item,dict):
+            if item.get('outcome')=='native_crash' or item.get('status')=='crashed':return 'nested_native_crash'
+            code=item.get('exit_code')
+            if type(code) is int and native_exit(code):return 'nested_native_crash'
+            if 'cleanup' in item and isinstance(item['cleanup'],dict) and item['cleanup'].get('active_processes')!=0:
+                return 'nested_cleanup_failure'
+            if item.get('process_terminated') is False:return 'nested_cleanup_failure'
+            if item.get('reason') in ('Windows_OS_low_memory','OS_low_memory_before_launch','os_low_memory',
+                                     'controller_interrupted','controller_error','heartbeat_timeout','startup_timeout'):
+                return 'nested_'+item['reason']
+            # Event/tensor rows carry measurements, not process receipts.
+            pending.extend(v for k,v in item.items() if k not in
+                ('rows','events','trace_events','records','invocations','module_inventory','operators','kernels','aten_calls')
+                and isinstance(v,(dict,list)))
+    return None
+
 def stage_evidence_bytes(root):
     """Sample live evidence without racing atomic publishers' temporary paths."""
     total=0

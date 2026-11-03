@@ -98,7 +98,7 @@ def runtime_inventory(python):
         expected=dict(torch='2.5.1+cu121',torchvision='0.20.1+cu121',python_major_minor='3.10'),
         tooling='existing local packages only; no install performed')
 
-def prepare(output,*,python=DEFAULT_PYTHON,gpu_uuid=None,camera_config=None,ncu_plan=None,ort_cpu=None,ort_cuda=None,continue_independent=False):
+def prepare(output,*,python=DEFAULT_PYTHON,gpu_uuid=None,camera_config=None,ncu_plan=None,ort_cpu=None,ort_cuda=None,continue_independent=False,p13_evidence=None):
     if type(continue_independent) is not bool:raise TypeError('continue_independent must be bool')
     out=Path(output).resolve();out.mkdir(parents=True,exist_ok=True)
     if (out/'manifest.json').exists() or (out/'source').exists():raise FileExistsError('use a new output directory; manifests are never overwritten')
@@ -133,7 +133,7 @@ def prepare(output,*,python=DEFAULT_PYTHON,gpu_uuid=None,camera_config=None,ncu_
         if sha(path)!=row['artifact_sha256']:raise ValueError('replay artifact changed: '+str(path))
         replay_sources[str(path)]=row['artifact_sha256']
     extras={}
-    for key,val in (('camera_adapter',camera_config),('ncu_plan',ncu_plan)):
+    for key,val in (('camera_adapter',camera_config),('ncu_plan',ncu_plan),('p13_evidence',p13_evidence)):
         if val:extras[key]=dict(file=record(val),configuration=read(val))
     if ncu_plan is None:
         ncu=Path('C:/Program Files/NVIDIA Corporation/Nsight Compute 2026.3.1/target/windows-desktop-win7-x64/ncu.exe')
@@ -242,6 +242,9 @@ def verify(path,*,expected=None,live=True,assets=True):
         if m.get('preservation_baseline'):refs.append(m['preservation_baseline'])
         if m.get('external_preservation_baseline'):refs.append(m['external_preservation_baseline'])
         refs.extend(x['file'] for x in m['optional'].values() if 'file' in x)
+        if 'p13_evidence' in m['optional']:
+            cfg=m['optional']['p13_evidence']['configuration']
+            refs.extend(cfg[k] for k in ('sqlite','report','capture') if cfg.get(k))
         if 'ncu_plan' in m['optional']:refs.append(m['optional']['ncu_plan']['configuration']['tool'])
         if 'camera_adapter' in m['optional']:
             camera=m['optional']['camera_adapter']['configuration']

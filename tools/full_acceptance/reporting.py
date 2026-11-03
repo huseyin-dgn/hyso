@@ -30,6 +30,9 @@ def prerequisites(m,e):
         elif key=='ncu_plan':
             cfg=m['optional'].get('ncu_plan',{}).get('configuration',{})
             if not cfg.get('tool') or not Path(cfg['tool']['path']).is_file():missing.append('installed pinned Nsight Compute required; native counter privileges checked at capture')
+            if cfg.get('number_format') not in ('decimal_point','decimal_comma'):
+                missing.append('explicit ncu_plan.number_format required before capture')
+            if not m['hardware'].get('gpu_uuid'):missing.append('physical GPU UUID required for counter capture')
     return missing
 
 def decision(m,e,rows,*,stopped=False):
@@ -51,7 +54,8 @@ def validate_metrics(row):
 
 def matrix(m,rows):
     old=read(m['prior_audit']['P01-P35-acceptance-matrix.json']['path']);out=[]
-    promotions={'P18':('06.roofline','P18_calibration_screen'),'P30':('08.camera','real_camera_trained'),
+    promotions={'P13':('06.layer','P13_verified_module_attribution'),
+        'P18':('06.roofline','P18_calibration_screen'),'P30':('08.camera','real_camera_trained'),
         'P31':('10.stability','P31_uninterrupted_7200'),'P33':('07.energy','trained_energy_full'),
         'P34':('07.devices','trained_matched_CPU_GPU')}
     for feature in old['features']:
@@ -59,7 +63,12 @@ def matrix(m,rows):
         current=feature['decision'];basis='retained historical scoped decision; no automatic promotion from stage exit'
         if ident in promotions:
             stage,key=promotions[ident];row=rows[stage]
-            if row.get('attempted') and row['status']=='PASS' and row.get('criteria',{}).get(key) is True and row.get('supervisor',{}).get('cleanup',{}).get('active_processes')==0:
+            p13_ready=(ident!='P13' or (row.get('criteria',{}).get('ownership_estimate') is True
+                and row.get('criteria',{}).get('real_profiler') is True
+                and any(e['id']==stage and e['authorization']['approved'] is True for e in m['experiments'])))
+            authorized=any(e['id']==stage and e['authorization']['approved'] is True for e in m['experiments'])
+            active=row.get('supervisor',{}).get('cleanup',{}).get('active_processes')
+            if authorized and p13_ready and row.get('attempted') and row['status']=='PASS' and row.get('criteria',{}).get(key) is True and type(active) is int and active==0:
                 current='PASS';basis='new exact criterion satisfied in declared scope; historical failed sessions unchanged'
             elif row['status']=='FAIL':current='FAIL';basis='new required acceptance criterion actually failed; historical scope retained separately'
         execution='FAIL' if any(r['status']=='FAIL' for r in selected) else 'ABORTED' if any(r['status']=='ABORTED' for r in selected) else (

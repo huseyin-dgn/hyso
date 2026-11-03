@@ -177,8 +177,10 @@ def worker(args):
         validate_metrics(value);value.update(id=args.worker,finished_at=now(),manifest_sha256=request['manifest_sha256'],gate=gate)
         publish(root/'result.json',value,new=True);status=value['status']
     except BaseException as error:
+        from .safety import capture_stop
+        boundary=getattr(error,'safety_stop',None) or capture_stop(getattr(error,'diagnostics',{}))
         publish(root/'result.json',dict(id=args.worker,status='FAIL',reason=type(error).__name__+': '+str(error),metrics=[],
-            criteria={},finished_at=now(),manifest_sha256=request['manifest_sha256']),new=True)
+            criteria={},safety_stop=boundary,finished_at=now(),manifest_sha256=request['manifest_sha256']),new=True)
         import traceback;traceback.print_exc();status='FAIL'
     finally:stop.set();thread.join(3)
     return 1 if status=='FAIL' else 0
@@ -194,7 +196,7 @@ def preflight(args):
             from datetime import datetime,timezone,timedelta
             args.output=ROOT/'outputs'/('full-acceptance-'+datetime.now(timezone(timedelta(hours=3))).strftime('%Y%m%d-%H%M%S'))
         m=prepare(args.output,python=args.python,gpu_uuid=args.gpu_uuid,camera_config=args.camera_config,
-            ncu_plan=args.ncu_plan,ort_cpu=args.ort_cpu,ort_cuda=args.ort_cuda,
+            ncu_plan=args.ncu_plan,ort_cpu=args.ort_cpu,ort_cuda=args.ort_cuda,p13_evidence=getattr(args,'p13_evidence',None),
             continue_independent=getattr(args,"continue_independent",False))
     out=Path(m['output']);row=dict(id='__environment',handler='environment',output=None,outer_seconds=180)
     path=out/'preparation'/('preflight-'+uuid.uuid4().hex[:8]);p=supervise(m,row,operation='environment',output=path)
@@ -309,11 +311,14 @@ def _fatal_experiment_boundary(value):
     native crash, user stop, low-memory signal, failed ownership cleanup, or
     controller/supervisor error is never interpreted as safe to continue.
     """
+    if value.get('safety_stop'):return str(value['safety_stop'])
     if value.get('status')=='ABORTED':return 'aborted_or_user_stop'
     if value.get('status')!='FAIL':return None
     receipt=value.get('supervisor')
     if not isinstance(receipt,dict):return 'missing_supervisor_receipt'
     if receipt.get('native_crash'):return 'native_crash'
+    if value.get('reason') in ('missing_worker_terminal_result','worker_terminal_identity_mismatch'):
+        return str(value['reason'])
     if receipt.get('reason') in (
         'user_stop','user_interrupt','Windows_OS_low_memory',
         'OS_low_memory_before_launch','cleanup_failure','supervisor_error',
@@ -403,6 +408,7 @@ def main(argv=None):
     p.add_argument('--manifest',type=Path);p.add_argument('--output',type=Path);p.add_argument('--approved-sha256')
     p.add_argument('--python',type=Path,default=DEFAULT_PYTHON);p.add_argument('--gpu-uuid');p.add_argument('--camera-config',type=Path)
     p.add_argument('--ncu-plan',type=Path);p.add_argument('--ort-cpu',type=Path);p.add_argument('--ort-cuda',type=Path)
+    p.add_argument('--p13-evidence',type=Path,help='read-only pinned P13 Nsight evidence configuration; grants no native authorization')
     p.add_argument('--approval-text');p.add_argument('--stage-output',type=Path,help=argparse.SUPPRESS)
     p.add_argument('--continue-independent',action='store_true',help='new --preflight only: seal independent continuation in the manifest')
     p.add_argument('--cuda-subtasks',action='store_true',help='opt-in isolated 04.cuda diagnostic; never legacy PASS')

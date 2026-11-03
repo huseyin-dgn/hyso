@@ -18,6 +18,18 @@ def save(root,name,value):
     else:publish(path,value,new=True)
     return record(path)
 
+
+class UnsafeCaptureError(RuntimeError):
+    def __init__(self,boundary):
+        self.safety_stop=boundary
+        super().__init__(boundary)
+
+
+def _check_capture_boundary(data):
+    from .safety import capture_stop
+    boundary=capture_stop(data)
+    if boundary:raise UnsafeCaptureError(boundary)
+
 def environment(m,root):
     import torch,torchvision,numpy
     from .workloads import configure
@@ -242,6 +254,10 @@ def training(m,root):
     mem=measure_training_memory_isolated(recipe,protocol=IsolatedTrainingMemoryProtocol(timeout_seconds=600,
         process_memory_bytes=None,job_memory_bytes=None,max_processes=4,cuda_memory_fraction=None,saved_activation_lifetime=True))
     evidence.append(save(root,'isolated-memory',mem))
+    memory_data=mem.to_dict();_check_capture_boundary(memory_data)
+    if memory_data['outcome']!='success':
+        return result('FAIL',reason='isolated_P23_worker_did_not_complete',evidence=evidence,
+            safety_stop='nested_worker_incomplete',criteria=dict(isolated_P23=False))
     from hyso import EvaluationCohort,measure_time_to_quality
     from .workloads import data
     import torch
@@ -279,9 +295,31 @@ def layer(m,root):
     refs.append(save(root,'ownership-calibration',overhead));d=overhead.to_dict()
     if d['measurements']['status']!='estimated':return result('FAIL',reason='ownership_calibration_screen_failed: '+str(d['measurements'].get('reason')),
         evidence=refs,criteria=dict(real_profiler=True,ownership_estimate=False))
-    return result('PARTIAL',reason='CPU_ownership_calibration_does_not_establish_CUDA_module_kernel_attribution',
-        evidence=refs,criteria=dict(real_profiler=True,ownership_estimate=d['measurements'].get('status')=='estimated'),
+    cuda = _p13_cuda_evidence(m,root)
+    refs.extend(cuda.pop('evidence'))
+    return result(cuda['status'],reason=cuda['reason'],
+        evidence=refs,criteria=dict(real_profiler=True,ownership_estimate=True,
+            P13_verified_module_attribution=cuda['status']=='PASS'),
         metrics=[metric('calibration_pair_count',p['trials'],'pair','measured','fresh control/instrumented pairs; windows not independent pairs')])
+
+def _p13_cuda_evidence(m,root):
+    """Optional sealed-manifest evidence import; no new native capture permission."""
+    from hyso.performance import analyze_nsys_modules
+    cfg=m.get('optional',{}).get('p13_evidence',{}).get('configuration')
+    if cfg is None:
+        return result('PARTIAL',reason='CPU_ownership_calibration_does_not_establish_CUDA_module_kernel_attribution',evidence=[])
+    try:
+        data=analyze_nsys_modules(cfg)
+        capture=data['capture']
+        if capture is not None:
+            if (capture['checkpoint']['sha256']!=m['assets']['models']['B']['sha256']
+                    or capture['gpu_uuid']!=m['hardware']['gpu_uuid']):
+                raise ValueError('P13 capture does not match acceptance Model B/device')
+        ref=save(root,'verified-cuda-modules',data)
+    except ValueError as error:
+        return result('FAIL',reason='invalid_P13_CUDA_evidence: '+str(error),evidence=[])
+    return result('PASS' if data['status']=='complete' else 'PARTIAL',
+        reason=None if data['status']=='complete' else 'P13_CUDA_attribution_or_capture_provenance_incomplete',evidence=[ref])
 
 def _p18_capture_contract(role, ncu_plan):
     """One target interval, three independent compute/memory reference samples.
@@ -295,6 +333,12 @@ def _p18_capture_contract(role, ncu_plan):
     if number_format not in ('decimal_point', 'decimal_comma'):
         raise ValueError('P18 requires explicit ncu_plan.number_format: decimal_point or decimal_comma')
     return (1 if role == 'target' else 3), number_format
+
+
+def _run_counter_capture(cmd,out,err):
+    try:p=subprocess.run(cmd,stdout=out,stderr=err,timeout=120,creationflags=subprocess.CREATE_NO_WINDOW)
+    except subprocess.TimeoutExpired as error:raise UnsafeCaptureError('nested_counter_capture_timeout') from error
+    if p.returncode:raise UnsafeCaptureError('nested_counter_capture_failed_exit_'+str(p.returncode))
 
 
 def roofline(m,root):
@@ -317,8 +361,7 @@ def roofline(m,root):
             '--case',role,'--output',str(folder)]
         commands.append(cmd);save(root,'commands-through-'+role,commands)
         with (folder/'raw.csv').open('xb') as out,(folder/'stderr.log').open('xb') as err:
-            p=subprocess.run(cmd,stdout=out,stderr=err,timeout=120,creationflags=subprocess.CREATE_NO_WINDOW)
-        if p.returncode:raise RuntimeError('NCU capture failed, no retry; exit='+str(p.returncode))
+            _run_counter_capture(cmd,out,err)
         lines=(folder/'raw.csv').read_text(encoding='utf-8-sig').splitlines();start=next(i for i,l in enumerate(lines) if l.startswith(('"ID",','ID,')))
         parsed=list(csv.DictReader(lines[start:]));names={row['Kernel Name'] for row in parsed[1:]}
         if len(names)!=1:raise ValueError('ambiguous counter kernel')
@@ -352,13 +395,15 @@ def stability(m,root,*,energy=False):
             process_memory_bytes=None,job_memory_bytes=None,max_processes=None)
     else:protocol=StabilityProtocol(**m['protocols']['stability'])
     raw=measure_stability(recipe,root/'journal',protocol=protocol);refs=[save(root,'stability',raw)]
-    d=raw.to_dict();diagnostics=raw.stability_diagnostics();save(root,'diagnostics',diagnostics)
+    d=raw.to_dict();_check_capture_boundary(d)
+    diagnostics=raw.stability_diagnostics();save(root,'diagnostics',diagnostics)
     if reopen_stability(root/'journal').to_dict()['evidence']!=d['evidence']:raise ValueError('journal reopen mismatch')
     a=d['analysis'];c=d['evidence']['controller'];terminal=d['evidence']['terminal']
     complete=a['status']=='completed' and c['exit_code']==0 and c['cleanup']['active_processes']==0 and terminal is not None and terminal['closed']
     actual=a.get('duration_seconds')  # Verified terminal work_end_ns - work_start_ns; not first-to-last completion span.
     complete=complete and actual is not None and actual>=protocol.duration_seconds
-    metrics=[metric('actual_work_seconds',actual,'s','derived','one worker actual completed work window'),
+    metrics=[metric('actual_work_seconds',actual,'s','derived','one worker actual completed work window',
+                    'no validated terminal work window' if actual is None else None),
         metric('completed_images',a['completed'],'image','measured','same source completion ledger')]
     if energy:
         en=analyze_energy(raw,max_gap_seconds=p['max_gap_seconds'],idle_max_age_seconds=p['idle_max_age_seconds']);refs.append(save(root,'energy',en));ea=en.to_dict()['analysis']
@@ -381,7 +426,7 @@ def devices(m,root):
         p=m['protocols']['device']
         d=compare_devices(recipe,['cpu',m['hardware']['gpu_uuid']],root/(arm+'-workers'),protocol=DeviceProtocol(**p,
             startup_timeout_seconds=120,step_timeout_seconds=60,max_runtime_seconds=300,process_memory_bytes=None,job_memory_bytes=None,max_processes=None))
-        refs.append(save(root,arm+'-comparison',d));a=d.to_dict()['analysis']
+        refs.append(save(root,arm+'-comparison',d));_check_capture_boundary(d.to_dict());a=d.to_dict()['analysis']
         if not a['comparable'] or any(row['identity']['origin']['kind']!='trained_checkpoint' for row in a['devices']):
             return result('FAIL',reason='trained_device_pair_not_comparable',evidence=refs)
         save(root,arm+'-diagnostics',d.device_diagnostics())
@@ -389,8 +434,9 @@ def devices(m,root):
         limits=['ratios belong only to this matched protocol','RSS, CUDA allocated/reserved, logical bytes remain separate','no universal winner or statistical superiority'])
 
 def memory(m,root):
-    from hyso.performance import RuntimeResult,analyze_memory_trend
-    source=Path(m['output'])/'stages/10.stability/stability.json';raw=RuntimeResult.from_json(source)
+    from hyso.performance import analyze_memory_trend
+    from .p31_evidence import validated_source
+    raw=validated_source(m)
     refs=[]
     for warmup in (0.,60.,300.):refs.append(save(root,'growth-warmup-'+str(int(warmup)),analyze_memory_trend(raw,warmup_seconds=warmup)))
     return result(evidence=refs,criteria=dict(actual_long_run_series=True),
@@ -404,7 +450,7 @@ def camera(m,root,*,live):
         search_path=str(Path(m['source_snapshot']['root'])/'tools'))
     p=m['protocols']['camera' if live else 'video'];raw=measure_streaming(source,recipe,root/'journal',protocol=StreamProtocol(**p,
         max_runtime_seconds=180,startup_timeout_seconds=120,heartbeat_timeout_seconds=60))
-    ref=save(root,'stream',raw);d=raw.to_dict();a=d['analysis']
+    ref=save(root,'stream',raw);d=raw.to_dict();_check_capture_boundary(d);a=d['analysis']
     conservation=a['received']==a['processed']+a['dropped']+a['pending'];ok=a['status']=='completed' and conservation
     return result('PASS' if ok else 'FAIL',evidence=[ref],criteria=dict(real_camera_trained=bool(live and ok),conservation=conservation),
         metrics=[metric('processed_fps',a['completed_processing_fps'],'frame/s','derived','host application window; not nominal sensor FPS')],
@@ -437,7 +483,7 @@ def provider(m,root,*,cuda):
             recipe=WorkloadRecipe('full_acceptance.workloads:onnx_trained',dict(manifest_path=mp,arm=arm,export_path=str(root/(arm+'.onnx'))),search_path=tools)
             value=profile_execution_providers(recipe,root/(arm+'-worker'),protocol=protocol,providers=['CPUExecutionProvider'],expected={'*':'CPUExecutionProvider'},
                 optimization='disabled',runtime_search_path=m['hardware']['ort_cpu'])
-            refs.append(save(root,arm+'-provider',value));diag=value.provider_diagnostics();save(root,arm+'-diagnostics',diag)
+            refs.append(save(root,arm+'-provider',value));_check_capture_boundary(value.to_dict());diag=value.provider_diagnostics();save(root,arm+'-diagnostics',diag)
             if not _trained_cpu_ort_execution_confirmed(value,diag):return result('FAIL',reason='no_real_trained_ORT_execution',evidence=refs)
     else:
         tests=str(Path(m['source_snapshot']['root'])/'tests')
@@ -446,7 +492,7 @@ def provider(m,root,*,cuda):
             value=profile_execution_providers(recipe,root/(name+'-worker'),protocol=protocol,
                 providers=['CUDAExecutionProvider','CPUExecutionProvider'],expected={'*':'CUDAExecutionProvider'},optimization='disabled',
                 runtime_search_path=m['hardware']['ort_cuda'],provider_options={'CUDAExecutionProvider':{'device_id':0}})
-            refs.append(save(root,name+'-provider',value));diag=value.provider_diagnostics();save(root,name+'-diagnostics',diag)
+            refs.append(save(root,name+'-provider',value));_check_capture_boundary(value.to_dict());diag=value.provider_diagnostics();save(root,name+'-diagnostics',diag)
             observed=set(diag['observed_execution_providers'])
             if 'CUDAExecutionProvider' not in observed or name=='mixed' and observed!={'CUDAExecutionProvider','CPUExecutionProvider'}:
                 return result('FAIL',reason='expected_actual_native_node_placement_missing',evidence=refs)

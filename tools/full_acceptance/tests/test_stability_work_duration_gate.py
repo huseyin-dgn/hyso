@@ -108,7 +108,14 @@ class VerifiedWorkDurationTests(Fixture):
     def test_failed_cleanup_cannot_pass_with_sufficient_work(self):
         for energy, requested in ((True, 30.), (False, 7200.)):
             with self.subTest(energy=energy):
-                outcome = self._stage(energy=energy, requested=requested,
-                    work_seconds=requested + 1, completion_seconds=requested + 1,
-                    active_processes=1)
-                self.assertEqual(outcome['status'], 'PARTIAL' if energy else 'FAIL')
+                with self.assertRaises(handlers.UnsafeCaptureError):
+                    self._stage(energy=energy, requested=requested,
+                        work_seconds=requested + 1, completion_seconds=requested + 1,
+                        active_processes=1)
+
+    def test_missing_terminal_duration_is_null_with_reason_not_a_metric_exception(self):
+        outcome=self._stage(energy=False,requested=7200.,work_seconds=None,completion_seconds=0,status='aborted')
+        self.assertEqual(outcome['status'],'FAIL')
+        self.assertIsNone(outcome['metrics'][0]['value'])
+        self.assertEqual(outcome['metrics'][0]['kind'],'missing')
+        self.assertTrue(outcome['metrics'][0]['reason'])

@@ -76,6 +76,12 @@ def profile_operators(recipe,*,protocol=ProfilingProtocol(),trace_path=None):
     return _execute_profile(recipe,protocol,trace_path=trace_path)
 
 
+def analyze_nsys_modules(configuration, *, max_rows=20000):
+    """Read-only, hash-pinned P13 module evidence; never runs a capture."""
+    from ._module_activity import analyze
+    return analyze(configuration, max_rows=max_rows)
+
+
 def analyze_nsys_operators(sqlite_path,*,capture_path):
     """Optional linked P14 GPU/ATen report from one external Nsight capture.
 

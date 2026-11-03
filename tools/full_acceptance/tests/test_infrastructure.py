@@ -37,6 +37,17 @@ class Fixture(unittest.TestCase):
         return reporting.initial_results(self.m)
 
 class ManifestTests(Fixture):
+    def test_P13_pinned_artifacts_are_checked_at_admission(self):
+        artifact=self.base/'artifact';artifact.write_bytes(b'fixture')
+        ref=core.record(artifact)
+        cfg=self.base/'p13.json';core.publish(cfg,dict(sqlite=ref,report=ref))
+        self.m['optional']['p13_evidence']=dict(file=core.record(cfg),configuration=core.read(cfg))
+        self.m['assets']=dict(models={'B':ref},dataset=ref,split_indices=ref,split_manifest=ref)
+        self.m['runtime'].update(python=core.record(sys.executable),runtime_files=[])
+        self.m['replay_sources']={};self.seal()
+        core.verify(self.path,expected=self.hash)
+        artifact.write_bytes(b'changed')
+        with self.assertRaisesRegex(ValueError,'asset/runtime changed'):core.verify(self.path,expected=self.hash)
     def test_manifest_roundtrip_and_exact_hash(self):self.assertEqual(core.verify(self.path,expected=self.hash,assets=False)['run_id'],self.m['run_id'])
     def test_wrong_manifest_hash_never_admits(self):
         with self.assertRaisesRegex(ValueError,'SHA256'):core.verify(self.path,expected='0'*64,assets=False)
@@ -164,6 +175,40 @@ class ReportingTests(Fixture):
     def test_P13_CPU_does_not_promote_full_CUDA_scope(self):
         rows=self.old_matrix();rows['06.layer'].update(status='PASS',attempted=True,criteria=dict(ownership_estimate=True))
         self.assertEqual(next(f for f in reporting.matrix(self.m,rows) if f['id']=='P13')['decision'],'PARTIAL')
+    def test_P13_verified_evidence_requires_authorization_and_cleanup(self):
+        rows=self.old_matrix();row=rows['06.layer']
+        row.update(status='PASS',attempted=True,criteria=dict(ownership_estimate=True,real_profiler=True,
+            P13_verified_module_attribution=True),supervisor=dict(cleanup=dict(active_processes=0)))
+        exp=next(e for e in self.m['experiments'] if e['id']=='06.layer')
+        for approved,active,attempted,expected in ((False,0,True,'PARTIAL'),(True,1,True,'PARTIAL'),
+                (True,0,False,'PARTIAL'),(True,0,True,'PASS')):
+            exp['authorization']['approved']=approved;row['attempted']=attempted
+            row['supervisor']['cleanup']['active_processes']=active
+            f=next(f for f in reporting.matrix(self.m,rows) if f['id']=='P13')
+            self.assertEqual(f['decision'],expected);self.assertEqual(f['prior_scoped_decision'],'PARTIAL')
+    def test_P13_missing_evidence_stays_partial_and_invalid_evidence_fails(self):
+        self.assertEqual(handlers._p13_cuda_evidence(self.m,self.out)['status'],'PARTIAL')
+        self.m['optional']['p13_evidence']=dict(configuration={})
+        self.assertEqual(handlers._p13_cuda_evidence(self.m,self.out)['status'],'FAIL')
+    def test_P13_import_decision_is_derived_and_does_not_promote_P14(self):
+        self.m['optional']['p13_evidence']=dict(configuration=dict(test_only=True))
+        self.m['assets']['models']={'B':dict(sha256='b'*64)};self.m['hardware']['gpu_uuid']='GPU-test'
+        data=dict(status='complete',capture=dict(checkpoint=dict(sha256='b'*64),gpu_uuid='GPU-test'))
+        with patch('hyso.performance.analyze_nsys_modules',return_value=data):
+            self.assertEqual(handlers._p13_cuda_evidence(self.m,self.out)['status'],'PASS')
+        data['capture']['gpu_uuid']='GPU-other'
+        with patch('hyso.performance.analyze_nsys_modules',return_value=data):
+            self.assertEqual(handlers._p13_cuda_evidence(self.m,self.out)['status'],'FAIL')
+        data.update(status='partial',capture=None)
+        with patch('hyso.performance.analyze_nsys_modules',return_value=data),patch.object(handlers,'save',return_value={}):
+            self.assertEqual(handlers._p13_cuda_evidence(self.m,self.out)['status'],'PARTIAL')
+        rows=self.old_matrix();rows['06.layer'].update(status='PASS',attempted=True,
+            criteria=dict(P13_verified_module_attribution=True))
+        old_path=self.m['prior_audit']['P01-P35-acceptance-matrix.json']['path']
+        old=core.read(old_path)
+        next(f for f in old['features'] if f['id']=='P14')['decision']='PARTIAL'
+        core.publish(old_path,old)
+        self.assertEqual(next(f for f in reporting.matrix(self.m,rows) if f['id']=='P14')['decision'],'PARTIAL')
     def test_package_is_exclusive_and_not_in_evidence_tree(self):
         rows=self.old_matrix();reporting.write_reports(self.m,rows);core.publish(self.out/'run-status.json',dict(controller_active=False,suite_complete=False))
         target=self.base/'evidence.zip';args=types.SimpleNamespace(manifest=self.path,package=target)
