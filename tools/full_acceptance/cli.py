@@ -370,6 +370,11 @@ def execute(args):
                 advisory_unmet=[k for k,v in dependency_context.items() if v!='PASS' and
                     policy=='continue_independent' and (e['id'],k) in ADVISORY_DEPENDENCIES],
                 scope='source_pinned_independent_work_not_upstream_evidence_reuse')
+            # A hard process termination cannot run finally. Retain the exact
+            # post-supervisor phase before potentially expensive report writes.
+            publish(out/'controller-progress.json',dict(phase='stage_reports',experiment=e['id'],
+                stage_status=rows[e['id']]['status'],controller_pid=os.getpid(),
+                run_id=m['run_id'],manifest_sha256=manifest_sha256,updated_at=now()))
             write_reports(m,rows,state='RUNNING',preparation=prep)
             print(e['id'],rows[e['id']]['status'],flush=True)
         complete=all(r.get('attempted') and r['status'] in ('PASS','PARTIAL','FAIL','UNSUPPORTED') for r in rows.values())

@@ -32,6 +32,9 @@ def build(manifest, expected_sha, output):
             or state.get("manifest_sha256") != sha(manifest)
             or state.get("finalization_errors")):
         raise ValueError("P13 outer acceptance did not finalize cleanly")
+    # Verify the real disk receipt and admission chain, not just a copied row.
+    from .p13_capture_recover import validate_capture
+    validate_capture(m, manifest)
     rows = read(prior / "stage-results.json")
     row, = [x for x in rows["experiments"] if x["id"] == "06.p13_capture"]
     authorization, = [e["authorization"] for e in m["experiments"] if e["id"] == "06.p13_capture"]

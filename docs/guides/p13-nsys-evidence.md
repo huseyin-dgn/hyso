@@ -1,5 +1,58 @@
 # P13 CUDA module evidence integration
 
+## Interrupted capture recovery, 2026-11-09
+
+`python -B -m tools.full_acceptance.p13_capture_recover` audits a consumed run
+without resuming it. Supply `--manifest`, its exact `--approved-sha256`, and a
+new `--output` directory outside the old run. It verifies the historical sealed
+snapshot rather than requiring the evolving live repository to match it.
+
+The audit compares the **on-disk** Job supervisor receipt with the controller
+row, exact worker command, request/admission token, stage PID, ready gate and
+terminal result. It rehashes all six capture artifacts, Model B, snapshot sources
+and input dataset; checks the recorded model state, GPU UUID, input NPY contract
+and exact uint8/255 test input; and reruns the read-only CUDA attribution reader.
+Input/source/checkpoint hashes are checked again before publishing. Three true
+output-equivalence flags remain worker attestations: no output arrays were
+retained for independent equivalence recomputation. The pinned report/export pair
+and exporter exit record support their relationship; the binary report is not
+independently decoded. Hashes and receipts are unsigned historical evidence.
+
+The supplied `hyso-p13-native-20261103-174604-e36fd535/run` manifest
+`a07f887125cce11f5e851d7f781f83fee44da7224554b3741eaba828dee8fabb`
+passed this offline audit: 102/102 measured kernels, 68 outside-scope kernels,
+165 module intervals, 55 paths, three forwards. Job stage PID 21468 and capture
+worker PID 25632 are distinct identities; their recorded bindings were checked.
+The Job receipt reports exit 0, no native crash and zero active processes.
+
+**Decision remains PARTIAL.** Controller PID 5432 has no clean terminal or
+preservation receipt. `run-status.json` still records RUNNING; `11.memory` and
+`12.replay` remain PENDING, and `06.layer` was NOT_AUTHORIZED. Recovery does not
+rewrite these files, reuse a PID/handle, manufacture a capture receipt, or claim
+current OS ownership. Results are in the separate local recovery directory.
+
+The last retained stage-results update is 2026-11-03 18:14:58 Europe/Istanbul,
+after the successful capture supervisor receipt. No controller-error diagnostic
+is retained. The controller source has exception/finally handling around
+reporting/preservation, but a hard termination need not run it. Stage Job peak
+commit is not controller memory evidence. External termination, native controller
+failure and memory pressure are unproven hypotheses; the cause is unresolved.
+Future controllers now publish their post-supervisor/reporting phase before
+report generation. This improves diagnosis; it cannot guarantee a terminal
+receipt after an OS/process kill. The strict finalizer additionally validates
+the real disk receipt/admission chain before binding any new provenance.
+
+The earlier base run's CPU ownership calibration reopens as `estimated` with five
+paired workers. It and this capture share Model B's checkpoint but use different
+manifests. The calibration uses the declared Shared ownership workload; it is
+not a CUDA timing measurement. Neither this combination nor offline recovery
+satisfies the unchanged requirement for an authorized `06.layer` stage with
+CPU calibration, verified capture identity and clean current-stage Job cleanup.
+A new explicitly approved capture must finalize cleanly, then its finalized
+configuration can be supplied to a fresh, separately authorized layer run.
+See `remaining-acceptance-next-steps.md` for executable preparation/approval
+commands. No new GPU work was performed for this audit.
+
 ## Contract and root cause
 
 The historical P13 criterion separates inclusive/exclusive module observations

@@ -25,6 +25,11 @@ class ControllerFinalizationTests(Fixture):
             return dict(all_readable_preserved=True)
 
         def reports(manifest, rows, *, state, preparation):
+            if state == 'RUNNING':
+                progress = core.read(self.out / 'controller-progress.json')
+                self.assertEqual(progress['phase'], 'stage_reports')
+                self.assertEqual(progress['manifest_sha256'], self.hash)
+                self.assertEqual(progress['stage_status'], rows[progress['experiment']]['status'])
             if state != 'RUNNING':
                 self.assertEqual([rows[eid]['status'] for eid in ('02.regression', '03.cpu', '04.cuda')],
                                  ['PASS', 'PASS', 'PASS'])
