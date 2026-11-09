@@ -24,7 +24,7 @@ from .training import _int,TrainingTimingProtocol,TrainingPerformanceResult,_mea
 from .training_details import _source
 from .training_memory import (TrainingMemoryProtocol,TrainingMemoryError,_MemoryRecorder,_logical_summary,
                               _rss_summary,_memory_diagnostics,_validate_stage_pairs)
-from .training_memory import _cuda
+from .training_memory import _cuda, _validate_logical_storage, _validate_cuda_boundary
 from ._training_process import _launch,_bounded_read
 from ._saved_activation import _SavedActivationRecorder, _validate_activation
 
@@ -60,14 +60,19 @@ class TrainingMemoryRecipe:
         _int(seed);_int(epochs,1)
         if seed>2**32-1 or epochs>100000:raise ValueError("seed/epoch ceiling exceeded")
         kwargs={} if kwargs is None else kwargs
-        def check(value):
+        nodes = 0
+        def check(value, depth=0, ancestors=frozenset()):
+            nonlocal nodes
+            nodes += 1
+            if nodes > 10000 or depth > 32 or id(value) in ancestors:
+                raise ValueError("recipe nesting/cycle/node budget exceeded")
             if value is None or type(value) in (str,bool,int):return
             if type(value) is float and math.isfinite(value):return
             if type(value) is list:
-                for item in value:check(item)
+                for item in value:check(item, depth+1, ancestors | {id(value)})
                 return
             if type(value) is dict and all(type(k) is str for k in value):
-                for item in value.values():check(item)
+                for item in value.values():check(item, depth+1, ancestors | {id(value)})
                 return
             raise TypeError("recipe contains non-plain/live Python state")
         if type(kwargs) is not dict or "device" in kwargs:raise ValueError("plain kwargs without reserved device required")
@@ -231,6 +236,8 @@ class _IsolatedRecorder(_MemoryRecorder):
 def _run_recipe(request):
     """Called only by admitted stdlib bootstrap. Imports/allocations stay child-owned."""
     recipe=TrainingMemoryRecipe(**request["recipe"]).to_dict();protocol=_protocol(request["protocol"])
+    if recipe["device"] != protocol.memory_protocol.device:
+        raise ValueError("recipe/protocol device mismatch before worker setup")
     if str(torch.__version__)!=request["torch_version"]:raise RuntimeError("worker runtime Torch mismatch")
     if torch.cuda.is_initialized():raise RuntimeError("CUDA initialized before owned allocator setup")
     device=torch.device(recipe["device"])
@@ -361,6 +368,8 @@ def _validate(data):
         raise ValueError("invalid isolated outcome")
     receipt=data["receipt"]
     if receipt is not None:
+        for key in ("active_processes", "total_processes", "peak_process_commit_bytes", "peak_job_commit_bytes"):
+            _int(receipt["job"][key])
         if receipt["job"]["active_processes"]!=0 or receipt["kill_on_close"] is not True or receipt["admitted"] is not True:raise ValueError("owned process cleanup unverified")
         if receipt["limits"]!=dict(process_memory_bytes=protocol.process_memory_bytes,job_memory_bytes=protocol.job_memory_bytes,max_processes=protocol.max_processes):raise ValueError("resource limit mismatch")
         if any(len(receipt[k].encode("utf-8"))>protocol.max_log_bytes*3 for k in ("stdout","stderr")):raise ValueError("unbounded worker logs")
@@ -387,9 +396,29 @@ def _validate(data):
             physical_vram=dict(value=None,status="unsupported",reason="allocator_counters_are_not_physical_VRAM")):raise ValueError("invalid CUDA domains")
     if not 2<=len(boundaries)<=protocol.memory_protocol.max_boundaries or boundaries[0]["boundary"]!="ready" or boundaries[-1]["boundary"]!="segment_end":raise ValueError("invalid bounded memory ledger")
     total=0;end=0
+    epochs = {r["epoch_id"]: r for r in source["epochs"]}
+    contexts = {kind: {r[kind+"_id"]: r for r in source["observations"] if r["kind"] == kind}
+                for kind in ("microbatch", "attempt")}
     for row in boundaries:
+        _int(row["query_start_ns"]); _int(row["query_end_ns"])
+        if row["status"] != "measured" or row["reason"] is not None or row["scope"] != "registered_tensor_state_and_allocator_boundary":
+            raise ValueError("invalid isolated boundary scope/status")
+        if row["boundary"] in ("ready", "segment_end"):
+            if any(row[k] is not None for k in ("epoch_id", "microbatch_id", "window_id", "attempt_id")):
+                raise ValueError("segment boundary cannot claim training IDs")
+        else:
+            epoch = epochs.get(row["epoch_id"])
+            if epoch is None or not epoch["start_ns"] <= row["query_start_ns"] <= row["query_end_ns"] <= epoch["end_ns"]:
+                raise ValueError("memory boundary outside source epoch")
+        for kind, mapping in contexts.items():
+            if row[kind+"_id"] is not None:
+                linked = mapping.get(row[kind+"_id"])
+                if linked is None or any(row[k] != linked[k] for k in ("epoch_id", "window_id")) or not linked["start_ns"] <= row["query_start_ns"] <= row["query_end_ns"] <= linked["end_ns"]:
+                    raise ValueError("memory boundary outside source training scope")
         if not end<=row["query_start_ns"]<=row["query_end_ns"]:raise ValueError("unordered memory queries")
         end=row["query_end_ns"];logical=row["logical"];total+=len(logical["tensors"])+len(logical["optimizer_metadata"])
+        _validate_logical_storage(logical)
+        _validate_cuda_boundary(row["cuda"], recipe["device"])
         if not logical["optimizer_supported"]:raise ValueError("isolated native optimizer evidence required")
         if logical["summary"]!=_logical_summary(logical["tensors"]):raise ValueError("logical summary mismatch")
         for tensor in logical["tensors"]:
@@ -433,8 +462,13 @@ class IsolatedTrainingMemoryResult:
         if measurement is None:
             return dict(core_status="not_executed",outcome=data["outcome"],reason=data["reason"],
                         scope="isolated_recipe_fit")
-        return _memory_diagnostics(measurement["boundaries"],measurement["rss"],data["recipe"]["device"],
+        result = _memory_diagnostics(measurement["boundaries"],measurement["rss"],data["recipe"]["device"],
             isolated=True,windows=measurement["windows"],activation=measurement["activation"])
+        result["process_private_commit"] = dict(status="measured", unit="byte",
+            scope="owned_Job_lifetime_including_imports_and_factory_not_fit_only",
+            peak_process_commit_bytes=data["receipt"]["job"]["peak_process_commit_bytes"],
+            peak_job_commit_bytes=data["receipt"]["job"]["peak_job_commit_bytes"])
+        return result
     def to_json(self,path,*,overwrite=False):
         _write_export(path,json.dumps(self._export_data(),sort_keys=True,ensure_ascii=False,indent=2,allow_nan=False)+"\n",overwrite)
     def to_csv(self,path,*,overwrite=False):

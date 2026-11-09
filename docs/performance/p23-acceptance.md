@@ -1,5 +1,11 @@
 # P23 acceptance: training memory analysis
 
+Current expanded acceptance scope (2026-11-09): **PARTIAL** because native CUDA
+saved-activation evidence is still missing and `0xC0000409` remains unresolved.
+The original measured-scope completion described below is retained separately.
+See [safe fixes and forensic plan](../guides/p23-forensic-plan.md); CPU and
+hook-free CUDA evidence cannot substitute for the disabled activation path.
+
 **P23 = COMPLETED for the original roadmap's measured scopes.** This covers
 registered parameter/gradient/native-optimizer accounting, optional CPU eager
 saved-for-backward evidence, native process RSS observations and supported CUDA

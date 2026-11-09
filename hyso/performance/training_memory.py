@@ -99,7 +99,11 @@ def _logical(model, optimizer, budget):
 
     tensor_ids = {}
     stack = [("", model, frozenset())]
+    module_visits = 0
     while stack:
+        module_visits += 1
+        if module_visits > budget:
+            raise TrainingMemoryError("module traversal budget exhausted")
         path, module, ancestors = stack.pop()
         if id(module) in ancestors:
             raise TrainingMemoryError("cyclic module graph unsupported")
@@ -170,6 +174,58 @@ def _logical_summary(rows):
     return result
 
 
+def _validate_logical_storage(logical):
+    """Validate alias extents as well as sums, including isolated saved results."""
+    storages, identities = {}, set()
+    for row in logical["tensors"]:
+        if row["status"] != "measured":
+            if row["status"] != "unsupported" or row["logical_bytes"] is not None or not row["reason"]:
+                raise ValueError("unsupported logical tensor needs null + reason")
+            continue
+        if row["component"] not in ("parameter", "buffer", "gradient", "optimizer"):
+            raise ValueError("invalid logical component")
+        if row["reason"] is not None or type(row["frozen"]) is not bool:
+            raise ValueError("invalid measured logical tensor")
+        for key in ("elements", "element_size_bytes", "logical_bytes", "storage_bytes", "storage_offset"):
+            _int(row[key])
+        for key in ("tensor_id", "storage_id"):
+            _int(row[key], 1)
+        for value in (*row["shape"], *row["stride"]):
+            _int(value)
+        if (not row["element_size_bytes"] or len(row["shape"]) != len(row["stride"])
+                or math.prod(row["shape"]) != row["elements"]
+                or row["logical_bytes"] != row["elements"] * row["element_size_bytes"]):
+            raise ValueError("inconsistent logical shape/bytes")
+        extent = row["storage_offset"] + sum((d - 1)*s for d, s in zip(row["shape"], row["stride"])) + 1
+        if row["elements"] and extent * row["element_size_bytes"] > row["storage_bytes"]:
+            raise ValueError("logical tensor exceeds storage extent")
+        identity = (row["component"], row["tensor_id"])
+        if identity in identities:
+            raise ValueError("duplicate logical tensor within component")
+        identities.add(identity)
+        storage = (row["device"], row["storage_bytes"])
+        if storages.setdefault(row["storage_id"], storage) != storage:
+            raise ValueError("inconsistent logical storage alias")
+    expected = sum(size for _, size in storages.values())
+    if type(logical["unique_storage_bytes"]) is not int or logical["unique_storage_bytes"] != expected:
+        raise ValueError("inconsistent unique logical storage bytes")
+
+
+def _validate_cuda_boundary(cuda, device):
+    if device == "cpu":
+        if cuda is not None:
+            raise ValueError("CPU is not CUDA allocator evidence")
+        return
+    if cuda is None or cuda.get("allocator_backend") != "native":
+        raise ValueError("missing/unvalidated CUDA allocator evidence")
+    for key in ("allocated_bytes", "reserved_bytes", "lifetime_peak_allocated_bytes", "lifetime_peak_reserved_bytes"):
+        _int(cuda[key])
+    if (cuda["allocated_bytes"] > cuda["reserved_bytes"]
+            or cuda["allocated_bytes"] > cuda["lifetime_peak_allocated_bytes"]
+            or cuda["reserved_bytes"] > cuda["lifetime_peak_reserved_bytes"]):
+        raise ValueError("inconsistent CUDA counters")
+
+
 def _cuda(device):
     if device.type != "cuda":
         return None
@@ -206,11 +262,19 @@ class _MemoryRecorder(_Recorder):
                 self.thread = threading.Thread(target=self.sampling, name="hyso-training-rss", daemon=True)
                 self.thread.start()
         except BaseException:
-            self.stop.set()
-            if self.thread is not None and self.thread.ident is not None:
-                self.thread.join()
+            self._stop_sampler()
             self.trainer = None
             raise
+
+    def _stop_sampler(self):
+        self.stop.set()
+        if self.thread is not None and self.thread.ident is not None:
+            self.thread.join(timeout=5.)
+            if self.thread.is_alive():
+                # A blocked native query cannot be cancelled safely in-process.
+                # Retain a failure, release trainer references, never publish a
+                # successful measurement. Isolated callers have the outer Job.
+                self.errors.append("RSS_sampler_shutdown_timeout; native query not cancelled")
 
     def sample(self):
         try:
@@ -298,10 +362,8 @@ class _MemoryRecorder(_Recorder):
         if self.closed:
             return
         self.closed = True
-        self.stop.set()
         try:
-            if self.thread is not None:
-                self.thread.join()
+            self._stop_sampler()
             super().close()
             # On training failure no successful result is constructed. This final
             # snapshot also observes best restore and explicit checkpoint I/O scope.
@@ -399,6 +461,7 @@ def _validate(data):
         if row["fields"] != expected_fields:
             raise ValueError("memory applied/skipped/sample ledger mismatch")
         logical = row["logical"]
+        _validate_logical_storage(logical)
         count += len(logical["tensors"]) + len(logical["optimizer_metadata"])
         for tensor in logical["tensors"]:
             if tensor["component"] not in ("parameter", "buffer", "gradient", "optimizer") or type(tensor["frozen"]) is not bool:
@@ -519,6 +582,8 @@ def _memory_diagnostics(rows, rss, device, *, isolated=False, windows=(), activa
             cuda_training_windows=list(windows) if isolated else _unsupported("in_process_peak_reset_not_permitted"),
             stage_peaks=_unsupported("boundary_samples_are_not_stage_peaks")),
         activation=activation if activation is not None else _unsupported("saved_tensor_lifetime_adapter_unvalidated"),
+        process_private_commit=_unsupported("not_observed_in_process_RSS_is_not_private_commit"),
+        artifact_bytes=_unsupported("serialized_artifact_sizes_are_not_training_memory"),
         limitations=["logical components can alias; frozen parameters are a subset of parameters",
             "logical bytes, storage extents, RSS and CUDA allocator bytes must not be added",
             "RSS includes observer/runtime/main-process activity and excludes DataLoader workers",
