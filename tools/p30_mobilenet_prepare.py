@@ -133,22 +133,21 @@ def prepare(args):
             print("Downloading public OpenCV real recorded sample video:", VIDEO_URL)
             download_file(VIDEO_URL, video, max_bytes=48*1024*1024)
         provenance = "OpenCV opencv/4.x samples/data/vtest.avi real recorded sample; " + VIDEO_URL
-    frame = validate_video(video)
+    frame = None if args.contract_only else validate_video(video)
 
+    if __package__:
+        from .p30_mobilenet_adapter import contract, build_processor
+    else:
+        from p30_mobilenet_adapter import contract, build_processor
     config = dict(
         factory="p30_mobilenet_adapter:build_processor",
         factory_source=dict(path=str(module_path), sha256=sha256(module_path)),
         checkpoint=dict(path=str(checkpoint), sha256=cp_hash),
-        input_contract=dict(format="OpenCV uint8 BGR", shape="H,W,3", source="real camera/video"),
-        output_contract=dict(task="ImageNet-1K image classification", shape=[1,1000],
-                             accuracy="unsupported_without_labeled_task_appropriate_cohort"),
-        preprocessing=dict(color="BGR_to_RGB", resize_short_edge=256, center_crop=[224,224],
-                           scale="divide_255", mean_rgb=[0.485,0.456,0.406],
-                           std_rgb=[0.229,0.224,0.225],
-                           source="torchvision.MobileNet_V3_Small_Weights.IMAGENET1K_V1.transforms"),
+        **contract(weights),
         provenance=provenance,
         kwargs=dict(checkpoint_path=str(checkpoint), checkpoint_sha256=cp_hash),
         camera_index=args.camera_index,
+        camera_provenance=args.camera_provenance,
         video=dict(path=str(video), sha256=sha256(video)),
     )
     target = (Path(args.config) if args.config else root / "p30-camera-config.json").resolve()
@@ -161,9 +160,8 @@ def prepare(args):
     else:
         target.write_text(json.dumps(config, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
-    if not args.skip_smoke:
+    if not args.skip_smoke and not args.contract_only:
         sys.path.insert(0, str(module_path.parent))
-        from p30_mobilenet_adapter import build_processor
         processor = build_processor(checkpoint_path=str(checkpoint), checkpoint_sha256=cp_hash)
         try:
             stages = processor.process(frame)
@@ -186,11 +184,16 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--video", help="existing real video file (otherwise download OpenCV's real recorded vtest.avi)")
     p.add_argument("--camera-index", type=int, default=0, help="physical OpenCV camera index, default 0")
+    p.add_argument("--camera-provenance", help="operator's physical camera identity/source; required before live acceptance")
     p.add_argument("--asset-dir", help="separate output directory for official assets/config")
     p.add_argument("--config", help="output config path (existing differing files never overwritten)")
     p.add_argument("--offline", action="store_true", help="do not download; assets must be present")
     p.add_argument("--skip-smoke", action="store_true", help="skip one real-video-frame CPU smoke")
-    prepare(p.parse_args())
+    p.add_argument("--contract-only", action="store_true", help="existing assets only; no video decode, camera or inference")
+    args = p.parse_args()
+    if args.contract_only and not args.offline:
+        p.error('--contract-only requires --offline')
+    prepare(args)
 
 
 if __name__ == "__main__":

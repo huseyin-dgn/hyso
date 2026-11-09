@@ -22,8 +22,10 @@ def prerequisites(m,e):
             if not path or not Path(path,'onnxruntime').is_dir():missing.append(key+' runtime_search_path missing')
         elif key=='camera_adapter':
             cfg=m['optional'].get('camera_adapter',{}).get('configuration',{})
-            required=('factory','factory_source','checkpoint','input_contract','output_contract','preprocessing','provenance')
+            required=('factory','factory_source','checkpoint','model_id','input_contract','output_contract','preprocessing','label_semantics','provenance')
             if any(k not in cfg for k in required):missing.append('task-appropriate trained camera adapter/config/checkpoint missing; MNIST not assumed appropriate')
+            if e.get('id') == '08.camera' and not cfg.get('camera_provenance'):
+                missing.append('physical camera identity/provenance required separately from recorded video')
         elif key=='video':
             cfg=m['optional'].get('camera_adapter',{}).get('configuration',{}).get('video',{})
             if not cfg.get('path') or not Path(cfg['path']).is_file():missing.append('real local video required')
@@ -73,8 +75,14 @@ def matrix(m,rows):
                 and row.get('criteria',{}).get('real_profiler') is True
                 and any(e['id']==stage and e['authorization']['approved'] is True for e in m['experiments'])))
             authorized=any(e['id']==stage and e['authorization']['approved'] is True for e in m['experiments'])
+            video = rows.get('08.video', {})
+            video_active = video.get('supervisor', {}).get('cleanup', {}).get('active_processes')
+            p30_ready = ident != 'P30' or (video.get('attempted') is True and video.get('status') == 'PASS'
+                and video.get('criteria', {}).get('real_video_trained') is True
+                and any(e['id']=='08.video' and e['authorization']['approved'] is True for e in m['experiments'])
+                and type(video_active) is int and video_active == 0)
             active=row.get('supervisor',{}).get('cleanup',{}).get('active_processes')
-            if authorized and p13_ready and row.get('attempted') and row['status']=='PASS' and row.get('criteria',{}).get(key) is True and type(active) is int and active==0:
+            if authorized and p13_ready and p30_ready and row.get('attempted') and row['status']=='PASS' and row.get('criteria',{}).get(key) is True and type(active) is int and active==0:
                 current='PASS';basis='new exact criterion satisfied in declared scope; historical failed sessions unchanged'
             elif row['status']=='FAIL':current='FAIL';basis='new required acceptance criterion actually failed; historical scope retained separately'
         execution='FAIL' if any(r['status']=='FAIL' for r in selected) else 'ABORTED' if any(r['status']=='ABORTED' for r in selected) else (

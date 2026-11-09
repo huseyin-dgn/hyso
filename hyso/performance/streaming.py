@@ -233,30 +233,46 @@ def _file_hash(path):
     return digest.hexdigest()
 
 
+def _prepare_capture(root, request, p, source, processor, processor_source):
+    """Close both resources on any startup failure, before producer ownership."""
+    import cv2
+    capture = None
+    try:
+        capture=cv2.VideoCapture(source.location)
+        if not capture.isOpened():raise RuntimeError('capture open failed')
+        fps=capture.get(cv2.CAP_PROP_FPS);count=capture.get(cv2.CAP_PROP_FRAME_COUNT)
+        if source.kind=='video_file' and (not math.isfinite(count) or count<1):
+            raise ValueError('finite recorded video frame count required')
+        if p.pace_video and (source.kind!='video_file' or not math.isfinite(fps) or fps<=0):
+            raise ValueError('video pacing requires declared positive FPS')
+        target=min(p.max_frames,int(count)) if source.kind=='video_file' else p.max_frames
+        digest=_file_hash(source.location) if source.kind=='video_file' else None
+        header=dict(run_id=request['token'],pid=os.getpid(),clock_id=request['token']+':perf_counter_ns',lifecycle_version=2,
+            target_frames=target,capture=dict(kind=source.kind,location=source.location,provenance=source.provenance,
+                file_sha256=digest,backend=capture.getBackendName(),opencv_version=cv2.__version__,declared_fps=fps if math.isfinite(fps) and fps>0 else None,
+                declared_frames=int(count) if source.kind=='video_file' else None),processor=processor.identity,processor_source=processor_source)
+        journal=_Journal(root,header,64,p.max_frames*8+16)
+        _atomic(root/'ready.json',dict(pid=os.getpid(),token=request['token']))
+        return capture, fps, target, digest, journal
+    except BaseException:
+        try:
+            if capture is not None:capture.release()
+        finally:processor.close()
+        raise
+
+
 def _worker_stream(root,request):
     import cv2
     import torch
     torch.set_num_threads(1)
     p=StreamProtocol(**request['protocol']);source=StreamSource(**request['source'])
-    processor,processor_source=_factory(request['recipe']);capture=cv2.VideoCapture(source.location)
-    if not capture.isOpened():capture.release();processor.close();raise RuntimeError('capture open failed')
-    fps=capture.get(cv2.CAP_PROP_FPS);count=capture.get(cv2.CAP_PROP_FRAME_COUNT)
-    if source.kind=='video_file' and (not math.isfinite(count) or count<1):
-        capture.release();processor.close();raise ValueError('finite recorded video frame count required')
-    if p.pace_video and (source.kind!='video_file' or not math.isfinite(fps) or fps<=0):
-        capture.release();processor.close();raise ValueError('video pacing requires declared positive FPS')
-    target=min(p.max_frames,int(count)) if source.kind=='video_file' else p.max_frames
-    digest=_file_hash(source.location) if source.kind=='video_file' else None
-    header=dict(run_id=request['token'],pid=os.getpid(),clock_id=request['token']+':perf_counter_ns',lifecycle_version=2,
-        target_frames=target,capture=dict(kind=source.kind,location=source.location,provenance=source.provenance,
-            file_sha256=digest,backend=capture.getBackendName(),opencv_version=cv2.__version__,declared_fps=fps if math.isfinite(fps) and fps>0 else None,
-            declared_frames=int(count) if source.kind=='video_file' else None),processor=processor.identity,processor_source=processor_source)
-    journal=_Journal(root,header,64,p.max_frames*8+16);condition=threading.Condition();queue=deque()
-    state=dict(done=False,stop=False,failure=None,received=0,processed=0,dropped=0,closed=False)
+    processor,processor_source=_factory(request['recipe'])
+    capture,fps,target,digest,journal=_prepare_capture(root,request,p,source,processor,processor_source)
+    condition=threading.Condition();queue=deque()
+    state=dict(done=False,stop=False,failure=None,received=0,processed=0,dropped=0,closed=False,capture_closed=False)
     def event(kind,frame_id=None,**extra):
         journal.append(dict(event=kind,frame_id=frame_id,timestamp_ns=time.perf_counter_ns(),queue_depth=len(queue),**extra))
         _atomic(root/'heartbeat.json',dict(sequence=journal.count))
-    _atomic(root/'ready.json',dict(pid=os.getpid(),token=request['token']))
     def produce():
         started=time.perf_counter()
         try:
@@ -291,9 +307,18 @@ def _worker_stream(root,request):
             with condition:
                 state['failure']=type(exc).__name__+': '+str(exc)[:1024];event('failure',reason=state['failure'])
         finally:
-            capture.release()
-            with condition:state['done']=True;condition.notify_all()
-    producer=threading.Thread(target=produce,name='hyso-real-capture',daemon=True);producer.start()
+            try:
+                capture.release();state['capture_closed']=True
+            except Exception as exc:
+                with condition:state['failure']=state['failure'] or 'capture release: '+str(exc)[:1024]
+            finally:
+                with condition:state['done']=True;condition.notify_all()
+    producer=threading.Thread(target=produce,name='hyso-real-capture',daemon=True)
+    try:producer.start()
+    except BaseException:
+        try:capture.release()
+        finally:processor.close()
+        raise
     try:
         while True:
             with condition:
@@ -319,7 +344,7 @@ def _worker_stream(root,request):
         try:
             processor.close()
             if digest is not None and _file_hash(source.location)!=digest:raise ValueError('video content changed during run')
-            state['closed']=True
+            state['closed']=state['capture_closed']
         except Exception as exc:state['failure']=state['failure'] or 'close: '+str(exc)[:1024]
         journal.flush()
         _atomic(root/'terminal.json',dict(status='completed' if state['failure'] is None else 'failed',reason=state['failure'],

@@ -148,6 +148,20 @@ class ReportingTests(Fixture):
         self.assertEqual(m['kind'],'missing');self.assertIsNone(m['value'])
         reporting.validate_metrics(dict(metrics=[m]))
         with self.assertRaises(ValueError):reporting.validate_metrics(dict(metrics=[dict(m,reason=None)]))
+    def test_P30_requires_separate_authorized_video_and_camera(self):
+        rows=self.old_matrix()
+        camera=dict(status='PASS',attempted=True,criteria=dict(real_camera_trained=True),
+                    supervisor=dict(cleanup=dict(active_processes=0)))
+        rows['08.camera'].update(camera)
+        for e in self.m['experiments']:
+            if e['id']=='08.camera':e['authorization']['approved']=True
+        feature=lambda:next(x for x in reporting.matrix(self.m,rows) if x['id']=='P30')['decision']
+        self.assertEqual(feature(),'PARTIAL')
+        rows['08.video'].update(status='PASS',attempted=True,criteria=dict(real_video_trained=True),
+            supervisor=dict(cleanup=dict(active_processes=0)))
+        self.assertEqual(feature(),'PARTIAL')
+        next(e for e in self.m['experiments'] if e['id']=='08.video')['authorization']['approved']=True
+        self.assertEqual(feature(),'PASS')
     def test_prepared_report_cannot_be_complete(self):
         rows=self.old_matrix();self.assertFalse(reporting.write_reports(self.m,rows))
         self.assertFalse(core.read(self.out/'stage-results.json')['suite_complete'])

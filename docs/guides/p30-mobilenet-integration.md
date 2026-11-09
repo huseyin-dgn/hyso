@@ -1,5 +1,49 @@
 # HYSo P30 — genuine pretrained MobileNetV3-Small / OpenCV camera and video adapter
 
+## Contract completion, 2026-11-09
+
+The existing adapter is retained. Configuration and processor now use one exact
+contract: BGR uint8 HWC frames, normalized FP32 `[1,3,224,224]` model input,
+FP32 `[1,1000]` logits, ImageNet-1K single-label task, ordered category-list hash,
+model identity, checkpoint hash and official preprocessing. Acceptance checks
+these fields against the actual retained worker header, as well as source kind,
+location, provenance and the recorded video's hash. `trained=True` by itself is
+insufficient. No classification quality is inferred from unlabeled video; this
+is a pretrained real-frame inference/stream-throughput workload. A task such as
+person detection needs its own suitable model and label/output semantics.
+
+The local official checkpoint and `vtest.avi` are available and rehashed:
+
+- checkpoint: `047dcff4addef86ea5bc2eff13c9614dc11f47ab1160d0a71a25e7db994f4e1f`
+- video: `45cddc9490be69345cbdab64ca583be65987e864ca408038e648db99e10516cf`
+
+`--offline --contract-only --config <NEW_PATH>` verifies existing assets and strict
+CPU checkpoint loading, then creates a new configuration without video decoding,
+camera access or inference. Existing configurations are never overwritten. The
+new adapter source hash requires a fresh config/manifest; do not execute old
+manifests. This task's config is
+`%LOCALAPPDATA%/hyso-p30-assets/p30-contract-20261109-v1.json`.
+
+`--camera-provenance '<actual physical device/source identity>'` is separate from
+the video's provenance. It is unset in the prepared contract because no physical
+camera was verified. This operator attestation is not independent sensor or
+driver identity proof. A file capture cannot establish physical camera success.
+P30 promotion now requires both separately authorized successful video and camera
+stages, each with its own trained-source criterion and zero active Job processes.
+
+Startup exceptions close both processor and capture. Producer release exceptions
+notify the consumer and retain a failed, unclosed terminal rather than leaving
+the consumer waiting indefinitely. The outer Job watchdog still bounds blocked
+native reads/joins. Existing host frame timestamps, media PTS, bounded queue,
+drop/backpressure accounting and journal conservation remain intact; they are
+application observations, not exposure timestamps or upstream camera loss.
+
+CPU tests load the genuine checkpoint but use explicitly synthetic frames for
+inference, invalid-input and lifecycle injection. These tests are not real video
+or physical camera acceptance. P30 remains **PARTIAL**. See
+`remaining-acceptance-next-steps.md` for separate video/camera preparation and
+explicit authorization commands.
+
 ## Purpose and boundaries
 
 This setup is limited to P30, a **read-only real video/camera streaming acceptance**.

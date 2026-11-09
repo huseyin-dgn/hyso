@@ -448,16 +448,31 @@ def memory(m,root):
 
 def camera(m,root,*,live):
     from hyso.performance import WorkloadRecipe,StreamSource,StreamProtocol,measure_streaming
-    cfg=m['optional']['camera_adapter']['configuration'];source=StreamSource('camera' if live else 'video_file',
-        cfg.get('camera_index',0) if live else cfg['video']['path'],cfg['provenance'])
+    cfg=m['optional']['camera_adapter']['configuration']
+    provenance = cfg.get('camera_provenance') if live else cfg['provenance']
+    if not provenance:raise ValueError('physical camera provenance required separately from video')
+    source=StreamSource('camera' if live else 'video_file',
+        cfg.get('camera_index',0) if live else cfg['video']['path'],provenance)
     recipe=WorkloadRecipe('full_acceptance.workloads:frame_processor',dict(manifest_path=str(Path(m['output'])/'manifest.json')),
         search_path=str(Path(m['source_snapshot']['root'])/'tools'))
     p=m['protocols']['camera' if live else 'video'];raw=measure_streaming(source,recipe,root/'journal',protocol=StreamProtocol(**p,
         max_runtime_seconds=180,startup_timeout_seconds=120,heartbeat_timeout_seconds=60))
     ref=save(root,'stream',raw);d=raw.to_dict();_check_capture_boundary(d);a=d['analysis']
+    header=d.get('evidence',{}).get('header')
+    if header is None:
+        return result('FAIL',reason='missing_stream_source_and_processor_identity',evidence=[ref])
+    from .workloads import validate_frame_processor
+    validate_frame_processor(cfg,header.get('processor'))
+    captured=header.get('capture',{})
+    if (captured.get('kind')!=source.kind or captured.get('location')!=source.location
+            or captured.get('provenance')!=source.provenance
+            or captured.get('file_sha256')!=(None if live else cfg['video']['sha256'])):
+        raise ValueError('stream capture source differs from authorized camera/video contract')
     conservation=a['received']==a['processed']+a['dropped']+a['pending'];ok=a['status']=='completed' and conservation
-    return result('PASS' if ok else 'FAIL',evidence=[ref],criteria=dict(real_camera_trained=bool(live and ok),conservation=conservation),
-        metrics=[metric('processed_fps',a['completed_processing_fps'],'frame/s','derived','host application window; not nominal sensor FPS')],
+    return result('PASS' if ok else 'FAIL',evidence=[ref],criteria=dict(real_camera_trained=bool(live and ok),real_video_trained=bool(not live and ok),conservation=conservation),
+        metrics=[metric('processed_fps',a['completed_processing_fps'],'frame/s',
+            'derived' if a['completed_processing_fps'] is not None else 'missing','host application window; not nominal sensor FPS',
+            None if a['completed_processing_fps'] is not None else 'stream did not complete; no successful throughput')],
         limits=['sensor/exposure/upstream driver drops unavailable unless adapter measures them','classification correctness needs its own appropriate labeled camera dataset'])
 
 def _trained_cpu_ort_execution_confirmed(value, diag):

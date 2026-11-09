@@ -118,6 +118,21 @@ def frame_processor(manifest_path):
     module,name=config['factory'].split(':');factory=getattr(importlib.import_module(module),name)
     if Path(importlib.import_module(module).__file__).resolve()!=Path(source['path']).resolve():raise ValueError('camera factory import path mismatch')
     processor=factory(**config.get('kwargs',{}))
-    if not hasattr(processor,'identity') or processor.identity.get('trained') is not True:
-        raise ValueError('camera adapter must expose trained=True identity and frame input/preprocessing/output contract')
+    try:
+        validate_frame_processor(config, processor.identity)
+    except BaseException:
+        close = getattr(processor, 'close', None)
+        if callable(close):close()
+        raise
     return processor
+
+
+def validate_frame_processor(config, identity):
+    """Trained=True alone is insufficient; bind actual factory semantics to plan."""
+    if (not isinstance(identity, dict) or identity.get('trained') is not True
+            or identity.get('device_id') != 'cpu'
+            or identity.get('checkpoint_sha256') != config['checkpoint']['sha256']):
+        raise ValueError('camera processor trained checkpoint/device identity mismatch')
+    for key in ('model_id', 'input_contract', 'output_contract', 'preprocessing', 'label_semantics'):
+        if not config.get(key) or identity.get(key) != config[key]:
+            raise ValueError('camera processor contract mismatch: '+key)

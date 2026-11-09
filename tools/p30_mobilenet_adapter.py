@@ -7,6 +7,7 @@ fresh acceptance manifest. CPU processing and provenance are explicit.
 from __future__ import annotations
 
 import hashlib
+import json
 from pathlib import Path
 import time
 
@@ -19,6 +20,23 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def contract(weights):
+    """One configuration/processor contract, including ordered label semantics."""
+    labels = weights.meta["categories"]
+    if len(labels) != 1000 or any(type(x) is not str or not x for x in labels):
+        raise ValueError("official ordered ImageNet-1K labels required")
+    return dict(model_id="torchvision_mobilenet_v3_small_imagenet1k_v1",
+        input_contract=dict(format="OpenCV BGR", dtype="uint8", shape="H,W,3",
+                            model_shape=[1, 3, 224, 224], model_dtype="float32"),
+        output_contract=dict(task="ImageNet-1K classification", task_id="imagenet1k_single_label",
+                             shape=[1, 1000], dtype="float32", class_count=1000, labeled_quality_claim=False),
+        preprocessing=dict(color="BGR_to_RGB", dtype="float32", scale="divide_255",
+            resize_short_edge=256, center_crop=[224, 224], mean_rgb=[0.485, 0.456, 0.406],
+            std_rgb=[0.229, 0.224, 0.225], recipe="torchvision.IMAGENET1K_V1.transforms"),
+        label_semantics=dict(class_count=1000, ordering="torchvision.IMAGENET1K_V1.categories",
+            labels_sha256=hashlib.sha256(json.dumps(labels, ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()))
+
+
 def build_processor(*, checkpoint_path: str, checkpoint_sha256: str):
     """Factory used by full_acceptance.workloads:frame_processor inside owned worker.
 
@@ -26,13 +44,14 @@ def build_processor(*, checkpoint_path: str, checkpoint_sha256: str):
     strict state-dict validation. No network is used here.
     """
     import torch
+    import numpy as np
     from torchvision.models import mobilenet_v3_small, MobileNet_V3_Small_Weights
     from hyso.performance.streaming import FrameInferenceProcessor
 
     ckpt = Path(checkpoint_path).resolve(strict=True)
     if ckpt.suffix.lower() != ".pth" or not ckpt.is_file():
         raise ValueError("explicit pretrained .pth checkpoint required")
-    if len(checkpoint_sha256) != 64 or _sha256(ckpt) != checkpoint_sha256:
+    if type(checkpoint_sha256) is not str or len(checkpoint_sha256) != 64 or _sha256(ckpt) != checkpoint_sha256:
         raise ValueError("pinned pretrained checkpoint SHA256 mismatch")
     # The official 0.20.x URL embeds this SHA256 prefix. Full digest is pinned
     # separately in the configuration; prefix alone is not used for ownership.
@@ -50,6 +69,8 @@ def build_processor(*, checkpoint_path: str, checkpoint_sha256: str):
     if not isinstance(state, dict) or not state:
         raise ValueError("nonempty pretrained state dict required")
     model.load_state_dict(state, strict=True)
+    if _sha256(ckpt) != checkpoint_sha256:
+        raise ValueError("pretrained checkpoint changed during loading")
     model.eval()
 
     class MobileNetProcessor(FrameInferenceProcessor):
@@ -61,23 +82,15 @@ def build_processor(*, checkpoint_path: str, checkpoint_sha256: str):
             self.transform = weights.transforms()
             self.identity.update(
                 trained=True,
-                model_id="torchvision_mobilenet_v3_small_imagenet1k_v1",
                 origin={"kind": "official_pretrained_checkpoint", "source": weights.url,
                         "checkpoint_sha256": checkpoint_sha256},
                 checkpoint_sha256=checkpoint_sha256,
-                input_contract={"format": "OpenCV BGR uint8", "shape": "H,W,3", "source": "real_camera_or_video"},
-                output_contract={"task": "ImageNet-1K classification", "shape": [1, 1000],
-                                 "class_count": 1000, "labeled_quality_claim": False},
-                preprocessing={"color": "BGR_to_RGB", "dtype": "float32", "scale": "divide_255",
-                               "resize_short_edge": 256, "center_crop": [224, 224],
-                               "mean_rgb": [0.485, 0.456, 0.406],
-                               "std_rgb": [0.229, 0.224, 0.225],
-                               "recipe": "torchvision.IMAGENET1K_V1.transforms"},
+                **contract(weights),
                 inference_scope="CPU_real_frame; throughput_not_classification_accuracy",
             )
 
         def process(self, frame):
-            if frame is None or frame.dtype.name != "uint8" or frame.ndim != 3 or frame.shape[2] != 3:
+            if not isinstance(frame, np.ndarray) or frame.dtype != np.uint8 or frame.ndim != 3 or frame.shape[2] != 3:
                 raise ValueError("expected nonempty OpenCV BGR uint8 HWC frame")
             if not frame.size:
                 raise ValueError("empty camera frame")
