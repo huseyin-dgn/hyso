@@ -120,7 +120,8 @@ class ContinuationSafetyTests(Fixture):
 
     def test_isolated_memory_crash_stops_handler_before_further_fits(self):
         fake=types.ModuleType('hyso.performance')
-        for name in ('TrainingMemoryRecipe','IsolatedTrainingMemoryProtocol'):setattr(fake,name,lambda *a,**k:object())
+        for name in ('TrainingMemoryRecipe','IsolatedTrainingMemoryProtocol','TrainingMemoryProtocol'):setattr(fake,name,lambda *a,**k:object())
+        fake.IsolatedTrainingMemoryProtocol=Mock(return_value=object())
         fake.measure_training_with_loader=Mock(return_value=types.SimpleNamespace(timing=object(),stages=object(),loader=object(),throughput=object()))
         fake.measure_gradient_diagnostics=Mock(return_value=object())
         mem=Mock();mem.to_dict.return_value=dict(outcome='native_crash')
@@ -131,6 +132,7 @@ class ContinuationSafetyTests(Fixture):
              patch.object(handlers,'save',return_value={}):
             with self.assertRaises(handlers.UnsafeCaptureError):handlers.training(self.m,self.out)
         self.assertEqual(build.call_count,2)
+        self.assertIs(fake.IsolatedTrainingMemoryProtocol.call_args.kwargs['saved_activation_lifetime'],False)
 
     def test_unauthorized_matrix_pass_does_not_promote_p31(self):
         rows=self.old_matrix();row=rows['10.stability']

@@ -1,7 +1,7 @@
 """Concrete adapters to the existing HYSo APIs. No optimizer/advisor engine."""
 from pathlib import Path
 import contextlib,csv,hashlib,importlib,importlib.metadata,json,math,os,statistics,subprocess,sys,tempfile,threading,time,uuid
-from .core import read,sha,publish,record,now
+from .core import read,sha,publish,record,now,selected_arm
 
 def metric(name,value,unit,kind,scope,reason=None):
     if value is None:
@@ -54,15 +54,15 @@ def smoke_cpu(m,root):
     from .workloads import configure,load_model,data
     from hyso._evaluation_evidence import model_hash
     configure(m);before=torch.get_rng_state().clone()
-    model=load_model(m,'B');x,_=data(m,count=1);state=model_hash(model)
+    arm=selected_arm(m);model=load_model(m,arm);x,_=data(m,count=1);state=model_hash(model)
     begin=time.perf_counter_ns()
     with torch.inference_mode():y=model(x)
     elapsed=time.perf_counter_ns()-begin
     if list(y.shape)!=[1,10] or not torch.isfinite(y).all().item():raise ValueError('trained CPU output contract')
     if model_hash(model)!=state or torch.cuda.is_initialized():raise ValueError('smoke changed model or initialized CUDA')
     return result(criteria=dict(trained_checkpoint_loaded=True,one_CPU_forward=True,output_contract=True,source_state_preserved=True),
-        model='B',batch=1,device='cpu',acceptance_scope='one-forward infrastructure smoke only; not full inference acceptance',
-        identity=dict(checkpoint=m['assets']['models']['B'],loaded_state_sha256=state,input_shape=list(x.shape),input_dtype=str(x.dtype),
+        model=arm,batch=1,device='cpu',acceptance_scope='one-forward infrastructure smoke only; not full inference acceptance',
+        identity=dict(checkpoint=m['assets']['models'][arm],loaded_state_sha256=state,input_shape=list(x.shape),input_dtype=str(x.dtype),
             input_sha256=hashlib.sha256(x.numpy().tobytes()).hexdigest(),preprocessing=m['assets']['dataset']['preprocessing']),
         metrics=[metric('completed_forwards',1,'call','measured','smoke'),metric('host_forward_ms',elapsed/1e6,'ms','measured','one smoke call; no benchmark quantile')])
 
@@ -98,7 +98,7 @@ def cuda_benchmark_check(m,root):
     torch.cuda.set_device(0)
     evidence=[save(root,'physical-GPU-runtime-identity',_cuda_hardware(torch,m['hardware']['gpu_uuid']))]
     protocol=dict(m['protocols']['inference'],samples=1)
-    for arm in ('A','B'):
+    for arm in ([selected_arm(m)] if 'model_run' in m else ('A','B')):
         model=load_model(m,arm);state=model_hash(model);x,_=data(m,count=protocol['batch'])
         evidence.append(save(root,arm+'-identity',dict(checkpoint=m['assets']['models'][arm],state_sha256=state,
             input_shape=list(x.shape),input_sha256=hashlib.sha256(x.numpy().tobytes()).hexdigest(),
@@ -117,7 +117,7 @@ def cpu_benchmark_check(m,root):
     from .workloads import configure,load_model,data
     from hyso._evaluation_evidence import model_hash
     configure(m);evidence=[]
-    for arm in ('A','B'):
+    for arm in ([selected_arm(m)] if 'model_run' in m else ('A','B')):
         model=load_model(m,arm);state=model_hash(model);x,_=data(m,count=1)
         protocol=dict(warmup=1,samples=3,repeats=1,seed=m['protocols']['inference']['seed'])
         evidence.append(save(root,arm+'-benchmark',inference_benchmark(model,x,protocol,'cpu')))
@@ -147,7 +147,7 @@ def inference(m,root,device):
     x,y=data(m);evidence=[];metrics=[];identities={};models={}
     cohort=EvaluationCohort(x,y,sample_ids=[f'mnist:test:{i:05}' for i in range(len(x))],class_names=[str(i) for i in range(10)],
         split='test',preprocessing_id=m['assets']['dataset']['preprocessing'])
-    for arm in ('A','B'):
+    for arm in ([selected_arm(m)] if 'model_run' in m else ('A','B')):
         folder=root/arm;folder.mkdir();model=load_model(m,arm);state=model_hash(model);sample=x[:p['batch']].clone()
         identity=dict(checkpoint=m['assets']['models'][arm],device=device,gpu_uuid=m['hardware']['gpu_uuid'] if gpu else None,
             precision='fp32',input_shape=list(sample.shape),input_sha256=hashlib.sha256(sample.numpy().tobytes()).hexdigest(),
@@ -212,8 +212,18 @@ def inference(m,root,device):
         evidence.append(save(folder,'precision-sweep',run_sweep(model,factory,axis='precision',points=p['precisions_cuda' if gpu else 'precisions_cpu'],
             protocol=sweep,input_shape=tuple(sample.shape))))
         ids=iter(range(1000))
+        if 'fresh_acceptance' in m:
+            from PIL import Image
+            import numpy as np
+            images=folder/'pipeline-images';images.mkdir()
+            for i in range(41):Image.fromarray((x[i,0].numpy()*255).round().astype(np.uint8)).save(images/(str(i)+'.png'))
         def source():
-            i=next(ids);return PipelineSample(str(i),x[i:i+1].clone())
+            i=next(ids)
+            if 'fresh_acceptance' in m:
+                with Image.open(images/(str(i)+'.png')) as im:raw=np.asarray(im.convert('L')).copy()
+                payload=torch.from_numpy(raw).unsqueeze(0).unsqueeze(0).float().div_(255)
+            else:payload=x[i:i+1].clone()
+            return PipelineSample(str(i),payload)
         def post(v):return PipelineSample(v.sample_id,v.payload.argmax(1).float().reshape(1,1,1,1))
         transfer=PipelineStage('transfer',lambda v:PipelineSample(v.sample_id,v.payload.to('cuda:0')),'cuda') if gpu else None
         pipeline_model=copy.deepcopy(model).to(device)
@@ -226,38 +236,69 @@ def inference(m,root,device):
         if any(t.device.type!='cpu' for t in [*model.parameters(),*model.buffers()]):raise ValueError('CPU master moved')
         metrics.append(metric(arm+'.quality_accuracy',quality.to_dict()['metrics']['accuracy'],'ratio','derived','same official10000 MNIST test cohort'))
     save(root,'model-identities',identities)
-    if not gpu:
+    if not gpu and 'fresh_acceptance' not in m:
         for precision in ('fp32','fp64'):
             evidence.append(save(root,'A-B-tradeoff-'+precision,compare_performance_quality(models['A'],models['B'],cohort,
                 precision=precision,iterations=20,batch_size=p['batch'],memory_metric='logical_model_bytes',independent_samples=False)))
-    else:
+    if gpu:
         for pinned,nonblocking in ((False,False),(True,False),(True,True)):
             evidence.append(save(root,'transfer-'+str(pinned)+'-'+str(nonblocking),measure_transfers(protocol=TransferProtocol(
                 shape=(p['batch'],1,28,28),warmup_iterations=p['warmup'],measure_iterations=20,repeats=1,
                 pinned=pinned,non_blocking=nonblocking,timeout_seconds=120,cpu_memory_limit_bytes=None,input_limit_bytes=None,cuda_memory_fraction=None))))
+    if 'fresh_acceptance' in m:
+        from .fresh import inference_extra
+        evidence.extend(inference_extra(m,root,device,models[selected_arm(m)]))
+        # Seal all nested trial and identity receipts after their owned workers close.
+        evidence=list({r['path']:r for r in [*evidence,*[record(p) for p in root.rglob('*.json')]]}.values())
     return result(criteria=dict(trained_A_B=True,matched_input_protocol=True,source_model_state_preserved=True),evidence=evidence,
-        metrics=metrics,limits=['P05 cold start is retained evidence; no new cold-cache claim','P07 extra resolutions are declared new protocol, not copies of historical8-point acceptance',
-            'P28 uses same-device fresh FP32 baselines; sweep latency is not quality','new P29 single-pair descriptions do not certify independent-trial significance or verified improvement'],device=device)
+        metrics=metrics,limits=['fresh interpreter cold start; OS page cache not flushed' if 'fresh_acceptance' in m else 'P05 cold start is retained evidence; no new cold-cache claim','P07 extra resolutions are declared new protocol, not copies of historical8-point acceptance',
+            'P28 uses same-device fresh FP32 baselines; sweep latency is not quality','P29 channels-last vs contiguous trained clone: three independent process pairs; no significance or improvement promised' if 'fresh_acceptance' in m else 'new P29 single-pair descriptions do not certify independent-trial significance or verified improvement'],device=device)
 
 def training(m,root):
+    if 'model_run' not in m:return _training_device(m,root)
+    arm=selected_arm(m);devices=m['protocols']['training']['devices'];rows=[]
+    if devices!=['cpu','cuda:0']:raise ValueError('per-model CPU/CUDA training pair required')
+    for device in devices:
+        folder=Path(root)/device.replace(':','-');folder.mkdir()
+        value=_training_device(m,folder,device=device)
+        rows.append(dict(device=device,result=value))
+        if value['status']=='FAIL':
+            return result('FAIL',reason='per_model_training_failed',device_results=rows,
+                criteria=dict(model_arm=arm,declared_devices=devices))
+    complete=all(r['result']['status']=='PASS' for r in rows)
+    return result('PASS' if complete else 'PARTIAL',reason=None if complete else 'per_model_training_coverage_incomplete',
+        evidence=[e for r in rows for e in r['result'].get('evidence',[])],device_results=rows,
+        criteria=dict(model_arm=arm,declared_devices=devices,real_training_each_device=complete,
+            P23_basic_each_device=all(r['result']['criteria'].get('P23_basic') is True for r in rows)))
+
+
+def _training_device(m,root,device='cpu'):
     from hyso.performance import (measure_training_with_loader,measure_gradient_diagnostics,TrainingMemoryRecipe,
-        IsolatedTrainingMemoryProtocol,measure_training_memory_isolated)
+        IsolatedTrainingMemoryProtocol,TrainingMemoryProtocol,measure_training_memory_isolated)
     from .workloads import training_recipe
     p=m['protocols']['training'];kw=dict(manifest_path=str(Path(m['output'])/'manifest.json'))
-    t=training_recipe(device='cpu',**kw)
+    t=training_recipe(device=device,**kw)
     fit=measure_training_with_loader(t['trainer'],t['train_loader'],t['val_loader'],epochs=p['epochs'],stages=True)
     evidence=[save(root,'timing',fit.timing),save(root,'stages',fit.stages),save(root,'loader',fit.loader),save(root,'throughput',fit.throughput)]
-    t=training_recipe(device='cpu',**kw)
+    t=training_recipe(device=device,**kw)
     evidence.append(save(root,'gradient',measure_gradient_diagnostics(t['trainer'],t['train_loader'],t['val_loader'],epochs=p['epochs'])))
-    recipe=TrainingMemoryRecipe('full_acceptance.workloads:training_recipe',kwargs=kw,device='cpu',epochs=p['epochs'],
+    recipe=TrainingMemoryRecipe('full_acceptance.workloads:training_recipe',kwargs=kw,device=device,epochs=p['epochs'],
         factory_search_path=str(Path(m['source_snapshot']['root'])/'tools'),seed=p['seed'])
     mem=measure_training_memory_isolated(recipe,protocol=IsolatedTrainingMemoryProtocol(timeout_seconds=600,
-        process_memory_bytes=None,job_memory_bytes=None,max_processes=4,cuda_memory_fraction=None,saved_activation_lifetime=True))
+        process_memory_bytes=None,job_memory_bytes=None,max_processes=4,cuda_memory_fraction=None,saved_activation_lifetime=False,
+        memory_protocol=TrainingMemoryProtocol(device=device),allow_peak_reset=device!='cpu'))
     evidence.append(save(root,'isolated-memory',mem))
     memory_data=mem.to_dict();_check_capture_boundary(memory_data)
     if memory_data['outcome']!='success':
         return result('FAIL',reason='isolated_P23_worker_did_not_complete',evidence=evidence,
             safety_stop='nested_worker_incomplete',criteria=dict(isolated_P23=False))
+    memory_basic=mem.basic_metrics()
+    evidence.append(save(root,'isolated-memory-basic',memory_basic))
+    if device!='cpu':
+        ok=memory_basic['status']=='complete'
+        return result('PASS' if ok else 'PARTIAL',reason=None if ok else 'basic_memory_domain_unavailable',
+            criteria=dict(model_arm=selected_arm(m),device=device,P23_basic=ok),evidence=evidence,
+            limits=['P24 target API is CPU-only; measured by the separate CPU fit'])
     from hyso import EvaluationCohort,measure_time_to_quality
     from .workloads import data
     import torch
@@ -268,21 +309,25 @@ def training(m,root):
     cohort=EvaluationCohort(vx,vy,sample_ids=['mnist:train:'+str(i) for i in idx],
         class_names=[str(i) for i in range(10)],split='validation',preprocessing_id=m['assets']['dataset']['preprocessing'])
     def target_factory(seed):
-        built=training_recipe(device='cpu',**kw)
+        built=training_recipe(device='cpu',seed=seed,**kw)
         from torch.utils.data import DataLoader,TensorDataset
         tensors=built['train_loader'].dataset.tensors
         loader=DataLoader(TensorDataset(*[v[:256] for v in tensors]),batch_size=p['batch'],shuffle=False,num_workers=0)
         return built['trainer'],loader
     evidence.append(save(root,'time-to-target',measure_time_to_quality(target_factory,cohort,seeds=p['target_seeds'],target=p['target_accuracy'],epochs=p['epochs'])))
-    return result('PARTIAL',reason='CPU_current_source_evidence_only;CUDA_training_and_disabled_CUDA_saved_activation_not_claimed',
-        criteria=dict(real_trained_B_CPU_training=True,distinct_observer_fits_separate=True,isolated_P23=True),evidence=evidence,
+    ok='model_run' in m and memory_basic['status']=='complete'
+    return result('PASS' if ok else 'PARTIAL',reason=None if ok else 'CPU_current_source_evidence_only;CUDA_training_not_validated_by_this_stage',
+        criteria=dict(real_trained_B_CPU_training=selected_arm(m)=='B',real_trained_CPU_training=True,
+            distinct_observer_fits_separate=True,isolated_P23=True,
+            P23_basic_model_B_CPU=selected_arm(m)=='B' and memory_basic['status']=='complete',
+            model_arm=selected_arm(m),device=device,P23_basic=memory_basic['status']=='complete'),evidence=evidence,
         metrics=[metric('epochs_per_distinct_fit',p['epochs'],'epoch','measured','three separate observer fits, not one merged timeline')])
 
 def layer(m,root):
     from hyso.performance import (ColdStartRecipe,ProfilingProtocol,profile_operators,profile_layers,analyze_flops,
         LayerOverheadProtocol,measure_layer_overhead)
     p=m['protocols']['layer'];tools=Path(m['source_snapshot']['root'])/'tools'
-    recipe=ColdStartRecipe('full_acceptance.workloads:model_only',model_kwargs=dict(manifest_path=str(Path(m['output'])/'manifest.json'),arm='B'),
+    recipe=ColdStartRecipe('full_acceptance.workloads:model_only',model_kwargs=dict(manifest_path=str(Path(m['output'])/'manifest.json'),arm=selected_arm(m)),
         input_shape=(1,1,28,28),device='cpu',factory_search_path=str(tools))
     capture=ProfilingProtocol(warmup_iterations=p['warmup'],measure_iterations=p['windows'],timeout_seconds=120,
         profile_memory=True,allocation_lifetimes=True,cpu_memory_ownership=True,max_cpu_witness_items=p.get('max_cpu_witness_items',250000),max_cpu_result_bytes=p.get('max_cpu_result_bytes',128*1024**2))
@@ -310,13 +355,16 @@ def _p13_cuda_evidence(m,root):
     """Optional sealed-manifest evidence import; no new native capture permission."""
     from hyso.performance import analyze_nsys_modules
     cfg=m.get('optional',{}).get('p13_evidence',{}).get('configuration')
+    if cfg is None and 'fresh_acceptance' in m:
+        finalized=Path(m['output'])/'p13-finalized/p13-evidence-configuration.json'
+        if finalized.is_file():cfg=read(finalized)
     if cfg is None:
         return result('PARTIAL',reason='CPU_ownership_calibration_does_not_establish_CUDA_module_kernel_attribution',evidence=[])
     try:
         data=analyze_nsys_modules(cfg)
         capture=data['capture']
         if capture is not None:
-            if (capture['checkpoint']['sha256']!=m['assets']['models']['B']['sha256']
+            if (capture['checkpoint']['sha256']!=m['assets']['models'][selected_arm(m)]['sha256']
                     or capture['gpu_uuid']!=m['hardware']['gpu_uuid']):
                 raise ValueError('P13 capture does not match acceptance Model B/device')
         ref=save(root,'verified-cuda-modules',data)
@@ -424,7 +472,7 @@ def stability(m,root,*,energy=False):
 def devices(m,root):
     from hyso.performance import WorkloadRecipe,DeviceProtocol,compare_devices
     refs=[]
-    for arm in ('A','B'):
+    for arm in ([selected_arm(m)] if 'model_run' in m else ('A','B')):
         recipe=WorkloadRecipe('full_acceptance.workloads:model_pair',dict(manifest_path=str(Path(m['output'])/'manifest.json'),arm=arm),
             search_path=str(Path(m['source_snapshot']['root'])/'tools'))
         p=m['protocols']['device']
@@ -451,8 +499,12 @@ def camera(m,root,*,live):
     cfg=m['optional']['camera_adapter']['configuration']
     provenance = cfg.get('camera_provenance') if live else cfg['provenance']
     if not provenance:raise ValueError('physical camera provenance required separately from video')
+    binding=cfg.get('camera_binding') if live else None
+    if live:
+        from hyso.performance._windows_camera import validate_binding
+        validate_binding(binding,cfg.get('camera_index',0))
     source=StreamSource('camera' if live else 'video_file',
-        cfg.get('camera_index',0) if live else cfg['video']['path'],provenance)
+        cfg.get('camera_index',0) if live else cfg['video']['path'],provenance,camera_binding=binding)
     recipe=WorkloadRecipe('full_acceptance.workloads:frame_processor',dict(manifest_path=str(Path(m['output'])/'manifest.json')),
         search_path=str(Path(m['source_snapshot']['root'])/'tools'))
     p=m['protocols']['camera' if live else 'video'];raw=measure_streaming(source,recipe,root/'journal',protocol=StreamProtocol(**p,
@@ -468,6 +520,8 @@ def camera(m,root,*,live):
             or captured.get('provenance')!=source.provenance
             or captured.get('file_sha256')!=(None if live else cfg['video']['sha256'])):
         raise ValueError('stream capture source differs from authorized camera/video contract')
+    if live and (captured.get('camera_binding')!=binding or captured.get('backend')!='DSHOW'):
+        raise ValueError('stream physical camera binding/backend differs from authorized contract')
     conservation=a['received']==a['processed']+a['dropped']+a['pending'];ok=a['status']=='completed' and conservation
     return result('PASS' if ok else 'FAIL',evidence=[ref],criteria=dict(real_camera_trained=bool(live and ok),real_video_trained=bool(not live and ok),conservation=conservation),
         metrics=[metric('processed_fps',a['completed_processing_fps'],'frame/s',
@@ -492,18 +546,49 @@ def _trained_cpu_ort_execution_confirmed(value, diag):
             and set(diag.get('observed_execution_providers') or ()) == {'CPUExecutionProvider'})
 
 
+def _trained_cuda_ort_execution_confirmed(value, diag, protocol):
+    """Canonical completed_runs includes warmup; coverage is in the assessment.
+
+    Count only the declared measured phase as measured runs, while requiring the
+    complete warmup+measured ledger and covered real CUDA node events.
+    """
+    data=value.to_dict();analysis=data.get('analysis',{});evidence=data.get('evidence',{})
+    report=evidence.get('report') or {};declared=evidence.get('protocol',{})
+    assessment=diag.get('evidence_assessment') or {}
+    coverage=assessment.get('node_coverage') or {}
+    spans=(report.get('capture_context') or {}).get('run_intervals') or []
+    total=protocol.warmup+protocol.runs
+    phases=['warmup']*protocol.warmup+['measured']*protocol.runs
+    return (declared.get('warmup')==protocol.warmup and declared.get('runs')==protocol.runs
+            and report.get('status')=='completed'
+            and report.get('completed_runs')==diag.get('completed_runs')==total
+            and len(spans)==total and [s.get('index') for s in spans]==list(range(total))
+            and [s.get('phase') for s in spans]==phases
+            and 'CUDAExecutionProvider' in set(diag.get('observed_execution_providers') or ())
+            and bool(diag.get('events')) and diag.get('failure_kind') is None
+            and coverage.get('status')=='complete' and coverage.get('source_node_count',0)>0
+            and not coverage.get('missing_or_partial_nodes')
+            and analysis.get('status') in ('expected_execution_observed','fallback_detected'))
+
+
 def provider(m,root,*,cuda):
     from hyso.performance import WorkloadRecipe,ProviderProtocol,profile_execution_providers
     mp=str(Path(m['output'])/'manifest.json');tools=str(Path(m['source_snapshot']['root'])/'tools');refs=[]
     protocol=ProviderProtocol(warmup=3,runs=10,startup_timeout_seconds=120,step_timeout_seconds=60,max_runtime_seconds=300,
         process_memory_bytes=None,job_memory_bytes=None,max_processes=None)
-    if not cuda:
-        for arm in ('A','B'):
-            recipe=WorkloadRecipe('full_acceptance.workloads:onnx_trained',dict(manifest_path=mp,arm=arm,export_path=str(root/(arm+'.onnx'))),search_path=tools)
-            value=profile_execution_providers(recipe,root/(arm+'-worker'),protocol=protocol,providers=['CPUExecutionProvider'],expected={'*':'CPUExecutionProvider'},
-                optimization='disabled',runtime_search_path=m['hardware']['ort_cpu'])
+    if not cuda or 'fresh_acceptance' in m:
+        for arm in ([selected_arm(m)] if 'model_run' in m else ('A','B')):
+            recipe=WorkloadRecipe('full_acceptance.workloads:onnx_trained',dict(manifest_path=mp,arm=arm,export_path=str(root/(arm+'.onnx'))),search_path=tools,gpu_uuid=m['hardware']['gpu_uuid'] if cuda else None)
+            providers=['CUDAExecutionProvider','CPUExecutionProvider'] if cuda else ['CPUExecutionProvider']
+            expected={'*':providers[0]}
+            value=profile_execution_providers(recipe,root/(arm+'-worker'),protocol=protocol,providers=providers,expected=expected,
+                optimization='disabled',runtime_search_path=m['hardware']['ort_cuda' if cuda else 'ort_cpu'],
+                provider_options={'CUDAExecutionProvider':{'device_id':0}} if cuda else None)
             refs.append(save(root,arm+'-provider',value));_check_capture_boundary(value.to_dict());diag=value.provider_diagnostics();save(root,arm+'-diagnostics',diag)
-            if not _trained_cpu_ort_execution_confirmed(value,diag):return result('FAIL',reason='no_real_trained_ORT_execution',evidence=refs)
+            if cuda:
+                ok=_trained_cuda_ort_execution_confirmed(value,diag,protocol)
+            else:ok=_trained_cpu_ort_execution_confirmed(value,diag)
+            if not ok:return result('FAIL',reason='no_real_trained_ORT_execution',evidence=refs)
     else:
         tests=str(Path(m['source_snapshot']['root'])/'tests')
         for name,factory in (('relu','deployment_support:onnx_model'),('mixed','provider_acceptance_factories:partition_model')):
@@ -515,7 +600,7 @@ def provider(m,root,*,cuda):
             observed=set(diag['observed_execution_providers'])
             if 'CUDAExecutionProvider' not in observed or name=='mixed' and observed!={'CUDAExecutionProvider','CPUExecutionProvider'}:
                 return result('FAIL',reason='expected_actual_native_node_placement_missing',evidence=refs)
-    return result(evidence=refs,criteria=dict(actual_node_execution=True),limits=['availability is not execution','mixed controlled graph is not trained A/B mixed fallback','no execution-error retry recovery claim'])
+    return result(evidence=refs,criteria=dict(actual_node_execution=True),limits=['availability is not execution','selected trained ONNX export on CPU/CUDA' if 'fresh_acceptance' in m else 'mixed controlled graph is not trained A/B mixed fallback','no execution-error retry recovery claim'])
 
 def replay(m,root):
     import torch

@@ -66,7 +66,7 @@ $sha = '{h}'
 
 # 1. Read-only environment/source/checkpoint/dataset preflight. No GPU work.
 & $py $entry --manifest $manifest --approved-sha256 $sha --preflight
-# Optional bounded preparation smoke: one trained Model B CPU forward only.
+# Optional bounded preparation smoke: one trained Model {m.get('model_run',{}).get('arm','B')} CPU forward only.
 & $py $entry --manifest $manifest --approved-sha256 $sha --smoke
 
 # 2. One upper command; runs only the sealed approved experiments.
@@ -108,7 +108,8 @@ $sha = '{h}'
     lines+=['','## Specific criterion limits','',
         'P13:5 fresh alternating worker pairs,2 warmups,2 declared priming windows,5 analyzed windows; CV<=.25 and relative CI half-width<=.5 unchanged. CPU calibration does not prove CUDA attribution.',
         'P18:new target/compute/memory NCU captures,2 warmups+3 actual samples; independent output/FFMA counters and10% spread calculation. Old failed sessions remain unchanged. No allocation fraction; fixed reference buffers are workload parameters, not hardware maxima.',
-        'P23:real Model B train/validation data and separate observer fits; registered logical/RSS/isolated CPU saved-payload evidence. Disabled CUDA saved activation remains disabled.',
+        ('P23:basic memory; per-model manifest explicitly runs the selected model on CPU and CUDA with separate fits and owned CUDA peak resets. P24 target API remains CPU-only.' if 'model_run' in m else
+         'P23:basic memory; legacy stage covers Model B CPU only. Both-model CUDA basic acceptance is separate.')+' Activation lifetime is excluded; production CUDA saved-activation tracing remains disabled and its crash guard remains enforced.',
         'P30:a task-appropriate trained camera processor/model/data/source contract is missing by default. Do not use MNIST as a real-world camera classifier by assumption.',
         'P31:new manifest only, Model B CPU FP32 batch256 actual work>=7200s; full terminal/close/accounting/continuity/gaps/inner+outer Job cleanup. Historical manifest is preserved and never executed.',
         'P33:trained same-UUID idle/active board-power trace with bracketed timestamps and completed work; gross/net values null if required sensor/coverage/baseline is absent.',
@@ -143,6 +144,9 @@ def worker(args):
         # The parent admission was verified above; do not attempt to look the
         # subtask up in the legacy manifest experiment list.
         pass
+    elif args.worker in ('__tradeoff_0','__tradeoff_1','__tradeoff_2','__p13_finalize_stage'):
+        from .fresh import authorize_auxiliary
+        authorize_auxiliary(m,args.worker,operation,root)
     elif args.worker in internal:
         if operation!=internal[args.worker]:raise PermissionError('invalid safe preparation operation')
         if operation=='cuda_benchmark_check' and not next(e for e in m['experiments'] if e['id']=='04.cuda')['authorization']['approved']:
@@ -165,7 +169,8 @@ def worker(args):
         from . import handlers as h
         if subtask:
             from .cuda_subtask_worker import run as cuda_subtask_run
-        dispatch={'environment':h.environment,'smoke_cpu':h.smoke_cpu,'cpu_benchmark_check':h.cpu_benchmark_check,'cuda_benchmark_check':h.cuda_benchmark_check,'regression':h.regression,
+        from .fresh import tradeoff_trial,finalize_p13_stage
+        dispatch={'tradeoff_trial':tradeoff_trial,'p13_finalize_stage':finalize_p13_stage,'environment':h.environment,'smoke_cpu':h.smoke_cpu,'cpu_benchmark_check':h.cpu_benchmark_check,'cuda_benchmark_check':h.cuda_benchmark_check,'regression':h.regression,
             'inference_cpu':lambda m,r:h.inference(m,r,'cpu'),'inference_cuda':lambda m,r:h.inference(m,r,'cuda:0'),
             'inference_cuda_subtask':lambda m,r:cuda_subtask_run(m,r,route),
             'training':h.training,'layer':h.layer,'roofline':h.roofline,
@@ -199,7 +204,7 @@ def preflight(args):
         m=prepare(args.output,python=args.python,gpu_uuid=args.gpu_uuid,camera_config=args.camera_config,
             ncu_plan=args.ncu_plan,ort_cpu=args.ort_cpu,ort_cuda=args.ort_cuda,p13_evidence=getattr(args,'p13_evidence',None),
             p13_nsys_plan=getattr(args,'p13_nsys_plan',None),
-            continue_independent=getattr(args,"continue_independent",False))
+            continue_independent=getattr(args,"continue_independent",False),model_arm=getattr(args,'model_arm',None))
     out=Path(m['output']);row=dict(id='__environment',handler='environment',output=None,outer_seconds=180)
     path=out/'preparation'/('preflight-'+uuid.uuid4().hex[:8]);p=supervise(m,row,operation='environment',output=path)
     payload=dict(status=p['status'],source_checkpoints_dataset_runtime='hash_verified_before_import',
@@ -324,7 +329,8 @@ def _fatal_experiment_boundary(value):
     if receipt.get('reason') in (
         'user_stop','user_interrupt','Windows_OS_low_memory',
         'OS_low_memory_before_launch','cleanup_failure','supervisor_error',
-        'startup_watchdog','heartbeat_watchdog',
+        'startup_watchdog','heartbeat_watchdog','resource_headroom_insufficient',
+        'declared_outer_deadline','finite_log_budget','finite_evidence_budget',
     ):return str(receipt['reason'])
     cleanup=receipt.get('cleanup')
     if not isinstance(cleanup,dict) or cleanup.get('active_processes')!=0:
@@ -338,13 +344,19 @@ def execute(args):
     m=verify(args.manifest,expected=args.approved_sha256);out=Path(m['output']);stopfile=out/'stop-request.json'
     manifest_sha256=sha(args.manifest)
     if stopfile.exists():raise ValueError('stop request exists; prepare a fresh manifest, do not clear history')
+    from .continuation import completed_rows
+    carried=completed_rows(m)
     publish(out/'STARTED.json',dict(pid=os.getpid(),at=now(),manifest_sha256=sha(args.manifest),one_shot=True),new=True)
-    rows=initial_results(m);stopped=False;halt_reason=None;state='RUNNING';complete=False
+    rows=initial_results(m);rows.update(carried)
+    stopped=False;halt_reason=None;state='RUNNING';complete=False
     policy=m.get('execution_policy','fail_fast')
     prep={}
     try:
         prep=read(out/'stage-results.json').get('preparation',{}) if (out/'stage-results.json').exists() else {}
         for e in _execution_order(m):
+            if e['id'] in carried:
+                print(e['id'],rows[e['id']]['status'],'CARRIED_NO_EXECUTION',flush=True)
+                continue
             status,reason,missing=decision(m,e,rows,stopped=stopped)
             if stopfile.exists():status,reason='NOT_RUN_STOPPED','user stop before next experiment';stopped=True
             elif stopped and halt_reason is not None:reason=halt_reason
@@ -377,6 +389,15 @@ def execute(args):
                 run_id=m['run_id'],manifest_sha256=manifest_sha256,updated_at=now()))
             write_reports(m,rows,state='RUNNING',preparation=prep)
             print(e['id'],rows[e['id']]['status'],flush=True)
+            if e['id']=='06.p13_capture' and 'fresh_acceptance' in m and rows[e['id']]['status']=='PASS':
+                auxiliary=dict(id='__p13_finalize_stage',handler='p13_finalize_stage',outer_seconds=180)
+                finalized=supervise(m,auxiliary,output=out/'preparation/p13-stage-finalizer',stop_file=stopfile)
+                prep['p13_stage_finalizer']=finalized
+                if finalized['status']!='PASS':
+                    # Capture evidence and its exact disk/controller row stay intact.
+                    fatal=_fatal_experiment_boundary(finalized)
+                    if fatal is not None:stopped=True;halt_reason='P13 finalizer unsafe boundary: '+fatal
+                write_reports(m,rows,state='RUNNING',preparation=prep)
         complete=all(r.get('attempted') and r['status'] in ('PASS','PARTIAL','FAIL','UNSUPPORTED') for r in rows.values())
         state='EXECUTION_COMPLETE_WITH_RESULTS' if complete else 'INCOMPLETE'
     except BaseException as error:
@@ -414,6 +435,7 @@ def main(argv=None):
     mode.add_argument('--worker',help=argparse.SUPPRESS)
     p.add_argument('--manifest',type=Path);p.add_argument('--output',type=Path);p.add_argument('--approved-sha256')
     p.add_argument('--python',type=Path,default=DEFAULT_PYTHON);p.add_argument('--gpu-uuid');p.add_argument('--camera-config',type=Path)
+    p.add_argument('--model-arm',choices=('A','B'),help='new independent per-model manifest with explicit CPU/CUDA training pairs')
     p.add_argument('--ncu-plan',type=Path);p.add_argument('--ort-cpu',type=Path);p.add_argument('--ort-cuda',type=Path)
     p.add_argument('--p13-nsys-plan',type=Path,help='explicit pinned native P13 tool; does not authorize GPU work')
     p.add_argument('--p13-evidence',type=Path,help='read-only pinned P13 Nsight evidence configuration; grants no native authorization')

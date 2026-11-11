@@ -17,14 +17,21 @@ class StreamSource:
     kind: str
     location: str | int
     provenance: str
+    camera_binding: dict | None = None
 
     def __post_init__(self):
         _name(self.provenance)
         if self.kind=='video_file':
             if type(self.location) is not str or not Path(self.location).is_absolute() or not Path(self.location).is_file():
                 raise ValueError('existing absolute video path required')
-        elif self.kind=='camera':_int(self.location,0,32)
+        elif self.kind=='camera':
+            _int(self.location,0,32)
+            if self.camera_binding is not None:
+                from ._windows_camera import validate_binding
+                validate_binding(self.camera_binding,self.location)
         else:raise NotImplementedError('local recorded video or camera only; no synthetic camera adapter')
+        if self.kind!='camera' and self.camera_binding is not None:
+            raise ValueError('camera identity cannot be attached to a video file')
 
 
 @dataclass(frozen=True)
@@ -77,6 +84,10 @@ def _analyze_stream(e):
     if any(header['capture'][k]!=e['request']['source'][k] for k in ('kind','location','provenance')):
         raise ValueError('capture source association mismatch')
     source=e['request']['source']
+    if source.get('camera_binding') is not None:
+        if (header['capture'].get('camera_binding')!=source['camera_binding']
+                or header['capture'].get('backend')!='DSHOW'):
+            raise ValueError('physical camera binding/backend mismatch')
     expected_target=p.max_frames
     if source['kind']=='video_file':
         _digest(header['capture']['file_sha256']);_int(header['capture']['declared_frames'],1)
@@ -238,8 +249,17 @@ def _prepare_capture(root, request, p, source, processor, processor_source):
     import cv2
     capture = None
     try:
-        capture=cv2.VideoCapture(source.location)
+        binding=None
+        if source.camera_binding is not None:
+            from ._windows_camera import verify_binding
+            binding=verify_binding(source.camera_binding,source.location)
+            capture=cv2.VideoCapture(source.location,cv2.CAP_DSHOW)
+            verify_binding(source.camera_binding,source.location)
+        else:
+            capture=cv2.VideoCapture(source.location)
         if not capture.isOpened():raise RuntimeError('capture open failed')
+        if binding is not None and capture.getBackendName()!='DSHOW':
+            raise ValueError('physical camera backend differs from pinned DSHOW')
         fps=capture.get(cv2.CAP_PROP_FPS);count=capture.get(cv2.CAP_PROP_FRAME_COUNT)
         if source.kind=='video_file' and (not math.isfinite(count) or count<1):
             raise ValueError('finite recorded video frame count required')
@@ -251,6 +271,7 @@ def _prepare_capture(root, request, p, source, processor, processor_source):
             target_frames=target,capture=dict(kind=source.kind,location=source.location,provenance=source.provenance,
                 file_sha256=digest,backend=capture.getBackendName(),opencv_version=cv2.__version__,declared_fps=fps if math.isfinite(fps) and fps>0 else None,
                 declared_frames=int(count) if source.kind=='video_file' else None),processor=processor.identity,processor_source=processor_source)
+        if binding is not None:header['capture']['camera_binding']=binding
         journal=_Journal(root,header,64,p.max_frames*8+16)
         _atomic(root/'ready.json',dict(pid=os.getpid(),token=request['token']))
         return capture, fps, target, digest, journal

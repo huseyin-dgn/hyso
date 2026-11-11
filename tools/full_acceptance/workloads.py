@@ -1,7 +1,7 @@
 """Trusted native factories; called only by admitted acceptance workers."""
 from pathlib import Path
 import hashlib,os
-from .core import read,sha,digest
+from .core import read,sha,digest,selected_arm
 
 def context(manifest_path):
     m=read(manifest_path)
@@ -49,6 +49,14 @@ def data(m,*,split='test',count=None):
         raw=d['x_'+suffix][indices].copy();labels=d['y_'+suffix][indices].astype(np.int64)
     return torch.from_numpy(raw).unsqueeze(1).float().div_(255),torch.from_numpy(labels)
 
+def architecture_only(manifest_path,arm='B'):
+    """CPU construction only; the public cold worker loads the owned weights."""
+    from hyso.models.modular import ModularCNN
+    m=context(manifest_path);configure(m)
+    if arm!=selected_arm(m):raise ValueError('selected model routing mismatch')
+    return ModularCNN(**m['assets']['models'][arm]['config'])
+
+
 def model_only(manifest_path,arm='B'):
     m=context(manifest_path);configure(m);return load_model(m,arm)
 
@@ -62,14 +70,16 @@ def model_pair(manifest_path,arm='B',batch=None):
         preprocessing_sha256=digest(dict(algorithm='uint8_div255_FP32_NCHW',dataset_sha256=m['assets']['dataset']['sha256'],
             indices='official_test_first_'+str(len(x)))))
 
-def training_recipe(*,device,manifest_path):
+def training_recipe(*,device,manifest_path,seed=None):
     import torch
     from torch.utils.data import DataLoader,TensorDataset
     from hyso.training import Trainer
     m=context(manifest_path);configure(m);p=m['protocols']['training']
-    model=load_model(m,'B');model.train()
+    arm=selected_arm(m)
+    torch.manual_seed(p['seed'] if seed is None else seed)
+    model=load_model(m,arm);model.train();model.to(device)
     trainer=Trainer(model,optimizer=torch.optim.AdamW(model.parameters(),lr=.001,weight_decay=.0001),
-        loss_fn=torch.nn.CrossEntropyLoss(),device=device,amp=False,model_config=m['assets']['models']['B']['config'])
+        loss_fn=torch.nn.CrossEntropyLoss(),device=device,amp=False,model_config=m['assets']['models'][arm]['config'])
     x,y=data(m,split='train',count=p['train_samples']);vx,vy=data(m,split='val',count=p['validation_samples'])
     train=DataLoader(TensorDataset(x,y),batch_size=p['batch'],shuffle=False,num_workers=0)
     val=DataLoader(TensorDataset(vx,vy),batch_size=p['batch'],shuffle=False,num_workers=0)
@@ -79,18 +89,18 @@ def inference_work(manifest_path,device='cpu'):
     import torch
     from hyso.performance import InferenceWorkload
     from hyso._evaluation_evidence import model_hash
-    m=context(manifest_path);model,x,origin=model_pair(manifest_path,'B',batch=256)
+    m=context(manifest_path);arm=selected_arm(m);model,x,origin=model_pair(manifest_path,arm,batch=256)
     base=InferenceWorkload(model,x,device='cpu' if device=='cpu' else 'cuda:0',gpu_uuid=None if device=='cpu' else device)
     if base.step()!=256:raise ValueError('warmup completion mismatch')
-    identity=dict(base.identity,precision='fp32',checkpoint=m['assets']['models']['B'],input_sha256=hashlib.sha256(x.numpy().tobytes()).hexdigest(),
+    identity=dict(base.identity,precision='fp32',checkpoint=m['assets']['models'][arm],input_sha256=hashlib.sha256(x.numpy().tobytes()).hexdigest(),
         preprocessing=m['assets']['dataset']['preprocessing'],setup_warmup_calls=1,trained=True,origin=origin)
     class Work:
         def __init__(self):self.identity=identity
         def step(self):return base.step()
         def close(self):
             base.close()
-            if model_hash(model)!=m['assets']['models']['B']['recorded_state_sha256']:raise ValueError('master state mutated')
-            if sha(m['assets']['models']['B']['path'])!=m['assets']['models']['B']['sha256']:raise ValueError('checkpoint mutated')
+            if model_hash(model)!=m['assets']['models'][arm]['recorded_state_sha256']:raise ValueError('master state mutated')
+            if sha(m['assets']['models'][arm]['path'])!=m['assets']['models'][arm]['sha256']:raise ValueError('checkpoint mutated')
     return Work()
 
 def onnx_trained(manifest_path,arm='B',export_path=None):

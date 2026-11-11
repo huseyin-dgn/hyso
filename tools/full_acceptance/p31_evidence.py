@@ -1,6 +1,6 @@
 """Strict offline admission of the current acceptance run's P31 series to P32."""
 from pathlib import Path
-from .core import read, sha
+from .core import read, sha, selected_arm
 
 
 def validated_source(m):
@@ -41,7 +41,7 @@ def validated_source(m):
             or identity.get('kind')!='model_inference' or identity.get('device_id')!='cpu'
             or identity.get('trained') is not True or identity.get('precision')!='fp32'
             or identity.get('input_shape')!=[256,1,28,28]
-            or identity.get('checkpoint',{}).get('sha256')!=m['assets']['models']['B']['sha256']):
+            or identity.get('checkpoint',{}).get('sha256')!=m['assets']['models'][selected_arm(m)]['sha256']):
         raise ValueError('P32 requires validated uninterrupted 7200-second Model B CPU evidence')
     if reopen_stability(stage/'journal').to_dict()['evidence']!=e:
         raise ValueError('P32 source differs from its committed journal')

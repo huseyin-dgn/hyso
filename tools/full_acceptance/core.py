@@ -88,6 +88,12 @@ def dataset_inventory():
         preprocessing=md['preprocessing'],cohort_sha256=data28['cohort_sha256'],ordered_stream=data28['stream']),
         split_indices=record(previous['split_indices']),split_manifest=record(previous['dataset_manifest']))
 
+
+def selected_arm(m):
+    arm=m.get('model_run',{}).get('arm','B')
+    if arm not in ('A','B'):raise ValueError('explicit Model A or B required')
+    return arm
+
 def runtime_inventory(python):
     python=Path(python).resolve()
     site=python.parent/'Lib/site-packages';paths=[site,*[p for p in TOOLING if p.is_dir()]]
@@ -98,8 +104,9 @@ def runtime_inventory(python):
         expected=dict(torch='2.5.1+cu121',torchvision='0.20.1+cu121',python_major_minor='3.10'),
         tooling='existing local packages only; no install performed')
 
-def prepare(output,*,python=DEFAULT_PYTHON,gpu_uuid=None,camera_config=None,ncu_plan=None,ort_cpu=None,ort_cuda=None,continue_independent=False,p13_evidence=None,p13_nsys_plan=None):
+def prepare(output,*,python=DEFAULT_PYTHON,gpu_uuid=None,camera_config=None,ncu_plan=None,ort_cpu=None,ort_cuda=None,continue_independent=False,p13_evidence=None,p13_nsys_plan=None,model_arm=None):
     if type(continue_independent) is not bool:raise TypeError('continue_independent must be bool')
+    if model_arm is not None and model_arm not in ('A','B'):raise ValueError('model_arm must be A or B')
     out=Path(output).resolve();out.mkdir(parents=True,exist_ok=True)
     if (out/'manifest.json').exists() or (out/'source').exists():raise FileExistsError('use a new output directory; manifests are never overwritten')
     baseline=out/'preservation-before.json'
@@ -212,6 +219,19 @@ def prepare(output,*,python=DEFAULT_PYTHON,gpu_uuid=None,camera_config=None,ncu_
                 dict(id='CPU65536.reproducer',authorization='NOT_AUTHORIZED',reason='high-memory crash experiment excluded from ordinary suite')]),
         approval_history=[],automatic_retry=False,
         execution_policy='continue_independent' if continue_independent else 'fail_fast')
+    if model_arm is not None:
+        manifest['model_run']=dict(arm=model_arm,checkpoint_sha256=inventory['models'][model_arm]['sha256'],
+            comparison_arms=['A','B'],comparison_scope='fresh peer context where the feature compares models',
+            native_features_completed=0,full_35_pass=False)
+        manifest['protocols']['training'].update(model_arm=model_arm,devices=['cpu','cuda:0'],
+            description='fresh trained Model '+model_arm+' clones; separate CPU/CUDA observer fits; CPU-only P24 target API')
+        for item in manifest['experiments']:
+            if item['model']=='B':item['model']=model_arm
+            item['scope']=item['scope'].replace('Model B','Model '+model_arm)
+            if item['handler']=='training':
+                item['device']='cpu+cuda:0'
+                item['expected_work']='Model '+model_arm+': separate P19-P23/P25 CPU and CUDA fits, owned P23 CUDA peak windows; P24 target measurement CPU only'
+            else:item['expected_work']=item['expected_work'].replace('Model B','Model '+model_arm).replace('trained B ','trained '+model_arm+' ')
     publish(out/'manifest.json',manifest,new=True)
     (out/'manifest.sha256').write_text(sha(out/'manifest.json')+'\n',encoding='ascii')
     verify(out/'manifest.json',expected=sha(out/'manifest.json'),live=True)
@@ -222,6 +242,12 @@ def verify(path,*,expected=None,live=True,assets=True):
     if expected is None:expected=path.with_suffix('.sha256').read_text(encoding='ascii').strip()
     if not isinstance(expected,str) or len(expected)!=64 or sha(path)!=expected:raise ValueError('manifest SHA256 mismatch')
     m=read(path)
+    if 'model_run' in m:
+        arm=selected_arm(m)
+        if (m['model_run']['checkpoint_sha256']!=m['assets']['models'][arm]['sha256']
+                or m['protocols']['training'].get('model_arm')!=arm
+                or m['protocols']['training'].get('devices')!=['cpu','cuda:0']):
+            raise ValueError('per-model training/checkpoint routing mismatch')
     if m.get('execution_policy','fail_fast') not in ('fail_fast','continue_independent'):
         raise ValueError('invalid sealed execution policy')
     if m.get('format')!='hyso.full_acceptance.manifest' or type(m.get('schema_version')) is not int or m['schema_version']!=SCHEMA:

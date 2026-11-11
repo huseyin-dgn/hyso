@@ -87,7 +87,8 @@ def test_startup_failure_closes_processor_and_capture(monkeypatch, tmp_path, fai
 def test_video_provenance_does_not_supply_physical_camera_identity():
     cfg = dict(factory="f:build", factory_source={}, checkpoint={}, model_id="model", input_contract={},
         output_contract={}, preprocessing={}, label_semantics={}, provenance="real recorded video")
-    manifest = dict(optional=dict(camera_adapter=dict(configuration=cfg)))
+    manifest = dict(optional=dict(camera_adapter=dict(configuration=cfg)),
+        source_snapshot=dict(root=str(Path(__file__).resolve().parents[1])))
     video = reporting.prerequisites(manifest, dict(id="08.video", requires=["camera_adapter"]))
     camera = reporting.prerequisites(manifest, dict(id="08.camera", requires=["camera_adapter"]))
     assert not video
@@ -143,9 +144,11 @@ def test_acceptance_binds_source_and_keeps_failed_throughput_null(processor, mon
     config.update(checkpoint=dict(sha256=processor.identity["checkpoint_sha256"]),
         provenance="synthetic video test", video=dict(path=str(video), sha256=adapter._sha256(video)),
         camera_index=0, camera_provenance="mocked physical-source attestation; no device opened")
+    config['camera_binding']=dict(index=0,backend='DSHOW',friendly_name='offline double',device_path='offline-device')
     capture = dict(kind="camera" if live else "video_file", location=0 if live else str(video),
         provenance=config["camera_provenance"] if live else config["provenance"],
         file_sha256=None if live else config["video"]["sha256"])
+    if live:capture.update(camera_binding=config['camera_binding'],backend='DSHOW')
     data = dict(evidence=dict(header=dict(processor=processor.identity, capture=capture)),
         analysis=dict(status="completed" if completed else "aborted", received=1,
             processed=1 if completed else 0, dropped=0 if completed else 1, pending=0,

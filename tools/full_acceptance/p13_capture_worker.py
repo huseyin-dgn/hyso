@@ -23,7 +23,7 @@ def main():
     if Path(m["source_snapshot"]["root"]).resolve() != snapshot:
         raise PermissionError("P13 capture worker source snapshot mismatch")
     sys.path[:0] = [str(snapshot), str(snapshot / "tools"), *m["runtime"]["site_paths"]]
-    from tools.full_acceptance.core import read, publish, sha
+    from tools.full_acceptance.core import read, publish, sha, selected_arm
     if (os.environ.get("HYSO_FULL_ACCEPTANCE_ADMITTED") != sha(manifest)
             or os.environ.get("CUDA_VISIBLE_DEVICES") != m["hardware"]["gpu_uuid"]):
         raise PermissionError("P13 capture worker not GPU-admitted")
@@ -61,7 +61,8 @@ def main():
     torch.backends.cudnn.allow_tf32 = False
     torch.backends.cuda.matmul.allow_tf32 = False
     torch.backends.cudnn.benchmark = False
-    model, sample, origin = model_pair(manifest, "B", batch=1)
+    arm = selected_arm(m)
+    model, sample, origin = model_pair(manifest, arm, batch=1)
     initial_hash = model_hash(model)
     input_path = root / "p13-input.npy"
     if input_path.exists():
@@ -85,7 +86,7 @@ def main():
                 results.append(equal)
     if model_hash(model) != initial_hash:
         raise ValueError("P13 original CPU master state changed")
-    cp = m["assets"]["models"]["B"]
+    cp = m["assets"]["models"][arm]
     if sha(cp["path"]) != cp["sha256"]:
         raise ValueError("P13 checkpoint modified")
     publish(root / "p13-worker.json", dict(status="completed", pid=os.getpid(),

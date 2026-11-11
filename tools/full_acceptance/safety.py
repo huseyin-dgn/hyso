@@ -5,6 +5,14 @@ from ctypes import wintypes as w
 import importlib.util,json,os,stat,subprocess,sys,time,uuid
 from .core import publish,read,now,sha
 
+
+def cuda_visibility(manifest,operation):
+    cuda_operation=operation in ('inference_cuda','inference_cuda_subtask','cuda_benchmark_check',
+        'energy','devices','provider_cuda','roofline','p13_capture')
+    cuda_operation |= (operation=='training' and 'model_run' in manifest
+        and 'cuda:0' in manifest['protocols']['training'].get('devices',[]))
+    return manifest['hardware']['gpu_uuid'] if cuda_operation and manifest['hardware']['gpu_uuid'] else '-1'
+
 def load_file(path,name):
     """Execute checked source bytes without reading or writing a .pyc cache."""
     spec=importlib.util.spec_from_file_location(name,path);module=importlib.util.module_from_spec(spec)
@@ -108,8 +116,7 @@ def supervise(manifest,experiment,*,operation=None,output=None,stop_file=None):
         '--worker',experiment['id'],'--manifest',request['manifest'],'--stage-output',str(root)]
     env=dict(os.environ,PYTHONUTF8='1',PYTHONDONTWRITEBYTECODE='1',PYTHONUNBUFFERED='1',MPLBACKEND='Agg')
     # Native descendants inherit only the explicit physical device for CUDA ops.
-    env['CUDA_VISIBLE_DEVICES']=manifest['hardware']['gpu_uuid'] if request['operation'] in (
-        'inference_cuda','inference_cuda_subtask','cuda_benchmark_check','energy','devices','provider_cuda','roofline','p13_capture') and manifest['hardware']['gpu_uuid'] else '-1'
+    env['CUDA_VISIBLE_DEVICES']=cuda_visibility(manifest,request['operation'])
     env.pop('HYSO_NATIVE_GPU_UUID',None)
     module=load_file(snapshot/'hyso/performance/_training_process.py','acceptance_owned_job')
     resource_module=load_file(snapshot/'hyso/performance/_stream_resources.py','acceptance_low_memory')
@@ -118,7 +125,17 @@ def supervise(manifest,experiment,*,operation=None,output=None,stop_file=None):
     try:
         resources=resource_module._StreamResources(token)
         if resources.sample(job):reason='OS_low_memory_before_launch'
-        else:
+        if reason is None and 'fresh_acceptance' in manifest:
+            telemetry=load_file(snapshot/'tools/p23_basic_resources.py','ordinary_resource_telemetry')
+            observed=telemetry.capture()
+            expected=dict(manifest['fresh_acceptance']['resource_estimate'])
+            if request['operation'] in ('environment','regression','replay','memory','p13_finalize_stage','tradeoff_trial'):
+                expected={k:(v//2 if k in ('expected_host_bytes','expected_commit_bytes') else v) for k,v in expected.items()}
+            if cuda_visibility(manifest,request['operation'])=='-1':expected['expected_gpu_bytes']=0
+            admission=telemetry.evaluate(observed,expected)
+            publish(root/'resource-admission.json',dict(observed=observed,estimate=expected,admission=admission),new=True)
+            if not admission['eligible']:reason='resource_headroom_insufficient'
+        if reason is None:
             with (root/'stdout.log').open('xb') as stdout,(root/'stderr.log').open('xb') as stderr:
                 process=subprocess.Popen(argv,cwd=snapshot,env=env,stdout=stdout,stderr=stderr,
                     creationflags=subprocess.CREATE_NO_WINDOW)

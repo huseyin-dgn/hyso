@@ -18,20 +18,27 @@ from .core import read, record, publish, sha, verify
 from .p13_capture_native import LABELS
 
 
-def build(manifest, expected_sha, output):
+def build(manifest, expected_sha, output, *, completed_stage=False):
     manifest = Path(manifest).resolve()
     m = verify(manifest, expected=expected_sha, live=True)
     prior = Path(m["output"]).resolve()
     output = Path(output).resolve()
     if output.exists():
         raise FileExistsError("P13 finalized evidence requires a new directory")
-    if output == prior or prior in output.parents:
+    if completed_stage:
+        if 'fresh_acceptance' not in m or output!=prior/'p13-finalized':
+            raise ValueError('completed-stage finalization requires sealed fresh runner scope')
+    elif output == prior or prior in output.parents:
         raise ValueError("do not write into consumed acceptance run")
     state = read(prior / "run-status.json")
-    if (state.get("controller_active") is not False or state.get("preservation_status") != "PASS"
+    if not completed_stage and (state.get("controller_active") is not False or state.get("preservation_status") != "PASS"
             or state.get("manifest_sha256") != sha(manifest)
             or state.get("finalization_errors")):
         raise ValueError("P13 outer acceptance did not finalize cleanly")
+    if completed_stage and (state.get('state')!='RUNNING' or state.get('controller_active') is not True
+            or state.get('manifest_sha256')!=sha(manifest) or state.get('run_id')!=m['run_id']):
+        raise ValueError('completed-stage coordinator binding mismatch')
+    # The Nsight stage Job has closed; the coordinator may still be alive.
     # Verify the real disk receipt and admission chain, not just a copied row.
     from .p13_capture_recover import validate_capture
     validate_capture(m, manifest)
@@ -75,7 +82,7 @@ def build(manifest, expected_sha, output):
             or worker.get("output_equal") != [True, True, True]
             or worker.get("forward_labels") != LABELS
             or worker.get("cudnn_tf32_disabled") is not True
-            or worker.get("checkpoint_sha256") != m["assets"]["models"]["B"]["sha256"]
+            or worker.get("checkpoint_sha256") != m["assets"]["models"][m.get("model_run",{}).get("arm","B")]["sha256"]
             or worker.get("gpu_uuid") != m["hardware"]["gpu_uuid"]):
         raise ValueError("P13 native worker identity/output unverified")
     source = Path(m["source_snapshot"]["root"]) / "tools/full_acceptance/p13_capture_worker.py"
@@ -104,9 +111,9 @@ def build(manifest, expected_sha, output):
         authorization=dict(approved=True, basis=authorization["basis"]),
         supervisor=dict(owned_process_tree=True, process_terminated=True,
                         cleanup=dict(active_processes=cleanup["active_processes"])),
-        checkpoint=record(m["assets"]["models"]["B"]["path"]),
+        checkpoint=record(m["assets"]["models"][m.get("model_run",{}).get("arm","B")]["path"]),
         input=record(stage / "p13-input.npy"), worker_source=record(source))
-    if receipt["checkpoint"]["sha256"] != m["assets"]["models"]["B"]["sha256"]:
+    if receipt["checkpoint"]["sha256"] != m["assets"]["models"][m.get("model_run",{}).get("arm","B")]["sha256"]:
         raise ValueError("P13 checkpoint unexpectedly changed")
     output.mkdir(parents=True)
     publish(output / "p13-capture-receipt.json", receipt, new=True)
@@ -116,7 +123,7 @@ def build(manifest, expected_sha, output):
         raise ValueError("P13 final capture evidence rejected; do not reuse")
     publish(output / "p13-evidence-configuration.json", final_cfg, new=True)
     publish(output / "p13-finalization.json", dict(status="PROVENANCE_VALIDATED_NOT_06_LAYER_ACCEPTANCE",
-        manifest_sha256=sha(manifest), supervisor_receipt=record(stage / "supervisor-receipt.json"),
+        manifest_sha256=sha(manifest), completed_stage_only=completed_stage, coordinator_active=state.get('controller_active'), supervisor_receipt=record(stage / "supervisor-receipt.json"),
         capture_receipt=record(output / "p13-capture-receipt.json"),
         configuration=record(output / "p13-evidence-configuration.json"),
         mapped_kernel_count=complete["mapped_kernel_count"],

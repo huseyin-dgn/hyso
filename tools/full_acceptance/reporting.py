@@ -1,7 +1,7 @@
 """Acceptance execution state, honest missing metrics and non-certifying reports."""
 from pathlib import Path
 import collections,csv,json,xml.etree.ElementTree as ET
-from .core import read,publish,record,now,sha
+from .core import read,publish,record,now,sha,selected_arm
 from .registry import FEATURE_EXPERIMENTS, ADVISORY_DEPENDENCIES
 
 OBSERVED={'PASS','PARTIAL','FAIL','UNSUPPORTED'}
@@ -14,6 +14,13 @@ def initial_results(m):
 
 def prerequisites(m,e):
     missing=[]
+    if e.get('id')=='06.roofline' and m.get('known_counter_permission_block'):
+        from .continuation import counter_block
+        missing.append(counter_block(m))
+    if (e.get('handler')=='training' and 'model_run' in m
+            and 'cuda:0' in m['protocols']['training'].get('devices',[])
+            and not m['hardware'].get('gpu_uuid')):
+        missing.append('per-model CUDA training requires an explicit physical GPU UUID')
     for key in e['requires']:
         if key=='gpu':
             if not m['hardware'].get('gpu_uuid'):missing.append('explicit physical GPU UUID missing; recorded UUID is selection intent, validated natively only after approval')
@@ -26,6 +33,12 @@ def prerequisites(m,e):
             if any(k not in cfg for k in required):missing.append('task-appropriate trained camera adapter/config/checkpoint missing; MNIST not assumed appropriate')
             if e.get('id') == '08.camera' and not cfg.get('camera_provenance'):
                 missing.append('physical camera identity/provenance required separately from recorded video')
+            if e.get('id') == '08.camera':
+                from .safety import load_file
+                try:
+                    validate_binding=load_file(Path(m['source_snapshot']['root'])/'hyso/performance/_windows_camera.py','camera_binding_metadata').validate_binding
+                    validate_binding(cfg.get('camera_binding'),cfg.get('camera_index',0))
+                except (ValueError,FileNotFoundError):missing.append('physical camera DirectShow device path/index/backend binding required')
         elif key=='video':
             cfg=m['optional'].get('camera_adapter',{}).get('configuration',{}).get('video',{})
             if not cfg.get('path') or not Path(cfg['path']).is_file():missing.append('real local video required')
@@ -33,7 +46,7 @@ def prerequisites(m,e):
             cfg=m['optional'].get('p13_nsys_plan',{}).get('configuration',{})
             tool=cfg.get('tool',{})
             if (not isinstance(tool,dict) or not tool.get('path')
-                    or not Path(tool['path']).is_file() or cfg.get('protocol')!='trained_B_3_forward_module_nvtx'):
+                    or not Path(tool['path']).is_file() or cfg.get('protocol')!='trained_'+selected_arm(m)+'_3_forward_module_nvtx'):
                 missing.append('explicit pinned Nsight Systems x64 and P13 protocol required')
         elif key=='ncu_plan':
             cfg=m['optional'].get('ncu_plan',{}).get('configuration',{})
@@ -61,6 +74,9 @@ def validate_metrics(row):
         if metric.get('value') is not None and metric['kind']=='missing':raise ValueError('missing metric has numeric value')
 
 def matrix(m,rows):
+    if 'fresh_acceptance' in m:
+        from .fresh import matrix as fresh_matrix
+        return fresh_matrix(m,rows)
     old=read(m['prior_audit']['P01-P35-acceptance-matrix.json']['path']);out=[]
     promotions={'P13':('06.layer','P13_verified_module_attribution'),
         'P18':('06.roofline','P18_calibration_screen'),'P30':('08.camera','real_camera_trained'),
@@ -104,9 +120,9 @@ def write_reports(m,rows,*,state='PREPARED',preparation=None):
         updated_at=now(),suite_complete=complete,status_counts=counts,experiments=list(rows.values()),preparation=preparation))
     cols=['id','name','prior_scoped_decision','decision','decision_basis','current_execution','experiments','retained_scope','prior_decision_source','current_evidence','limitations']
     with (out/'P01-P35-final-acceptance-matrix.csv').open('w',encoding='utf-8-sig',newline='') as stream:
-        writer=csv.DictWriter(stream,cols);writer.writeheader()
+        writer=csv.DictWriter(stream,cols,extrasaction='ignore');writer.writeheader()
         for f in features:writer.writerow({k:json.dumps(v,ensure_ascii=False) if isinstance(v,(dict,list)) else v for k,v in f.items()})
-    publish(out/'P01-P35-final-acceptance-matrix.json',dict(features=features,scope='retained acceptance vs current execution separated',suite_complete=complete))
+    publish(out/'P01-P35-final-acceptance-matrix.json',dict(features=features,scope='fresh selected-model acceptance; history never certifies current run' if 'fresh_acceptance' in m else 'retained acceptance vs current execution separated',suite_complete=complete,all_features_pass=all(f['decision']=='PASS' for f in features)))
     groups={'model-evidence':['03.cpu','04.cuda'],'training-evidence':['05.training'],'cpu-gpu-comparison':['07.devices'],
         'energy-evidence':['07.energy'],'memory-evidence':['05.training','10.stability','11.memory'],
         'provider-evidence':['09.provider_cpu','09.provider_cuda']}
@@ -122,7 +138,7 @@ def write_reports(m,rows,*,state='PREPARED',preparation=None):
         interpretation='root causes remain OPEN; successful short tests do not close B4 or CPU65536'))
     write_junit(out,rows,preparation)
     partial=[f['id'] for f in features if f['decision']=='PARTIAL'];fc=collections.Counter(f['decision'] for f in features)
-    lines=['# HYSo full-system acceptance — '+('EXECUTION REPORT' if complete else 'PREPARATION / INCOMPLETE EXECUTION'),'',
+    lines=['# HYSo full-system acceptance â€” '+('EXECUTION REPORT' if complete else 'PREPARATION / INCOMPLETE EXECUTION'),'',
         '**Suite complete: '+str(complete).lower()+'.** State: `'+state+'`. A prepared manifest, successful smoke or process exit is not full native acceptance.','',
         'Manifest SHA256: `'+sha(out/'manifest.json')+'`. Source tree: `'+m['source_snapshot']['tree_sha256']+'`.','',
         'Retained/current scoped feature decisions: `'+json.dumps(dict(fc))+'`. These are not35 newly executed PASS results.','',
@@ -147,6 +163,17 @@ def write_reports(m,rows,*,state='PREPARED',preparation=None):
         '- Preservation: `preservation-verification.json`. No checkpoint, previous training artifact or source/user dirty file is overwritten.',
         '','## Remaining work','',
         'Review `execution-plan.md` and `commands.ps1`; create a newly authorized child manifest for explicitly approved native stages. Supply a trained camera adapter/appropriate data and any missing runtime/hardware. Execute once, inspect raw failures; fix only proved defects and prepare a fresh source-pinned run. Full acceptance remains incomplete until every required experiment has a real terminal result.']
+    if 'fresh_acceptance' in m:
+        lines=['# Model '+selected_arm(m)+' fresh P01-P35 acceptance','',
+            'suite_complete='+str(complete).lower()+'; all_features_pass='+str(all(f['decision']=='PASS' for f in features)).lower(),
+            '','Feature decisions: '+json.dumps(dict(fc)),
+            '','Manifest SHA256: `'+sha(out/'manifest.json')+'`. Historical decisions never certify current acceptance.',
+            '','| ID | Decision | Actual scope / missing evidence |','|---|---|---|']
+        for f in features:lines.append('| '+f['id']+' | '+f['decision']+' | '+(f['decision_basis']+'; '+f['retained_scope']).replace('|','/')+' |')
+        lines+=['','Metrics, model/device, artifact hashes and cleanup: `P01-P35-final-acceptance-matrix.json`.',
+            '','P31 requires actual uninterrupted 7200-second work. P23 is Basic only. Saved-activation forensics remain excluded.',
+            '','Camera/video use their separately identified trained adapter. Roofline references are not trained-CNN hardware counters.',
+            '','Preservation: `preservation-verification.json`. Raw artifacts and owned Job receipts remain authoritative.']
     (out/'final-report.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
     return complete
 

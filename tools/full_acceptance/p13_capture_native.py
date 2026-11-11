@@ -59,7 +59,7 @@ def run(m, root):
     nsys = Path(tool["path"])
     if not nsys.is_file() or sha(nsys) != tool["sha256"] or "Nsight Systems" not in str(nsys) or nsys.name.lower() != "nsys.exe":
         raise ValueError("Nsight Systems tool mismatch")
-    if plan.get("protocol") != "trained_B_3_forward_module_nvtx":
+    if plan.get("protocol") != "trained_"+m.get("model_run",{}).get("arm","B")+"_3_forward_module_nvtx":
         raise ValueError("unrecognized P13 native protocol")
     manifest = Path(m["output"]) / "manifest.json"
     worker = Path(m["source_snapshot"]["root"]) / "tools/full_acceptance/p13_capture_worker.py"
@@ -81,7 +81,7 @@ def run(m, root):
     if (worker_row.get("status") != "completed" or worker_row.get("forward_labels") != LABELS
             or worker_row.get("output_equal") != [True] * 3
             or worker_row.get("gpu_uuid") != m["hardware"]["gpu_uuid"]
-            or worker_row.get("checkpoint_sha256") != m["assets"]["models"]["B"]["sha256"]
+            or worker_row.get("checkpoint_sha256") != m["assets"]["models"][m.get("model_run",{}).get("arm","B")]["sha256"]
             or worker_row.get("worker_source_sha256") != sha(worker)
             or worker_row.get("cudnn_tf32_disabled") is not True):
         raise ValueError("P13 worker identity/output validation failed")

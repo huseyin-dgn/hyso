@@ -83,7 +83,7 @@ def validate_capture(m, manifest):
         require(not path.is_symlink() and path.is_file(), "missing/linked artifact: " + name)
         require(indexed.get(str(path)) == record(path), "capture artifact changed: " + name)
     worker = read(stage / "p13-worker.json")
-    cp = m["assets"]["models"]["B"]
+    cp = m["assets"]["models"][m.get("model_run",{}).get("arm","B")]
     source = Path(m["source_snapshot"]["root"]) / "tools/full_acceptance/p13_capture_worker.py"
     require(sha(cp["path"]) == cp["sha256"], "Model B checkpoint changed")
     require(worker.get("status") == "completed" and type(worker.get("pid")) is int and worker["pid"] > 0
@@ -142,7 +142,7 @@ def audit(manifest, expected_sha, output):
     stage = prior / "stages" / STAGE
     inputs += [p for p in stage.iterdir() if p.is_file()]
     inputs += [Path(m["source_snapshot"]["root"]) / rel for rel in m["source_snapshot"]["files"]]
-    inputs += [Path(m["assets"]["models"]["B"]["path"]), Path(m["assets"]["dataset"]["path"])]
+    inputs += [Path(m["assets"]["models"][m.get("model_run",{}).get("arm","B")]["path"]), Path(m["assets"]["dataset"]["path"])]
     before = [record(p) for p in inputs]
     state = read(prior / "run-status.json")
     started = read(prior / "STARTED.json")
