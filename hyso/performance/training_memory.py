@@ -278,9 +278,19 @@ class _MemoryRecorder(_Recorder):
 
     def sample(self):
         try:
-            self.rss.append(_observe())
+            sample = _observe()
         except _BackendUnavailable as error:
             self.rss_reason = str(error)
+            return
+        except ValueError as error:
+            if str(error) != "inconsistent native memory observation/clock":
+                raise
+            self.rss_reason = str(error)
+            return
+        if self.rss and sample["lifetime_hwm_bytes"] < self.rss[-1]["lifetime_hwm_bytes"]:
+            self.rss_reason = "native_RSS_lifetime_high_water_mark_decreased"
+            return
+        self.rss.append(sample)
 
     def sampling(self):
         try:
@@ -546,6 +556,70 @@ def _cuda_summary(rows, device):
                 sampled_peak_reserved_bytes=max(r["cuda"]["reserved_bytes"] for r in rows))
 
 
+def _basic_memory_report(rows, rss, device, *, isolated=False, windows=(), reason=None):
+    """Offline basic-scope projection, independent of saved-activation evidence.
+
+    Keep schema1/CSV evidence unchanged. Values are bytes in separate domains;
+    a measured empty gradient/state is zero, missing evidence is always null.
+    """
+    def metric(value, scope, status="measured", reason=None, **fields):
+        return dict(value=value, unit="byte", status=status, reason=reason,
+                    scope=scope, **fields)
+
+    metrics = {}
+    for component, name in (("parameter", "parameter_bytes"), ("gradient", "gradient_bytes"),
+                            ("optimizer", "optimizer_state_bytes")):
+        summaries = [r["logical"]["summary"][component] for r in rows]
+        valid = bool(summaries) and all(r["status"] == "measured" for r in summaries)
+        values = [r["logical_bytes"] for r in summaries] if valid else []
+        missing = reason or next((r["reason"] for r in summaries if r["status"] != "measured"),
+                                 "no_completed_measurement")
+        metrics[name] = metric(values[-1] if valid else None, "registered_tensor_logical_boundary",
+            "measured" if valid else "unsupported" if summaries else "unavailable",
+            None if valid else missing, baseline_bytes=values[0] if valid else None,
+            sampled_min_bytes=min(values) if valid else None,
+            sampled_max_bytes=max(values) if valid else None)
+    for source, name, scope in (
+            ("current_rss_bytes", "process_rss_bytes", "current_process_end_observation"),
+            ("sampled_peak_rss_bytes", "process_sampled_peak_rss_bytes", "sampled_fit_maximum_not_exact_peak"),
+            ("current_lifetime_hwm_bytes", "process_lifetime_peak_rss_bytes", "process_lifetime_including_before_fit")):
+        observed = rss["summary"][source] if rss is not None else {}
+        valid = observed.get("status") == "measured"
+        metrics[name] = metric(observed.get("value") if valid else None, scope,
+            "measured" if valid else "unavailable",
+            None if valid else observed.get("reason") or reason or "RSS_backend_unavailable")
+    reset_windows = [r for r in windows if r["reset_performed"]]
+    for kind in ("allocated", "reserved"):
+        for peak in (False, True):
+            name = "cuda_" + ("peak_" if peak else "") + kind + "_bytes"
+            if device == "cpu":
+                metrics[name] = metric(None, "CUDA_allocator", "not_applicable", "CPU_training")
+            elif not rows:
+                metrics[name] = metric(None, "CUDA_allocator", "unavailable", reason or "no_completed_measurement")
+            elif peak and reset_windows:
+                # Each reset has one owned window; never subtract lifetime peaks.
+                valid = all(r["status"] == "measured" for r in reset_windows)
+                metrics[name] = metric(max(r["peak_"+kind+"_bytes"] for r in reset_windows) if valid else None,
+                    "maximum_of_owned_training_windows", "measured" if valid else "unsupported",
+                    None if valid else "incomplete_owned_window_peak_evidence")
+            else:
+                key = ("lifetime_peak_" if peak else "") + kind + "_bytes"
+                metrics[name] = metric(rows[-1]["cuda"][key],
+                    "process_device_lifetime" if peak else "process_device_end_boundary")
+    required = ("parameter_bytes", "gradient_bytes", "optimizer_state_bytes", "process_rss_bytes")
+    if device != "cpu":
+        required += tuple(k for k in metrics if k.startswith("cuda_"))
+    return dict(format="hyso.performance.p23_basic_memory", schema_version=1,
+        status="not_executed" if not rows else "complete" if all(metrics[k]["status"] == "measured" for k in required) else "partial",
+        reason=reason, device=device, scope="isolated_recipe_fit" if isolated else "in_process_fit",
+        metrics=metrics, reset_performed=bool(reset_windows),
+        activation_lifetime_scope="experimental_excluded_from_basic_acceptance",
+        limitations=["Logical components can alias and must not be added to RSS or allocator bytes.",
+            "Gradient/state values describe the end boundary; sampled maxima show their lifecycle.",
+            "RSS samples can miss transients; native RSS high-water marks include process history.",
+            "In-process CUDA peaks include pre-fit history; only owned reset windows have fit-window scope."])
+
+
 def _memory_diagnostics(rows, rss, device, *, isolated=False, windows=(), activation=None):
     """Derive changes within each domain; never add logical/RSS/allocator bytes.
 
@@ -617,6 +691,15 @@ class TrainingMemoryResult:
         data = self._export_data()
         return _memory_diagnostics(data["observations"], data["rss"], data["protocol"]["device"],
                                    activation=data["activation"])
+
+    def basic_metrics(self):
+        """Basic P23 bytes/status/scope; no execution or saved-activation hooks.
+
+        CPU CUDA metrics use not_applicable. Legacy schema1 exports retain their
+        original full-scope coverage labels and are not rewritten by this view.
+        """
+        data = self._export_data()
+        return _basic_memory_report(data["observations"], data["rss"], data["protocol"]["device"])
 
     def to_json(self, path, *, overwrite=False):
         _write_export(path, json.dumps(self._export_data(), ensure_ascii=False, sort_keys=True,

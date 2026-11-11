@@ -26,7 +26,22 @@ from .training_memory import (TrainingMemoryProtocol,TrainingMemoryError,_Memory
                               _rss_summary,_memory_diagnostics,_validate_stage_pairs)
 from .training_memory import _cuda, _validate_logical_storage, _validate_cuda_boundary
 from ._training_process import _launch,_bounded_read
-from ._saved_activation import _SavedActivationRecorder, _validate_activation
+from .training_memory import _basic_memory_report
+
+
+def _activation_adapter():
+    # Experimental CPU opt-in (or archived evidence validation) only. The basic
+    # production path neither imports this adapter nor enters saved-tensor hooks.
+    from ._saved_activation import _SavedActivationRecorder, _validate_activation
+    return _SavedActivationRecorder, _validate_activation
+
+
+def _SavedActivationRecorder(*args, **kwargs):
+    return _activation_adapter()[0](*args, **kwargs)
+
+
+def _validate_activation(*args, **kwargs):
+    return _activation_adapter()[1](*args, **kwargs)
 
 
 @dataclass(frozen=True,init=False)
@@ -456,6 +471,14 @@ class IsolatedTrainingMemoryResult:
     def to_dict(self):return json.loads(self._payload)
     def _export_data(self):
         data=_plain(self.to_dict());self._check(data);return data
+    def basic_metrics(self):
+        """Basic-scope projection; failed workers expose null/unavailable values."""
+        data=self._export_data();measurement=data["measurement"]
+        if measurement is None:
+            return _basic_memory_report([],None,data["recipe"]["device"],isolated=True,
+                                        reason=data["reason"] or data["outcome"])
+        return _basic_memory_report(measurement["boundaries"],measurement["rss"],
+            data["recipe"]["device"],isolated=True,windows=measurement["windows"])
     def diagnostics(self):
         """Independent core/peak/activation coverage without changing v1 exports."""
         data=self._export_data();measurement=data["measurement"]
