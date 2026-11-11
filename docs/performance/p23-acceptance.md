@@ -1,5 +1,12 @@
 # P23 acceptance: training memory analysis
 
+**Scope revision, 2026-11-11:** current acceptance is the independent
+[basic training-memory scope](p23-basic-acceptance.md) for Model 1/A and Model 2/B.
+The expanded full-scope decision below is historical PARTIAL; deferred CUDA
+activation work is not completed by a basic-memory acceptance.
+The current Basic scope has **CPU/CUDA PASS for both models**; see the
+[final scoped acceptance](../reports/p01-p35-final-acceptance-20261112.md).
+
 Current expanded acceptance scope (2026-11-09): **PARTIAL** because native CUDA
 saved-activation evidence is still missing and `0xC0000409` remains unresolved.
 The original measured-scope completion described below is retained separately.

@@ -7,6 +7,17 @@ training memory from inference or replay a live Trainer automatically.
 The [P23 acceptance matrix](p23-acceptance.md) identifies the verified CPU/CUDA
 scopes and retained unsupported domains.
 
+The current [basic acceptance](p23-basic-acceptance.md) separates parameter,
+gradient, native optimizer state, process RSS and CUDA allocator measurements
+from experimental activation lifetime. Call `result.basic_metrics()` on either
+result class for this scope. CPU CUDA fields are null with `not_applicable`;
+missing applicable measurements have `unsupported`/`unavailable` and a reason.
+No additional training, CUDA query or saved hook is performed by this method.
+Legacy schema1 JSON/CSV coverage labels remain unchanged.
+An inconsistent native in-process RSS tuple or decreasing lifetime HWM now
+invalidates the RSS domain with a reason while preserving independent completed
+training/logical/allocator evidence. It is not clamped, retried or reported as zero.
+
 ```python
 import torch
 from torch.utils.data import DataLoader, TensorDataset
@@ -104,7 +115,7 @@ unsupported execution does not provide completed measurements or trigger retry.
 Memory and CUDA allocator quotas are unset by default. Deadlines, evidence
 bounds and owned-worker cleanup remain independent of optional quotas.
 
-## Optional activation evidence
+## Experimental activation evidence (outside basic P23 acceptance)
 
 CPU native eager saved-payload tracing is available in the isolated recipe API:
 
