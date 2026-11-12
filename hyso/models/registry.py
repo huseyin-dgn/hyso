@@ -20,6 +20,7 @@ from .attention import ECAAttention, CoordinateAttention
 from .m3_attention import SimAM, TripletAttention, SelectiveKernelAttention
 from .m3_residual import BasicResidualBlock, Bottleneck, PreActivationBlock, WideResidualBlock, ResNeXtBottleneck
 from .architectures import ResNet, PreActResNet, WideResNet, ResNeXt, DenseNet, validate_family
+from .m4_registry import specifications as mobile_specifications, M4_FAMILIES, M4_BLOCKS, validate_mobile, validate_block
 from .modular import ModularCNN
 
 
@@ -149,7 +150,13 @@ _SPECS += (
    ('densenet',DenseNet,121,1000,(_p('growth_rate',default=32),_p('dropout','probability',0.)))))
 )
 
+_SPECS += mobile_specifications(_p)
+
 _IO = {
+    'mobile': ('Floating NCHW with matching in_channels; native BN statistics constraints apply.',
+               '[N,out_channels,ceil(H/stride),ceil(W/stride)]; closed internal branch topology.'),
+    'channel_mixing': ('Floating NCHW with matching channels.', 'Same NCHW shape; validated channel partition.'),
+    'regularization': ('Nonempty floating NCHW.', 'Same shape and dtype; explicit training-only masking.'),
     'convolution': ('Floating [N,in_channels,H,W]; groups divides both channel counts.',
                     '[N,out_channels,floor((H+2*pH-kH)/sH)+1,floor((W+2*pW-kW)/sW)+1]; positive spatial output.'),
     'residual': ('Floating [N,in_channels,H,W]; attention channels equal out_channels.',
@@ -181,7 +188,7 @@ class ModelRegistry:
         self._entries = MappingProxyType({name: ComponentSpec(
             name, category, description, ctor, params,
             _IO[category][0], _IO[category][1],
-            (('Existing canonical constructor; CPU construction only.' if name in ('conv_norm_act','conv2d','residual','se','cbam','eca','coordinate','batch_norm','group_norm','relu','silu','hardswish','identity','modular_cnn') else 'Closed M3 constructor / torchvision adapter; CPU construction only.'),
+            (('Existing canonical constructor; CPU construction only.' if name in ('conv_norm_act','conv2d','residual','se','cbam','eca','coordinate','batch_norm','group_norm','relu','silu','hardswish','identity','modular_cnn') else 'Closed mobile/edge constructor or torchvision adapter; CPU construction only.' if name in M4_FAMILIES+M4_BLOCKS else 'Closed M3 constructor / torchvision adapter; CPU construction only.'),
              'Builder v1: linear connections; no external skip/concat/DAG.',
              'BatchNorm requires N*H*W>1 while training; GroupNorm requires valid group statistics.',
              'SE/CBAM keep max(1, channels//reduction); CBAM/ECA kernels must be odd.',
@@ -227,6 +234,10 @@ class ModelRegistry:
                 valid = type(v) is list and 1 <= len(v) <= 16 and all(type(x) is int and 1 <= x <= 8192 for x in v)
             elif kind in ('positive_float', 'probability'):
                 valid = type(v) in (int,float) and abs(v)<=1e308 and math.isfinite(v) and (v>0 if kind=='positive_float' else 0<=v<1)
+            elif kind == 'optional_probability':
+                valid = v is None or type(v) in (int,float) and 0 <= v < 1
+            elif kind == 'probability_closed':
+                valid = type(v) in (int,float) and 0 <= v <= 1
             elif kind == 'bool': valid = type(v) is bool
             elif kind == 'choice': valid = (type(v) is str or v is None) and v in field.choices
             elif kind == 'attention':
@@ -261,6 +272,13 @@ class ModelRegistry:
                 raise ModelConfigError('bottleneck inner width must be positive')
         if name=='selective_kernel' and (not 2<=result['branches']<=4 or result['channels']%result['groups']):
             raise ModelConfigError('SK branches must be 2..4; groups must divide channels')
+        try:
+            if name in M4_FAMILIES:
+                validate_mobile(name,result)
+            if name in M4_BLOCKS:
+                validate_block(name,result)
+        except ValueError as exc:
+            raise ModelConfigError(str(exc)) from exc
         return result
 
     def create(self, name: str, **params: Any) -> nn.Module:

@@ -13,6 +13,7 @@ import torch
 from torch import nn
 
 from .registry import ModelConfigError, ModelRegistry, _plain
+from .m4_registry import M4_FAMILIES, M4_BLOCKS, block_cost, block_shape
 
 _MAX_BYTES = 2 * 1024**2
 _MAX_PARAMETERS = 10_000_000
@@ -20,6 +21,8 @@ _MAX_PARAMETERS = 10_000_000
 
 def _cost(name, p):
     """Conservative parameter bound, computed before any tensor allocation."""
+    if name in M4_BLOCKS:
+        return block_cost(name,p)
     if name in ('basic_residual','bottleneck','preactivation','wide_residual','resnext_bottleneck'):
         a,b=p['in_channels'],p['out_channels']
         expanded=name in ('bottleneck','resnext_bottleneck') or p.get('bottleneck',False)
@@ -54,7 +57,9 @@ def _shape(name, p, shape):
     expected = p.get('in_channels', p.get('channels', p.get('num_features', p.get('num_channels', c))))
     if c != expected:
         raise ModelConfigError(f'{name}: incoming channels {c}, expected {expected}')
-    if name in ('conv2d', 'conv_norm_act'):
+    if name in M4_BLOCKS:
+        c,h,w = block_shape(name,p,shape)
+    elif name in ('conv2d', 'conv_norm_act'):
         k, s, pad = p['kernel_size'], p['stride'], p['padding']
         h, w = ((v + 2*padding - kernel)//stride + 1 for v, padding, kernel, stride in zip((h,w),pad,k,s))
         c = p['out_channels']
@@ -98,7 +103,11 @@ class BuiltClassifier(nn.Module):
 
     def to_config(self) -> dict[str, Any]:
         """Return an independent architecture description, never model weights."""
-        return json.loads(self._architecture)
+        config = json.loads(self._architecture)
+        for block,entry in zip(self.features,config['blocks']):
+            if entry['name'] in ('repvgg_block','mobileone_block'):
+                entry['params']['deploy'] = block.deploy
+        return config
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Return [N, num_classes] logits; reject incompatible input before work."""
@@ -141,7 +150,7 @@ class ModelBuilder:
             raise ModelConfigError('unsupported model configuration format/version')
         reg = ModelRegistry()
         if c.get('kind') == 'registered_model':
-            if set(c)!={'format','schema_version','kind','name','params'} or c['name'] not in ('resnet','preact_resnet','wide_resnet','resnext','densenet'):
+            if set(c)!={'format','schema_version','kind','name','params'} or c['name'] not in ('resnet','preact_resnet','wide_resnet','resnext','densenet')+M4_FAMILIES:
                 raise ModelConfigError('unknown/missing registered_model family fields')
             c['params']=reg.validate(c['name'],c['params'])
             return c, ()
@@ -188,7 +197,7 @@ class ModelBuilder:
 
     @classmethod
     def named(cls, name: str, **params: Any) -> ModelBuilder:
-        """Describe a closed M3 family; validation allocates no model or weights."""
+        """Describe a closed model family; validation allocates no model or weights."""
         return cls.from_config(dict(format='hyso.model_config',schema_version=1,kind='registered_model',name=name,params=params))
 
     @classmethod

@@ -1,5 +1,10 @@
 # M3 residual, dense and attention architectures
 
+Mobile/edge families and explicit train/deploy conversion are covered by the
+[M4 guide](mobile-edge-architectures.md). Their source decisions and excluded
+FasterNet/PartialConv components are recorded in the
+[Stage 13 license audit](../reports/stage13-license-audit.md).
+
 Use explicit imports from `hyso.models`. No pretrained weights are downloaded.
 All families return unnormalized `[N,num_classes]` classification logits and
 follow normal `.to(device/dtype)` semantics. Registry/Builder construct on CPU.

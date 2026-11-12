@@ -17,6 +17,8 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
+    "hyso/models/m4_blocks.py", "hyso/models/m4_reparam.py", "hyso/models/m4_config.py",
+    "hyso/models/mobile_architectures.py", "hyso/models/reparam_architectures.py", "hyso/models/m4_registry.py",
     "hyso/models/architectures.py", "hyso/models/m3_residual.py", "hyso/models/m3_attention.py",
     "hyso/__main__.py", "hyso/cli/__init__.py", "hyso/cli/main.py", "hyso/cli/common.py",
     "hyso/cli/models.py", "hyso/cli/train.py", "hyso/cli/analysis.py",
@@ -119,7 +121,7 @@ MODULES = {
 }
 DEPENDENCIES = {"torch", "torchvision", "numpy", "matplotlib", "seaborn",
                 "scikit-learn", "tqdm", "torchsummary"}
-CONFIG_FILES = ("pyproject.toml", "setup.cfg", "MANIFEST.in", "LICENSE")
+CONFIG_FILES = ("pyproject.toml", "setup.cfg", "MANIFEST.in", "LICENSE", "THIRD_PARTY_NOTICES.md")
 
 
 def command(args, cwd):
@@ -157,7 +159,7 @@ def distributions(tmp_path_factory):
 
 def test_canonical_packaging_configuration():
     assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == MODULES
-    assert len(MODULES) == 153
+    assert len(MODULES) == 159
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
     assert not (ROOT / "hyso/setup.cfg").exists()
@@ -185,6 +187,9 @@ def test_wheel_and_sdist_content_and_metadata(distributions):
         license_names = [name for name in wheel_names if name.endswith("/LICENSE")]
         assert len(license_names) == 1
         assert archive.read(license_names[0]) == (ROOT / "LICENSE").read_bytes()
+        notices = [name for name in wheel_names if name.endswith("/THIRD_PARTY_NOTICES.md")]
+        assert len(notices) == 1
+        assert archive.read(notices[0]) == (ROOT / "THIRD_PARTY_NOTICES.md").read_bytes()
         for name in MODULES:
             assert archive.read(name) == (ROOT / name).read_bytes()
     with tarfile.open(sdist) as archive:
@@ -195,7 +200,7 @@ def test_wheel_and_sdist_content_and_metadata(distributions):
         assert set(CONFIG_FILES) <= names
         assert archive.extractfile("hyso-0.2.0/hyso/py.typed").read() == (ROOT / "hyso/py.typed").read_bytes()
         # setuptools adds egg_info settings to the sdist's setup.cfg.
-        for name in ("LICENSE", "pyproject.toml", "MANIFEST.in", *MODULES):
+        for name in ("LICENSE", "THIRD_PARTY_NOTICES.md", "pyproject.toml", "MANIFEST.in", *MODULES):
             assert archive.extractfile("hyso-0.2.0/" + name).read() == (ROOT / name).read_bytes()
     for name in wheel_names | names:
         assert "sentinel" not in name and not name.endswith((".pth", ".pt", ".ckpt", ".pyc", ".sqlite3", ".db"))
@@ -683,6 +688,45 @@ built = ModelBuilder((1, 8, 8), 2).add('conv_norm_act', in_channels=1, out_chann
 with torch.inference_mode(): assert built(torch.zeros(1, 1, 8, 8)).shape == (1, 2)
 model = ModularCNN(input_channels=1, num_classes=2, widths=(4,), repeats=(1,), strides=(1,), norm=None).eval()
 with torch.inference_mode(): assert model(torch.zeros(1, 1, 8, 8)).shape == (1, 2)
+from hyso.cli import main
+from hyso.models import reparameterize_model
+from contextlib import redirect_stdout
+import io, json
+families = ('mobilenet_v2', 'mobilenet_v3', 'efficientnet_v2', 'ghostnet',
+            'shufflenet_v2', 'repvgg', 'mobileone')
+assert len(ModelRegistry().list()) == 44
+stream = io.StringIO()
+with redirect_stdout(stream):
+    assert main(['models', 'list', '--json']) == 0
+assert all(name in stream.getvalue() for name in families)
+assert 'fasternet' not in stream.getvalue() and 'partial_conv' not in stream.getvalue()
+for name in families:
+    options = dict(input_channels=1, num_classes=3)
+    if name == 'shufflenet_v2':
+        options['variant'] = 'x0_5'
+    else:
+        options['width_mult'] = .125
+    if name in ('efficientnet_v2', 'repvgg', 'mobileone'):
+        options['depth_mult'] = .1
+    architecture = ModelBuilder.named(name, **options)
+    model = architecture.build().eval()
+    inputs = torch.zeros(2, 1, 32, 32)
+    with torch.inference_mode():
+        expected = model(inputs)
+        assert expected.shape == (2, 3) and torch.isfinite(expected).all()
+        if name in ('repvgg', 'mobileone'):
+            model = reparameterize_model(model)
+            torch.testing.assert_close(model(inputs), expected, atol=2e-6, rtol=2e-5)
+    config = json.loads(json.dumps(model.to_config()))
+    clone = ModelBuilder.from_config(config).build().eval()
+    clone.load_state_dict(model.state_dict(), strict=True)
+    with torch.inference_mode():
+        assert torch.equal(clone(inputs), model(inputs))
+for path in (target / 'hyso-0.2.0.dist-info').rglob('THIRD_PARTY_NOTICES.md'):
+    assert 'Huawei' in path.read_text(encoding='utf-8')
+    break
+else:
+    raise AssertionError('installed third-party notices missing')
 assert not torch.cuda.is_initialized()
 print('installed discovery/typing PASS')
 """
