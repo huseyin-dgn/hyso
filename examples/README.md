@@ -27,3 +27,8 @@ Use a fresh output directory or fresh filenames. The exports retain their
 no-clobber behavior. Open `report.html` locally for embedded charts. `report.json`
 retains all source snapshots and chart data, and `report.md` contains metric and
 scope explanations. HTML graphics use the existing Matplotlib dependency.
+
+## General terminal interface
+
+See [cli/README.md](cli/README.md) for installed `hyso` commands, safe offline
+fixtures and deferred typed-binding factories.

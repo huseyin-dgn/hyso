@@ -1,8 +1,8 @@
 # HYSo
 
 PyTorch classification models, model-independent training, explicit performance
-analysis, evidence reports and local experiment tracking. Start with Python;
-there is no general installed HYSo CLI or graphical UI yet.
+analysis, evidence reports and local experiment tracking. Use the Python API or
+the installed `hyso` terminal interface.
 
 ## Installation and imports
 
@@ -11,6 +11,23 @@ matching Torch/torchvision CPU or CUDA pair for your platform; minimum version
 bounds do not guarantee all combinations. For this checkout: `python -m pip install -e .`.
 Optional `hyso[deployment]` supplies pinned ONNX/ONNX Runtime packages, not a
 general deployment converter or automatic CUDA runtime installation.
+
+## Terminal interface
+
+```console
+hyso --help
+python -m hyso --help
+hyso models list
+hyso analysis list --json
+hyso analysis plan --features P01 P02 P11
+```
+
+Command groups: `models`, `train`, `analysis`, `experiments`, `compare`, `advisor`,
+`reports`. Training and analysis default to dry-run. Execution requires explicit
+authorization and separate permissions for training, CUDA, camera, sensors and
+long runs. Retained reports and comparisons never start new measurements.
+See the [CLI guide](docs/guides/cli.md) and [working offline examples](examples/cli/README.md)
+for source/factory contracts, exit codes, JSON output and no-clobber exports.
 
 ```python
 from hyso import ModularCNN, Trainer, BenchmarkRunner, ExperimentManager
