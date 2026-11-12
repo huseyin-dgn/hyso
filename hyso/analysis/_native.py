@@ -1,5 +1,37 @@
 """Closed native-reader adapters. Never import a source-declared factory."""
-from ._codec import EvidenceError, plain, digest
+from ._codec import EvidenceError, plain, digest, canonical
+import json
+
+
+class NsightModuleEvidence:
+    """Closed read-only delegation to the existing hash-pinned Nsight reader."""
+    def __init__(self, data):
+        from hyso.performance import analyze_nsys_modules
+        refs = data['artifacts']
+        configuration = dict(sqlite=refs[0], report=refs[1], global_pid=data['global_pid'],
+                             forward_labels=[row['label'] for row in data['forwards']])
+        if data.get('capture') is not None:
+            configuration['capture'] = refs[2]
+        rebuilt = analyze_nsys_modules(configuration, max_rows=100000)
+        if canonical(rebuilt) != canonical(data):
+            raise ValueError('Nsight_module_evidence_mismatch')
+        self._payload = canonical(data)
+
+    def to_dict(self):
+        return json.loads(self._payload)
+
+
+class NsightOperatorEvidence:
+    """Closed read-only delegation to the existing linked operator reader."""
+    def __init__(self, data):
+        from hyso.performance import analyze_nsys_operators
+        rebuilt = analyze_nsys_operators(data['source_sqlite'], capture_path=data['source_capture'])
+        if canonical(rebuilt) != canonical(data):
+            raise ValueError('Nsight_operator_evidence_mismatch')
+        self._payload = canonical(data)
+
+    def to_dict(self):
+        return json.loads(self._payload)
 
 _PERFORMANCE = {
     'latency_analysis': 'LatencyAnalysis', 'throughput': 'ThroughputResult',
@@ -17,7 +49,8 @@ def validate_native(payload):
     """Reuse native pure constructors, including their original version rules."""
     d = plain(payload)
     if (type(d) is not dict or type(d.get('schema_version')) is not int
-            or d['schema_version'] not in ((1, 2, 3) if d.get('format') == 'hyso.evaluation.classification' else (1,))):
+            or d['schema_version'] not in ((1, 2, 3) if d.get('format') == 'hyso.evaluation.classification'
+                else (2,) if d.get('format') == 'hyso.performance.worker_tasks' else (1,))):
         raise EvidenceError('unsupported_source_version')
     fmt = d.get('format')
     try:
@@ -25,6 +58,9 @@ def validate_native(payload):
             from hyso.benchmark import BenchmarkResult
             cls = BenchmarkResult
             features = ['P01', 'P09']
+        elif fmt in ('hyso.performance.layer_profile.nsys', 'hyso.performance.operator_profile.nsys'):
+            cls = NsightModuleEvidence if fmt == 'hyso.performance.layer_profile.nsys' else NsightOperatorEvidence
+            features = ['P13'] if cls is NsightModuleEvidence else ['P14']
         elif fmt and fmt.startswith('hyso.performance.') and fmt[17:] in _PERFORMANCE:
             from hyso.performance import result
             cls = getattr(result, _PERFORMANCE[fmt[17:]])
@@ -44,6 +80,9 @@ def validate_native(payload):
             from hyso.performance.dataloader import DataLoaderAnalysisResult
             from hyso.performance.training_memory import TrainingMemoryResult
             from hyso.performance.gradients import GradientDiagnosticsResult
+            from hyso.performance.isolated_training_memory import IsolatedTrainingMemoryResult
+            from hyso.performance.worker_trace_result import WorkerTraceAnalysisResult
+            from hyso.performance.worker_task_result import WorkerTaskAnalysisResult
             readers = {
                 'hyso.performance.training_timing': TrainingPerformanceResult,
                 'hyso.performance.training_stages': TrainingStageResult,
@@ -51,10 +90,13 @@ def validate_native(payload):
                 'hyso.performance.dataloader': DataLoaderAnalysisResult,
                 'hyso.performance.training_memory': TrainingMemoryResult,
                 'hyso.performance.gradient_diagnostics': GradientDiagnosticsResult,
+                'hyso.performance.isolated_training_memory': IsolatedTrainingMemoryResult,
+                'hyso.performance.worker_trace': WorkerTraceAnalysisResult,
+                'hyso.performance.worker_tasks': WorkerTaskAnalysisResult,
             }
             if fmt not in readers:
                 raise EvidenceError('unsupported_source_format')
-            cls, features = readers[fmt], d.get('feature_ids')
+            cls, features = readers[fmt], ['P21'] if fmt == 'hyso.performance.worker_tasks' else d.get('feature_ids')
         cls(d)  # Constructor verifies raw/derived consistency; no measure call.
     except EvidenceError:
         raise
@@ -77,7 +119,26 @@ def at(data, path, default=None):
         return default
 
 
+def restore_native(payload):
+    """Construct an already validated result using the closed native type list."""
+    name, _ = validate_native(payload)
+    for cls in (NsightModuleEvidence, NsightOperatorEvidence):
+        if name == cls.__module__ + '.' + cls.__name__:
+            return cls(payload)
+    from hyso import performance, evaluation, quality, benchmark
+    modules = (performance, evaluation, quality, benchmark)
+    for module in modules:
+        cls = getattr(module, name.rsplit('.', 1)[-1], None)
+        if cls is not None and cls.__module__ + '.' + cls.__name__ == name:
+            return cls(payload)
+    raise EvidenceError('native_reader_unavailable')
+
+
 def native_scope(d, feature):
+    if d.get('format') == 'hyso.performance.isolated_training_memory':
+        measurement = d.get('measurement') or {}
+        source = measurement.get('source_p19')
+        return native_scope(source, 'P19') if source is not None else dict(phase='training')
     source = d.get('source_p19', d)
     p = source.get('provenance', {})
     protocol = d.get('protocol', d.get('configuration', {}))
@@ -90,6 +151,10 @@ def native_scope(d, feature):
     model = p.get('model', {})
     shape = input_data.get('shape', input_data.get('input_shape'))
     device = env.get('device', at(protocol, 'configuration.device', at(protocol, 'recipe.device')))
+    if type(device) is not str:
+        # Counter provenance can carry a hardware descriptor without an explicit
+        # CUDA logical index/physical UUID association. Retain it in the payload.
+        device = None
     precision = at(protocol, 'configuration.precision', at(protocol, 'recipe.precision'))
     if feature == 'P26':
         device = at(d, 'source.device')
@@ -139,6 +204,8 @@ _DOMAINS = {'P01':'latency','P02':'throughput','P03':'e2e','P04':'stage_timing',
 def metrics(d, feature):
     """Small projections with explicit units; retained native payload is canonical."""
     out = []
+    if d.get('format') in ('hyso.performance.layer_profile.nsys', 'hyso.performance.operator_profile.nsys'):
+        return out
     def add(path, unit=None, status='derived', domain=None, reason=None):
         value = at(d, path)
         if type(value) not in (int, float) and value is not None:
@@ -192,6 +259,11 @@ def metrics(d, feature):
     if feature == 'P21':
         for i, _ in enumerate(d['summaries']): add('summaries.%d.next_wait_ms'%i,'ms')
     if feature == 'P23':
+        if d.get('format') == 'hyso.performance.isolated_training_memory':
+            # The isolated envelope retains worker/window identities. Its fields
+            # are exposed through basic_metrics()/diagnostics(), never relabeled
+            # as an in-process P23 observation ledger.
+            return out
         wrappers(d['rss']['summary'], 'rss.summary')
         for i, row in enumerate(d['observations']):
             for component in ('parameter','buffer','gradient','optimizer'):
@@ -223,6 +295,8 @@ def metrics(d, feature):
 
 
 def native_outcome(d):
+    if d.get('format') == 'hyso.performance.isolated_training_memory':
+        return d['outcome']
     for node in (d,d.get('analysis'),d.get('measurements')):
         if type(node) is dict and type(node.get('status')) is str:return node['status']
     return None

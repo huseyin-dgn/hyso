@@ -51,7 +51,8 @@ def test_profiles_catalog_and_selection_are_pure(profile,monkeypatch):
     assert len(analysis.feature_catalog())==35
     for spec in analysis.feature_catalog():
         assert spec.description and spec.cost_class and spec.applicability and spec.executor_scope
-        assert spec.supported_devices==(('cpu',) if spec.executor_modes else ())
+        from hyso.analysis.catalog import NATIVE_CUDA_FEATURES
+        assert spec.supported_devices == (('cpu', 'cuda') if spec.feature_id in NATIVE_CUDA_FEATURES else ('cpu',))
     assert analysis.feature_catalog('P09').required_capabilities==('gpu',)
     assert analysis.feature_catalog('P31').cost_class=='long_7200s'
     assert analysis.feature_catalog('P32').dependencies==('P31',)

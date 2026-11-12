@@ -134,7 +134,13 @@ def _restore_result(kind, data):
                 raise ValueError("completed_execution_evidence_required")
             if "benchmark" in row["auxiliary_evidence"]:
                 BenchmarkResult(row["auxiliary_evidence"]["benchmark"])
+            if plan.get('execution_mode') == 'native':
+                from ..analysis.native_execution import validate_operation_row
+                validate_operation_row(row, data)
         expected_counts = {s: sum(r["status"] == s for r in data["features"]) for s in STATUSES}
+        if plan.get('execution_mode') == 'native' and seen != {
+                (model, feature['feature_id']) for model in models for feature in plan['features']}:
+            raise ValueError('native_execution_rows_incomplete')
         if data["status_counts"] != expected_counts:
             raise ValueError("execution_status_counts_mismatch")
         result = AnalysisExecutionResult(canonical(data))

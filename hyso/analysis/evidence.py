@@ -83,6 +83,8 @@ def _scope(data, feature, declared):
 
 def _record(feature, payload, artifact, declarations, origin, imported_at):
     if feature not in FEATURES: raise EvidenceError('invalid_feature_id')
+    if payload.get('format') in ('hyso.performance.worker_trace', 'hyso.performance.worker_tasks'):
+        raise EvidenceError('worker_companion_requires_base_record')
     if origin not in ('new', 'reused'): raise EvidenceError('invalid_origin')
     try:
         if datetime.fromisoformat(imported_at).tzinfo is None:raise ValueError()
@@ -108,6 +110,10 @@ def _record(feature, payload, artifact, declarations, origin, imported_at):
                     provenance='Some associations may be caller-declared; no authenticity attestation.'),
                 native_payload=payload, metrics=metrics(payload,feature), limitations=limitations(feature,payload)+[
                     'Capture UTC time and clock-domain identity are unknown unless natively recorded; import time is not measurement time.'])
+    if payload.get('format') == 'hyso.performance.isolated_training_memory':
+        measurement = payload.get('measurement') or {}
+        data['source'].update(result_id=payload['probe_id'], source_id=measurement.get('source_segment_id'),
+                              declared_source_sha256=measurement.get('source_sha256'))
     data['record_id'] = digest(data)
     return data
 

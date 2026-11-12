@@ -9,15 +9,15 @@ It is not the full acceptance runner and does not reimplement measurement math.
 |---|---|---|
 | trusted_cpu | P01, P02, P10, P11 | Caller-owned, trusted local CPU PyTorch classification models |
 | isolated_cpu | P02, P11 | Existing source-hashed trusted factories in Windows Job workers |
-| Other features | Planning only | Original performance APIs can exist without a common adapter |
+| native | P01–P35 | Typed operation sources, native protocols and explicit per-resource consent |
 
 `feature_catalog()` describes all P01–P35 IDs, requirements, capabilities,
 dependencies, applicability, limitations and qualitative workload classes.
 `supported_devices` describes connected common adapters, not the coverage of all
-original native APIs. GPU-required features retain that prerequisite. No CUDA
-query, GPU execution, training, camera, energy sensor, Nsight or ONNX invocation
-is connected here. Those paths still need separate native resource/protocol
-preflight and explicit authorization before future integration.
+original native APIs. GPU-required captures retain their resource prerequisites.
+The `native` mode provides CUDA, training, runtime and ONNX adapters with
+separate source/protocol admission. Retained analysis uses CPU execution.
+See the [native executor guide](native-analysis-executor.md) for those bindings.
 
 `plan_analysis(context, features="P11")` selects one feature; `features=("P01",
 "P11")` selects a list. Alternatively use exactly one `profile`:
@@ -35,9 +35,9 @@ An existing `FeaturePlanRequest` is also accepted unchanged, including G1
 single/selected/automatic/full modes. One or two ModelContexts are supported.
 Dependencies are visible but never automatically authorized or executed. For
 example selecting P32 shows P31 as a dependency-only SKIPPED row. P31 still
-requires one uninterrupted 7200-second source; P32 still requires validated
-source identity/continuity and memory-series evidence. Neither is connected to
-this executor. There is no shortcut from a short benchmark to P31/P32 acceptance.
+requires explicit runtime duration and source continuity. The 7200-second
+acceptance scope is preserved. `native` mode can derive P32 from an existing
+P31 memory series, with the actual source duration visible in its evidence.
 
 ## Complete tiny CPU example
 

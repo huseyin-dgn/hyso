@@ -150,14 +150,17 @@ print(analysis_dry_run.to_dict())  # No forward, training or factory import.
 Profiles: basic, inference, training, memory, comparison, full. They select IDs,
 not permissions. Trusted CPU execution supports P01, P02, P10 and P11; the existing
 Windows Job route supports P02/P11. P10 is one process RSS/HWM snapshot with no
-model forward or model-only peak claim. Other common adapters are not connected;
-P09/CUDA is unsupported here. Dependencies never start automatically.
+model forward or model-only peak claim. The separate `native` mode connects
+P01–P35 through typed operation sources and explicit native resource policies.
+Dependencies remain visible as separate selections.
 Default P01 requests 1000 measured samples to retain the native tail policy;
 a smaller requested budget is never silently increased. A valid but insufficient
 capture remains MISSING_PREREQUISITE, with raw samples retained.
 See [selective analysis](docs/guides/selective-analysis.md) for exact statuses,
 trust/resource limits and report integration. The acceptance runner remains a
 separate advanced tool; full selection does not execute or certify all 35 features.
+Typed sources, retained CUDA artifacts, training episodes and runnable examples
+are documented in the [native executor guide](docs/guides/native-analysis-executor.md).
 
 ## Experiments, reports and help
 

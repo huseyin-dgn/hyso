@@ -61,7 +61,7 @@ def test_all_35_bilingual_explanations_and_existing_catalog_scopes():
             assert all(row[key] for key in ('definition', 'purpose', 'limits', 'units'))
             guide = row['guide_url'].split('/docs/guides/')[1]
             assert (ROOT / 'docs/guides' / guide).is_file()
-        assert catalog[8]['executor_modes'] == []
+        assert catalog[8]['executor_modes'] == ['native']
         assert 'trusted_cpu' in catalog[9]['executor_modes']
     assert feature_explanations(language='tr')[9]['name'] != feature_explanations(language='en')[9]['name']
     with pytest.raises(ValueError):

@@ -9,6 +9,9 @@ from .execution import (AnalysisExecutionError, CPUAnalysisPolicy, AnalysisPlan,
 from .native_bridge import LiveCPUModel, TrustedCPUExecutionPolicy, execute_scoped_cpu
 from .isolated_bridge import TrustedFactoryBinding, IsolatedCPUExecutionPolicy, execute_isolated_cpu
 from .model_comparison import ModelComparisonError, ModelComparisonSource, ModelComparisonResult, compare_models
+from .sources import (ArtifactSource, OperationPolicy, NativeBinding, RetainedSource,
+                      InferenceSource, PipelineSource, RecipeSource, EvaluationSource,
+                      QualitySource, TrainingSource, ProtocolSource, RooflineSource, RuntimeSource)
 
 __all__ = ['EvidenceError', 'EvidenceScope', 'EvidenceRecord', 'EvidenceIndex',
            'compare_evidence', 'AnalysisContext', 'UnifiedAnalysisReport',
@@ -19,3 +22,6 @@ __all__ = ['EvidenceError', 'EvidenceScope', 'EvidenceRecord', 'EvidenceIndex',
            'LiveCPUModel', 'TrustedCPUExecutionPolicy', 'execute_scoped_cpu',
            'TrustedFactoryBinding', 'IsolatedCPUExecutionPolicy', 'execute_isolated_cpu',
            'ModelComparisonError', 'ModelComparisonSource', 'ModelComparisonResult', 'compare_models']
+__all__ += ['ArtifactSource', 'OperationPolicy', 'NativeBinding', 'RetainedSource',
+            'InferenceSource', 'PipelineSource', 'RecipeSource', 'EvaluationSource',
+            'QualitySource', 'TrainingSource', 'ProtocolSource', 'RooflineSource', 'RuntimeSource']

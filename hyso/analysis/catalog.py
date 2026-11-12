@@ -17,7 +17,11 @@ PROFILES = MappingProxyType({
 EXECUTOR_FEATURES = MappingProxyType({
     'trusted_cpu': ('P01', 'P02', 'P10', 'P11'),
     'isolated_cpu': ('P02', 'P11'),
+    'native': tuple(spec.feature_id for spec in CATALOG),
 })
+NATIVE_CUDA_FEATURES = frozenset(('P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P08',
+    'P09', 'P12', 'P13', 'P14', 'P15', 'P17', 'P18', 'P19', 'P20', 'P21', 'P22',
+    'P23', 'P25', 'P26', 'P28', 'P31', 'P32', 'P33', 'P34', 'P35'))
 _SCOPES = {
     'P01': 'resident CPU benchmark samples, then native latency analysis; tail policy unchanged',
     'P02': 'existing G2/G3 completed CPU inference throughput',
@@ -70,9 +74,10 @@ def feature_catalog(feature_id: str | None = None) -> tuple[AnalysisFeature, ...
                          if 'gpu' in spec.capabilities else 'producer-specific task/backend and protocol prerequisites')
         description = spec.name + ('. ' + '; '.join(spec.limitations) if spec.limitations else '.')
         result.append(AnalysisFeature(spec.feature_id, spec.name, description, spec.domain,
-            tuple(spec.needs), tuple(spec.capabilities), ('cpu',) if modes else (), modes, cost,
+            tuple(spec.needs), tuple(spec.capabilities),
+            ('cpu', 'cuda') if spec.feature_id in NATIVE_CUDA_FEATURES else ('cpu',) if modes else (), modes, cost,
             DEPENDENCIES.get(spec.feature_id, ()), applicability,
-            _SCOPES.get(spec.feature_id, 'no common executor adapter; original APIs remain independent'),
+            _SCOPES.get(spec.feature_id, 'typed native operation; source, protocol and explicit execution admission required'),
             tuple(spec.limitations)))
     if feature_id is None:
         return tuple(result)

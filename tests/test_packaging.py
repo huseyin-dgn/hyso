@@ -17,6 +17,7 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
+    "hyso/analysis/sources.py", "hyso/analysis/native_execution.py", "hyso/analysis/native_adapters.py",
     "hyso/reporting/__init__.py", "hyso/reporting/catalog.py", "hyso/reporting/report.py", "hyso/reporting/render.py",
     "hyso/experiments/workflow.py",
     "hyso/analysis/model_comparison.py", "hyso/advisor/model_comparison_presentation.py",
@@ -152,7 +153,7 @@ def distributions(tmp_path_factory):
 
 def test_canonical_packaging_configuration():
     assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == MODULES
-    assert len(MODULES) == 138
+    assert len(MODULES) == 141
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
     assert not (ROOT / "hyso/setup.cfg").exists()
@@ -653,6 +654,10 @@ with patch.object(torch.nn.Module, '_call_impl', side_effect=AssertionError('Adv
     assert 'Manual steps' in reporting.create_report(recommendations, language='en').to_html()
 assert callable(analysis.compare_models)
 assert len(analysis.feature_catalog()) == 35
+assert 'native' in analysis.feature_catalog('P35').executor_modes
+assert typing.get_type_hints(analysis.NativeBinding)['source']
+assert typing.get_type_hints(analysis.AnalysisExecutionResult.from_json)['return'] is analysis.AnalysisExecutionResult
+assert analysis.OperationPolicy().allow_capture is False
 assert analysis.plan_analysis(analysis.ModelContext('installed'), features='P11').to_dict()['execution_authorized'] is False
 assert callable(performance.analyze_latency)
 assert ModelRegistry().get('modular_cnn').constructor is ModularCNN

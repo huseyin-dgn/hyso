@@ -210,6 +210,10 @@ class TrainingSession:
         timing is unavailable, not synthesized from total wall time. Total fit
         wall seconds include validation, serialization, restore and observers.
         """
+        return self._fit_with_native()
+
+    def _fit_with_native(self, operation=None):
+        """Share the prepared checks and finalization with opt-in analysis fits."""
         if self._state!='prepared': raise TrainingConfigError('session is one-shot; create a fresh session, never implicitly retry')
         if type(self.config) is not TrainingConfig or self.config.to_dict()!=self._c:
             raise TrainingConfigError('prepared configuration changed; create a fresh session')
@@ -220,8 +224,12 @@ class TrainingSession:
         if self._effective()!=self._prepared_effective: raise TrainingConfigError('prepared native settings changed before fit')
         self._state='running';start=time.perf_counter()
         try:
-            history=self.trainer.fit(self.train_loader,self.val_loader,epochs=self._c['epochs'],
-                                     save_last_to=self._c['save_last_to'],resume_from=self._c['resume_from'])
+            if operation is None:
+                history=self.trainer.fit(self.train_loader,self.val_loader,epochs=self._c['epochs'],
+                                         save_last_to=self._c['save_last_to'],resume_from=self._c['resume_from'])
+            else:
+                native = operation()
+                history = self.trainer.history
         except BaseException:
             self._state='failed';raise
         wall=time.perf_counter()-start;self._state='completed'
@@ -238,4 +246,5 @@ class TrainingSession:
             epoch_timing_scope='unavailable_callback_free_checkpoint_profile' if self._checkpoint_mode else
                 'observer_intervals_including_validation_and_observer_overhead_not_P19_or_GPU_time',
             history_scope='Trainer.history_may_include_unmeasured_restored_prefix')
-        return TrainingResult(json.dumps(payload,sort_keys=True,allow_nan=False))
+        result = TrainingResult(json.dumps(payload,sort_keys=True,allow_nan=False))
+        return result if operation is None else (native, result)

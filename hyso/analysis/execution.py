@@ -10,6 +10,7 @@ from dataclasses import asdict, dataclass, replace
 import json
 import os
 import re
+import threading
 from typing import Any, Sequence
 
 from ._codec import canonical, digest, export
@@ -21,6 +22,7 @@ from .isolated_bridge import (TrustedFactoryBinding, IsolatedCPUExecutionPolicy,
 from .evidence import EvidenceRecord, EvidenceIndex, EvidenceScope
 from .report import AnalysisContext, UnifiedAnalysisReport
 from ._analysis_resources import memory_availability
+from .sources import NativeBinding, ArtifactSource
 
 
 STATUSES = ('SUPPORTED','UNSUPPORTED','MISSING_PREREQUISITE','NOT_IMPLEMENTED_IN_EXECUTOR',
@@ -142,6 +144,8 @@ def plan_analysis(models: ModelContext | Sequence[ModelContext] | FeaturePlanReq
 
 
 def _support(plan, feature):
+    if plan.execution_mode == 'native':
+        return 'SUPPORTED'
     if plan.device != 'cpu' or (plan.device=='cpu' and 'gpu' in feature_catalog(feature).required_capabilities):
         return 'UNSUPPORTED'
     return 'SUPPORTED' if feature in EXECUTOR_FEATURES[plan.execution_mode] else 'NOT_IMPLEMENTED_IN_EXECUTOR'
@@ -156,6 +160,7 @@ class AnalysisDryRun:
     def __init__(self, plan, bindings, isolated_policy, data):
         self._plan = plan; self._bindings = bindings; self._isolated_policy = isolated_policy
         self._payload = canonical(data); self._used = False
+        self._execution_lock = threading.Lock()
 
     def to_dict(self) -> dict[str,Any]:
         """Return detached per-model support, reasons, costs, limits and OS estimates."""
@@ -168,11 +173,18 @@ class AnalysisDryRun:
         plan identity, selection and unchanged policy, without approval flags or
         factory kwargs. It neither starts a run nor logs anything automatically.
         """
-        plan = self.to_dict()['plan']
-        return dict(analysis_plan_id=plan['plan_id'],selected_features=plan['selected_features'],
+        snapshot = self.to_dict()
+        plan = snapshot['plan']
+        result = dict(analysis_plan_id=plan['plan_id'],selected_features=plan['selected_features'],
             models=[m['model_id'] for m in plan['request']['models']],device=plan['device'],
             execution_mode=plan['execution_mode'],policy=plan['policy'],
             scope='plan_and_policy_summary;full_dry_run_and_receipts_retained_in_execution_artifact')
+        if plan['execution_mode'] == 'native':
+            result['policy_scope'] = 'native_protocol_limits_in_source;CPU_policy_applies_to_legacy_routes'
+            result['operations'] = [dict(operation_id=item['operation_id'], features=item['features'],
+                model_ids=item['model_ids'], device=item['device'], source_kind=item['source']['type'],
+                binding_sha256=digest(item)) for item in snapshot['bindings']]
+        return result
 
 
 def _binding_preflight(binding, model, policy, feature, mode):
@@ -236,7 +248,7 @@ def _binding_metadata(binding):
         input_device=str(x.device) if type(x) is torch.Tensor else None)
 
 
-def preflight_analysis(plan: AnalysisPlan, bindings: Sequence[LiveCPUModel | TrustedFactoryBinding] = (), *,
+def preflight_analysis(plan: AnalysisPlan, bindings: Sequence[LiveCPUModel | TrustedFactoryBinding | NativeBinding] = (), *,
                        isolated_policy: IsolatedCPUExecutionPolicy = IsolatedCPUExecutionPolicy()) -> AnalysisDryRun:
     """Inspect metadata/OS headroom only; no forward, training or factory import.
 
@@ -248,6 +260,9 @@ def preflight_analysis(plan: AnalysisPlan, bindings: Sequence[LiveCPUModel | Tru
         raise AnalysisExecutionError('typed_plan_and_isolated_policy_required')
     if type(bindings) not in (tuple,list):
         raise AnalysisExecutionError('bindings_must_be_a_sequence')
+    if plan.execution_mode == 'native':
+        from .native_execution import preflight_native
+        return preflight_native(plan, bindings, isolated_policy)
     expected_type = LiveCPUModel if plan.execution_mode=='trusted_cpu' else TrustedFactoryBinding
     if any(type(b) is not expected_type for b in bindings):
         raise AnalysisExecutionError('binding_type_does_not_match_execution_mode')
@@ -351,6 +366,34 @@ class AnalysisExecutionResult:
         """Explicit no-clobber export. No files are written by execution itself."""
         export(path,self._payload+'\n',overwrite)
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> AnalysisExecutionResult:
+        """Reopen through the existing Manager result validation, without execution."""
+        from hyso.experiments.workflow import _restore_result
+        return _restore_result('analysis_execution', data)
+
+    @classmethod
+    def from_json(cls, path) -> AnalysisExecutionResult:
+        """Read a bounded execution snapshot through the same native readers."""
+        from ._codec import read_json
+        data, _, _ = read_json(path, None, 128*1024**2)
+        return cls.from_dict(data)
+
+    def artifact_sources(self) -> tuple[ArtifactSource, ...]:
+        """Return file dependencies for explicit ExperimentManager registration."""
+        from .sources import ArtifactSource
+        items = {}
+        for row in self.to_dict()['features']:
+            for receipt in (row.get('execution_receipt') or {}).get('artifact_receipts', []):
+                if receipt.get('status') == 'verified':
+                    item = ArtifactSource(receipt['path'], receipt['sha256'], receipt['bytes'])
+                    items[item.path] = item
+        return tuple(items.values())
+
+    def verify_artifacts(self) -> list[dict[str, Any]]:
+        """Report current file availability alongside the retained native snapshot."""
+        return [item.verify() for item in self.artifact_sources()]
+
     def to_evidence_index(self) -> EvidenceIndex:
         """Preserve validated native payloads and explicit unavailable reasons."""
         records = []
@@ -380,6 +423,18 @@ def execute_analysis(dry_run: AnalysisDryRun, *, authorized_features: Sequence[s
     KeyboardInterrupt/SystemExit propagate. In-process trusted forwards may hang;
     use the existing isolated CPU route where a hard Job deadline is required.
     """
+    if type(dry_run) is not AnalysisDryRun:
+        raise AnalysisExecutionError('typed_dry_run_required')
+    if not dry_run._execution_lock.acquire(blocking=False):
+        raise AnalysisExecutionError('execution_already_in_progress')
+    try:
+        return _execute_analysis_once(dry_run, authorized_features=authorized_features,
+                                      explicit_authorization=explicit_authorization)
+    finally:
+        dry_run._execution_lock.release()
+
+
+def _execute_analysis_once(dry_run, *, authorized_features, explicit_authorization):
     if type(dry_run) is not AnalysisDryRun or dry_run._used:
         raise AnalysisExecutionError('fresh_dry_run_required;execution_is_one_shot')
     if type(authorized_features) not in (tuple,list) or any(type(f) is not str for f in authorized_features):
@@ -389,6 +444,9 @@ def execute_analysis(dry_run: AnalysisDryRun, *, authorized_features: Sequence[s
         raise AnalysisExecutionError('authorization_must_be_a_unique_subset_of_explicit_selection')
     if type(explicit_authorization) is not bool or (authorized and not explicit_authorization):
         raise AnalysisExecutionError('explicit_execution_authorization_required')
+    if dry_run._plan.execution_mode == 'native':
+        from .native_execution import execute_native
+        return execute_native(dry_run, authorized)
     fresh = preflight_analysis(dry_run._plan,dry_run._bindings,isolated_policy=dry_run._isolated_policy)
     data = fresh.to_dict()
     reviewed = dry_run.to_dict()
@@ -410,7 +468,8 @@ def execute_analysis(dry_run: AnalysisDryRun, *, authorized_features: Sequence[s
                 row['execution_receipt'] = receipt
                 if native is None:
                     raise AnalysisExecutionError(receipt.get('reason') or 'native_execution_failed')
-                if native.get('feature_ids') != [feature]:
+                from ._native import validate_native
+                if feature not in validate_native(native)[1]:
                     raise AnalysisExecutionError('native_feature_identity_mismatch')
                 record = EvidenceRecord.from_native(native,feature_id=feature,scope=EvidenceScope(model_id=model_id))
                 row.update(evidence_record=record.to_dict(),auxiliary_evidence=aux,status='COMPLETED',reasons=[])

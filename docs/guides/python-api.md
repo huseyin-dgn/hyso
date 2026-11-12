@@ -40,6 +40,8 @@ separately. See [training configuration](training-config.md) for a single-Traine
 workflow, applied-value reporting, Manager metric logging and checkpoint limits.
 For feature/profile selection and explicitly authorized native CPU producers,
 see [selective analysis](selective-analysis.md). Legacy G1/G2/G3 APIs remain valid.
+P01–P35 typed sources, shared native captures and retained analysis are covered
+in the [native executor guide](native-analysis-executor.md).
 
 ## Tiny configurable CPU training
 
