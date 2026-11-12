@@ -65,7 +65,7 @@ def test_current_readme_examples_execute_cpu_only(tmp_path, monkeypatch):
     monkeypatch.setattr(torch.cuda, '_lazy_init', forbidden)
     text = (ROOT/'README.md').read_text(encoding='utf-8')
     examples = re.findall(r'^```python\n(.*?)^```', text, re.M | re.S)
-    assert len(examples) == 8
+    assert len(examples) == 9
     namespace = {}
     for example in examples:
         ast.parse(example, feature_version=(3, 10))

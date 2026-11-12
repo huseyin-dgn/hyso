@@ -197,6 +197,27 @@ and call `close()` in a try/finally block. `EvidenceIndex` and `UnifiedAnalysisR
 aggregate existing evidence. `advisor.advise(report)` interprets a compatible report
 without running a model. Advisor display JSON/Markdown supports English and Turkish.
 
+Review related architecture, training, analysis and comparison runs in one experiment:
+
+```python
+def review_experiment(store_dir, experiment_id):
+    manager = ExperimentManager(store_dir)
+    try:
+        history = manager.get_experiment_history(experiment_id)
+        details = [manager.get_run_details(run["id"]) for run in history["runs"]]
+        return history, details
+    finally:
+        manager.close()
+```
+
+`create_workflow_run()` stores ModelBuilder architectures, TrainingConfig settings,
+explicit model/dataset/device/precision/protocol context and existing analysis or
+comparison tracking configuration. `run.record_result()` retains an existing result
+and input artifact links. `open_result()` checks registered bytes before reading it.
+Full result artifacts require schema2 through the existing explicit offline migration.
+See [experiment history integration](docs/guides/experiment-workflow.md) for recording,
+filtering, reopening, artifact availability and recovery.
+
 Use `help(Trainer)`, `help(Trainer.fit)`, `help(TrainingConfig)`, `help(ModularCNN)` and `help(BenchmarkRunner)`
 for parameters and return values. `py.typed` enables inline typing discovery;
 annotations remain incremental and heterogeneous metadata may use Any. Actual IDE

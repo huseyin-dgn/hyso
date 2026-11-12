@@ -83,7 +83,12 @@ class TrainingResult:
         for row in data['epoch_events']:
             records.append(dict(name='epoch_observer_interval',value=row['interval_seconds'],unit='s',
                                 epoch=row['epoch'],source='Trainer_callback_interval_including_validation_and_observer_overhead'))
-        return run.log_metrics(records) if records else []
+        saved = []
+        # Respect the Manager's existing 256-event transaction bound. Replaying
+        # an identical history reuses the original per-axis metric events.
+        for start in range(0, len(records), 256):
+            saved.extend(run.log_metrics(records[start:start + 256]))
+        return saved
 
 
 class TrainingSession:

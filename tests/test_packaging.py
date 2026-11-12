@@ -17,6 +17,7 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
+    "hyso/experiments/workflow.py",
     "hyso/analysis/model_comparison.py", "hyso/advisor/model_comparison_presentation.py",
     "hyso/analysis/catalog.py", "hyso/analysis/execution.py", "hyso/analysis/_analysis_resources.py",
     "hyso/training/config.py", "hyso/training/session.py",
@@ -148,7 +149,7 @@ def distributions(tmp_path_factory):
 
 def test_canonical_packaging_configuration():
     assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == MODULES
-    assert len(MODULES) == 131
+    assert len(MODULES) == 132
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
     assert not (ROOT / "hyso/setup.cfg").exists()
@@ -643,6 +644,19 @@ assert analysis.plan_analysis(analysis.ModelContext('installed'), features='P11'
 assert callable(performance.analyze_latency)
 assert ModelRegistry().get('modular_cnn').constructor is ModularCNN
 assert TrainingConfig.from_dict(TrainingConfig().to_dict()).to_dict() == TrainingConfig().to_dict()
+import tempfile
+with tempfile.TemporaryDirectory(prefix='hyso-installed-history-') as history_root:
+    manager = ExperimentManager(history_root)
+    try:
+        study = manager.create_experiment('installed workflow')
+        architecture = ModelBuilder((1, 4, 4), 2).add('conv2d', in_channels=1, out_channels=2)
+        record = manager.create_workflow_run(study['id'], 'model', model_ids=['A'], architectures={'A': architecture})
+        record.start()
+        record.finish()
+        assert manager.get_experiment_history(study['id'])['status'] == 'completed'
+        assert manager.get_run_details(record.id)['artifact_support'] == 'schema2_required'
+    finally:
+        manager.close()
 built = ModelBuilder((1, 8, 8), 2).add('conv_norm_act', in_channels=1, out_channels=4, norm=None).build().eval()
 with torch.inference_mode(): assert built(torch.zeros(1, 1, 8, 8)).shape == (1, 2)
 model = ModularCNN(input_channels=1, num_classes=2, widths=(4,), repeats=(1,), strides=(1,), norm=None).eval()

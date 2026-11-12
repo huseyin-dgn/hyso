@@ -13,6 +13,7 @@
 | Two-model comparison | from hyso import analysis | ModelComparisonSource, compare_models, ModelComparisonResult |
 | Advisor | from hyso import advisor | advise, to_display_dict/json, to_markdown |
 | Experiments | from hyso import ExperimentManager | hyso.experiments.manager; run/metric/artifact persistence |
+| Experiment history | from hyso.experiments import ExperimentRun | create_workflow_run, list_experiments, get_experiment_history, get_run_details, record_result, open_result |
 
 Root convenience aliases resolve on access to the original classes, not wrappers.
 Imports do not construct models or request execution. Existing deep imports remain
@@ -95,3 +96,8 @@ For Stage-5 outputs, use `ModelComparisonSource.from_execution(result, model_id)
 Native comparison metadata may still be insufficient; no capture is rerun or
 backfilled. [Two-model comparison](two-model-comparison.md) explains native gates,
 P10/P11/P09 separation, bilingual views and optional Manager artifact linking.
+
+See [experiment history integration](experiment-workflow.md) to retain architectures,
+settings and existing results in the same experiment. Workflow entries use the current
+training/evaluation/benchmark run kinds and existing lifecycle states. schema1 supports
+snapshots and metrics. Result artifacts use schema2 after explicit offline migration.

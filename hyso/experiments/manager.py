@@ -23,6 +23,15 @@ import tempfile
 import threading
 import uuid
 
+if _typing.TYPE_CHECKING:
+    from ..models.builder import ModelBuilder
+    from ..training import TrainingConfig, TrainingResult
+    from ..analysis import AnalysisDryRun, AnalysisExecutionResult, ModelComparisonResult
+else:
+    # Keep the storage module usable without importing the scientific runtime.
+    ModelBuilder = TrainingConfig = TrainingResult = _typing.Any
+    AnalysisDryRun = AnalysisExecutionResult = ModelComparisonResult = _typing.Any
+
 
 class ExperimentError(RuntimeError):
     """Safe domain error. Payloads and underlying storage messages are omitted."""
@@ -492,6 +501,98 @@ class ExperimentManager:
         identity = _id(id)
         with self._access("get_experiment") as db:
             return self._experiment(self._row(db, "experiments", identity))
+
+    def list_experiments(self, *, name: str | None = None, kind: str | None = None,
+                         status: str | None = None, after_seq: int | None = None,
+                         limit: int = 100) -> list[dict[str, _typing.Any]]:
+        """List experiments by exact name and matching run kind/status, with a seq cursor.
+
+        kind/status match the same run. Existing run states remain authoritative.
+        """
+        cursor, limit = _page(after_seq, limit, 100)
+        clauses, values = ["e.seq>?"], [cursor]
+        if name is not None:
+            clauses.append("e.name=?")
+            values.append(_label(name, 256))
+        filters = []
+        for key, value, options in (("kind", kind, _KINDS), ("status", status, _STATES)):
+            if value is not None:
+                if type(value) is not str or value not in options:
+                    _error("invalid_filter", "list_experiments")
+                filters.append("r." + key + "=?")
+                values.append(value)
+        if filters:
+            clauses.append("EXISTS(SELECT 1 FROM runs r WHERE r.experiment_id=e.id AND " +
+                           " AND ".join(filters) + ")")
+        with self._access("list_experiments") as db:
+            rows = db.execute("SELECT e.* FROM experiments e WHERE " + " AND ".join(clauses) +
+                              " ORDER BY e.seq LIMIT ?", (*values, limit)).fetchall()
+            return [self._experiment(row) for row in rows]
+
+    def create_workflow_run(self, experiment_id: str, stage: str, *, model_ids: _typing.Sequence[str],
+                            architectures: dict[str, ModelBuilder] | None = None,
+                            training_config: TrainingConfig | None = None,
+                            analysis: AnalysisDryRun | None = None,
+                            comparison: ModelComparisonResult | None = None,
+                            dataset: dict[str, _typing.Any] | None = None,
+                            device: str | None = None, precision: str | None = None,
+                            protocol: dict[str, _typing.Any] | None = None,
+                            request_id: str | None = None) -> ExperimentRun:
+        """Create a model/training/analysis/comparison history entry in this Manager.
+
+        Architecture comes from ModelBuilder.to_config(); analysis/comparison reuse
+        tracking_config(). Context labels are caller declarations. Omitted context
+        stays None. Creation only persists immutable snapshots, on schema1 or schema2.
+        Start/finish/fail/interrupt remain explicit ExperimentRun operations.
+        """
+        from .workflow import workflow_config
+        kind, config = workflow_config(stage, model_ids, architectures, training_config,
+                                       analysis, comparison, dataset, device, precision, protocol)
+        return self.create_run(experiment_id, kind, config, request_id=request_id)
+
+    def get_experiment_history(self, experiment_id: str, *, after_seq: int | None = None,
+                               limit: int = 100) -> dict[str, _typing.Any]:
+        """Read a run page and a status summary over ALL runs of the experiment.
+
+        Summary precedence is running, created, failed, interrupted, completed.
+        An empty experiment is created. This derived view never changes run states.
+        next_after_seq continues a full page using the existing seq pagination.
+        """
+        identity = _id(experiment_id)
+        cursor, limit = _page(after_seq, limit, 100)
+        with self._access("experiment_history") as db:
+            experiment = self._experiment(self._row(db, "experiments", identity))
+            counts = dict.fromkeys(_STATES, 0)
+            for row in db.execute("SELECT status,count(*) AS n FROM runs WHERE experiment_id=? GROUP BY status",
+                                  (identity,)):
+                counts[row["status"]] = row["n"]
+            rows = db.execute("SELECT * FROM runs WHERE experiment_id=? AND seq>? ORDER BY seq LIMIT ?",
+                              (identity, cursor, limit)).fetchall()
+            runs = [self._run_record(db, dict(row)) for row in rows]
+        state = next((s for s in ("running", "created", "failed", "interrupted", "completed") if counts[s]), "created")
+        return dict(experiment=experiment, status=state, status_scope="derived_from_all_run_states",
+                    status_counts=counts, runs=runs,
+                    next_after_seq=runs[-1]["seq"] if len(runs) == limit else None)
+
+    def get_run_details(self, run_id: str, *, after_metric_seq: int | None = None,
+                        after_artifact_seq: int | None = None, limit: int = 100) -> dict[str, _typing.Any]:
+        """Read snapshots, a metric page, and artifact roles/current byte availability.
+
+        Availability observations are read-only, without appending artifact checks.
+        Each full page supplies a cursor. schema1 reports schema2_required for artifacts.
+        """
+        from .workflow import run_details
+        return run_details(self, run_id, after_metric_seq, after_artifact_seq, limit)
+
+    def open_result(self, artifact_id: str, *, path: str | _PathLike[str] | None = None) -> dict[str, _typing.Any]:
+        """Read a retained typed result after verifying its exact bytes and native readers.
+
+        Returns status/reason/result. Missing, moved, corrupt or unsupported artifacts
+        return result=None. path explicitly locates a moved reference artifact without
+        rewriting its locator. Managed copies always use their registered location.
+        """
+        from .workflow import open_result
+        return open_result(self, artifact_id, path)
 
     def create_run(self, experiment_id, kind, config, provenance=None, *, redact_paths=(),
                    retry_of_run_id=None, resume_artifact_id=None, request_id=None):
@@ -1096,6 +1197,18 @@ class ExperimentRun:
         return self._manager._add_artifact(self.id, path, kind=kind, ownership=ownership,
                     role=role, request_id=request_id, metadata=metadata,
                     retain_locator=retain_locator, max_size_bytes=max_size_bytes)
+
+    def record_result(self, result: TrainingResult | AnalysisExecutionResult | ModelComparisonResult, *,
+                      input_artifact_ids: _typing.Sequence[str] = ()) -> dict[str, _typing.Any]:
+        """Retain one typed workflow result using existing schema2 artifact/link APIs.
+
+        Requires a matching workflow run. Training history uses TrainingResult.log_to().
+        Repeating identical recording reuses its artifact and metric events. Different
+        results/inputs conflict. Partial ingest requires explicit existing recovery.
+        Run lifecycle remains explicit, including after a storage/logging failure.
+        """
+        from .workflow import record_result
+        return record_result(self, result, input_artifact_ids)
 
     def start(self, *, request_id=None):
         return self._transition("running", {}, request_id)
