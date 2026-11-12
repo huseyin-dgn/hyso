@@ -10,6 +10,7 @@ from .validation import validate_request
 from .resolver import (EvidenceEligibility, MetricResolution, NativeMetric,
                        NativeMetricResolver, NativeObservation, ResolvedMetric)
 from .engine import advise, validate_advisor_report
+from .presentation import build_display_model, to_display_dict, to_display_json, to_markdown
 from .goals import evaluate_goal, evaluate_goals, goal_context
 from .planning import DecisionPlan, PlannedFinding
 from .comparison import (ComparisonContract, P26QualityComparisonContract, P26BoundQualityComparisonContract,
@@ -35,4 +36,5 @@ __all__ = [
     'MetricDifference', 'PerformanceComparison', 'compare_performance',
     'BoundEvaluationReference', 'P26ModelProfileComparisonContract',
     'UnifiedModelComparison', 'compare_p26_model_profiles',
+    'build_display_model', 'to_display_dict', 'to_display_json', 'to_markdown',
 ]

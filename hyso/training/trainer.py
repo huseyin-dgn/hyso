@@ -1,5 +1,9 @@
 """Classification updates, independent of model-specific fit APIs."""
 
+from __future__ import annotations
+
+import typing as _typing
+from os import PathLike as _PathLike
 import math
 import copy
 import inspect
@@ -36,9 +40,34 @@ class Trainer:
     or CosineAnnealingLR instances. The Trainer owns their stepping.
     """
 
-    def __init__(self, model, *, optimizer, loss_fn, device="cpu", task="multiclass",
-                 scheduler=None, amp=False, accum_steps=1, grad_clip=None,
-                 ema_decay=None, early_stopping=None, callbacks=(), model_config=None):
+    def __init__(self, model: nn.Module, *, optimizer: torch.optim.Optimizer,
+                 loss_fn: nn.Module, device: str | torch.device = "cpu", task: str = "multiclass",
+                 scheduler: _typing.Any = None, amp: bool = False, accum_steps: int = 1,
+                 grad_clip: float | None = None, ema_decay: float | None = None,
+                 early_stopping: EarlyStopping | None = None,
+                 callbacks: _typing.Sequence[_typing.Callable[[str, dict[str, _typing.Any]], None]] = (),
+                 model_config: dict[str, _typing.Any] | None = None) -> None:
+        """Configure one caller-owned classification training lifecycle.
+
+        Args:
+            model: Eager nn.Module, already on device before optimizer creation.
+            optimizer: Standard non-fused SGD, Adam or AdamW bound to model.
+            loss_fn: Supported mean-reduction classification loss (CE or BCE logits).
+            device: Explicit CPU/CUDA device; the model is not moved implicitly.
+            task: 'multiclass' or 'binary'; targets must match the loss contract.
+            scheduler: Supported bare PyTorch scheduler; Trainer owns stepping.
+            amp: CUDA FP16 autocast/scaling; False by default, unsupported on CPU.
+            accum_steps: Positive microbatch accumulation count.
+            grad_clip: Optional positive gradient-norm clipping threshold.
+            ema_decay: Optional EMA decay in [0, 1]; validation uses the shadow.
+            early_stopping: Optional standard HYSo EarlyStopping instance.
+            callbacks: Synchronous observers called with (event, independent logs).
+            model_config: Exact ModularCNN constructor configuration for resume.
+
+        Raises:
+            TypeError: Unsupported model/optimizer/loss or callback contract.
+            ValueError: Invalid parameter, device, tensor or training configuration.
+        """
         if not isinstance(model, nn.Module):
             raise TypeError("model must be an nn.Module")
         if not isinstance(optimizer, torch.optim.Optimizer):
@@ -120,7 +149,7 @@ class Trainer:
             self._validate_ema()
 
     @property
-    def evaluation_model(self):
+    def evaluation_model(self) -> nn.Module:
         """Inference/best-weight target; EMA weights are never loaded into live model."""
         return self.model if self.ema is None else self.ema.ema_model
 
@@ -449,8 +478,22 @@ class Trainer:
             raise FloatingPointError("nonfinite scalar loss encountered")
         return loss, correct
 
-    def fit(self, train_loader, val_loader=None, *, epochs=5, save_last_to=None, resume_from=None):
+    def fit(self, train_loader: _typing.Iterable[tuple[torch.Tensor, torch.Tensor]],
+            val_loader: _typing.Iterable[tuple[torch.Tensor, torch.Tensor]] | None = None, *,
+            epochs: int = 5, save_last_to: str | _PathLike[str] | None = None,
+            resume_from: str | _PathLike[str] | None = None) -> dict[str, list[float | None]]:
         """Run train→validation→scheduler→ES→observer→optional last save→finalization.
+
+        Args:
+            train_loader: Finite, sized batches of (inputs, targets).
+            val_loader: Optional finite validation loader; required by early stopping.
+            epochs: Positive total epoch budget, including any restored epochs.
+            save_last_to: Optional continuing-state checkpoint destination.
+            resume_from: Optional compatible epoch-boundary checkpoint source.
+
+        Returns:
+            Independent lists under train_loss, train_acc, val_loss and val_acc.
+            Accuracy is a percentage. Without validation, val_loss/val_acc entries are None.
 
         Save requires callbacks=(), standard num_workers=0 TensorDataset loaders
         and all seven ModularCNN constructor fields in model_config. It saves

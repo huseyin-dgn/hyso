@@ -275,7 +275,7 @@ def _missing(model, spec, capabilities):
     return 'PROPOSED', ('prerequisites_caller_declared_only;native_validation_and_explicit_approval_required',)
 
 
-def plan_features(request):
+def plan_features(request: FeaturePlanRequest) -> FeaturePlan:
     """Return a *planning-only* decision; never execute or authorize a workload."""
     if type(request) is not FeaturePlanRequest:
         raise FeaturePlanError('typed_feature_plan_request_required')

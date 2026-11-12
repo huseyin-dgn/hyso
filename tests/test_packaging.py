@@ -17,6 +17,11 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
+    "hyso/analysis/model_comparison.py", "hyso/advisor/model_comparison_presentation.py",
+    "hyso/analysis/catalog.py", "hyso/analysis/execution.py", "hyso/analysis/_analysis_resources.py",
+    "hyso/training/config.py", "hyso/training/session.py",
+    "hyso/models/registry.py", "hyso/models/builder.py",
+    "hyso/performance/_module_activity.py", "hyso/performance/_windows_camera.py",
     "hyso/evaluation.py", "hyso/quality.py", "hyso/_quality_memory.py",
     "hyso/performance/_cpu_layer_memory.py", "hyso/performance/_layer_allocator.py",
     "hyso/performance/_layer_memory.py", "hyso/performance/_loader_diagnostics.py",
@@ -122,7 +127,7 @@ def distributions(tmp_path_factory):
     work = tmp_path_factory.mktemp("packaging")
     stage = work / "source"
     stage.mkdir()
-    for name in (*CONFIG_FILES, *MODULES):
+    for name in (*CONFIG_FILES, *MODULES, "hyso/py.typed"):
         target = stage / name
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / name, target)
@@ -143,7 +148,7 @@ def distributions(tmp_path_factory):
 
 def test_canonical_packaging_configuration():
     assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == MODULES
-    assert len(MODULES) == 120
+    assert len(MODULES) == 131
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
     assert not (ROOT / "hyso/setup.cfg").exists()
@@ -164,6 +169,7 @@ def test_wheel_and_sdist_content_and_metadata(distributions):
     assert sdist.name == "hyso-0.2.0.tar.gz"
     with zipfile.ZipFile(wheel) as archive:
         wheel_names = set(archive.namelist())
+        assert archive.read("hyso/py.typed") == (ROOT / "hyso/py.typed").read_bytes()
         wheel_meta = email.message_from_bytes(archive.read("hyso-0.2.0.dist-info/METADATA"))
         assert {name for name in wheel_names if name.endswith(".py")} == MODULES
         assert archive.read("hyso-0.2.0.dist-info/top_level.txt").decode().split() == ["hyso"]
@@ -178,6 +184,7 @@ def test_wheel_and_sdist_content_and_metadata(distributions):
         sdist_requires = archive.extractfile("hyso-0.2.0/hyso.egg-info/requires.txt").read().decode().splitlines()
         assert {name for name in names if name.endswith(".py")} == MODULES
         assert set(CONFIG_FILES) <= names
+        assert archive.extractfile("hyso-0.2.0/hyso/py.typed").read() == (ROOT / "hyso/py.typed").read_bytes()
         # setuptools adds egg_info settings to the sdist's setup.cfg.
         for name in ("LICENSE", "pyproject.toml", "MANIFEST.in", *MODULES):
             assert archive.extractfile("hyso-0.2.0/" + name).read() == (ROOT / name).read_bytes()
@@ -604,6 +611,46 @@ print(json.dumps({'source': hyso.__file__, 'version': importlib.metadata.version
                   'sweep_guide': True, 'sweep_precision_points': 4, 'pipeline_guide': True, 'pipeline_samples': 4, 'cold_trials': pipeline_manual['cold'].to_dict()['actual'],
                   'isolated_activation': True, 'training_timing': True, 'manual_integration': True, 'cpu_models': 3, 'cuda_initialized': torch.cuda.is_initialized()}))
 """
+
+
+@pytest.mark.parametrize("kind", ["wheel", "sdist"])
+def test_installed_public_entry_points_and_typing(distributions, kind):
+    """Minimal installed discovery smoke, independent of long native fixtures."""
+    work, wheel, sdist = distributions
+    target = work / ("entry-points-" + kind)
+    command(["-m", "pip", "--isolated", "--no-cache-dir", "install", "--no-index",
+             "--no-deps", "--no-build-isolation", "--no-compile", "--target", str(target),
+             str(wheel if kind == "wheel" else sdist)], work)
+    code = """
+import pathlib, sys, typing
+target = pathlib.Path(sys.argv[1]).resolve()
+sys.path.insert(0, str(target))
+import torch, hyso
+torch.set_num_threads(1)
+from hyso import ModularCNN, Trainer, BenchmarkRunner, ExperimentManager, analysis, advisor, performance, ModelRegistry, ModelBuilder
+from hyso import TrainingConfig
+from hyso.models.modular import ModularCNN as CanonicalModel
+from hyso.training import Trainer as CanonicalTrainer
+assert pathlib.Path(hyso.__file__).resolve().is_relative_to(target)
+assert (target / 'hyso/py.typed').is_file()
+assert ModularCNN is CanonicalModel and Trainer is CanonicalTrainer
+assert typing.get_type_hints(ModularCNN.forward)['return'] is torch.Tensor
+assert typing.get_type_hints(Trainer.fit)['return'] == dict[str, list[float | None]]
+assert callable(analysis.plan_features) and callable(advisor.to_display_dict)
+assert callable(analysis.compare_models)
+assert len(analysis.feature_catalog()) == 35
+assert analysis.plan_analysis(analysis.ModelContext('installed'), features='P11').to_dict()['execution_authorized'] is False
+assert callable(performance.analyze_latency)
+assert ModelRegistry().get('modular_cnn').constructor is ModularCNN
+assert TrainingConfig.from_dict(TrainingConfig().to_dict()).to_dict() == TrainingConfig().to_dict()
+built = ModelBuilder((1, 8, 8), 2).add('conv_norm_act', in_channels=1, out_channels=4, norm=None).build().eval()
+with torch.inference_mode(): assert built(torch.zeros(1, 1, 8, 8)).shape == (1, 2)
+model = ModularCNN(input_channels=1, num_classes=2, widths=(4,), repeats=(1,), strides=(1,), norm=None).eval()
+with torch.inference_mode(): assert model(torch.zeros(1, 1, 8, 8)).shape == (1, 2)
+assert not torch.cuda.is_initialized()
+print('installed discovery/typing PASS')
+"""
+    assert 'installed discovery/typing PASS' in command(["-c", code, str(target)], work)
 
 
 @pytest.mark.parametrize("kind", ["wheel", "sdist"])

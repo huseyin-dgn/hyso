@@ -1,4 +1,7 @@
 """Caller-owned resident eager inference with host or selected-stream event timing."""
+from __future__ import annotations
+
+import typing as _typing
 from contextlib import ExitStack
 import hashlib
 import importlib.metadata
@@ -311,9 +314,28 @@ class BenchmarkRunner:
     memory probing irreversibly resets process/device allocator peak counters.
     No model movement, training, file export or comparison occurs.
     """
-    def __init__(self, model, *, device="cpu", input_shape=None, example_input=None,
-                 precision="fp32", warmup_iterations=10, measure_iterations=50, repeats=3,
-                 seed=0, model_name=None, model_config=None, measure_cuda_memory=False):
+    def __init__(self, model: nn.Module, *, device: str | torch.device = "cpu",
+                 input_shape: tuple[int, ...] | list[int] | None = None,
+                 example_input: torch.Tensor | None = None, precision: str = "fp32",
+                 warmup_iterations: int = 10, measure_iterations: int = 50, repeats: int = 3,
+                 seed: int = 0, model_name: str | None = None,
+                 model_config: _typing.Any = None, measure_cuda_memory: bool = False) -> None:
+        """Configure resident inference; execution occurs only in run().
+
+        Args:
+            model: Caller-owned eager module on the requested device/dtype.
+            device: Explicit CPU/CUDA device; no implicit accelerator selection.
+            input_shape: Positive NCHW dimensions, alternative to example_input.
+            example_input: Existing input tensor, alternative to input_shape.
+            precision: CPU 'fp32'/'fp64'; CUDA 'fp32'/'amp_fp16'.
+            warmup_iterations: Nonnegative untimed forwards per repeat.
+            measure_iterations: Positive timed forwards per repeat.
+            repeats: Positive repeat count; samples need not be independent.
+            seed: Deterministic input seed with parent RNG restoration.
+            model_name: Optional descriptive model identity.
+            model_config: Optional plain JSON-compatible model metadata.
+            measure_cuda_memory: Opt-in owned memory probe; False by default.
+        """
         if type(measure_cuda_memory) is not bool:
             raise TypeError("measure_cuda_memory must be bool")
         if not isinstance(device, (str, torch.device)):
@@ -366,7 +388,12 @@ class BenchmarkRunner:
             _shape(tuple(self._example.shape))
         return modules, entries
 
-    def run(self):
+    def run(self) -> BenchmarkResult:
+        """Execute the explicit protocol and return immutable timing evidence.
+
+        Preserves supported model/RNG state. Raises StateMutationError for an
+        observed unsupported model mutation; does not silently retry.
+        """
         if not _RUN_LOCK.acquire(blocking=False):
             raise RuntimeError("concurrent/reentrant benchmark runs are unsupported")
         rng = None

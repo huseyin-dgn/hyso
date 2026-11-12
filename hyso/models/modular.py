@@ -1,5 +1,7 @@
 """Standalone CNN composition from existing blocks; no training wrapper."""
 
+from __future__ import annotations
+
 import torch
 from torch import nn
 
@@ -52,8 +54,25 @@ class ModularCNN(nn.Module):
     or EBO epoch-boundary resume support is provided. Use normal Module.to().
     """
 
-    def __init__(self, input_channels=3, num_classes=10, widths=(32, 64, 128),
-                 repeats=(1, 1, 1), strides=(1, 2, 2), attention="none", norm="batch"):
+    def __init__(self, input_channels: int = 3, num_classes: int = 10,
+                 widths: tuple[int, ...] | list[int] = (32, 64, 128),
+                 repeats: tuple[int, ...] | list[int] = (1, 1, 1),
+                 strides: tuple[int, ...] | list[int] = (1, 2, 2),
+                 attention: str = "none", norm: str | None = "batch") -> None:
+        """Build a classification CNN without choosing a device or training it.
+
+        Args:
+            input_channels: Positive NCHW input channel count.
+            num_classes: Positive number of output logits per example.
+            widths: Positive output channels for each residual stage.
+            repeats: Positive number of blocks per stage; same length as widths.
+            strides: First-block stride per stage; later blocks use stride one.
+            attention: 'none', 'se', 'cbam', 'eca' or 'coordinate'.
+            norm: 'batch', 'group' or None for the convolution blocks.
+
+        Raises:
+            ValueError: Invalid dimensions or unsupported attention/normalization.
+        """
         super().__init__()
         self.input_channels = _positive_int(input_channels, "input_channels")
         self.num_classes = _positive_int(num_classes, "num_classes")
@@ -83,7 +102,7 @@ class ModularCNN(nn.Module):
         self.pool = nn.AdaptiveAvgPool2d(1)
         self.classifier = nn.Linear(self.widths[-1], num_classes)
 
-    def forward_features(self, x):
+    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
         """Return the final stage's NCHW feature map, before global pooling."""
         if not isinstance(x, torch.Tensor) or x.ndim != 4:
             raise ValueError("input must be an NCHW tensor")
@@ -94,5 +113,6 @@ class ModularCNN(nn.Module):
             x = stage(x)
         return x
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Map nonempty NCHW inputs to [batch, num_classes] unnormalized logits."""
         return self.classifier(torch.flatten(self.pool(self.forward_features(x)), 1))

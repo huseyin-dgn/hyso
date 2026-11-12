@@ -5,6 +5,10 @@ physical power-loss guarantees are outside this API's contract. All successful
 mutations are committed; closing a session never completes its runs.
 """
 
+from __future__ import annotations
+
+from os import PathLike as _PathLike
+import typing as _typing
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
@@ -292,7 +296,16 @@ class ExperimentManager:
     known OneDrive roots, network drives and reparse points are rejected.
     """
 
-    def __init__(self, root_dir, *, max_metrics_per_run=_MAX_METRICS):
+    def __init__(self, root_dir: str | _PathLike[str], *, max_metrics_per_run: int = _MAX_METRICS) -> None:
+        """Open a dedicated non-synced local store (creates it if absent).
+
+        Args:
+            root_dir: Local experiment directory outside OneDrive/network shares.
+            max_metrics_per_run: Positive persisted record limit, identical on reopen.
+
+        Call close() to release this thread/process-owned handle (no context manager).
+        Opening a store never starts training, benchmarking or run completion.
+        """
         self._pid, self._thread = os.getpid(), threading.get_ident()
         self._lock = threading.Lock()
         self._closed = True
@@ -434,7 +447,7 @@ class ExperimentManager:
         """A separate boundary permits real commit/ACK failure injection."""
         self._db.commit()
 
-    def close(self):
+    def close(self) -> None:
         if os.getpid() != self._pid or threading.get_ident() != self._thread:
             _error("session_context", "close")
         if self._closed:
@@ -456,7 +469,11 @@ class ExperimentManager:
     def _experiment(row):
         return {key: row[key] for key in ("id", "seq", "name", "created_at_utc", "request_id")}
 
-    def create_experiment(self, name, *, request_id=None):
+    def create_experiment(self, name: str, *, request_id: str | None = None) -> dict[str, _typing.Any]:
+        """Persist experiment metadata; return its identity/name dictionary.
+
+        request_id is an optional idempotency key, not a model identifier.
+        """
         name = _label(name, 256)
         request_id, identity = _request(request_id), uuid.uuid4().hex
         digest = _hash(_json({"name": name}))

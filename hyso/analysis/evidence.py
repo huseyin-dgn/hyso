@@ -137,6 +137,29 @@ class EvidenceRecord:
         object.__setattr__(self, '_payload', canonical(d))
 
     @classmethod
+    def from_native(cls, payload: dict, *, feature_id: str, scope: EvidenceScope | None = None,
+                    origin: str = 'new') -> 'EvidenceRecord':
+        """Validate an in-memory native result using the existing reader contracts.
+
+        Artifact identity describes canonical JSON bytes retained in this record;
+        it does not claim a file was written. Export explicitly when persistence
+        is needed. Import time is not capture time; associations remain declared.
+        """
+        if scope is not None and type(scope) is not EvidenceScope:
+            raise EvidenceError('typed_scope_required')
+        raw = canonical(payload).encode('utf-8')
+        if len(raw) > 64*1024**2:
+            raise EvidenceError('artifact_size_limit')
+        # Project metrics from canonical key order, just as on subsequent JSON
+        # reloads. Native dictionaries can have a different insertion order.
+        data = json.loads(raw)
+        sha = digest(data)
+        artifact = dict(artifact_id='sha256:'+sha,name='in-memory-'+sha+'.json',
+                        sha256=sha,bytes=len(raw),media_type='application/json')
+        return cls(_record(feature_id,data,artifact,scope or EvidenceScope(),origin,
+                           datetime.now(timezone.utc).isoformat()))
+
+    @classmethod
     def from_json(cls, path, *, feature_id, expected_sha256, scope=None, origin='new', max_bytes=64*1024**2):
         if scope is not None and type(scope) is not EvidenceScope:raise EvidenceError('typed_scope_required')
         fingerprint(expected_sha256)

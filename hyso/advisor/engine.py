@@ -1,4 +1,7 @@
 """Deterministic observations and record-local goals; no execution engine."""
+from __future__ import annotations
+
+from ..analysis import UnifiedAnalysisReport
 import hashlib
 
 from ._json import AdvisorError, canonical
@@ -25,7 +28,7 @@ def _identity(*values):
     return hashlib.sha256(canonical(values).encode('utf-8')).hexdigest()
 
 
-def advise(report, request=None):
+def advise(report: UnifiedAnalysisReport, request: AdvisorRequest | None = None) -> AdvisorReport:
     """Explain eligible existing native measurements without running a workload.
 
     Advanced goals are assessed within single matching native captures only.
