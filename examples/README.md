@@ -7,6 +7,7 @@ with HYSo installed in the selected Python environment.
 | Directory | Available examples |
 |---|---|
 | `reporting/` | Retained result exports and existing experiment history |
+| `advisor/` | Manual recommendations from retained analysis/comparison evidence |
 
 Future model construction, training and analysis examples belong in separate
 workflow directories when their executable scripts and tests are added. The

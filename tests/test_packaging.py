@@ -84,6 +84,8 @@ MODULES = {
     "hyso/advisor/goals.py",
     "hyso/advisor/performance.py",
     "hyso/advisor/planning.py",
+    "hyso/advisor/recommendations.py",
+    "hyso/advisor/_recommendation_text.py",
     "hyso/advisor/presentation.py",
     "hyso/advisor/profiles.py",
     "hyso/advisor/render.py",
@@ -150,7 +152,7 @@ def distributions(tmp_path_factory):
 
 def test_canonical_packaging_configuration():
     assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == MODULES
-    assert len(MODULES) == 136
+    assert len(MODULES) == 138
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
     assert not (ROOT / "hyso/setup.cfg").exists()
@@ -639,6 +641,16 @@ assert ModularCNN is CanonicalModel and Trainer is CanonicalTrainer
 assert typing.get_type_hints(ModularCNN.forward)['return'] is torch.Tensor
 assert typing.get_type_hints(Trainer.fit)['return'] == dict[str, list[float | None]]
 assert callable(analysis.plan_features) and callable(advisor.to_display_dict)
+assert callable(advisor.recommend)
+assert typing.get_type_hints(advisor.recommend)['return'] is advisor.RecommendationReport
+from unittest.mock import patch
+from hyso import reporting
+with patch.object(torch.nn.Module, '_call_impl', side_effect=AssertionError('Advisor ran a model')):
+    recommendations = advisor.recommend(analysis.EvidenceIndex(), context=analysis.AnalysisContext(
+        workload_id='installed-advisor', task='classification', model={}, dataset={}))
+    assert recommendations.to_dict()['claims']['numerical_improvement'] is None
+    assert not any(c['action_kind'] == 'conditional_experiment' for c in recommendations.to_dict()['recommendations'])
+    assert 'Manual steps' in reporting.create_report(recommendations, language='en').to_html()
 assert callable(analysis.compare_models)
 assert len(analysis.feature_catalog()) == 35
 assert analysis.plan_analysis(analysis.ModelContext('installed'), features='P11').to_dict()['execution_authorized'] is False

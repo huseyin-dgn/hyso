@@ -240,6 +240,34 @@ contract. Experiment histories use `report_experiment(manager, experiment_id)`.
 See [result reporting](docs/guides/result-reporting.md) and the
 [executable reporting examples](examples/README.md).
 
+Explain retained performance evidence with manual, evidence-linked recommendations:
+
+```python
+def explain_performance(saved_analysis_path, output_dir):
+    from pathlib import Path
+    from hyso.analysis import UnifiedAnalysisReport
+    from hyso.advisor import recommend
+    from hyso.reporting import create_report
+    source = UnifiedAnalysisReport.from_json(saved_analysis_path)
+    advice = recommend(source)
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    advice.to_json(output_dir / "recommendations.json")
+    report = create_report(source, advice, language="tr", level="technical")
+    report.to_markdown(output_dir / "advisor.md")
+    report.to_html(output_dir / "advisor.html")
+    return advice
+```
+
+`recommend` also accepts `ModelComparisonResult`, or `EvidenceIndex` with an
+explicit `AnalysisContext`. Six areas cover inference, training, memory, model
+architecture, deployment and data pipeline. Cards explain the condition, evidence,
+manual change/review, rationale, risks, steps and remeasurement. Existing Advisor
+rules decide eligibility; coverage prompts never claim a measured bottleneck.
+No configuration changes or workloads run. Gain estimates, global winners and
+benefit rankings remain unestablished. See the [Performance Advisor guide](docs/guides/performance-advisor.md)
+and [executable examples](examples/advisor/README.md).
+
 Use `help(Trainer)`, `help(Trainer.fit)`, `help(TrainingConfig)`, `help(ModularCNN)` and `help(BenchmarkRunner)`
 for parameters and return values. `py.typed` enables inline typing discovery;
 annotations remain incremental and heterogeneous metadata may use Any. Actual IDE

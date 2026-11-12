@@ -155,6 +155,99 @@ def _actions(source):
     return [action for side in view.get("advisor_observations", {}).values() for action in side["text"]["actions"]]
 
 
+def _recommendations(source, words, language, *, as_html):
+    """Render manual cards, including exact retained evidence at every level."""
+    view = source.get("recommendations")
+    if view is None:
+        return "" if as_html else []
+    tr = language == "tr"
+    labels = dict(detected="Tespit edilen durum" if tr else "Detected condition",
+                  change="Önerilen değişiklik" if tr else "Suggested change",
+                  why="Neden faydalı olabilir?" if tr else "Why it may help",
+                  risks="Olası yan etkiler" if tr else "Possible side effects",
+                  steps="Uygulama adımları" if tr else "Manual steps",
+                  verification="Yeniden ölçme ve doğrulama" if tr else "Remeasurement and verification",
+                  evidence="Kaynak kanıtları" if tr else "Source evidence",
+                  missing="Eksik veya uygun olmayan kanıt" if tr else "Missing or ineligible evidence",
+                  gates="Engelleyen koşullar" if tr else "Blocking conditions",
+                  original="Mevcut kural ve plan" if tr else "Existing rule and plan")
+    states = dict(evidence_review="Kanıt incelemesi" if tr else "Evidence review",
+                  measurement_request="Ölçüm ihtiyacı" if tr else "Measurement needed",
+                  conditional_experiment="Koşullu deney adayı" if tr else "Conditional experiment candidate")
+    summary = ("Manuel inceleme. Değişiklik uygulanmadı, ölçüm başlatılmadı. Kazanç ve öncelik sırası belirlenmedi."
+               if tr else "Manual review. No change applied or measurement started. Benefit and priority ranking are not established.")
+    parts = ["<p>" + summary + "</p>"] if as_html else ["", summary, ""]
+    records = {(s["side"], r["record_id"]): r for s in view["sources"] for r in s["report"]["index"]["records"]}
+
+    def paragraph(label, value):
+        if as_html:
+            parts.append("<p><strong>" + label + "</strong> " + _escape(value, words) + "</p>")
+        else:
+            parts.extend(["", "**" + label + "** " + _md(value, words), ""])
+
+    for area in view["areas"]:
+        cards = [c for c in view["recommendations"] if c["area"] == area["area"]]
+        if not cards:
+            continue
+        parts.append("<h3>" + _escape(area["label"], words) + "</h3>" if as_html else "### " + _md(area["label"], words))
+        for card in cards:
+            # Presentation JSON is inspectable, not an authenticity certificate.
+            # Restrict anchors before using them in HTML or Markdown attributes.
+            card = dict(card)
+            for key in ("recommendation_anchor", "evidence_anchor", "verification_anchor"):
+                value = card[key]
+                if type(value) is not str or not value or len(value) > 256 or any(c not in "abcdefghijklmnopqrstuvwxyz0123456789-" for c in value):
+                    from .report import ReportError
+                    raise ReportError("invalid_recommendation_anchor")
+            anchor = card["recommendation_anchor"]
+            if as_html:
+                parts.append("<article id='" + anchor + "'><h4>" + _escape(card["title"], words) + "</h4>")
+            else:
+                parts.extend(["", '<a id="' + anchor + '"></a>', "", "#### " + _md(card["title"], words), ""])
+            paragraph(words["status"], states[card["action_kind"]] + " · " + card["side"])
+            for key in ("detected", "change", "why", "risks"):
+                paragraph(labels[key], card[key])
+            if as_html:
+                parts.append("<p><a href='#" + card["evidence_anchor"] + "'>" + labels["evidence"] + "</a> · <a href='#" +
+                             card["verification_anchor"] + "'>" + labels["verification"] + "</a></p>")
+            else:
+                parts.extend(["[" + labels["evidence"] + "](#" + card["evidence_anchor"] + ") · [" +
+                              labels["verification"] + "](#" + card["verification_anchor"] + ")", ""])
+            for key in ("steps", "verification"):
+                aid = card["verification_anchor"] if key == "verification" else anchor + "-steps"
+                if as_html:
+                    parts.extend(["<div id='" + aid + "'><h5>" + labels[key] + "</h5><ol>",
+                                  *["<li>" + _escape(step, words) + "</li>" for step in card[key]], "</ol></div>"])
+                else:
+                    parts.extend(['<a id="' + aid + '"></a>', "", "**" + labels[key] + "**", "",
+                                  *[str(i) + ". " + _md(step, words) for i, step in enumerate(card[key], 1)], ""])
+            if card["blocked_by"]:
+                paragraph(labels["gates"], card["blocked_by"])
+            paragraph(labels["missing"], card["missing_evidence"])
+            evidence = dict(references=card["evidence"], coverage=card["coverage"],
+                            records=[records[(card["side"], rid)] for rid in card["retained_record_ids"]])
+            if as_html:
+                parts.append("<details id='" + card["evidence_anchor"] + "'><summary>" + labels["evidence"] + "</summary>")
+            else:
+                parts.extend(['<a id="' + card["evidence_anchor"] + '"></a>', "", "**" + labels["evidence"] + "**", ""])
+            for metric in card["observations"]:
+                paragraph(metric["label"], str(metric["value"]) + " " + metric["reference"]["unit"])
+                paragraph(words["definition"], metric["description"])
+            raw = json.dumps(evidence, ensure_ascii=False, indent=2)
+            if as_html:
+                parts.extend(["<pre>" + _escape(raw, words) + "</pre></details>",
+                              "<details><summary>" + labels["original"] + "</summary><pre>" +
+                              _escape(json.dumps(dict(rule_id=card["rule_id"], rule_version=card["rule_version"],
+                                                     finding=card["original_finding"], plan=card["plan"]), ensure_ascii=False, indent=2), words) + "</pre></details></article>"])
+            else:
+                parts.extend(["```json", raw.replace("`", "\\u0060"), "```", ""])
+                paragraph(labels["original"], dict(rule_id=card["rule_id"], rule_version=card["rule_version"],
+                                                  finding=card["original_finding"], plan=card["plan"]))
+    if view["comparison"] is not None:
+        paragraph("Comparability", view["comparison"]["metrics"])
+    return "".join(parts) if as_html else parts
+
+
 def _experiment_html(experiment, words, language, level):
     if experiment is None:
         return ""
@@ -217,10 +310,11 @@ def html_report(data):
         if source.get("execution"):
             rows = [[r["model_id"], r["feature_id"], _status(r["status"], language), r["reasons"]] for r in source["execution"]["features"]]
             parts += ["<h3>" + words["execution"] + "</h3>", _table(["Model", "P", words["status"], words["reason"]], rows, words)]
-        parts.append("<h3>" + words["metrics"] + "</h3>")
+        if not source.get("recommendations"):
+            parts.append("<h3>" + words["metrics"] + "</h3>")
         if source["metrics"]:
             parts.append(_table([words["metric"], words["value"], words["unit"], words["status"], "Domain"], _metric_rows(source, words, language), words))
-        else:
+        elif not source.get("recommendations"):
             parts.append("<p>" + words["empty"] + "</p>")
         for metric in source["metrics"]:
             parts += ["<details class='metric-note'><summary>" + _escape(metric["label"], words) + "</summary><p>" + _escape(metric["description"], words) + "</p>",
@@ -234,6 +328,7 @@ def html_report(data):
         for chart in source["charts"]:
             parts += ["<figure>" + _svg(chart, words) + "<figcaption>" + _escape(chart["domain"], words) + " · " + words["chart_data"] + "</figcaption>",
                       "<details><summary>" + words["protocol"] + "</summary><pre>" + _escape(chart["scope"], words) + "</pre></details></figure>"]
+        parts.append(_recommendations(source, words, language, as_html=True))
         actions = _actions(source)
         if actions:
             parts.append("<div id='advisor-" + identity + "'><h3>" + words["advisor"] + "</h3>")
@@ -277,7 +372,8 @@ def markdown(data):
                 info = catalog[feature["feature_id"]]
                 lines.append("| " + feature["feature_id"] + " | " + _status(feature["status"], language) + " | " + _md(info["explanations"][data["level"]] + " " + feature["reason"], words) + " |")
             lines.append("")
-        lines += ["| " + " | ".join([words["metric"], words["value"], words["unit"], words["status"], "Domain"]) + " |", "|---|---:|---|---|---|"]
+        if not source.get("recommendations"):
+            lines += ["| " + " | ".join([words["metric"], words["value"], words["unit"], words["status"], "Domain"]) + " |", "|---|---:|---|---|---|"]
         for row in _metric_rows(source, words, language):
             lines.append("| " + " | ".join(_md(value, words) for value in row) + " |")
         for metric in source["metrics"]:
@@ -290,6 +386,7 @@ def markdown(data):
                 lines += ["", "[" + words["guidance"] + "](" + _fragment(link) + ")"]
         for chart in source["charts"]:
             lines += ["", "### " + _md(chart["title"], words), "", words["chart_data"], "", _md(chart["scope"], words)]
+        lines.extend(_recommendations(source, words, language, as_html=False))
         actions = _actions(source)
         if actions:
             lines += ["", '<a id="advisor-' + source["source_id"] + '"></a>', "", "### " + words["advisor"], ""]

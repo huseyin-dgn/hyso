@@ -11,7 +11,7 @@
 | Analysis | from hyso import analysis | EvidenceIndex, UnifiedAnalysisReport, FeaturePlanRequest, plan_features |
 | Selective execution | from hyso import analysis | feature_catalog, plan_analysis, preflight_analysis, execute_analysis |
 | Two-model comparison | from hyso import analysis | ModelComparisonSource, compare_models, ModelComparisonResult |
-| Advisor | from hyso import advisor | advise, to_display_dict/json, to_markdown |
+| Advisor | from hyso import advisor | advise, to_display_dict/json, to_markdown; recommend, RecommendationReport.to_json/to_markdown/to_html |
 | Experiments | from hyso import ExperimentManager | hyso.experiments.manager; run/metric/artifact persistence |
 | Experiment history | from hyso.experiments import ExperimentRun | create_workflow_run, list_experiments, get_experiment_history, get_run_details, record_result, open_result |
 | Result reporting | from hyso import reporting | create_report, report_experiment, feature_explanations; PresentationReport.to_json/to_markdown/to_html |
@@ -107,3 +107,11 @@ snapshots and metrics. Result artifacts use schema2 after explicit offline migra
 comparison and experiment history in bilingual beginner/technical/expert views.
 The presentation contract preserves source units and eligibility statuses and
 exports portable HTML with embedded charts alongside JSON and Markdown.
+
+[Performance Advisor](performance-advisor.md) adds read-only `recommend(source,
+request=None, *, context=None)`. Existing `advise` decisions remain unchanged.
+`RecommendationReport` retains native sources, original plans, six recommendation
+areas, missing evidence and manual verification steps. Use `to_display_dict` or
+the Stage 8 exports with `language="tr"/"en"` and
+`level="beginner"/"technical"/"expert"`. Reopening JSON rederives recommendations
+without running a workload. It does not reread external artifact files.

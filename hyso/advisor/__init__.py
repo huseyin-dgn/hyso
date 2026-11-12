@@ -13,6 +13,7 @@ from .engine import advise, validate_advisor_report
 from .presentation import build_display_model, to_display_dict, to_display_json, to_markdown
 from .goals import evaluate_goal, evaluate_goals, goal_context
 from .planning import DecisionPlan, PlannedFinding
+from .recommendations import RecommendationReport, recommend
 from .comparison import (ComparisonContract, P26QualityComparisonContract, P26BoundQualityComparisonContract,
                          ComparisonReason, ComparisonResult, ComparisonStatus, compare_records)
 from .performance import MetricDifference, PerformanceComparison, compare_performance
@@ -30,6 +31,7 @@ __all__ = [
     'NativeObservation',
     'evaluate_goal', 'evaluate_goals', 'goal_context',
     'DecisionPlan', 'PlannedFinding',
+    'RecommendationReport', 'recommend',
     'ComparisonContract', 'ComparisonReason', 'ComparisonResult', 'ComparisonStatus', 'compare_records',
     'P26QualityComparisonContract',
     'P26BoundQualityComparisonContract',

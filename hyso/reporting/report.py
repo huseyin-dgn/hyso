@@ -214,6 +214,12 @@ def _advisor_section(report, language, level):
 
 
 def _source(result, context, language, level, catalog):
+    from ..advisor.recommendations import RecommendationReport
+    if type(result) is RecommendationReport:
+        view = result.to_display_dict(language=language, level=level)
+        return dict(kind="recommendations", title=_text(language, "Performance Advisor önerileri", "Performance Advisor recommendations"),
+                    raw=result.to_dict(), metrics=[], charts=[], features=[], advisor=None,
+                    recommendations=view, limits=view["limitations"])
     if type(result) is TrainingResult:
         return _training_section(result, language, level)
     if type(result) is ModelComparisonResult:
@@ -307,6 +313,7 @@ def create_report(*results: Any, language: str = "tr", level: str = "technical",
     """Present retained Training/Analysis/Comparison/Advisor results without execution.
 
     EvidenceIndex and AnalysisExecutionResult require an explicit AnalysisContext.
+    RecommendationReport adds manual recommendations and native evidence links.
     Levels are beginner, technical, expert. Missing values keep their source statuses.
     """
     _options(language, level)
@@ -327,6 +334,16 @@ def create_report(*results: Any, language: str = "tr", level: str = "technical",
             for metric in section["metrics"]:
                 metric["recommendation_links"].append("#advisor-" + identity)
         sources.append(section)
+    # Explicit recommendation sources add links to their exact retained records.
+    # Existing presentation output is unchanged when no such source is supplied.
+    links = {}
+    for section in sources:
+        for card in section.get("recommendations", {}).get("recommendations", []):
+            for record_id in card["retained_record_ids"]:
+                links.setdefault(record_id, set()).add("#" + card["recommendation_anchor"])
+    for section in sources:
+        for metric in section["metrics"]:
+            metric["recommendation_links"].extend(sorted(links.get(metric["record_id"], ())))
     body = dict(format="hyso.presentation_report", schema_version=1, presentation_only=True,
                 authoritative_evidence=False, language=language, level=level, title=title,
                 catalog=metadata, sources=sources, experiment=None)
