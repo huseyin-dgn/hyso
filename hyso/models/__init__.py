@@ -11,3 +11,7 @@ from .builder import ModelBuilder as ModelBuilder
 
 # Frozen legacy wildcard contract. New components use explicit named imports.
 __all__ = ["EBO", "ELO", "CEMO", "EMA", "CNNSENormalWithFit"]
+
+from .architectures import ResNet, PreActResNet, WideResNet, ResNeXt, DenseNet
+from .m3_residual import BasicResidualBlock, Bottleneck, PreActivationBlock, WideResidualBlock, ResNeXtBottleneck
+from .m3_attention import SimAM, TripletAttention, SelectiveKernelAttention

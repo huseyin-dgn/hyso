@@ -34,7 +34,7 @@ def run(args):
         data = dict(valid=True, architecture=config, weights_included=False, trained_checkpoint=False,
                     model_constructed=False)
         if args.action == 'summary':
-            data['summary'] = dict(kind=config['kind'], input_shape=config.get('input_shape'),
+            data['summary'] = dict(kind=config['kind'], family=config.get('name'), options=config.get('params',{}), input_shape=config.get('input_shape'),
                 num_classes=config.get('num_classes', config.get('params', {}).get('num_classes')),
                 block_count=len(config['blocks']) if 'blocks' in config else None,
                 blocks=[b['name'] for b in config.get('blocks', [])],

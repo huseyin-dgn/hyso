@@ -16,11 +16,11 @@ def builder():
 
 def test_catalog_is_real_immutable_and_plain_metadata():
     r = ModelRegistry()
-    assert len(r.list()) == 14
+    assert len(r.list()) == 27
     assert r.get('conv_norm_act').constructor is ConvNormAct
     assert r.get('residual').constructor is ResidualBlock
     assert r.get('modular_cnn').constructor is ModularCNN
-    assert [s.name for s in r.list('attention')] == ['se','cbam','eca','coordinate']
+    assert [s.name for s in r.list('attention')] == ['se','cbam','eca','coordinate','simam','triplet','selective_kernel']
     for spec in r.list():
         assert spec.input_condition and spec.output_condition and spec.compatibility
         assert json.loads(json.dumps(spec.to_dict()))['name'] == spec.name

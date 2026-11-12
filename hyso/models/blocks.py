@@ -76,7 +76,7 @@ class ResidualBlock(nn.Module):
     is ceil(H/stride_h), ceil(W/stride_w) on both paths.
 
     attention accepts None, nn.Identity, SEBlock, CBAMBlock, ECAAttention or
-    CoordinateAttention with out_channels channels. The supplied instance is registered, never
+    CoordinateAttention, SimAM, TripletAttention or SelectiveKernelAttention with out_channels channels. The supplied instance is registered, never
     copied or recreated in forward. Sharing that instance between blocks shares
     weights and is the caller's responsibility; use separate instances for
     independent attention. No stochastic depth or training API is included.
@@ -88,11 +88,12 @@ class ResidualBlock(nn.Module):
         _positive_int(in_channels, "in_channels")
         _positive_int(out_channels, "out_channels")
         stride = _pair(stride, "stride")
+        from .m3_attention import SimAM, TripletAttention, SelectiveKernelAttention
         if attention is not None:
-            if type(attention) not in (nn.Identity, SEBlock, CBAMBlock, ECAAttention, CoordinateAttention):
+            if type(attention) not in (SimAM, TripletAttention, SelectiveKernelAttention, nn.Identity, SEBlock, CBAMBlock, ECAAttention, CoordinateAttention):
                 raise TypeError("attention must be None, nn.Identity, SEBlock, CBAMBlock, "
-                                "ECAAttention or CoordinateAttention")
-            if type(attention) in (ECAAttention, CoordinateAttention) and attention.channels != out_channels:
+                                "ECAAttention, CoordinateAttention, SimAM, TripletAttention or SelectiveKernelAttention")
+            if type(attention) in (SimAM, TripletAttention, SelectiveKernelAttention, ECAAttention, CoordinateAttention) and attention.channels != out_channels:
                 raise ValueError("attention channels must match out_channels")
             if type(attention) in (SEBlock, CBAMBlock):
                 if (attention.fc1.in_features != out_channels

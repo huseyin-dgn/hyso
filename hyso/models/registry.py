@@ -17,6 +17,9 @@ from .blocks import ConvNormAct, ResidualBlock
 from .bcam import CBAMBlock
 from .WithSE import SEBlock
 from .attention import ECAAttention, CoordinateAttention
+from .m3_attention import SimAM, TripletAttention, SelectiveKernelAttention
+from .m3_residual import BasicResidualBlock, Bottleneck, PreActivationBlock, WideResidualBlock, ResNeXtBottleneck
+from .architectures import ResNet, PreActResNet, WideResNet, ResNeXt, DenseNet, validate_family
 from .modular import ModularCNN
 
 
@@ -127,6 +130,25 @@ _SPECS = (
       _p('attention', 'choice', 'none', ('none', 'se', 'cbam', 'eca', 'coordinate')), _NORM)),
 )
 
+
+_M3_NORM = _p('norm', 'choice', 'batch', ('batch', 'group', None), 'M3 normalization; group uses gcd(8, channels).')
+_SPECS += (
+ ('simam','attention','Parameter-free spatial energy gates; singleton variance is zero.',SimAM,(_CHANNELS,_p('epsilon','positive_float',1e-4))),
+ ('triplet','attention','Convolutional rotated-axis Triplet Attention with BN.',TripletAttention,(_CHANNELS,_p('kernel_size','odd_int',7),_p('spatial','bool',True))),
+ ('selective_kernel','attention','Dilated branch fusion with per-channel branch softmax.',SelectiveKernelAttention,(_CHANNELS,_p('branches',default=2),_p('groups',default=1),_p('reduction',default=16),_p('minimum',default=32))),
+ *tuple((name,'residual',ctor.__doc__,ctor,(_IN,_OUT,_p('stride',default=1),_M3_NORM)+opts) for name,ctor,opts in (
+  ('basic_residual',BasicResidualBlock,()),('bottleneck',Bottleneck,(_p('groups',default=1),_p('width_per_group',default=64))),
+  ('preactivation',PreActivationBlock,(_p('bottleneck','bool',False),_p('dropout','probability',0.))),
+  ('wide_residual',WideResidualBlock,(_p('dropout','probability',0.),)),
+  ('resnext_bottleneck',ResNeXtBottleneck,(_p('groups',default=32),_p('width_per_group',default=4))))),
+ *tuple((name,'model',ctor.__doc__,ctor,(_p('depth',default=depth),_p('input_channels',default=3),_p('num_classes',default=classes))+opts)
+  for name,ctor,depth,classes,opts in (
+   ('resnet',ResNet,18,1000,(_M3_NORM,)),('preact_resnet',PreActResNet,18,1000,(_p('base_channels',default=64),_M3_NORM)),
+   ('wide_resnet',WideResNet,28,10,(_p('widen_factor',default=10),_p('dropout','probability',0.),_M3_NORM)),
+   ('resnext',ResNeXt,50,1000,(_p('groups',default=32),_p('width_per_group',default=4),_M3_NORM)),
+   ('densenet',DenseNet,121,1000,(_p('growth_rate',default=32),_p('dropout','probability',0.)))))
+)
+
 _IO = {
     'convolution': ('Floating [N,in_channels,H,W]; groups divides both channel counts.',
                     '[N,out_channels,floor((H+2*pH-kH)/sH)+1,floor((W+2*pW-kW)/sW)+1]; positive spatial output.'),
@@ -150,7 +172,8 @@ class ModelRegistry:
     constructs only existing classes on CPU, consuming normal constructor RNG.
     No device/dtype, arbitrary callable, import path or plugin is accepted in JSON.
     Integer dimensions are bounded to 8192; complete Builder models additionally
-    have an estimated 10-million-parameter limit. Native normalization retains
+    have an estimated 10-million-parameter limit for sequential chains; named
+    M3 families use a separate 200-million bound. Native normalization retains
     PyTorch's training batch/statistics requirements.
     """
 
@@ -158,7 +181,7 @@ class ModelRegistry:
         self._entries = MappingProxyType({name: ComponentSpec(
             name, category, description, ctor, params,
             _IO[category][0], _IO[category][1],
-            ('Existing canonical constructor; CPU construction only.',
+            (('Existing canonical constructor; CPU construction only.' if name in ('conv_norm_act','conv2d','residual','se','cbam','eca','coordinate','batch_norm','group_norm','relu','silu','hardswish','identity','modular_cnn') else 'Closed M3 constructor / torchvision adapter; CPU construction only.'),
              'Builder v1: linear connections; no external skip/concat/DAG.',
              'BatchNorm requires N*H*W>1 while training; GroupNorm requires valid group statistics.',
              'SE/CBAM keep max(1, channels//reduction); CBAM/ECA kernels must be odd.',
@@ -202,6 +225,8 @@ class ModelRegistry:
                 if valid: v = values
             elif kind == 'int_list':
                 valid = type(v) is list and 1 <= len(v) <= 16 and all(type(x) is int and 1 <= x <= 8192 for x in v)
+            elif kind in ('positive_float', 'probability'):
+                valid = type(v) in (int,float) and abs(v)<=1e308 and math.isfinite(v) and (v>0 if kind=='positive_float' else 0<=v<1)
             elif kind == 'bool': valid = type(v) is bool
             elif kind == 'choice': valid = (type(v) is str or v is None) and v in field.choices
             elif kind == 'attention':
@@ -225,6 +250,17 @@ class ModelRegistry:
         if name == 'modular_cnn':
             if len({len(result[k]) for k in ('widths', 'repeats', 'strides')}) != 1 or sum(result['repeats']) > 64:
                 raise ModelConfigError('ModularCNN stage lengths must match; at most 64 total blocks')
+        if name in ('resnet','preact_resnet','wide_resnet','resnext','densenet'):
+            try: validate_family(name,result)
+            except ValueError as exc: raise ModelConfigError(str(exc)) from exc
+        if name in ('basic_residual','bottleneck','preactivation','wide_residual','resnext_bottleneck'):
+            if result['stride'] not in (1,2): raise ModelConfigError('residual stride must be 1 or 2')
+            if (name in ('bottleneck','resnext_bottleneck') or result.get('bottleneck')) and result['out_channels']%4:
+                raise ModelConfigError('expanded output channels must be divisible by 4')
+            if name in ('bottleneck','resnext_bottleneck') and int(result['out_channels']/4*result['width_per_group']/64)<1:
+                raise ModelConfigError('bottleneck inner width must be positive')
+        if name=='selective_kernel' and (not 2<=result['branches']<=4 or result['channels']%result['groups']):
+            raise ModelConfigError('SK branches must be 2..4; groups must divide channels')
         return result
 
     def create(self, name: str, **params: Any) -> nn.Module:

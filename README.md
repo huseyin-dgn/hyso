@@ -29,6 +29,12 @@ long runs. Retained reports and comparisons never start new measurements.
 See the [CLI guide](docs/guides/cli.md) and [working offline examples](examples/cli/README.md)
 for source/factory contracts, exit codes, JSON output and no-clobber exports.
 
+M3 adds configurable ResNet, PreActResNet, WideResNet, ResNeXt and DenseNet
+families, residual blocks and SimAM/Triplet/Selective Kernel attention. See
+[model architectures](docs/guides/model-architectures.md) and
+[CPU model examples](examples/models/README.md) for exact topology, Builder JSON
+and state_dict boundaries. `hyso models show resnet` describes its parameters.
+
 ```python
 from hyso import ModularCNN, Trainer, BenchmarkRunner, ExperimentManager
 from hyso import performance, analysis, advisor

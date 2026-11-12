@@ -9,6 +9,7 @@ with HYSo installed in the selected Python environment.
 | `reporting/` | Retained result exports and existing experiment history |
 | `advisor/` | Manual recommendations from retained analysis/comparison evidence |
 | `analysis/` | Typed native CPU/preflight, retained artifacts, training and ORT analysis, comparisons |
+| `models/` | M3 residual/dense families, attention, custom Builder CNN, short CPU training and state_dict |
 
 Future model construction, training and analysis examples belong in separate
 workflow directories when their executable scripts and tests are added. The

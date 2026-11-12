@@ -20,6 +20,17 @@ _MAX_PARAMETERS = 10_000_000
 
 def _cost(name, p):
     """Conservative parameter bound, computed before any tensor allocation."""
+    if name in ('basic_residual','bottleneck','preactivation','wide_residual','resnext_bottleneck'):
+        a,b=p['in_channels'],p['out_channels']
+        expanded=name in ('bottleneck','resnext_bottleneck') or p.get('bottleneck',False)
+        groups=p.get('groups',1);inner=int(b/4*p.get('width_per_group',64)/64)*groups if expanded else b
+        main=a*inner+9*inner*inner//groups+inner*b if expanded else 9*a*b+9*b*b
+        return main+a*b+4*(a+b+inner)
+    if name=='simam': return 0
+    if name=='triplet': return 3*(2*p['kernel_size']**2+2)
+    if name=='selective_kernel':
+        c=p['channels'];h=max(p['minimum'],c//p['reduction']);m=p['branches']
+        return m*(9*c*c//p['groups']+2*c)+(c+1)*h+m*(h+1)*c
     if name in ('conv2d', 'conv_norm_act'):
         k = p['kernel_size']
         return p['in_channels']*p['out_channels']*k[0]*k[1]//p['groups'] + 3*p['out_channels']
@@ -47,6 +58,8 @@ def _shape(name, p, shape):
         k, s, pad = p['kernel_size'], p['stride'], p['padding']
         h, w = ((v + 2*padding - kernel)//stride + 1 for v, padding, kernel, stride in zip((h,w),pad,k,s))
         c = p['out_channels']
+    elif name in ('basic_residual','bottleneck','preactivation','wide_residual','resnext_bottleneck'):
+        h,w=((v+p['stride']-1)//p['stride'] for v in (h,w));c=p['out_channels']
     elif name == 'residual':
         h, w = ((v+s-1)//s for v,s in zip((h,w),p['stride']))
         c = p['out_channels']
@@ -111,7 +124,8 @@ class ModelBuilder:
     ``add(name, **params)`` validates the whole proposed chain before changing
     this builder. Only linear connections are supported; the existing residual
     block alone owns its internal skip/projection. At most 64 blocks and a
-    conservative 10-million-parameter estimate are allowed. ``build`` allocates
+    conservative 10-million-parameter estimate are allowed for sequential chains.
+    Named M3 families use a separate conservative 200-million parameter bound. ``build`` allocates
     fresh CPU weights; call .to(device/dtype) explicitly afterwards. Arbitrary
     user nn.Module objects remain usable directly with Trainer/BenchmarkRunner.
     """
@@ -126,6 +140,11 @@ class ModelBuilder:
         if type(c) is not dict or c.get('format') != 'hyso.model_config' or type(c.get('schema_version')) is not int or c['schema_version'] != 1:
             raise ModelConfigError('unsupported model configuration format/version')
         reg = ModelRegistry()
+        if c.get('kind') == 'registered_model':
+            if set(c)!={'format','schema_version','kind','name','params'} or c['name'] not in ('resnet','preact_resnet','wide_resnet','resnext','densenet'):
+                raise ModelConfigError('unknown/missing registered_model family fields')
+            c['params']=reg.validate(c['name'],c['params'])
+            return c, ()
         if c.get('kind') == 'modular_cnn':
             if set(c) != {'format','schema_version','kind','params'}:
                 raise ModelConfigError('unknown/missing ModularCNN configuration fields')
@@ -168,6 +187,11 @@ class ModelBuilder:
         return c, tuple(shape)
 
     @classmethod
+    def named(cls, name: str, **params: Any) -> ModelBuilder:
+        """Describe a closed M3 family; validation allocates no model or weights."""
+        return cls.from_config(dict(format='hyso.model_config',schema_version=1,kind='registered_model',name=name,params=params))
+
+    @classmethod
     def modular(cls, **params: Any) -> ModelBuilder:
         """Describe the original ModularCNN; build() returns exactly that class."""
         return cls.from_config(dict(format='hyso.model_config', schema_version=1,kind='modular_cnn',params=params))
@@ -187,7 +211,7 @@ class ModelBuilder:
     def add(self, name: str, **params: Any) -> ModelBuilder:
         """Append a registered block transactionally; return self for chaining."""
         if self._config['kind'] != 'sequential_classifier':
-            raise ModelConfigError('add is unavailable for the fixed ModularCNN profile')
+            raise ModelConfigError('add is unavailable for fixed complete-model profiles')
         candidate = self.to_config()
         candidate['blocks'].append(dict(name=name,params=params))
         self._config, _ = self._validate(candidate)
@@ -198,6 +222,8 @@ class ModelBuilder:
         config, shape = self._validate(self._config)
         reg = ModelRegistry()
         with torch.device('cpu'):
+            if config['kind'] == 'registered_model':
+                return reg.create(config['name'],**config['params'])
             if config['kind'] == 'modular_cnn':
                 return reg.create('modular_cnn',**config['params'])
             blocks = [reg.create(b['name'],**b['params']) for b in config['blocks']]
