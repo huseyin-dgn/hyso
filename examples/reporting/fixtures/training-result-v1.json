@@ -1,0 +1,75 @@
+{
+  "format": "hyso.training_session_result",
+  "schema_version": 1,
+  "settings": {
+    "state": "completed",
+    "requested": {
+      "accum_steps": 1,
+      "batch_size": 2,
+      "device": "cpu",
+      "drop_last": false,
+      "early_stopping": null,
+      "ema_decay": null,
+      "epochs": 3,
+      "format": "hyso.training_config",
+      "grad_clip": null,
+      "learning_rate": 0.001,
+      "num_workers": 0,
+      "optimizer": "adamw",
+      "optimizer_params": null,
+      "precision": "fp32",
+      "resume_from": null,
+      "save_last_to": null,
+      "scheduler": null,
+      "scheduler_params": null,
+      "schema_version": 1,
+      "shuffle": false,
+      "task": "multiclass",
+      "validation": true
+    },
+    "effective": {
+      "device": "cpu",
+      "precision": "fp32"
+    }
+  },
+  "history": {
+    "train_loss": [
+      0.9,
+      0.6,
+      0.4
+    ],
+    "val_loss": [
+      0.95,
+      0.7,
+      0.65
+    ],
+    "train_acc": [
+      50.0,
+      65.0,
+      80.0
+    ],
+    "val_acc": [
+      50.0,
+      60.0,
+      65.0
+    ]
+  },
+  "completed_history_epochs": 3,
+  "applied_updates": 6,
+  "epoch_events": [
+    {
+      "epoch": 1,
+      "interval_seconds": 0.12
+    },
+    {
+      "epoch": 2,
+      "interval_seconds": 0.11
+    },
+    {
+      "epoch": 3,
+      "interval_seconds": 0.1
+    }
+  ],
+  "history_scope": "synthetic retained history for a reporting example",
+  "fixture_scope": "Sentetik raporlama fixture verisi / Synthetic reporting fixture data. No training was performed."
+}

@@ -27,6 +27,7 @@ if _TYPE_CHECKING:
     from .experiments import ExperimentManager as ExperimentManager
     from . import training as training, benchmark as benchmark, performance as performance
     from . import analysis as analysis, advisor as advisor, experiments as experiments
+    from . import reporting as reporting
 
 _LAZY_EXPORTS = {
     'TrainingConfig': ('.training', 'TrainingConfig'),
@@ -41,7 +42,7 @@ _LAZY_EXPORTS = {
     'BenchmarkRunner': ('.benchmark', 'BenchmarkRunner'),
     'ExperimentManager': ('.experiments', 'ExperimentManager'),
     **{name: ('.' + name, None) for name in
-       ('training', 'benchmark', 'performance', 'analysis', 'advisor', 'experiments')},
+       ('training', 'benchmark', 'performance', 'analysis', 'advisor', 'experiments', 'reporting')},
 }
 
 

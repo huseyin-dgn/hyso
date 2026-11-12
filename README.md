@@ -218,6 +218,28 @@ Full result artifacts require schema2 through the existing explicit offline migr
 See [experiment history integration](docs/guides/experiment-workflow.md) for recording,
 filtering, reopening, artifact availability and recovery.
 
+Export retained results with shared Turkish/English explanations and embedded charts:
+
+```python
+def export_saved_results(output_dir, *saved_results):
+    from pathlib import Path
+    from hyso.reporting import create_report
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    report = create_report(*saved_results, language="tr", level="technical")
+    report.to_json(output_dir / "report.json")
+    report.to_markdown(output_dir / "report.md")
+    report.to_html(output_dir / "report.html")
+    return report
+```
+
+Explanation levels are `beginner`, `technical` and `expert`. HTML includes
+portable SVG charts when retained numerical data is available. Training,
+UnifiedAnalysisReport, model comparison and Advisor results share the presentation
+contract. Experiment histories use `report_experiment(manager, experiment_id)`.
+See [result reporting](docs/guides/result-reporting.md) and the
+[executable reporting examples](examples/README.md).
+
 Use `help(Trainer)`, `help(Trainer.fit)`, `help(TrainingConfig)`, `help(ModularCNN)` and `help(BenchmarkRunner)`
 for parameters and return values. `py.typed` enables inline typing discovery;
 annotations remain incremental and heterogeneous metadata may use Any. Actual IDE

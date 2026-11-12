@@ -14,6 +14,7 @@
 | Advisor | from hyso import advisor | advise, to_display_dict/json, to_markdown |
 | Experiments | from hyso import ExperimentManager | hyso.experiments.manager; run/metric/artifact persistence |
 | Experiment history | from hyso.experiments import ExperimentRun | create_workflow_run, list_experiments, get_experiment_history, get_run_details, record_result, open_result |
+| Result reporting | from hyso import reporting | create_report, report_experiment, feature_explanations; PresentationReport.to_json/to_markdown/to_html |
 
 Root convenience aliases resolve on access to the original classes, not wrappers.
 Imports do not construct models or request execution. Existing deep imports remain
@@ -101,3 +102,8 @@ See [experiment history integration](experiment-workflow.md) to retain architect
 settings and existing results in the same experiment. Workflow entries use the current
 training/evaluation/benchmark run kinds and existing lifecycle states. schema1 supports
 snapshots and metrics. Result artifacts use schema2 after explicit offline migration.
+
+[Result reporting](result-reporting.md) unifies retained training, evidence, Advisor,
+comparison and experiment history in bilingual beginner/technical/expert views.
+The presentation contract preserves source units and eligibility statuses and
+exports portable HTML with embedded charts alongside JSON and Markdown.

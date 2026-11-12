@@ -17,6 +17,7 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = {
+    "hyso/reporting/__init__.py", "hyso/reporting/catalog.py", "hyso/reporting/report.py", "hyso/reporting/render.py",
     "hyso/experiments/workflow.py",
     "hyso/analysis/model_comparison.py", "hyso/advisor/model_comparison_presentation.py",
     "hyso/analysis/catalog.py", "hyso/analysis/execution.py", "hyso/analysis/_analysis_resources.py",
@@ -149,7 +150,7 @@ def distributions(tmp_path_factory):
 
 def test_canonical_packaging_configuration():
     assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == MODULES
-    assert len(MODULES) == 132
+    assert len(MODULES) == 136
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
     assert not (ROOT / "hyso/setup.cfg").exists()
