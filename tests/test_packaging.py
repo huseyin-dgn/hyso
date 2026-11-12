@@ -16,7 +16,7 @@ import pytest
 from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
-MODULES = {
+DEVELOPMENT_MODULES = {
     "hyso/models/m4_blocks.py", "hyso/models/m4_reparam.py", "hyso/models/m4_config.py",
     "hyso/models/mobile_architectures.py", "hyso/models/reparam_architectures.py", "hyso/models/m4_registry.py",
     "hyso/models/architectures.py", "hyso/models/m3_residual.py", "hyso/models/m3_attention.py",
@@ -119,9 +119,13 @@ MODULES = {
     "hyso/structure.py",
     "hyso/structure_comparison.py",
 }
+DEVELOPMENT_MODULES |= {'hyso/models/_profile.py', 'hyso/models/_development.py', 'hyso/models/regularization.py'}
+PROFILE = json.loads((ROOT / 'commercial-profile.json').read_text(encoding='utf-8'))
+MODULES = set(PROFILE['python_files'])
+
 DEPENDENCIES = {"torch", "torchvision", "numpy", "matplotlib", "seaborn",
                 "scikit-learn", "tqdm", "torchsummary"}
-CONFIG_FILES = ("pyproject.toml", "setup.cfg", "MANIFEST.in", "LICENSE", "THIRD_PARTY_NOTICES.md")
+CONFIG_FILES = ("pyproject.toml", "setup.cfg", "MANIFEST.in", "LICENSE", "THIRD_PARTY_NOTICES.md", "setup.py", "commercial-profile.json")
 
 
 def command(args, cwd):
@@ -138,7 +142,7 @@ def distributions(tmp_path_factory):
     work = tmp_path_factory.mktemp("packaging")
     stage = work / "source"
     stage.mkdir()
-    for name in (*CONFIG_FILES, *MODULES, "hyso/py.typed"):
+    for name in (*CONFIG_FILES, *DEVELOPMENT_MODULES, "hyso/py.typed"):
         target = stage / name
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / name, target)
@@ -158,8 +162,9 @@ def distributions(tmp_path_factory):
 
 
 def test_canonical_packaging_configuration():
-    assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == MODULES
-    assert len(MODULES) == 159
+    assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == DEVELOPMENT_MODULES
+    assert len(MODULES) == 152
+    assert MODULES.isdisjoint(PROFILE["excluded_python_files"])
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
     assert not (ROOT / "hyso/setup.cfg").exists()
@@ -170,7 +175,7 @@ def test_canonical_packaging_configuration():
     assert cfg["metadata"]["version"] == "0.2.0"
     assert cfg["options"]["python_requires"] == ">=3.10"
     assert cfg["options.packages.find"]["where"] == "."
-    for name in MODULES:
+    for name in DEVELOPMENT_MODULES:
         ast.parse((ROOT / name).read_text(encoding="utf-8-sig"), feature_version=(3, 10))
 
 
@@ -196,7 +201,7 @@ def test_wheel_and_sdist_content_and_metadata(distributions):
         names = {name.removeprefix("hyso-0.2.0/") for name in archive.getnames()}
         sdist_meta = email.message_from_bytes(archive.extractfile("hyso-0.2.0/PKG-INFO").read())
         sdist_requires = archive.extractfile("hyso-0.2.0/hyso.egg-info/requires.txt").read().decode().splitlines()
-        assert {name for name in names if name.endswith(".py")} == MODULES
+        assert {name for name in names if name.endswith(".py")} == MODULES | {"setup.py"}
         assert set(CONFIG_FILES) <= names
         assert archive.extractfile("hyso-0.2.0/hyso/py.typed").read() == (ROOT / "hyso/py.typed").read_bytes()
         # setuptools adds egg_info settings to the sdist's setup.cfg.
@@ -689,39 +694,26 @@ with torch.inference_mode(): assert built(torch.zeros(1, 1, 8, 8)).shape == (1, 
 model = ModularCNN(input_channels=1, num_classes=2, widths=(4,), repeats=(1,), strides=(1,), norm=None).eval()
 with torch.inference_mode(): assert model(torch.zeros(1, 1, 8, 8)).shape == (1, 2)
 from hyso.cli import main
-from hyso.models import reparameterize_model
+from hyso.models._profile import PROFILE
 from contextlib import redirect_stdout
-import io, json
-families = ('mobilenet_v2', 'mobilenet_v3', 'efficientnet_v2', 'ghostnet',
-            'shufflenet_v2', 'repvgg', 'mobileone')
-assert len(ModelRegistry().list()) == 44
+import io, json, importlib.util
+assert PROFILE == 'commercial'
+assert len(ModelRegistry().list()) == 16
 stream = io.StringIO()
 with redirect_stdout(stream):
     assert main(['models', 'list', '--json']) == 0
-assert all(name in stream.getvalue() for name in families)
-assert 'fasternet' not in stream.getvalue() and 'partial_conv' not in stream.getvalue()
-for name in families:
-    options = dict(input_channels=1, num_classes=3)
-    if name == 'shufflenet_v2':
-        options['variant'] = 'x0_5'
+assert 'conv_norm_act' in stream.getvalue() and 'dropblock2d' in stream.getvalue()
+for name in ('resnet','preact_resnet','wide_resnet','resnext','densenet','mobilenet_v2',
+             'mobilenet_v3','efficientnet_v2','ghostnet','shufflenet_v2','repvgg','mobileone','fasternet'):
+    try:
+        ModelBuilder.named(name)
+    except ValueError:
+        pass
     else:
-        options['width_mult'] = .125
-    if name in ('efficientnet_v2', 'repvgg', 'mobileone'):
-        options['depth_mult'] = .1
-    architecture = ModelBuilder.named(name, **options)
-    model = architecture.build().eval()
-    inputs = torch.zeros(2, 1, 32, 32)
-    with torch.inference_mode():
-        expected = model(inputs)
-        assert expected.shape == (2, 3) and torch.isfinite(expected).all()
-        if name in ('repvgg', 'mobileone'):
-            model = reparameterize_model(model)
-            torch.testing.assert_close(model(inputs), expected, atol=2e-6, rtol=2e-5)
-    config = json.loads(json.dumps(model.to_config()))
-    clone = ModelBuilder.from_config(config).build().eval()
-    clone.load_state_dict(model.state_dict(), strict=True)
-    with torch.inference_mode():
-        assert torch.equal(clone(inputs), model(inputs))
+        raise AssertionError('excluded family admitted: ' + name)
+for module in ('architectures','m3_residual','m3_attention','m4_blocks','m4_config',
+               'm4_registry','m4_reparam','mobile_architectures','reparam_architectures','_development'):
+    assert importlib.util.find_spec('hyso.models.'+module) is None
 for path in (target / 'hyso-0.2.0.dist-info').rglob('THIRD_PARTY_NOTICES.md'):
     assert 'Huawei' in path.read_text(encoding='utf-8')
     break
@@ -770,3 +762,41 @@ def test_installed_distribution_import_and_cpu_forward(distributions, kind):
     assert observed["experiment_snapshot"]["metric_count"] == 1
     assert {row["configuration"]["precision"] for row in observed["benchmarks"]} == {"fp32", "fp64"}
     (work / (kind + "-smoke.json")).write_text(json.dumps(observed), encoding="utf-8")
+
+
+# Historical development-package scenario retained outside the commercial smoke.
+DEVELOPMENT_M4_INSTALLED_SCENARIO = """
+from hyso.models import reparameterize_model
+from contextlib import redirect_stdout
+import io, json
+families = ('mobilenet_v2', 'mobilenet_v3', 'efficientnet_v2', 'ghostnet',
+            'shufflenet_v2', 'repvgg', 'mobileone')
+assert len(ModelRegistry().list()) == 44
+stream = io.StringIO()
+with redirect_stdout(stream):
+    assert main(['models', 'list', '--json']) == 0
+assert all(name in stream.getvalue() for name in families)
+assert 'fasternet' not in stream.getvalue() and 'partial_conv' not in stream.getvalue()
+for name in families:
+    options = dict(input_channels=1, num_classes=3)
+    if name == 'shufflenet_v2':
+        options['variant'] = 'x0_5'
+    else:
+        options['width_mult'] = .125
+    if name in ('efficientnet_v2', 'repvgg', 'mobileone'):
+        options['depth_mult'] = .1
+    architecture = ModelBuilder.named(name, **options)
+    model = architecture.build().eval()
+    inputs = torch.zeros(2, 1, 32, 32)
+    with torch.inference_mode():
+        expected = model(inputs)
+        assert expected.shape == (2, 3) and torch.isfinite(expected).all()
+        if name in ('repvgg', 'mobileone'):
+            model = reparameterize_model(model)
+            torch.testing.assert_close(model(inputs), expected, atol=2e-6, rtol=2e-5)
+    config = json.loads(json.dumps(model.to_config()))
+    clone = ModelBuilder.from_config(config).build().eval()
+    clone.load_state_dict(model.state_dict(), strict=True)
+    with torch.inference_mode():
+        assert torch.equal(clone(inputs), model(inputs))
+"""

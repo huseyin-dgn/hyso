@@ -12,11 +12,15 @@ from .builder import ModelBuilder as ModelBuilder
 # Frozen legacy wildcard contract. New components use explicit named imports.
 __all__ = ["EBO", "ELO", "CEMO", "EMA", "CNNSENormalWithFit"]
 
-from .architectures import ResNet, PreActResNet, WideResNet, ResNeXt, DenseNet
-from .m3_residual import BasicResidualBlock, Bottleneck, PreActivationBlock, WideResidualBlock, ResNeXtBottleneck
-from .m3_attention import SimAM, TripletAttention, SelectiveKernelAttention
+from .regularization import ChannelShuffle, DropBlock2D
+from ._profile import DEVELOPMENT
 
-from .mobile_architectures import MobileNetV2, MobileNetV3, EfficientNetV2, GhostNet, ShuffleNetV2
-from .reparam_architectures import RepVGG, MobileOne
-from .m4_blocks import InvertedResidual, MBConv, FusedMBConv, GhostConv, GhostBottleneck, ChannelShuffle, ShuffleUnit, DropBlock2D
-from .m4_reparam import RepVGGBlock, MobileOneBlock, reparameterize_model
+if DEVELOPMENT:
+    from .architectures import ResNet, PreActResNet, WideResNet, ResNeXt, DenseNet
+    from .m3_residual import BasicResidualBlock, Bottleneck, PreActivationBlock, WideResidualBlock, ResNeXtBottleneck
+    from .m3_attention import SimAM, TripletAttention, SelectiveKernelAttention
+
+    from .mobile_architectures import MobileNetV2, MobileNetV3, EfficientNetV2, GhostNet, ShuffleNetV2
+    from .reparam_architectures import RepVGG, MobileOne
+    from .m4_blocks import InvertedResidual, MBConv, FusedMBConv, GhostConv, GhostBottleneck, ChannelShuffle, ShuffleUnit, DropBlock2D
+    from .m4_reparam import RepVGGBlock, MobileOneBlock, reparameterize_model

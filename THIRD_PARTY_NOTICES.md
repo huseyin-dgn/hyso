@@ -1,10 +1,25 @@
-# Third-party notices for Stage 13
+# Third-party notices for HYSo source profiles
 
 HYSo-specific code remains covered by the root MIT license. The following notices govern the identified third-party material used or adapted for the Stage 13 models. Preserve this file when redistributing the source or binary distribution. No pretrained weights or datasets are included.
 
 The audit covers the identified Stage 13 sources and the installed torch 2.5.1 / torchvision 0.20.1 dependency versions. Dependency binaries retain their own complete transitive license inventories. This file does not certify every existing HYSo dependency or grant trademark or universal patent rights.
 
 FasterNet and PartialConv are excluded from the shipped implementation because their reviewed source/configuration licensing could not be established sufficiently for the requested policy.
+
+## Stage 13-R distribution scope
+
+The default wheel and sdist contain the explicit commercial source allowlist in
+commercial-profile.json. M3/M4 ready architectures and their dedicated modules
+are excluded. The checkout retains those development sources and their notices.
+The PyTorch and torchvision dependency notices remain applicable to shared
+operators and data transforms. The GhostNet, RepVGG and Apple sections below
+are retained for the development checkout and historical attribution. They do
+not identify implementations shipped in the commercial HYSo Python payload.
+
+ECA and Coordinate Attention in the shared core use HYSo module composition.
+Their upstream algorithm implementations are conservatively acknowledged below.
+Source-license review supplies no universal patent or commercial deployment
+clearance. Installed dependency binaries carry additional licenses and notices.
 
 ## pytorch/vision
 
@@ -1805,4 +1820,178 @@ SOFTWARE DISTRIBUTED WITH ML-MobileOne:
 The ML-MobileOne software includes a number of subcomponents with separate
 copyright notices and license terms - please see the file ACKNOWLEDGEMENTS.
 -------------------------------------------------------------------------------
+```
+
+## BangguWu/ECANet shared dependency or reference
+
+Reviewed revision `b332f6b3e6e2afe8a3287dc8ee8440a0fbec74c4`.
+
+Source [upstream license](https://github.com/BangguWu/ECANet/blob/b332f6b3e6e2afe8a3287dc8ee8440a0fbec74c4/LICENSE). SHA256 `c7f1d1c857a614565af01ef2a55f354cfef07cfbe4cf33d714e7d2b1073658ce`.
+
+```text
+MIT License
+
+Copyright (c) 2019 BangguWu, Qilong Wang 
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## houqb/CoordAttention shared dependency or reference
+
+Reviewed revision `7619bea9acbe260b3793833cc78cef3f124c8112`.
+
+Source [upstream license](https://github.com/houqb/CoordAttention/blob/7619bea9acbe260b3793833cc78cef3f124c8112/LICENSE). SHA256 `263948396d6a475a6f473644f223d1f78c499ae95dd89934db59fd7b62782e52`.
+
+```text
+MIT License
+
+Copyright (c) 2021 Qibin (Andrew) Hou
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## sksq96/pytorch-summary shared dependency or reference
+
+Reviewed revision `345d898d84507b848e92dab4629e03405e19afce`.
+
+Source [upstream license](https://github.com/sksq96/pytorch-summary/blob/345d898d84507b848e92dab4629e03405e19afce/LICENSE). SHA256 `ff9b34acb85ba0a7b8d53068ed89ca98ca78c507c31af153f6f27bb2aa935490`.
+
+```text
+MIT License
+
+Copyright (c) 2020 Shubham Chandel
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## tqdm dependency
+
+The separately installed tqdm distribution uses MPL-2.0 and MIT terms. Retain its complete LICENCE and applicable source obligations when redistributing or modifying that dependency. The dependency was not vendored into HYSo.
+
+```text
+`tqdm` is a product of collaborative work.
+Unless otherwise stated, all authors (see commit logs) retain copyright
+for their respective work, and release the work under the MIT licence
+(text below).
+
+Exceptions or notable authors are listed below
+in reverse chronological order:
+
+* files: *
+  MPL-2.0 2015-2024 (c) Casper da Costa-Luis
+  [casperdcl](https://github.com/casperdcl).
+* files: tqdm/_tqdm.py
+  MIT 2016 (c) [PR #96] on behalf of Google Inc.
+* files: tqdm/_tqdm.py README.rst .gitignore
+  MIT 2013 (c) Noam Yorav-Raphael, original author.
+
+[PR #96]: https://github.com/tqdm/tqdm/pull/96
+
+
+Mozilla Public Licence (MPL) v. 2.0 - Exhibit A
+-----------------------------------------------
+
+This Source Code Form is subject to the terms of the
+Mozilla Public License, v. 2.0.
+If a copy of the MPL was not distributed with this project,
+You can obtain one at https://mozilla.org/MPL/2.0/.
+
+
+MIT License (MIT)
+-----------------
+
+Copyright (c) 2013 noamraph
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+## Triplet Attention development-only reference
+
+This module is excluded from the commercial Python payload. Its source-reference notice is retained for the development checkout. [Pinned upstream license](https://github.com/landskape-ai/triplet-attention/blob/2cf02fb91196408ac6352f7984a0336aa4f7677a/LICENSE).
+
+```text
+MIT License
+
+Copyright (c) 2020 LandskapeAI
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ```

@@ -6,6 +6,9 @@ import os
 from pathlib import Path
 
 import pytest
+
+# Historical families remain available only in the development checkout profile.
+pytestmark = pytest.mark.development_profile
 import torch
 from torch import nn
 from torch.nn import functional as F

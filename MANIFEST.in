@@ -8,3 +8,16 @@ prune hyso/dist
 prune hyso/build
 prune hyso/hyso.egg-info
 global-exclude __pycache__ *.py[cod] *.pt *.pth *.ckpt
+
+include setup.py
+include commercial-profile.json
+exclude hyso/models/_development.py
+exclude hyso/models/architectures.py
+exclude hyso/models/m3_attention.py
+exclude hyso/models/m3_residual.py
+exclude hyso/models/m4_blocks.py
+exclude hyso/models/m4_config.py
+exclude hyso/models/m4_registry.py
+exclude hyso/models/m4_reparam.py
+exclude hyso/models/mobile_architectures.py
+exclude hyso/models/reparam_architectures.py

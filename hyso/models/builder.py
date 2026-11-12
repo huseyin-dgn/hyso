@@ -13,7 +13,12 @@ import torch
 from torch import nn
 
 from .registry import ModelConfigError, ModelRegistry, _plain
-from .m4_registry import M4_FAMILIES, M4_BLOCKS, block_cost, block_shape
+from ._profile import DEVELOPMENT
+
+M4_FAMILIES = ()
+M4_BLOCKS = ()
+if DEVELOPMENT:
+    from .m4_registry import M4_FAMILIES, M4_BLOCKS, block_cost, block_shape
 
 _MAX_BYTES = 2 * 1024**2
 _MAX_PARAMETERS = 10_000_000
@@ -150,7 +155,7 @@ class ModelBuilder:
             raise ModelConfigError('unsupported model configuration format/version')
         reg = ModelRegistry()
         if c.get('kind') == 'registered_model':
-            if set(c)!={'format','schema_version','kind','name','params'} or c['name'] not in ('resnet','preact_resnet','wide_resnet','resnext','densenet')+M4_FAMILIES:
+            if set(c)!={'format','schema_version','kind','name','params'} or c['name'] not in (('resnet','preact_resnet','wide_resnet','resnext','densenet')+M4_FAMILIES if DEVELOPMENT else ()):
                 raise ModelConfigError('unknown/missing registered_model family fields')
             c['params']=reg.validate(c['name'],c['params'])
             return c, ()

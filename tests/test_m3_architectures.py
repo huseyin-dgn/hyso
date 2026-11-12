@@ -4,6 +4,9 @@ import json
 import gc
 from pathlib import Path
 import pytest
+
+# Historical families remain available only in the development checkout profile.
+pytestmark = pytest.mark.development_profile
 import torch
 from torch import nn
 from hyso import ModelBuilder, ModelRegistry, TrainingConfig

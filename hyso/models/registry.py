@@ -17,10 +17,16 @@ from .blocks import ConvNormAct, ResidualBlock
 from .bcam import CBAMBlock
 from .WithSE import SEBlock
 from .attention import ECAAttention, CoordinateAttention
-from .m3_attention import SimAM, TripletAttention, SelectiveKernelAttention
-from .m3_residual import BasicResidualBlock, Bottleneck, PreActivationBlock, WideResidualBlock, ResNeXtBottleneck
-from .architectures import ResNet, PreActResNet, WideResNet, ResNeXt, DenseNet, validate_family
-from .m4_registry import specifications as mobile_specifications, M4_FAMILIES, M4_BLOCKS, validate_mobile, validate_block
+from ._profile import DEVELOPMENT
+from .regularization import ChannelShuffle, DropBlock2D
+
+M4_FAMILIES = ()
+M4_BLOCKS = ()
+if DEVELOPMENT:
+    from .m3_attention import SimAM, TripletAttention, SelectiveKernelAttention
+    from .m3_residual import BasicResidualBlock, Bottleneck, PreActivationBlock, WideResidualBlock, ResNeXtBottleneck
+    from .architectures import ResNet, PreActResNet, WideResNet, ResNeXt, DenseNet, validate_family
+    from .m4_registry import specifications as mobile_specifications, M4_FAMILIES, M4_BLOCKS, validate_mobile, validate_block
 from .modular import ModularCNN
 
 
@@ -132,25 +138,33 @@ _SPECS = (
 )
 
 
-_M3_NORM = _p('norm', 'choice', 'batch', ('batch', 'group', None), 'M3 normalization; group uses gcd(8, channels).')
 _SPECS += (
- ('simam','attention','Parameter-free spatial energy gates; singleton variance is zero.',SimAM,(_CHANNELS,_p('epsilon','positive_float',1e-4))),
- ('triplet','attention','Convolutional rotated-axis Triplet Attention with BN.',TripletAttention,(_CHANNELS,_p('kernel_size','odd_int',7),_p('spatial','bool',True))),
- ('selective_kernel','attention','Dilated branch fusion with per-channel branch softmax.',SelectiveKernelAttention,(_CHANNELS,_p('branches',default=2),_p('groups',default=1),_p('reduction',default=16),_p('minimum',default=32))),
- *tuple((name,'residual',ctor.__doc__,ctor,(_IN,_OUT,_p('stride',default=1),_M3_NORM)+opts) for name,ctor,opts in (
-  ('basic_residual',BasicResidualBlock,()),('bottleneck',Bottleneck,(_p('groups',default=1),_p('width_per_group',default=64))),
-  ('preactivation',PreActivationBlock,(_p('bottleneck','bool',False),_p('dropout','probability',0.))),
-  ('wide_residual',WideResidualBlock,(_p('dropout','probability',0.),)),
-  ('resnext_bottleneck',ResNeXtBottleneck,(_p('groups',default=32),_p('width_per_group',default=4))))),
- *tuple((name,'model',ctor.__doc__,ctor,(_p('depth',default=depth),_p('input_channels',default=3),_p('num_classes',default=classes))+opts)
-  for name,ctor,depth,classes,opts in (
-   ('resnet',ResNet,18,1000,(_M3_NORM,)),('preact_resnet',PreActResNet,18,1000,(_p('base_channels',default=64),_M3_NORM)),
-   ('wide_resnet',WideResNet,28,10,(_p('widen_factor',default=10),_p('dropout','probability',0.),_M3_NORM)),
-   ('resnext',ResNeXt,50,1000,(_p('groups',default=32),_p('width_per_group',default=4),_M3_NORM)),
-   ('densenet',DenseNet,121,1000,(_p('growth_rate',default=32),_p('dropout','probability',0.)))))
+    ('channel_shuffle', 'channel_mixing', ChannelShuffle.__doc__, ChannelShuffle,
+     (_CHANNELS, _p('groups', default=2))),
+    ('dropblock2d', 'regularization', DropBlock2D.__doc__, DropBlock2D,
+     (_p('p', 'probability_closed', .1), _p('block_size', default=3))),
 )
 
-_SPECS += mobile_specifications(_p)
+if DEVELOPMENT:
+    _M3_NORM = _p('norm', 'choice', 'batch', ('batch', 'group', None), 'M3 normalization; group uses gcd(8, channels).')
+    _SPECS += (
+     ('simam','attention','Parameter-free spatial energy gates; singleton variance is zero.',SimAM,(_CHANNELS,_p('epsilon','positive_float',1e-4))),
+     ('triplet','attention','Convolutional rotated-axis Triplet Attention with BN.',TripletAttention,(_CHANNELS,_p('kernel_size','odd_int',7),_p('spatial','bool',True))),
+     ('selective_kernel','attention','Dilated branch fusion with per-channel branch softmax.',SelectiveKernelAttention,(_CHANNELS,_p('branches',default=2),_p('groups',default=1),_p('reduction',default=16),_p('minimum',default=32))),
+     *tuple((name,'residual',ctor.__doc__,ctor,(_IN,_OUT,_p('stride',default=1),_M3_NORM)+opts) for name,ctor,opts in (
+      ('basic_residual',BasicResidualBlock,()),('bottleneck',Bottleneck,(_p('groups',default=1),_p('width_per_group',default=64))),
+      ('preactivation',PreActivationBlock,(_p('bottleneck','bool',False),_p('dropout','probability',0.))),
+      ('wide_residual',WideResidualBlock,(_p('dropout','probability',0.),)),
+      ('resnext_bottleneck',ResNeXtBottleneck,(_p('groups',default=32),_p('width_per_group',default=4))))),
+     *tuple((name,'model',ctor.__doc__,ctor,(_p('depth',default=depth),_p('input_channels',default=3),_p('num_classes',default=classes))+opts)
+      for name,ctor,depth,classes,opts in (
+       ('resnet',ResNet,18,1000,(_M3_NORM,)),('preact_resnet',PreActResNet,18,1000,(_p('base_channels',default=64),_M3_NORM)),
+       ('wide_resnet',WideResNet,28,10,(_p('widen_factor',default=10),_p('dropout','probability',0.),_M3_NORM)),
+       ('resnext',ResNeXt,50,1000,(_p('groups',default=32),_p('width_per_group',default=4),_M3_NORM)),
+       ('densenet',DenseNet,121,1000,(_p('growth_rate',default=32),_p('dropout','probability',0.)))))
+    )
+
+    _SPECS += tuple(row for row in mobile_specifications(_p) if row[0] not in ('channel_shuffle', 'dropblock2d'))
 
 _IO = {
     'mobile': ('Floating NCHW with matching in_channels; native BN statistics constraints apply.',
@@ -253,6 +267,8 @@ class ModelRegistry:
             result[field.name] = v
         if name in ('conv_norm_act', 'conv2d') and any(result[k] % result['groups'] for k in ('in_channels', 'out_channels')):
             raise ModelConfigError('groups must divide both channel counts')
+        if name == 'channel_shuffle' and result['channels'] % result['groups']:
+            raise ModelConfigError('groups must divide channels')
         if name == 'group_norm' and result['num_channels'] % result['num_groups']:
             raise ModelConfigError('num_groups must divide num_channels')
         if name == 'residual' and result['attention'] is not None:

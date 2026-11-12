@@ -6,6 +6,7 @@ from torch import nn
 from .bcam import CBAMBlock
 from .WithSE import SEBlock
 from .attention import ECAAttention, CoordinateAttention
+from ._profile import DEVELOPMENT
 
 __all__ = ["ConvNormAct", "ResidualBlock"]
 
@@ -88,12 +89,15 @@ class ResidualBlock(nn.Module):
         _positive_int(in_channels, "in_channels")
         _positive_int(out_channels, "out_channels")
         stride = _pair(stride, "stride")
-        from .m3_attention import SimAM, TripletAttention, SelectiveKernelAttention
+        development_attention = ()
+        if DEVELOPMENT:
+            from .m3_attention import SimAM, TripletAttention, SelectiveKernelAttention
+            development_attention = (SimAM, TripletAttention, SelectiveKernelAttention)
         if attention is not None:
-            if type(attention) not in (SimAM, TripletAttention, SelectiveKernelAttention, nn.Identity, SEBlock, CBAMBlock, ECAAttention, CoordinateAttention):
+            if type(attention) not in development_attention + (nn.Identity, SEBlock, CBAMBlock, ECAAttention, CoordinateAttention):
                 raise TypeError("attention must be None, nn.Identity, SEBlock, CBAMBlock, "
                                 "ECAAttention, CoordinateAttention, SimAM, TripletAttention or SelectiveKernelAttention")
-            if type(attention) in (SimAM, TripletAttention, SelectiveKernelAttention, ECAAttention, CoordinateAttention) and attention.channels != out_channels:
+            if type(attention) in development_attention + (ECAAttention, CoordinateAttention) and attention.channels != out_channels:
                 raise ValueError("attention channels must match out_channels")
             if type(attention) in (SEBlock, CBAMBlock):
                 if (attention.fc1.in_features != out_channels
