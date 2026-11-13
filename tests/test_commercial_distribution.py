@@ -190,6 +190,42 @@ for dtype in (torch.float32,torch.float64):
         clone = ModelBuilder.from_config(builder.to_config()).build().to(dtype)
         clone.load_state_dict(model.state_dict(),strict=True)
         model.eval();clone.eval();assert torch.equal(model(inputs),clone(inputs))
+from hyso import GraphModelBuilder
+graph = (GraphModelBuilder({'image':[4,8,8]})
+    .add('left','pointwise_conv2d',['image'],in_channels=4,out_channels=4)
+    .add('right','conv2d',['image'],in_channels=4,out_channels=4)
+    .add('concat','concat',['left','right'],axis=1)
+    .add('project','pointwise_conv2d',['concat'],in_channels=8,out_channels=4)
+    .add('sum','add',['project','image'])
+    .add('weighted','weighted_sum',['sum','left'],weights=[.25,.75],learnable=True)
+    .add('product','multiply',['weighted','right'])
+    .add('classify','classification_head',['product'],in_features=4,num_classes=3)
+    .add('regress','regression_head',['product'],in_features=4,output_features=2)
+    .add('embed','embedding_head',['product'],in_features=4,embedding_dim=5,normalize=True)
+    .outputs(classification='classify',regression='regress',embedding='embed',features='concat'))
+report = graph.preview(batch_size=2)
+assert report['valid'] and report['nodes']['concat']['output_shape'] == ['N',8,8,8]
+model = graph.build()
+optimizer = torch.optim.SGD(model.parameters(),lr=.01)
+inputs = torch.randn(2,4,8,8,requires_grad=True)
+outputs = model(inputs)
+sum((value-torch.randn_like(value)).square().mean() for value in outputs.values()).backward()
+assert all(p.grad is not None and torch.isfinite(p.grad).all() for p in model.parameters())
+assert torch.isfinite(inputs.grad).all()
+optimizer.step()
+path = target.parent / ('graph-'+target.name+'.json')
+graph.to_json(path)
+clone = GraphModelBuilder.from_json(path).build()
+clone.load_state_dict(model.state_dict(),strict=True)
+model.eval();clone.eval()
+for name,value in model(inputs).items(): assert torch.equal(value,clone(inputs)[name])
+def no_allocate(*args,**kwargs): raise AssertionError('graph preview allocated weights')
+torch.nn.Module.__init__ = no_allocate
+torch.empty = no_allocate
+assert GraphModelBuilder.preflight(graph.to_config())['valid']
+stream = io.StringIO()
+with redirect_stdout(stream): assert main(['models','preview',str(path),'--json']) == 0
+assert json.loads(stream.getvalue())['result']['validation']['outputs']['embedding']['layout'] == 'NC'
 print('commercial installed blocks/JSON/training/CLI PASS')
 '''
 

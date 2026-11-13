@@ -34,6 +34,9 @@ from .modular import ModularCNN
 
 
 _DIAGNOSTICS = {
+    'GRAPH_STRUCTURE_ERROR': ('Graph yapısı geçersiz.', 'Düğüm kimliklerini, bağlantıları, çıktı referanslarını ve döngüleri kontrol edin.'),
+    'GRAPH_SHAPE_ERROR': ('Graph tensor şekli veya düzeni uyuşmuyor.', 'Rank/layout ve boyutları eşleştirin. Projection ve resize işlemlerini açık düğümlerle uygulayın.'),
+    'GRAPH_LIMIT_ERROR': ('Graph kaynak veya bağlantı sınırı aşıldı.', 'Düğüm, bağlantı, fan-out veya tensor boyutunu belgelenen sınırlara indirin.'),
     'ATTENTION_RESOURCE_LIMIT': ('Attention token veya matris sınırı aşıldı.', 'Pooling ile H/W boyutlarını azaltın veya spatial/channel attention ya da ECA kullanın.'),
     'INVALID_OUTPUT_PADDING': ('Çıkış padding değeri geçersiz.', 'Her eksende output_padding değerini stride veya dilation değerinden küçük seçin.'),
     'INVALID_POOLING_CONFIGURATION': ('Pooling ayarları geçersiz.', 'Pozitif kernel/stride ve kernel yarısını aşmayan padding kullanın.'),

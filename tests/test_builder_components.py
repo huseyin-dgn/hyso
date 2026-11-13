@@ -48,7 +48,7 @@ def test_a_registry_metadata_and_previous_names():
     old = {'conv2d','conv_norm_act','residual','se','cbam','eca','coordinate','batch_norm',
            'group_norm','relu','silu','hardswish','identity','modular_cnn','channel_shuffle','dropblock2d'}
     assert old | components.NEW_NAMES <= {s.name for s in registry.list()}
-    assert len(_DIAGNOSTICS) == 15
+    assert len(_DIAGNOSTICS) == 18
     for name in SAMPLES:
         row = registry.get(name).to_dict()
         assert row['layout'] == 'NCHW' and row['description'] and row['common_errors']

@@ -8,6 +8,7 @@ from .bcam import CBAMBlock as CBAMBlock
 from .WithSE import SEBlock as SEBlock
 from .registry import ModelRegistry as ModelRegistry, ModelConfigError as ModelConfigError
 from .builder import ModelBuilder as ModelBuilder
+from .graph import GraphModelBuilder as GraphModelBuilder
 
 # Frozen legacy wildcard contract. New components use explicit named imports.
 __all__ = ["EBO", "ELO", "CEMO", "EMA", "CNNSENormalWithFit"]

@@ -21,6 +21,7 @@ if _TYPE_CHECKING:
     from .training import TrainingSession as TrainingSession, TrainingResult as TrainingResult
     from .models.registry import ModelRegistry as ModelRegistry, ModelConfigError as ModelConfigError
     from .models.builder import ModelBuilder as ModelBuilder
+    from .models.graph import GraphModelBuilder as GraphModelBuilder
     from .models.modular import ModularCNN as ModularCNN
     from .training import Trainer as Trainer
     from .benchmark import BenchmarkRunner as BenchmarkRunner
@@ -37,6 +38,7 @@ _LAZY_EXPORTS = {
     'ModelRegistry': ('.models.registry', 'ModelRegistry'),
     'ModelConfigError': ('.models.registry', 'ModelConfigError'),
     'ModelBuilder': ('.models.builder', 'ModelBuilder'),
+    'GraphModelBuilder': ('.models.graph', 'GraphModelBuilder'),
     'ModularCNN': ('.models.modular', 'ModularCNN'),
     'Trainer': ('.training', 'Trainer'),
     'BenchmarkRunner': ('.benchmark', 'BenchmarkRunner'),

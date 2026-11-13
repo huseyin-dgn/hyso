@@ -76,6 +76,8 @@
     "hyso/models/builder.py",
     "hyso/models/components.py",
     "hyso/models/fit.py",
+    "hyso/models/graph.py",
+    "hyso/models/graph_ops.py",
     "hyso/models/modular.py",
     "hyso/models/registry.py",
     "hyso/models/regularization.py",

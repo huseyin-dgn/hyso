@@ -187,3 +187,14 @@ mevcut tanılama kodlarıyla doğrulanır. Yeni hata kodu eklenmedi. Schema2 pre
 head alanında exact parametre ve aktivasyon sınırlarını gösterir. Geçerli
 uyarılar mevcut advisory politika içinde kalır. Ayrıntılar
 [sampling/head rehberinde](custom-cnn-builder-sampling-heads.md) bulunur.
+
+## Graph schema3 doğrulaması
+
+GraphModelBuilder ayrı kind='graph', schema_version=3 sözleşmesini kullanır.
+GRAPH_STRUCTURE_ERROR, GRAPH_SHAPE_ERROR ve GRAPH_LIMIT_ERROR yeni tanılamaları
+eklenir. Önceki 15 kod korunur. Node bağlamı layer_id ile taşınır. Preflight ve
+preview allocation-free çalışır, bağımsız dalları doğrular ve geçersiz downstream
+shape'leri None bırakır. Eksik maliyet hesabında aggregate alanlar None olur,
+validated_parameter_estimate doğrulanan düğümlerin kısmi toplamını verir.
+Graph'ın zorunlu attention ve parametre sınırları önceki politikayı korur.
+Sözleşmeler [Graph Builder rehberinde](custom-cnn-graph-builder.md) açıklanır.

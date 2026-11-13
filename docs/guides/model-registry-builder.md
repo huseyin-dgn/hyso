@@ -49,6 +49,11 @@ schema1 implicit classifier. Flatten is supported at the terminal schema2 featur
 boundary with pooling=none. The [sampling/head guide](custom-cnn-builder-sampling-heads.md)
 documents rank restrictions, serialization and training support.
 
+GraphModelBuilder is a separate schema3 API for user-defined DAGs, explicit skips,
+fusion and named multiple outputs. The existing ModelBuilder remains sequential.
+The [Graph Builder guide](custom-cnn-graph-builder.md) documents node IDs, shape
+contracts, resource limits, preview and CPU execution.
+
 ## Architecture and shape contract
 
 `ModelBuilder((C,H,W), num_classes)` appends only linear NCHW blocks. Every add

@@ -8,6 +8,9 @@ başlığını ekler. Ticari profilde 57 Registry girdisi bulunur. Aşama 13.5.2
 [ileri bloklar rehberinde](custom-cnn-builder-advanced-blocks.md) açıklanır.
 Sampling ve explicit prediction head seçenekleri
 [sampling/head rehberinde](custom-cnn-builder-sampling-heads.md) açıklanır.
+Bu Registry girdileri ayrı GraphModelBuilder API'sinde DAG düğümleri olarak da
+kullanılabilir. Graph'a özgü dört fusion operatörü ve named output sözleşmesi
+[Graph Builder rehberinde](custom-cnn-graph-builder.md) açıklanır.
 
 ## İlk çalışan zincir
 

@@ -119,7 +119,7 @@ DEVELOPMENT_MODULES = {
     "hyso/structure.py",
     "hyso/structure_comparison.py",
 }
-DEVELOPMENT_MODULES |= {'hyso/models/components.py', 'hyso/models/advanced.py', 'hyso/models/sampling.py'}
+DEVELOPMENT_MODULES |= {'hyso/models/components.py', 'hyso/models/advanced.py', 'hyso/models/sampling.py', 'hyso/models/graph.py', 'hyso/models/graph_ops.py'}
 DEVELOPMENT_MODULES |= {'hyso/models/_profile.py', 'hyso/models/_development.py', 'hyso/models/regularization.py'}
 PROFILE = json.loads((ROOT / 'commercial-profile.json').read_text(encoding='utf-8'))
 MODULES = set(PROFILE['python_files'])
@@ -164,7 +164,7 @@ def distributions(tmp_path_factory):
 
 def test_canonical_packaging_configuration():
     assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == DEVELOPMENT_MODULES
-    assert len(MODULES) == 155
+    assert len(MODULES) == 157
     assert MODULES.isdisjoint(PROFILE["excluded_python_files"])
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()

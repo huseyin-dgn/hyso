@@ -1,5 +1,6 @@
 """Registry metadata and explicit CPU model inspection."""
 from pathlib import Path
+import json
 from .common import Outcome, command, output_check, require, export_text, json_text
 
 
@@ -12,6 +13,7 @@ def register(sub):
     q.add_argument('name', help='Registered component name; see models list.')
     for name, desc in [('validate', 'Validate bounded ModelBuilder JSON; no model construction.'),
                        ('summary', 'Summarize declared architecture and normalized defaults; no workload.'),
+                       ('preview', 'Preview allocation-free graph nodes, edges, shapes and resource estimates.'),
                        ('inspect', 'Allocate a new untrained CPU model and inspect parameter/buffer shapes; no forward or checkpoint loading.')]:
         q = command(s, name, desc, run)
         q.add_argument('input', type=Path, help='ModelBuilder architecture JSON, not weights or a trained checkpoint.')
@@ -29,12 +31,12 @@ def run(args):
     elif args.action == 'show':
         data = ModelRegistry().get(args.name).to_dict()
     else:
-        builder = ModelBuilder.from_json(args.input)
+        builder = _load_builder(args.input)
         config = builder.to_config()
         data = dict(valid=True, architecture=config, weights_included=False, trained_checkpoint=False,
                     model_constructed=False)
-        if args.action in ('validate', 'summary'):
-            data['validation'] = ModelBuilder.preflight(config)
+        if args.action in ('validate', 'summary','preview'):
+            data['validation'] = builder.preflight(config)
         if args.action == 'summary':
             data['summary'] = dict(kind=config['kind'], family=config.get('name'), options=config.get('params',{}), input_shape=config.get('input_shape'),
                 num_classes=config.get('num_classes', config.get('params', {}).get('num_classes')),
@@ -43,6 +45,9 @@ def run(args):
                 scope='declared architecture; no activation tracing or weight restoration')
             if config['kind']=='sequential':
                 data['summary']['head'] = data['validation']['head']
+            if config['kind']=='graph':
+                data['summary'].update(nodes=data['validation']['nodes'],outputs=data['validation']['outputs'],
+                                       topological_order=data['validation']['topological_order'])
         if args.action == 'inspect':
             require(args.execute, 'models inspect requires --execute to allocate a new CPU model. Use models summary for metadata only.', code=3)
             model = builder.build()
@@ -56,3 +61,16 @@ def run(args):
     if args.action == 'list':
         text = 'COMPONENT                 CATEGORY     DESCRIPTION\n' + ''.join(f"{r['name']:<25} {r['category']:<12} {r['description']}\n" for r in rows)
     return Outcome(data, text=text)
+
+
+def _load_builder(path):
+    from hyso.models.builder import ModelBuilder,_pairs
+    from hyso.models.graph import GraphModelBuilder
+    from hyso.models.registry import ModelConfigError
+    with path.open('rb') as stream:raw=stream.read(2*1024**2+1)
+    if len(raw)>2*1024**2:raise ModelConfigError('configuration exceeds 2 MiB')
+    def invalid(value):raise ModelConfigError('non-finite JSON number '+value)
+    try:data=json.loads(raw.decode('utf-8'),object_pairs_hook=_pairs,parse_constant=invalid)
+    except ModelConfigError:raise
+    except (ValueError,TypeError,RecursionError) as exc:raise ModelConfigError(str(exc)) from exc
+    return GraphModelBuilder.from_config(data) if type(data) is dict and data.get('kind')=='graph' else ModelBuilder.from_config(data)
