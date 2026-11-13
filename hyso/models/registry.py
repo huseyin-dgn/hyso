@@ -30,8 +30,66 @@ if DEVELOPMENT:
 from .modular import ModularCNN
 
 
+_DIAGNOSTICS = {
+    'INVALID_INPUT_SHAPE': ('Giriş boyutu geçersiz.', 'CHW boyutlarını 1..8192 aralığında üç tam sayı olarak belirtin.'),
+    'INVALID_PARAMETER': ('Bileşen parametresi veya mimari verisi geçersiz.', 'Bileşenin desteklediği parametreleri ve JSON şemasını kontrol edin.'),
+    'CHANNEL_MISMATCH': ('Katmanların kanal sayıları uyuşmuyor.', 'Katmanın giriş kanalını önceki katmanın çıkış kanalıyla eşleştirin.'),
+    'GROUP_DIVISIBILITY_ERROR': ('Kanal sayısı grup sayısına bölünemiyor.', 'Grup sayısını ilgili kanal sayılarını bölen pozitif bir tam sayı seçin.'),
+    'SPATIAL_DIMENSION_ERROR': ('Katman geçersiz bir uzamsal boyut üretiyor.', 'Kernel, padding ve stride değerlerini giriş yüksekliği ve genişliğine göre düzenleyin.'),
+    'INVALID_BLOCK_ORDER': ('Katman sırası veya bağlantı türü desteklenmiyor.', 'Lineer zincirde yalnız NCHW blokları kullanın. Tam modeli ayrı oluşturun.'),
+    'PARAMETER_BUDGET_EXCEEDED': ('Model parametre bütçesini aşıyor.', 'Kanal, kernel veya blok sayısını azaltın.'),
+    'UNSUPPORTED_COMPONENT': ('Bileşen bu dağıtım profilinde desteklenmiyor.', 'ModelRegistry.list() ile kullanılabilir bileşenleri kontrol edin.'),
+    'INVALID_OUTPUT_HEAD': ('Sınıflandırma başlığının çıkış sayısı geçersiz.', 'num_classes değerini 1..8192 aralığında bir tam sayı seçin.'),
+}
+
+
+def _diagnostic_value(value, depth=0):
+    """Bound diagnostic JSON values without invoking user repr or callables."""
+    if depth > 8:
+        return '<depth limit>'
+    if value is None or type(value) in (bool, int):
+        return value
+    if type(value) is str:
+        return value[:512]
+    if type(value) is float:
+        return value if math.isfinite(value) else str(value)
+    if type(value) in (list, tuple):
+        return [_diagnostic_value(v, depth+1) for v in value[:64]]
+    if type(value) is dict:
+        return {k[:256]: _diagnostic_value(v, depth+1)
+                for k, v in list(value.items())[:64] if type(k) is str}
+    return {'type': type(value).__name__}
+
+
 class ModelConfigError(ValueError):
-    """Invalid/unsupported registry configuration or architectural connection."""
+    """Backward-compatible English exception with JSON-safe bilingual diagnostics."""
+
+    def __init__(self, *messages: Any, code: str = 'INVALID_PARAMETER',
+                 layer_index: int | None = None, layer_id: str | None = None,
+                 expected: Any = None, actual: Any = None,
+                 suggestion: str | None = None) -> None:
+        super().__init__(*messages)
+        self.code = code
+        self.layer_index = layer_index
+        self.layer_id = layer_id
+        self.expected = _diagnostic_value(expected)
+        self.actual = _diagnostic_value(actual)
+        self.message_tr, default_suggestion = _DIAGNOSTICS[code]
+        self.suggestion = suggestion or default_suggestion
+
+    def at_layer(self, index: int) -> ModelConfigError:
+        """Attach zero-based chain context while retaining the English detail."""
+        if self.layer_index is None:
+            self.layer_index = index
+            self.args = (f'block {index}: {self}',)
+        return self
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a detached diagnostic, suitable for CLI or a future editor."""
+        return dict(code=self.code, message_tr=self.message_tr, message_en=str(self),
+                    layer_index=self.layer_index, layer_id=self.layer_id,
+                    expected=_diagnostic_value(self.expected), actual=_diagnostic_value(self.actual),
+                    suggestion=self.suggestion)
 
 
 def _plain(value: Any, depth: int = 0) -> Any:
@@ -218,7 +276,8 @@ class ModelRegistry:
     def get(self, name: str) -> ComponentSpec:
         """Return schema, constructor, shape conditions and compatibility notes."""
         if type(name) is not str or name not in self._entries:
-            raise ModelConfigError(f'unknown component: {name!r}')
+            raise ModelConfigError(f'unknown component: {name!r}', code='UNSUPPORTED_COMPONENT',
+                                   expected='registered component name', actual=name)
         return self._entries[name]
 
     def validate(self, name: str, params: dict[str, Any]) -> dict[str, Any]:
@@ -229,11 +288,13 @@ class ModelRegistry:
             raise ModelConfigError('params must be a dictionary')
         unknown = set(p)-{v.name for v in spec.parameters}
         if unknown:
-            raise ModelConfigError(f'{name}: unknown parameters {sorted(unknown)}')
+            raise ModelConfigError(f'{name}: unknown parameters {sorted(unknown)}',
+                                   expected=[v.name for v in spec.parameters], actual=sorted(unknown))
         result = {}
         for field in spec.parameters:
             if field.name not in p and field.required:
-                raise ModelConfigError(f'{name}: missing parameter {field.name}')
+                raise ModelConfigError(f'{name}: missing parameter {field.name}',
+                                       expected=field.name, actual='missing')
             v = p.get(field.name, _plain(field.default))
             kind = field.kind
             if kind in ('positive_int', 'odd_int'):
@@ -263,17 +324,23 @@ class ModelRegistry:
                     v = dict(name=v['name'], params=self.validate(v['name'], v['params']))
             else: valid = False
             if not valid:
-                raise ModelConfigError(f'{name}.{field.name}: invalid {kind} value')
+                raise ModelConfigError(f'{name}.{field.name}: invalid {kind} value',
+                                       code='INVALID_OUTPUT_HEAD' if field.name == 'num_classes' else 'INVALID_PARAMETER',
+                                       expected=dict(parameter=field.name, kind=kind, choices=list(field.choices)), actual=v)
             result[field.name] = v
         if name in ('conv_norm_act', 'conv2d') and any(result[k] % result['groups'] for k in ('in_channels', 'out_channels')):
-            raise ModelConfigError('groups must divide both channel counts')
+            raise ModelConfigError('groups must divide both channel counts', code='GROUP_DIVISIBILITY_ERROR',
+                                   expected='groups divides in_channels and out_channels', actual=result)
         if name == 'channel_shuffle' and result['channels'] % result['groups']:
-            raise ModelConfigError('groups must divide channels')
+            raise ModelConfigError('groups must divide channels', code='GROUP_DIVISIBILITY_ERROR',
+                                   expected='groups divides channels', actual=result)
         if name == 'group_norm' and result['num_channels'] % result['num_groups']:
-            raise ModelConfigError('num_groups must divide num_channels')
+            raise ModelConfigError('num_groups must divide num_channels', code='GROUP_DIVISIBILITY_ERROR',
+                                   expected='num_groups divides num_channels', actual=result)
         if name == 'residual' and result['attention'] is not None:
             if result['attention']['params']['channels'] != result['out_channels']:
-                raise ModelConfigError('residual attention channels must equal out_channels')
+                raise ModelConfigError('residual attention channels must equal out_channels', code='CHANNEL_MISMATCH',
+                                       expected=result['out_channels'], actual=result['attention']['params']['channels'])
         if name == 'modular_cnn':
             if len({len(result[k]) for k in ('widths', 'repeats', 'strides')}) != 1 or sum(result['repeats']) > 64:
                 raise ModelConfigError('ModularCNN stage lengths must match; at most 64 total blocks')

@@ -61,7 +61,8 @@ def _shape(name, p, shape):
     c, h, w = shape
     expected = p.get('in_channels', p.get('channels', p.get('num_features', p.get('num_channels', c))))
     if c != expected:
-        raise ModelConfigError(f'{name}: incoming channels {c}, expected {expected}')
+        raise ModelConfigError(f'{name}: incoming channels {c}, expected {expected}',
+                               code='CHANNEL_MISMATCH', expected=expected, actual=c)
     if name in M4_BLOCKS:
         c,h,w = block_shape(name,p,shape)
     elif name in ('conv2d', 'conv_norm_act'):
@@ -74,9 +75,11 @@ def _shape(name, p, shape):
         h, w = ((v+s-1)//s for v,s in zip((h,w),p['stride']))
         c = p['out_channels']
     if min(c,h,w) <= 0:
-        raise ModelConfigError(f'{name}: kernel/stride/padding produces an empty spatial output')
+        raise ModelConfigError(f'{name}: kernel/stride/padding produces an empty spatial output',
+                               code='SPATIAL_DIMENSION_ERROR', expected='positive CHW', actual=[c,h,w])
     if max(c,h,w) > 8192:
-        raise ModelConfigError(f'{name}: inferred output dimension exceeds 8192')
+        raise ModelConfigError(f'{name}: inferred output dimension exceeds 8192',
+                               code='SPATIAL_DIMENSION_ERROR', expected='CHW <= 8192', actual=[c,h,w])
     return c,h,w
 
 
@@ -117,14 +120,19 @@ class BuiltClassifier(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Return [N, num_classes] logits; reject incompatible input before work."""
         if not isinstance(x, torch.Tensor) or x.ndim != 4 or x.shape[0] < 1 or tuple(x.shape[1:]) != self.input_shape:
-            raise ModelConfigError(f'expected nonempty NCHW with CHW={self.input_shape}')
+            raise ModelConfigError(f'expected nonempty NCHW with CHW={self.input_shape}',
+                                   code='INVALID_INPUT_SHAPE', expected=['N', *self.input_shape],
+                                   actual=list(x.shape) if isinstance(x, torch.Tensor) else type(x).__name__)
         if x.device != self.classifier.weight.device or x.dtype != self.classifier.weight.dtype:
-            raise ModelConfigError('input device/dtype must match model; move/cast explicitly')
+            raise ModelConfigError('input device/dtype must match model; move/cast explicitly',
+                                   expected=dict(device=str(self.classifier.weight.device), dtype=str(self.classifier.weight.dtype)),
+                                   actual=dict(device=str(x.device), dtype=str(x.dtype)))
         for i, block in enumerate(self.features):
             try:
                 x = block(x)
             except ValueError as error:
-                raise ModelConfigError(f'block {i} rejected its input/statistics: {error}') from error
+                raise ModelConfigError(f'block {i} rejected its input/statistics: {error}',
+                                       layer_index=i, expected='valid block input/statistics', actual=list(x.shape)) from error
         return self.classifier(torch.flatten(self.pool(x), 1))
 
 
@@ -156,7 +164,8 @@ class ModelBuilder:
         reg = ModelRegistry()
         if c.get('kind') == 'registered_model':
             if set(c)!={'format','schema_version','kind','name','params'} or c['name'] not in (('resnet','preact_resnet','wide_resnet','resnext','densenet')+M4_FAMILIES if DEVELOPMENT else ()):
-                raise ModelConfigError('unknown/missing registered_model family fields')
+                raise ModelConfigError('unknown/missing registered_model family fields', code='UNSUPPORTED_COMPONENT',
+                                       expected='family allowed by the installed profile', actual=c.get('name'))
             c['params']=reg.validate(c['name'],c['params'])
             return c, ()
         if c.get('kind') == 'modular_cnn':
@@ -171,32 +180,46 @@ class ModelBuilder:
                     cost += _cost('residual',dict(in_channels=previous,out_channels=width,attention=attention))
                     previous = width
             cost += (previous+1)*p['num_classes']
-            if cost > _MAX_PARAMETERS: raise ModelConfigError('model exceeds conservative parameter budget 10000000')
+            if cost > _MAX_PARAMETERS:
+                raise ModelConfigError('model exceeds conservative parameter budget 10000000',
+                                       code='PARAMETER_BUDGET_EXCEEDED', expected=_MAX_PARAMETERS, actual=cost)
             c['params'] = p
             return c, (previous,)
         if c.get('kind') != 'sequential_classifier' or set(c) != {'format','schema_version','kind','input_shape','num_classes','blocks'}:
-            raise ModelConfigError('unsupported connection/model kind or unknown configuration fields')
+            raise ModelConfigError('unsupported connection/model kind or unknown configuration fields',
+                                   code='INVALID_BLOCK_ORDER', expected='schema1 sequential_classifier fields', actual=list(c))
         shape = c['input_shape']
         if type(shape) is not list or len(shape) != 3 or any(type(v) is not int or not 1 <= v <= 8192 for v in shape):
-            raise ModelConfigError('input_shape must be positive [C,H,W], dimensions <=8192')
+            raise ModelConfigError('input_shape must be positive [C,H,W], dimensions <=8192',
+                                   code='INVALID_INPUT_SHAPE', expected='three integers in 1..8192', actual=shape)
         if type(c['num_classes']) is not int or not 1 <= c['num_classes'] <= 8192:
-            raise ModelConfigError('num_classes must be a positive integer <=8192')
+            raise ModelConfigError('num_classes must be a positive integer <=8192',
+                                   code='INVALID_OUTPUT_HEAD', expected='integer in 1..8192', actual=c['num_classes'])
         if type(c['blocks']) is not list or len(c['blocks']) > 64:
-            raise ModelConfigError('blocks must be a list of at most 64 entries')
+            raise ModelConfigError('blocks must be a list of at most 64 entries', code='INVALID_BLOCK_ORDER',
+                                   expected='list with at most 64 NCHW blocks', actual=c['blocks'])
         normalized = []
         cost = 0
         for i, block in enumerate(c['blocks']):
             if type(block) is not dict or set(block) != {'name','params'}:
-                raise ModelConfigError(f'block {i}: only name/params are allowed; no custom connections')
-            spec = reg.get(block['name'])
-            if spec.category == 'model': raise ModelConfigError('a complete model cannot be inserted as an NCHW block')
-            p = reg.validate(block['name'],block['params'])
-            try: shape = _shape(block['name'],p,shape)
-            except ModelConfigError as error: raise ModelConfigError(f'block {i}: {error}') from error
+                raise ModelConfigError(f'block {i}: only name/params are allowed; no custom connections',
+                                       code='INVALID_BLOCK_ORDER', layer_index=i,
+                                       expected=['name', 'params'], actual=block)
+            try:
+                spec = reg.get(block['name'])
+                if spec.category == 'model':
+                    raise ModelConfigError('a complete model cannot be inserted as an NCHW block',
+                                           code='INVALID_BLOCK_ORDER', expected='NCHW block', actual=block['name'])
+                p = reg.validate(block['name'],block['params'])
+                shape = _shape(block['name'],p,shape)
+            except ModelConfigError as error:
+                raise error.at_layer(i)
             cost += _cost(block['name'],p)
             normalized.append(dict(name=block['name'],params=p))
         if cost + (shape[0]+1)*c['num_classes'] > _MAX_PARAMETERS:
-            raise ModelConfigError('model exceeds conservative parameter budget 10000000')
+            raise ModelConfigError('model exceeds conservative parameter budget 10000000',
+                                   code='PARAMETER_BUDGET_EXCEEDED', expected=_MAX_PARAMETERS,
+                                   actual=cost + (shape[0]+1)*c['num_classes'])
         c['blocks'] = normalized
         return c, tuple(shape)
 
@@ -222,10 +245,70 @@ class ModelBuilder:
         """Return a detached JSON-compatible configuration including defaults."""
         return _plain(self._config)
 
+    @classmethod
+    def preflight(cls, config: dict[str, Any]) -> dict[str, Any]:
+        """Validate architecture data and infer symbolic-N shapes without weights.
+
+        Sequential profiles expose exact per-layer CHW geometry and the existing
+        conservative parameter estimate. Other profiles retain their existing
+        configuration validation, with spatial shapes explicitly unspecified.
+        After a failure, independent scalar/block errors may also be reported.
+        Downstream shapes are omitted when a predecessor cannot be validated.
+        """
+        report = dict(valid=False, diagnostics=[], input_shape=None, output_shape=None,
+                      feature_shape=None, layers=[], parameter_estimate=None,
+                      shape_scope='configuration_only')
+        try:
+            checked, shape = cls._validate(config)
+        except ModelConfigError as error:
+            report['diagnostics'].append(error.to_dict())
+            # Scalar/Registry checks do not require a valid predecessor shape.
+            try:
+                plain = _plain(config)
+            except ModelConfigError:
+                return report
+            if type(plain) is not dict or plain.get('kind') != 'sequential_classifier' or type(plain.get('blocks')) is not list:
+                return report
+            reg = ModelRegistry()
+            for index, block in enumerate(plain['blocks'][:64]):
+                try:
+                    if type(block) is not dict or set(block) != {'name', 'params'}:
+                        raise ModelConfigError(f'block {index}: only name/params are allowed; no custom connections',
+                                               code='INVALID_BLOCK_ORDER', layer_index=index,
+                                               expected=['name', 'params'], actual=block)
+                    if reg.get(block['name']).category == 'model':
+                        raise ModelConfigError('a complete model cannot be inserted as an NCHW block',
+                                               code='INVALID_BLOCK_ORDER', expected='NCHW block', actual=block['name'])
+                    reg.validate(block['name'], block['params'])
+                except ModelConfigError as independent:
+                    diagnostic = independent.at_layer(index).to_dict()
+                    if diagnostic not in report['diagnostics']:
+                        report['diagnostics'].append(diagnostic)
+            return report
+        report['valid'] = True
+        classes = checked.get('num_classes', checked.get('params', {}).get('num_classes'))
+        report['output_shape'] = ['N', classes]
+        if checked['kind'] != 'sequential_classifier':
+            report['input_shape'] = ['N', checked['params']['input_channels'], None, None]
+            return report
+        report['shape_scope'] = 'sequential_nchw'
+        current = tuple(checked['input_shape'])
+        report['input_shape'] = ['N', *current]
+        cost = 0
+        for index, block in enumerate(checked['blocks']):
+            output = _shape(block['name'], block['params'], current)
+            report['layers'].append(dict(index=index, name=block['name'],
+                                         input_shape=['N', *current], output_shape=['N', *output]))
+            cost += _cost(block['name'], block['params'])
+            current = output
+        report['feature_shape'] = ['N', *shape]
+        report['parameter_estimate'] = cost + (shape[0]+1)*classes
+        return report
+
     def add(self, name: str, **params: Any) -> ModelBuilder:
         """Append a registered block transactionally; return self for chaining."""
         if self._config['kind'] != 'sequential_classifier':
-            raise ModelConfigError('add is unavailable for fixed complete-model profiles')
+            raise ModelConfigError('add is unavailable for fixed complete-model profiles', code='INVALID_BLOCK_ORDER')
         candidate = self.to_config()
         candidate['blocks'].append(dict(name=name,params=params))
         self._config, _ = self._validate(candidate)
@@ -259,5 +342,7 @@ class ModelBuilder:
         try:
             data = json.loads(raw.decode('utf-8'),object_pairs_hook=_pairs,parse_constant=invalid)
             return cls.from_config(data)
+        except ModelConfigError:
+            raise
         except (ValueError, TypeError, RecursionError) as error:
             raise ModelConfigError(str(error)) from error

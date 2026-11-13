@@ -33,6 +33,8 @@ def run(args):
         config = builder.to_config()
         data = dict(valid=True, architecture=config, weights_included=False, trained_checkpoint=False,
                     model_constructed=False)
+        if args.action in ('validate', 'summary'):
+            data['validation'] = ModelBuilder.preflight(config)
         if args.action == 'summary':
             data['summary'] = dict(kind=config['kind'], family=config.get('name'), options=config.get('params',{}), input_shape=config.get('input_shape'),
                 num_classes=config.get('num_classes', config.get('params', {}).get('num_classes')),

@@ -28,6 +28,7 @@ def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     machine = '--json' in argv
     debug = '--debug' in argv or '--verbose' in argv
+    diagnostics = None
     try:
         try:
             args = build_parser().parse_args(argv)
@@ -69,10 +70,18 @@ def main(argv=None):
         if not isinstance(code, int):
             code = 2
         error = str(exc) or type(exc).__name__
+        from hyso.models.registry import ModelConfigError
+        if isinstance(exc, ModelConfigError):
+            diagnostics = [exc.to_dict()]
         if not isinstance(exc, CLIError):
             error += '. Check the input format, paths and command --help; use --debug for details.'
     if machine:
         status = {3: 'blocked', 4: 'unsupported', 5: 'failed', 130: 'interrupted'}.get(code, 'error')
-        sys.stdout.write(json_text(dict(format='hyso.cli', schema_version=1, status=status, exit_code=code, error=error), ascii_only=True))
+        envelope = dict(format='hyso.cli', schema_version=1, status=status, exit_code=code, error=error)
+        if diagnostics is not None:
+            envelope['diagnostics'] = diagnostics
+        sys.stdout.write(json_text(envelope, ascii_only=True))
     sys.stderr.write('hyso: ' + error + '\n')
+    if diagnostics is not None:
+        sys.stderr.write('hyso: ' + diagnostics[0]['message_tr'] + ' ' + diagnostics[0]['suggestion'] + '\n')
     return code
