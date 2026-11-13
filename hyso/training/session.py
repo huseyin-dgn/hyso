@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader, BatchSampler, RandomSampler, Sequential
 from .config import TrainingConfig, TrainingConfigError, _plain, _resolved
 from .trainer import Trainer
 from ..models.modular import ModularCNN
-from ..models.builder import BuiltClassifier
+from ..models.builder import BuiltClassifier, BuiltSequential
 from ..callbacks.callbacks import EarlyStopping
 
 
@@ -105,17 +105,19 @@ class TrainingSession:
         self.config=config;c=config.to_dict();self._c=c
         opt,sched,early=_resolved(c)
         if not isinstance(model,nn.Module): raise TrainingConfigError('model must be nn.Module')
+        if type(model) is BuiltSequential and model.to_config()['head']['name']!='classification_head':
+            raise TrainingConfigError('TrainingSession supports classification heads. Use an explicit loss and optimizer loop for regression/embedding.')
         if c['validation'] != (val_loader is not None): raise TrainingConfigError('validation flag and loader must agree')
         _loader(train_loader,c)
         if val_loader is not None: _loader(val_loader,c,validation=True)
-        if type(model) in (ModularCNN,BuiltClassifier):
+        if type(model) in (ModularCNN,BuiltClassifier,BuiltSequential):
             outputs=model.classifier.out_features
             if (c['task']=='multiclass' and outputs<2) or (c['task']=='binary' and outputs!=1):
                 raise TrainingConfigError('known classifier head does not match requested task')
             for loader in (train_loader,val_loader):
                 if loader is not None and type(loader.dataset) is TensorDataset:
                     shape=tuple(loader.dataset.tensors[0].shape[1:])
-                    if len(shape)!=3 or (type(model) is ModularCNN and shape[0]!=model.input_channels) or (type(model) is BuiltClassifier and shape!=model.input_shape):
+                    if len(shape)!=3 or (type(model) is ModularCNN and shape[0]!=model.input_channels) or (type(model) in (BuiltClassifier,BuiltSequential) and shape!=model.input_shape):
                         raise TrainingConfigError('TensorDataset input shape does not match the known model contract')
         checkpoint_mode=c['save_last_to'] is not None or c['resume_from'] is not None
         if checkpoint_mode and (type(model) is not ModularCNN or model_config is None):

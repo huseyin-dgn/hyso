@@ -41,6 +41,8 @@ def run(args):
                 block_count=len(config['blocks']) if 'blocks' in config else None,
                 blocks=[b['name'] for b in config.get('blocks', [])],
                 scope='declared architecture; no activation tracing or weight restoration')
+            if config['kind']=='sequential':
+                data['summary']['head'] = data['validation']['head']
         if args.action == 'inspect':
             require(args.execute, 'models inspect requires --execute to allocate a new CPU model. Use models summary for metadata only.', code=3)
             model = builder.build()

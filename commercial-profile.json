@@ -79,6 +79,7 @@
     "hyso/models/modular.py",
     "hyso/models/registry.py",
     "hyso/models/regularization.py",
+    "hyso/models/sampling.py",
     "hyso/performance/__init__.py",
     "hyso/performance/_batch_worker.py",
     "hyso/performance/_cold_worker.py",

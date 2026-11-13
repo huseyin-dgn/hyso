@@ -21,6 +21,7 @@ from ._profile import DEVELOPMENT
 from .regularization import ChannelShuffle, DropBlock2D
 from . import components
 from . import advanced
+from . import sampling
 
 M4_FAMILIES = ()
 M4_BLOCKS = ()
@@ -176,6 +177,16 @@ class ComponentSpec:
                     common_errors=_common_errors(self.category))
         if self.name in advanced.NEW_NAMES:
             data.update(advanced.metadata(self.name))
+        if self.name in sampling.NEW_NAMES:
+            data.update(sampling.metadata(self.name))
+            for row in data['parameters']:
+                if row['kind'] in ('axes','chw','scale_pair','optional_bool'):
+                    row['constraints'] = {
+                        'axes': dict(choices=[[0,1,2,3],[0,1,3,2]],batch_preserved=True),
+                        'chw': dict(minimum=1,maximum=8192,length=3,batch_preserved=True),
+                        'scale_pair': dict(exclusive_minimum=0,maximum=8192,length=2,nullable=True,finite=True),
+                        'optional_bool': dict(type='boolean',nullable=True),
+                    }[row['kind']]
         return data
 
 
@@ -232,6 +243,7 @@ _SPECS += (
 
 _SPECS += components.specifications(_p)
 _SPECS += advanced.specifications(_p)
+_SPECS += sampling.specifications(_p)
 
 
 def _dependencies(name):
@@ -283,6 +295,9 @@ if DEVELOPMENT:
     _SPECS += tuple(row for row in mobile_specifications(_p) if row[0] not in ('channel_shuffle', 'dropblock2d'))
 
 _IO = {
+    'sampling': ('Floating nonempty NCHW.', 'Floating NCHW with explicit resize or pixel rearrangement geometry.'),
+    'tensor_utility': ('Floating NCHW with preserved batch axis.', 'NCHW or terminal NF for flatten, see shape_contract.'),
+    'prediction_head': ('Floating NCHW or NF with pooling=none.', 'Floating NF prediction, head type controls output semantics.'),
     'mobile': ('Floating NCHW with matching in_channels; native BN statistics constraints apply.',
                '[N,out_channels,ceil(H/stride),ceil(W/stride)]; closed internal branch topology.'),
     'channel_mixing': ('Floating NCHW with matching channels.', 'Same NCHW shape; validated channel partition.'),
@@ -320,7 +335,7 @@ class ModelRegistry:
         self._entries = MappingProxyType({name: ComponentSpec(
             name, category, description, ctor, params,
             _IO[category][0], _IO[category][1],
-            (('HYSo/PyTorch component; CPU construction only.' if name in components.NEW_NAMES | advanced.NEW_NAMES or name in ('conv_norm_act','conv2d','residual','se','cbam','eca','coordinate','batch_norm','group_norm','relu','silu','hardswish','identity','modular_cnn','channel_shuffle','dropblock2d') else 'Closed mobile/edge constructor or torchvision adapter; CPU construction only.' if name in M4_FAMILIES+M4_BLOCKS else 'Closed M3 constructor / torchvision adapter; CPU construction only.'),
+            (('HYSo/PyTorch component; CPU construction only.' if name in components.NEW_NAMES | advanced.NEW_NAMES | sampling.NEW_NAMES or name in ('conv_norm_act','conv2d','residual','se','cbam','eca','coordinate','batch_norm','group_norm','relu','silu','hardswish','identity','modular_cnn','channel_shuffle','dropblock2d') else 'Closed mobile/edge constructor or torchvision adapter; CPU construction only.' if name in M4_FAMILIES+M4_BLOCKS else 'Closed M3 constructor / torchvision adapter; CPU construction only.'),
              'Builder v1: linear connections; no external skip/concat/DAG.',
              'BatchNorm requires N*H*W>1 while training; GroupNorm requires valid group statistics.',
              'SE/CBAM keep max(1, channels//reduction); CBAM/ECA kernels must be odd.',
@@ -357,7 +372,9 @@ class ModelRegistry:
                                        expected=field.name, actual='missing')
             v = p.get(field.name, _plain(field.default))
             kind = field.kind
-            if kind == 'optional_positive_int':
+            if kind in ('scale_pair','optional_bool','chw','axes'):
+                valid,v = sampling.scalar(kind,v)
+            elif kind == 'optional_positive_int':
                 valid = v is None or type(v) is int and 1 <= v <= 8192
             elif kind in ('positive_int', 'odd_int'):
                 valid = type(v) is int and 1 <= v <= 8192
@@ -399,6 +416,7 @@ class ModelRegistry:
             result[field.name] = v
         components.validate(name, result, ModelConfigError)
         advanced.validate(name, result, ModelConfigError)
+        sampling.validate(name, result, ModelConfigError)
         if name == 'residual' and result['attention'] is not None and result['attention']['name'] in advanced.ATTENTION:
             raise ModelConfigError('use advanced residual attention options or append the attention as a separate block',
                                    code='UNSUPPORTED_COMPONENT', expected='legacy residual attention class', actual=result['attention']['name'])

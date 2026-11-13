@@ -44,7 +44,7 @@ def cpu_only(monkeypatch):
 def test_a_registry_metadata_and_previous_names():
     assert set(SAMPLES) == components.NEW_NAMES
     registry = ModelRegistry()
-    assert len(registry.list()) == 76
+    assert len(registry.list()) == 85
     old = {'conv2d','conv_norm_act','residual','se','cbam','eca','coordinate','batch_norm',
            'group_norm','relu','silu','hardswish','identity','modular_cnn','channel_shuffle','dropblock2d'}
     assert old | components.NEW_NAMES <= {s.name for s in registry.list()}

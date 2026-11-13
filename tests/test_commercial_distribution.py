@@ -105,7 +105,8 @@ samples = {
     'dropout': dict(p=.2), 'dropout2d': dict(p=.2), 'drop_path': dict(p=.2), 'gaussian_noise': dict(std=.1),
 }
 from hyso.models.components import NEW_NAMES
-assert set(samples) | {'modular_cnn'} | NEW_NAMES == {s.name for s in ModelRegistry().list()}
+from hyso.models.sampling import NEW_NAMES as SAMPLING_NAMES
+assert set(samples) | {'modular_cnn'} | NEW_NAMES | SAMPLING_NAMES == {s.name for s in ModelRegistry().list()}
 for dtype in (torch.float32, torch.float64):
     for name, options in samples.items():
         model = ModelRegistry().create(name, **options).to(dtype)
@@ -157,6 +158,38 @@ for args in (['models','list'], ['models','show','residual'],
     payload = json.loads(stream.getvalue())
     assert payload['exit_code'] == 0
 assert not torch.cuda.is_initialized()
+new_layers = {
+    'resize': dict(output_size=[6,10],mode='bilinear',align_corners=False),
+    'pixel_shuffle': dict(upscale_factor=2), 'pixel_unshuffle': dict(downscale_factor=2),
+    'flatten': {}, 'permute': {}, 'reshape': dict(shape=[2,8,16]),
+}
+assert set(new_layers) | {'classification_head','regression_head','embedding_head'} == SAMPLING_NAMES
+for dtype in (torch.float32,torch.float64):
+    for name,options in new_layers.items():
+        builder = ModelBuilder.sequential((4,8,8),head='classification',num_classes=3,
+                    pooling='none' if name=='flatten' else 'avg').add(name,**options)
+        report = ModelBuilder.preflight(builder.to_config())
+        model = builder.build().to(dtype)
+        inputs = torch.randn(2,4,8,8,dtype=dtype,requires_grad=True)
+        assert list(model.features(inputs).shape) == [2,*report['feature_shape'][1:]]
+        output = model(inputs); output.square().sum().backward()
+        assert torch.isfinite(inputs.grad).all()
+        other = ModelBuilder.from_config(builder.to_config()).build().to(dtype)
+        other.load_state_dict(model.state_dict(),strict=True)
+    for head,params in [('classification',dict(num_classes=3)),('regression',dict(output_features=2)),
+                        ('embedding',dict(embedding_dim=5,normalize=True))]:
+        builder = ModelBuilder.sequential((4,8,8),head=head,**params)
+        model = builder.build().to(dtype)
+        inputs = torch.randn(2,4,8,8,dtype=dtype,requires_grad=True)
+        optimizer = torch.optim.SGD(model.parameters(),lr=.01)
+        output = model(inputs)
+        torch.nn.functional.mse_loss(output,torch.randn_like(output)).backward()
+        assert torch.isfinite(inputs.grad).all()
+        assert all(p.grad is not None and torch.isfinite(p.grad).all() for p in model.parameters())
+        optimizer.step()
+        clone = ModelBuilder.from_config(builder.to_config()).build().to(dtype)
+        clone.load_state_dict(model.state_dict(),strict=True)
+        model.eval();clone.eval();assert torch.equal(model(inputs),clone(inputs))
 print('commercial installed blocks/JSON/training/CLI PASS')
 '''
 

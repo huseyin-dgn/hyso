@@ -6,6 +6,7 @@ attention family, checkpoint format, arbitrary graph compiler or code loader.
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,7 @@ from .registry import ModelConfigError, ModelRegistry, _plain
 from ._profile import DEVELOPMENT
 from . import components
 from . import advanced
+from . import sampling
 
 M4_FAMILIES = ()
 M4_BLOCKS = ()
@@ -64,6 +66,11 @@ def _cost(name, p):
 
 
 def _shape(name, p, shape):
+    if name in sampling.SAMPLING | sampling.UTILITIES:
+        return sampling.shape(name,p,shape,ModelConfigError)
+    if len(shape)!=3:
+        raise ModelConfigError('NCHW block requires rank-4 features',code='INVALID_BLOCK_ORDER',
+                               expected=['N','C','H','W'],actual=['N',*shape])
     c, h, w = shape
     expected = p.get('in_channels', p.get('channels', p.get('num_features', p.get('num_channels', c))))
     if c != expected:
@@ -114,6 +121,24 @@ def _pairs(items):
     return out
 
 
+def _validate_head(head, shape):
+    if (type(head) is not dict or set(head)!={'name','params'} or type(head['name']) is not str
+            or head['name'] not in sampling.HEADS or type(head['params']) is not dict):
+        raise ModelConfigError('schema2 head requires a whitelisted name and params',code='INVALID_OUTPUT_HEAD',
+                               expected=sorted(sampling.HEADS),actual=head)
+    if 'in_features' in head['params']:
+        raise ModelConfigError('Builder infers head in_features from the feature chain',code='INVALID_OUTPUT_HEAD',
+                               expected='head params without in_features',actual=head['params'])
+    features = math.prod(shape) if head['params'].get('pooling','avg')=='none' else shape[0]
+    try:
+        params = ModelRegistry().validate(head['name'],dict(in_features=features,**head['params']))
+        info = sampling.head_geometry(head['name'],params,shape,ModelConfigError)
+    except ModelConfigError as error:
+        raise ModelConfigError(str(error),code='INVALID_OUTPUT_HEAD',expected=error.expected,actual=error.actual) from error
+    params.pop('in_features')
+    return dict(name=head['name'],params=params),info
+
+
 class BuiltClassifier(nn.Module):
     """Existing blocks in a linear NCHW chain, global average pool, linear logits.
 
@@ -142,6 +167,10 @@ class BuiltClassifier(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Return [N, num_classes] logits; reject incompatible input before work."""
+        x = self._forward_features(x)
+        return self.classifier(torch.flatten(self.pool(x), 1))
+
+    def _forward_features(self, x):
         if not isinstance(x, torch.Tensor) or x.ndim != 4 or x.shape[0] < 1 or tuple(x.shape[1:]) != self.input_shape:
             raise ModelConfigError(f'expected nonempty NCHW with CHW={self.input_shape}',
                                    code='INVALID_INPUT_SHAPE', expected=['N', *self.input_shape],
@@ -159,7 +188,24 @@ class BuiltClassifier(nn.Module):
                 code = 'STATISTICS_REQUIREMENT' if isinstance(block, (nn.BatchNorm2d, nn.GroupNorm, nn.InstanceNorm2d)) else 'INVALID_PARAMETER'
                 raise ModelConfigError(f'block {i} rejected its input/statistics: {error}',
                                        code=code, layer_index=i, expected='valid block input/statistics', actual=list(x.shape)) from error
-        return self.classifier(torch.flatten(self.pool(x), 1))
+        return x
+
+
+class BuiltSequential(BuiltClassifier):
+    """Opt-in schema2 features and explicit prediction head."""
+    def __init__(self, features, config, head):
+        nn.Module.__init__(self)
+        self.features = nn.Sequential(*features)
+        self.head = head
+        self.input_shape = tuple(config['input_shape'])
+        self._architecture = json.dumps(config,sort_keys=True,allow_nan=False)
+
+    @property
+    def classifier(self):
+        return self.head.linear
+
+    def forward(self,x):
+        return self.head(self._forward_features(x))
 
 
 class ModelBuilder:
@@ -185,8 +231,11 @@ class ModelBuilder:
     @staticmethod
     def _validate(config):
         c = _plain(config)
-        if type(c) is not dict or c.get('format') != 'hyso.model_config' or type(c.get('schema_version')) is not int or c['schema_version'] != 1:
+        if type(c) is not dict or c.get('format') != 'hyso.model_config' or type(c.get('schema_version')) is not int or c['schema_version'] not in (1,2):
             raise ModelConfigError('unsupported model configuration format/version')
+        explicit_head = c['schema_version']==2
+        if explicit_head and c.get('kind')!='sequential':
+            raise ModelConfigError('schema2 requires kind=sequential',code='INVALID_BLOCK_ORDER')
         reg = ModelRegistry()
         if c.get('kind') == 'registered_model':
             if set(c)!={'format','schema_version','kind','name','params'} or c['name'] not in (('resnet','preact_resnet','wide_resnet','resnext','densenet')+M4_FAMILIES if DEVELOPMENT else ()):
@@ -211,14 +260,15 @@ class ModelBuilder:
                                        code='PARAMETER_BUDGET_EXCEEDED', expected=_MAX_PARAMETERS, actual=cost)
             c['params'] = p
             return c, (previous,)
-        if c.get('kind') != 'sequential_classifier' or set(c) != {'format','schema_version','kind','input_shape','num_classes','blocks'}:
+        fields = {'format','schema_version','kind','input_shape','blocks'} | ({'head'} if explicit_head else {'num_classes'})
+        if c.get('kind') != ('sequential' if explicit_head else 'sequential_classifier') or set(c) != fields:
             raise ModelConfigError('unsupported connection/model kind or unknown configuration fields',
                                    code='INVALID_BLOCK_ORDER', expected='schema1 sequential_classifier fields', actual=list(c))
         shape = c['input_shape']
         if type(shape) is not list or len(shape) != 3 or any(type(v) is not int or not 1 <= v <= 8192 for v in shape):
             raise ModelConfigError('input_shape must be positive [C,H,W], dimensions <=8192',
                                    code='INVALID_INPUT_SHAPE', expected='three integers in 1..8192', actual=shape)
-        if type(c['num_classes']) is not int or not 1 <= c['num_classes'] <= 8192:
+        if not explicit_head and (type(c['num_classes']) is not int or not 1 <= c['num_classes'] <= 8192):
             raise ModelConfigError('num_classes must be a positive integer <=8192',
                                    code='INVALID_OUTPUT_HEAD', expected='integer in 1..8192', actual=c['num_classes'])
         if type(c['blocks']) is not list or len(c['blocks']) > 64:
@@ -233,21 +283,36 @@ class ModelBuilder:
                                        expected=['name', 'params'], actual=block)
             try:
                 spec = reg.get(block['name'])
-                if spec.category == 'model':
+                if spec.category in ('model','prediction_head'):
                     raise ModelConfigError('a complete model cannot be inserted as an NCHW block',
                                            code='INVALID_BLOCK_ORDER', expected='NCHW block', actual=block['name'])
                 p = reg.validate(block['name'],block['params'])
+                if block['name']=='flatten' and (not explicit_head or i!=len(c['blocks'])-1):
+                    raise ModelConfigError('flatten is supported only as the final schema2 feature block',
+                                           code='INVALID_BLOCK_ORDER',expected='terminal schema2 flatten',actual=i)
                 shape = _shape(block['name'],p,shape)
             except ModelConfigError as error:
                 raise error.at_layer(i)
             cost += _cost(block['name'],p)
             normalized.append(dict(name=block['name'],params=p))
-        if cost + (shape[0]+1)*c['num_classes'] > _MAX_PARAMETERS:
+        if explicit_head:
+            head, head_info = _validate_head(c['head'],shape)
+            c['head'] = head
+            head_cost = head_info['parameter_count']
+        else:
+            head_cost = (shape[0]+1)*c['num_classes']
+        if cost + head_cost > _MAX_PARAMETERS:
             raise ModelConfigError('model exceeds conservative parameter budget 10000000',
                                    code='PARAMETER_BUDGET_EXCEEDED', expected=_MAX_PARAMETERS,
-                                   actual=cost + (shape[0]+1)*c['num_classes'])
+                                   actual=cost + head_cost)
         c['blocks'] = normalized
         return c, tuple(shape)
+
+    @classmethod
+    def sequential(cls, input_shape, *, head='classification', **head_params):
+        """Create an opt-in schema2 chain with an explicit terminal head."""
+        return cls.from_config(dict(format='hyso.model_config',schema_version=2,kind='sequential',
+                                    input_shape=input_shape,blocks=[],head=dict(name=f'{head}_head',params=head_params)))
 
     @classmethod
     def named(cls, name: str, **params: Any) -> ModelBuilder:
@@ -300,7 +365,7 @@ class ModelBuilder:
                 plain = _plain(config)
             except ModelConfigError:
                 return report
-            if type(plain) is not dict or plain.get('kind') != 'sequential_classifier' or type(plain.get('blocks')) is not list:
+            if type(plain) is not dict or plain.get('kind') not in ('sequential_classifier','sequential') or type(plain.get('blocks')) is not list:
                 return report
             reg = ModelRegistry()
             for index, block in enumerate(plain['blocks'][:64]):
@@ -320,8 +385,11 @@ class ModelBuilder:
             return report
         report['valid'] = True
         classes = checked.get('num_classes', checked.get('params', {}).get('num_classes'))
+        if checked['kind']=='sequential':
+            _, head_info = _validate_head(checked['head'],shape)
+            classes = head_info['output_features']
         report['output_shape'] = ['N', classes]
-        if checked['kind'] != 'sequential_classifier':
+        if checked['kind'] not in ('sequential_classifier','sequential'):
             report['input_shape'] = ['N', checked['params']['input_channels'], None, None]
             return report
         report['shape_scope'] = 'sequential_nchw'
@@ -350,7 +418,7 @@ class ModelBuilder:
                     report['diagnostics'].append(error.at_layer(index).to_dict())
                     return report
                 stages = details['stages']
-            stage_elements = [batch_size*c*h*w for c,h,w in stages]
+            stage_elements = [batch_size*math.prod(stage) for stage in stages]
             elements.extend(stage_elements)
             warnings = [ModelConfigError(requirement, code='STATISTICS_REQUIREMENT', layer_index=index,
                         expected=requirement, actual=dict(shape=['N', *current], batch='symbolic')).to_dict()
@@ -367,6 +435,8 @@ class ModelBuilder:
             exact = components.parameter_count(name, params) if name in components.NEW_NAMES | {'conv2d','batch_norm','group_norm','relu','silu','hardswish','identity'} else None
             if details is not None:
                 exact = details['parameter_count']
+            if name in sampling.SAMPLING | sampling.UTILITIES:
+                exact = 0
             report['layers'].append(dict(index=index, name=block['name'],
                                          input_shape=['N', *current], output_shape=['N', *output],
                                          intermediate_shapes=[['N', *s] for s in stages[:-1]],
@@ -379,14 +449,30 @@ class ModelBuilder:
             cost += estimate
             current = output
         report['feature_shape'] = ['N', *shape]
-        report['parameter_estimate'] = cost + (shape[0]+1)*classes
+        if checked['kind']=='sequential':
+            report['head'] = dict(checked['head'],**head_info,input_shape=['N',*shape],output_shape=['N',classes])
+            report['shape_scope'] = 'sequential_features'
+            report['parameter_estimate'] = cost + head_info['parameter_count']
+            head_elements = [batch_size*head_info['in_features'],batch_size*classes]
+            elements.extend(head_elements)
+            report['head']['activation_elements'] = head_elements
+            report['head']['warnings'] = []
+            report['activation_estimate']['scope'] += ', explicit head feature/output boundaries'
+            if max(head_elements)>activation_limit:
+                warning = ModelConfigError('head activation exceeds the advisory element threshold',
+                            code='RESOURCE_LIMIT_WARNING',layer_id='head',expected=activation_limit,
+                            actual=max(head_elements)).to_dict()
+                report['head']['warnings'].append(warning)
+                report['warnings'].append(warning)
+        else:
+            report['parameter_estimate'] = cost + (shape[0]+1)*classes
         report['activation_estimate']['peak_tensor_elements'] = max(elements)
         report['activation_estimate']['summed_tensor_elements'] = sum(elements)
         return report
 
     def add(self, name: str, **params: Any) -> ModelBuilder:
         """Append a registered block transactionally; return self for chaining."""
-        if self._config['kind'] != 'sequential_classifier':
+        if self._config['kind'] not in ('sequential_classifier','sequential'):
             raise ModelConfigError('add is unavailable for fixed complete-model profiles', code='INVALID_BLOCK_ORDER')
         candidate = self.to_config()
         candidate['blocks'].append(dict(name=name,params=params))
@@ -403,6 +489,10 @@ class ModelBuilder:
             if config['kind'] == 'modular_cnn':
                 return reg.create('modular_cnn',**config['params'])
             blocks = [reg.create(b['name'],**b['params']) for b in config['blocks']]
+            if config['kind']=='sequential':
+                _, info = _validate_head(config['head'],shape)
+                head = reg.create(config['head']['name'],in_features=info['in_features'],**config['head']['params'])
+                return BuiltSequential(blocks,config,head)
             return BuiltClassifier(blocks,config,shape[0])
 
     def to_json(self, path: str | Path, *, overwrite: bool = False) -> None:

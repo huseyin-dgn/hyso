@@ -35,13 +35,19 @@ training utility, not a model block. Absent attention/CNN families are not liste
 Stage 13.5.2 adds channel LayerNorm with an NCHW public interface, InstanceNorm,
 five additional activations, five pooling entries and six convolution entries.
 Pooling preserves NCHW and composes with the existing implicit classifier head.
-The commercial catalog contains 48 entries including all 34 Stage 13.5.2 entries. The
+The commercial catalog contains 57 entries including all 48 Stage 13.5.3 entries. The
 [component guide](custom-cnn-builder-components.md) describes the complete
 parameter, geometry, cost and runtime-statistics contracts.
 
 Stage 13.5.3 adds six generic residual blocks, four attention entries and four
 regularization entries. The [advanced guide](custom-cnn-builder-advanced-blocks.md)
 documents internal projections, train/eval behavior and mandatory token budgets.
+
+Stage 13.5.4 adds resize, pixel shuffle/unshuffle, restricted tensor utilities and
+three explicit heads. ModelBuilder.sequential opts into schema2, preserving the
+schema1 implicit classifier. Flatten is supported at the terminal schema2 feature
+boundary with pooling=none. The [sampling/head guide](custom-cnn-builder-sampling-heads.md)
+documents rank restrictions, serialization and training support.
 
 ## Architecture and shape contract
 

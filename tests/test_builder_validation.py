@@ -202,7 +202,7 @@ from hyso.models._profile import PROFILE
 from hyso.cli import main
 import hyso, torch
 assert pathlib.Path(hyso.__file__).resolve().is_relative_to(target)
-assert PROFILE == 'commercial' and len(ModelRegistry().list()) == 48
+assert PROFILE == 'commercial' and len(ModelRegistry().list()) == 57
 def forbidden(*a,**kw):
     raise AssertionError('validation attempted allocation or CUDA')
 torch.nn.Module.__init__ = forbidden

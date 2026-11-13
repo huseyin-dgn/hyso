@@ -16,7 +16,7 @@ def builder():
 
 def test_catalog_is_real_immutable_and_plain_metadata():
     r = ModelRegistry()
-    assert len(r.list()) == 76
+    assert len(r.list()) == 85
     assert r.get('conv_norm_act').constructor is ConvNormAct
     assert r.get('residual').constructor is ResidualBlock
     assert r.get('modular_cnn').constructor is ModularCNN

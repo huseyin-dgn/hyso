@@ -57,7 +57,7 @@ ModularCNN ve geliştirme profilindeki named modeller eski config validation
 yollarını kullanır. Bu profillerde preflight shape_scope='configuration_only'
 döndürür. Spatial input belirtilmediği için H/W ve feature_shape bilinmiyor
 olarak bırakılır. Ticari Registry önceki 16 girdiyi korur ve Aşama 13.5.2 ile
-34 girdiye çıkar. Aşama 13.5.3 ile toplam 48 olur. Hazır ailelerin ticari
+34 girdiye çıkar. Aşama 13.5.3 ile toplam 48, Aşama 13.5.4 ile 57 olur. Hazır ailelerin ticari
 dışlamaları korunur.
 
 ## Yapılandırılmış hatalar
@@ -172,3 +172,18 @@ En fazla 1024 token ve batch/head dahil 4.194.304 matris elemanı kabul edilir.
 Runtime gerçek batch ile QKV hesaplamasından önce aynı sınırı denetler.
 Mevcut advisory aktivasyon uyarıları geçerli eski modellerin kabulünü korur.
 Sözleşmeler ve örnekler [ileri bloklar rehberinde](custom-cnn-builder-advanced-blocks.md) yer alır.
+
+## Aşama 13.5.4 sampling ve explicit head
+
+Schema1 sequential_classifier aynı implicit classification head ve state_dict
+anahtarlarıyla yüklenir. Opt-in ModelBuilder.sequential schema2 kullanır ve
+head seçimini ayrı name/params kaydında tutar. Yeni head türleri classification,
+regression ve embedding olur. Head parametreleri ve pooling/feature uyuşmazlığı
+INVALID_OUTPUT_HEAD üretir. Final head'in blok zincirine eklenmesi ve terminal
+Flatten dışındaki rank geçişleri INVALID_BLOCK_ORDER ile reddedilir.
+
+Resize hedefi, mode/align_corners, pixel bölünebilirliği ve reshape eleman sayısı
+mevcut tanılama kodlarıyla doğrulanır. Yeni hata kodu eklenmedi. Schema2 preflight
+head alanında exact parametre ve aktivasyon sınırlarını gösterir. Geçerli
+uyarılar mevcut advisory politika içinde kalır. Ayrıntılar
+[sampling/head rehberinde](custom-cnn-builder-sampling-heads.md) bulunur.

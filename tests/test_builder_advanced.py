@@ -26,7 +26,7 @@ def cpu_only(monkeypatch):
 
 def test_registry_metadata_and_closed_legacy_attention():
     r = ModelRegistry()
-    assert len(r.list())==76 and set(SAMPLES)==advanced.NEW_NAMES
+    assert len(r.list())==85 and set(SAMPLES)==advanced.NEW_NAMES
     for name in SAMPLES:
         meta=r.get(name).to_dict()
         assert meta['description_tr'] and meta['train_eval'] and meta['memory_notes'] and meta['corrections']

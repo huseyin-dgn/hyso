@@ -119,7 +119,7 @@ DEVELOPMENT_MODULES = {
     "hyso/structure.py",
     "hyso/structure_comparison.py",
 }
-DEVELOPMENT_MODULES |= {'hyso/models/components.py', 'hyso/models/advanced.py'}
+DEVELOPMENT_MODULES |= {'hyso/models/components.py', 'hyso/models/advanced.py', 'hyso/models/sampling.py'}
 DEVELOPMENT_MODULES |= {'hyso/models/_profile.py', 'hyso/models/_development.py', 'hyso/models/regularization.py'}
 PROFILE = json.loads((ROOT / 'commercial-profile.json').read_text(encoding='utf-8'))
 MODULES = set(PROFILE['python_files'])
@@ -164,7 +164,7 @@ def distributions(tmp_path_factory):
 
 def test_canonical_packaging_configuration():
     assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == DEVELOPMENT_MODULES
-    assert len(MODULES) == 154
+    assert len(MODULES) == 155
     assert MODULES.isdisjoint(PROFILE["excluded_python_files"])
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
@@ -699,7 +699,7 @@ from hyso.models._profile import PROFILE
 from contextlib import redirect_stdout
 import io, json, importlib.util
 assert PROFILE == 'commercial'
-assert len(ModelRegistry().list()) == 48
+assert len(ModelRegistry().list()) == 57
 stream = io.StringIO()
 with redirect_stdout(stream):
     assert main(['models', 'list', '--json']) == 0
@@ -772,7 +772,7 @@ from contextlib import redirect_stdout
 import io, json
 families = ('mobilenet_v2', 'mobilenet_v3', 'efficientnet_v2', 'ghostnet',
             'shufflenet_v2', 'repvgg', 'mobileone')
-assert len(ModelRegistry().list()) == 76
+assert len(ModelRegistry().list()) == 85
 stream = io.StringIO()
 with redirect_stdout(stream):
     assert main(['models', 'list', '--json']) == 0
