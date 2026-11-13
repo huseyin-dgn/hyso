@@ -43,8 +43,9 @@ başlık kullanarak `(N,num_classes)` üretir.
 
 Genel convolution formülü her eksende
 `floor((input + 2*padding - dilation*(kernel-1) - 1)/stride) + 1` şeklindedir.
-Mevcut arayüz dilation=1 kullanır. JSON'a dilation eklenmesi bilinmeyen parametre
-hatasıdır. Asimetrik kernel/stride/padding için H/W çiftleri desteklenir.
+Conv2d dilation varsayılanı 1 olarak korunur. Aşama 13.5.2 ile Conv2d ve yeni
+spatial convolution bileşenleri pozitif dilation değerlerini kabul eder.
+Asimetrik kernel/stride/padding/dilation için H/W çiftleri desteklenir.
 Çıktının pozitif ve en fazla 8192 olması gerekir.
 
 Sequential ön doğrulama layers listesinde sıfır tabanlı indeks, bileşen adı,
@@ -55,7 +56,8 @@ sağlamaz.
 ModularCNN ve geliştirme profilindeki named modeller eski config validation
 yollarını kullanır. Bu profillerde preflight shape_scope='configuration_only'
 döndürür. Spatial input belirtilmediği için H/W ve feature_shape bilinmiyor
-olarak bırakılır. Ticari Registry 16 girdidir ve hazır aileleri açmaz.
+olarak bırakılır. Ticari Registry önceki 16 girdiyi korur ve Aşama 13.5.2 ile
+34 girdiye çıkar. Hazır ailelerin ticari dışlamaları korunur.
 
 ## Yapılandırılmış hatalar
 
@@ -126,8 +128,35 @@ oluşturmaz. Build ve inspect --execute mevcut açık CPU oluşturma yollarıdı
 BatchNorm/GroupNorm train istatistik koşulları N ve runtime değerlerine bağlıdır.
 Geçerli sembolik shape bunların her batch için sağlanacağını garanti etmez.
 Tensor bellek kapasitesi, precision politikası ve çalışma zamanı maliyeti ayrı
-konulardır. Yeni dtype/device veya dilation seçenekleri eklenmedi.
+konulardır. Dtype/device ayarları model.to() üzerinden yönetilir. Conv2d için
+dilation desteği Aşama 13.5.2 bileşen sözleşmesinde açıklanır.
 
 Graph bağlantıları, DAG/concat/add, kullanıcı katman ID'leri, dinamik H/W ve
-kullanıcı blok kaydı sonraki tasarım girdileridir. Bu teslim yalnız 13.5.1
-doğrulamasını kapsar.
+kullanıcı blok kaydı sonraki tasarım girdileridir. Bu belge 13.5.1 doğrulama
+sözleşmesini ve 13.5.2 genişletmelerini kapsar.
+
+## Aşama 13.5.2 genişletmeleri
+
+`preflight(config, batch_size=1, activation_limit=16_777_216)` aynı schema1
+yapılandırmasını kabul eder. Parametreler yalnız raporun aktivasyon hesabına
+aittir ve JSON mimarisine eklenmez. Hata listesi diagnostics, uyarı listesi
+warnings alanındadır. Başarılı raporda istatistik veya kaynak uyarısı bulunabilir.
+
+Her katman parameter_estimate, parameter_estimate_kind, parameter_count,
+intermediate_shapes, activation_elements ve warnings alanlarını ekler.
+parameter_count hesaplanabilen operatörlerin gerçek trainable parametre sayısıdır.
+parameter_estimate conservative üst sınırdır. Önceki 10M bütçesi korunur.
+
+activation_estimate, açık batch varsayımıyla input, sequential sınırlar ve yeni
+convolution ara tensorlarını sayar. Eşik aşımı RESOURCE_LIMIT_WARNING üretir.
+Eşik advisory olarak uygulanır. Build davranışı ve eski geçerli kayıtların
+kabulü bu eşik yüzünden değiştirilmez. Bu sayının kapsamı eleman tahminidir.
+
+Yeni INVALID_OUTPUT_PADDING, INVALID_POOLING_CONFIGURATION ve
+INTERMEDIATE_SHAPE_ERROR kodları geometri hatalarını açıklar.
+STATISTICS_REQUIREMENT kesin geçersiz InstanceNorm girdisinde hata, çalışma
+moduna veya sembolik N değerine bağlı koşullarda uyarı olur. Önceki dokuz kod
+ve CLI exit-code sözleşmesi korunur.
+
+Tüm bileşenlerin parametreleri, matematiği ve örnekleri
+[bileşen rehberinde](custom-cnn-builder-components.md) yer alır.

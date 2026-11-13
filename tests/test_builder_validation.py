@@ -64,7 +64,7 @@ def test_invalid_input_shape(shape,metadata_only):
     ('conv2d',dict(in_channels=4,out_channels=4,kernel_size=0),'INVALID_PARAMETER'),
     ('conv2d',dict(in_channels=4,out_channels=4,stride=0),'INVALID_PARAMETER'),
     ('conv2d',dict(in_channels=4,out_channels=4,padding=-1),'INVALID_PARAMETER'),
-    ('conv2d',dict(in_channels=4,out_channels=4,dilation=2),'INVALID_PARAMETER'),
+    ('conv2d',dict(in_channels=4,out_channels=4,dilation=0),'INVALID_PARAMETER'),
     ('conv2d',dict(in_channels=4,out_channels=4,groups=3),'GROUP_DIVISIBILITY_ERROR'),
     ('group_norm',dict(num_channels=4,num_groups=3),'GROUP_DIVISIBILITY_ERROR'),
     ('channel_shuffle',dict(channels=4,groups=3),'GROUP_DIVISIBILITY_ERROR'),
@@ -202,7 +202,7 @@ from hyso.models._profile import PROFILE
 from hyso.cli import main
 import hyso, torch
 assert pathlib.Path(hyso.__file__).resolve().is_relative_to(target)
-assert PROFILE == 'commercial' and len(ModelRegistry().list()) == 16
+assert PROFILE == 'commercial' and len(ModelRegistry().list()) == 34
 def forbidden(*a,**kw):
     raise AssertionError('validation attempted allocation or CUDA')
 torch.nn.Module.__init__ = forbidden

@@ -81,14 +81,28 @@ samples = {
     'group_norm': dict(num_groups=2,num_channels=4), 'relu': {}, 'silu': {},
     'hardswish': {}, 'identity': {}, 'channel_shuffle': dict(channels=4),
     'dropblock2d': dict(p=.2,block_size=3),
+    'pointwise_conv2d': dict(in_channels=4,out_channels=6),
+    'depthwise_conv2d': dict(in_channels=4,depth_multiplier=2),
+    'depthwise_separable_conv2d': dict(in_channels=4,out_channels=6,depth_multiplier=2),
+    'spatial_separable_conv2d': dict(in_channels=4,out_channels=6,intermediate_channels=2),
+    'factorized_conv2d': dict(in_channels=4,out_channels=6,intermediate_channels=2),
+    'conv_transpose2d': dict(in_channels=4,out_channels=6,stride=2,output_padding=1),
+    'channel_layer_norm': dict(channels=4),
+    'instance_norm': dict(num_features=4,affine=True,track_running_stats=True),
+    'leaky_relu': {}, 'prelu': dict(num_parameters=4), 'gelu': {}, 'mish': {}, 'hardsigmoid': {},
+    'max_pool2d': dict(kernel_size=2), 'avg_pool2d': dict(kernel_size=3,padding=1),
+    'adaptive_avg_pool2d': dict(output_size=[2,3]),
+    'adaptive_max_pool2d': dict(output_size=[2,3]), 'global_avg_pool2d': {},
 }
-assert set(samples) | {'modular_cnn'} == {s.name for s in ModelRegistry().list()}
+from hyso.models.components import NEW_NAMES
+assert set(samples) | {'modular_cnn'} | NEW_NAMES == {s.name for s in ModelRegistry().list()}
 for dtype in (torch.float32, torch.float64):
     for name, options in samples.items():
         model = ModelRegistry().create(name, **options).to(dtype)
         inputs = torch.randn(2,4,8,8,dtype=dtype,requires_grad=True)
         output = model(inputs)
-        assert output.shape == inputs.shape and torch.isfinite(output).all()
+        report = ModelBuilder.preflight(ModelBuilder((4,8,8),3).add(name,**options).to_config())
+        assert list(output.shape) == [2,*report['feature_shape'][1:]] and torch.isfinite(output).all()
         output.square().mean().backward()
         assert torch.isfinite(inputs.grad).all()
         assert all(p.grad is not None and torch.isfinite(p.grad).all() for p in model.parameters())
@@ -100,6 +114,8 @@ for dtype in (torch.float32, torch.float64):
         model.eval(); clone.eval()
         assert torch.equal(model(inputs),clone(inputs))
 architecture = (ModelBuilder((4,8,8),3).add('conv_norm_act',in_channels=4,out_channels=4)
+                .add('depthwise_separable_conv2d',in_channels=4,out_channels=4)
+                .add('channel_layer_norm',channels=4).add('gelu').add('avg_pool2d',kernel_size=3,padding=1,stride=1)
                 .add('residual',in_channels=4,out_channels=4)
                 .add('channel_shuffle',channels=4).add('dropblock2d',p=.1))
 model = architecture.build()

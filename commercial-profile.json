@@ -73,6 +73,7 @@
     "hyso/models/bcam.py",
     "hyso/models/blocks.py",
     "hyso/models/builder.py",
+    "hyso/models/components.py",
     "hyso/models/fit.py",
     "hyso/models/modular.py",
     "hyso/models/registry.py",

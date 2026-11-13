@@ -19,6 +19,7 @@ from .WithSE import SEBlock
 from .attention import ECAAttention, CoordinateAttention
 from ._profile import DEVELOPMENT
 from .regularization import ChannelShuffle, DropBlock2D
+from . import components
 
 M4_FAMILIES = ()
 M4_BLOCKS = ()
@@ -31,6 +32,11 @@ from .modular import ModularCNN
 
 
 _DIAGNOSTICS = {
+    'INVALID_OUTPUT_PADDING': ('Çıkış padding değeri geçersiz.', 'Her eksende output_padding değerini stride veya dilation değerinden küçük seçin.'),
+    'INVALID_POOLING_CONFIGURATION': ('Pooling ayarları geçersiz.', 'Pozitif kernel/stride ve kernel yarısını aşmayan padding kullanın.'),
+    'INTERMEDIATE_SHAPE_ERROR': ('Ara tensor boyutu geçersiz.', 'Ara kanal ve spatial boyutların 1..8192 aralığında olmasını sağlayın.'),
+    'STATISTICS_REQUIREMENT': ('Normalizasyon istatistik koşulu çalışma anında kontrol edilir.', 'Belirtilen örnek sayısı koşulunu sağlayın. Running statistics yalnız desteklenen eval modunda kullanılabilir.'),
+    'RESOURCE_LIMIT_WARNING': ('Tahmini aktivasyon eleman sayısı uyarı eşiğini aşıyor.', 'Batch, kanal veya spatial boyutları azaltın ve ön doğrulamayı yeniden çalıştırın.'),
     'INVALID_INPUT_SHAPE': ('Giriş boyutu geçersiz.', 'CHW boyutlarını 1..8192 aralığında üç tam sayı olarak belirtin.'),
     'INVALID_PARAMETER': ('Bileşen parametresi veya mimari verisi geçersiz.', 'Bileşenin desteklediği parametreleri ve JSON şemasını kontrol edin.'),
     'CHANNEL_MISMATCH': ('Katmanların kanal sayıları uyuşmuyor.', 'Katmanın giriş kanalını önceki katmanın çıkış kanalıyla eşleştirin.'),
@@ -140,17 +146,31 @@ class ComponentSpec:
         for p in self.parameters:
             row = dict(name=p.name, kind=p.kind, description=p.description,
                        required=p.required, choices=list(p.choices))
-            if p.kind in ('positive_int', 'odd_int', 'pair', 'padding', 'int_list'):
+            if p.kind in ('positive_int', 'odd_int', 'pair', 'optional_pair', 'padding', 'int_list'):
                 row['constraints'] = dict(minimum=0 if p.kind == 'padding' else 1,
                                           maximum=8192, odd=p.kind == 'odd_int')
                 if p.kind == 'int_list': row['constraints']['max_items'] = 16
+                if p.kind in ('pair', 'optional_pair', 'padding'):
+                    row['constraints']['pair_length'] = 2
+                    row['constraints']['nullable'] = p.kind == 'optional_pair'
+            elif p.kind in ('positive_float', 'nonnegative_float', 'finite_float', 'probability_closed', 'optional_momentum'):
+                row['constraints'] = dict(finite=True, minimum=0 if p.kind != 'finite_float' else None,
+                                          exclusive_minimum=p.kind == 'positive_float',
+                                          maximum=1 if p.kind in ('probability_closed', 'optional_momentum') else None,
+                                          nullable=p.kind == 'optional_momentum')
+            elif p.kind == 'bool':
+                row['constraints'] = dict(type='boolean')
+            if self.name == 'prelu' and p.name == 'init':
+                row['constraints'].update(minimum=-3.4028234663852886e38, maximum=3.4028234663852886e38)
             if not p.required:
                 row['default'] = _plain(p.default)
             params.append(row)
         return dict(name=self.name, category=self.category, description=self.description,
                     constructor=self.constructor.__module__+'.'+self.constructor.__qualname__,
                     parameters=params, input_condition=self.input_condition,
-                    output_condition=self.output_condition, compatibility=list(self.compatibility))
+                    output_condition=self.output_condition, compatibility=list(self.compatibility),
+                    layout='NCHW', parameter_dependencies=_dependencies(self.name),
+                    common_errors=_common_errors(self.category))
 
 
 def _p(name, kind='positive_int', default=..., choices=(), description=None):
@@ -168,7 +188,7 @@ _SPECS = (
       _p('groups', default=1), _NORM, _p('activation', 'choice', 'silu', ('silu', 'relu', None)))),
     ('conv2d', 'convolution', 'PyTorch Conv2d primitive used by HYSo; grouped/depthwise via groups.', nn.Conv2d,
      (_IN, _OUT, _p('kernel_size', 'pair', 3), _p('stride', 'pair', 1), _p('padding', 'padding', 1),
-      _p('groups', default=1), _p('bias', 'bool', True))),
+      _p('groups', default=1), _p('bias', 'bool', True), _p('dilation', 'pair', 1))),
     ('residual', 'residual', 'Existing two-convolution ResidualBlock with internal projection/addition.', ResidualBlock,
      (_IN, _OUT, _p('stride', 'pair', 1), _NORM,
       _p('attention', 'attention', None, description='None or {name, params} for a registered attention with matching output channels.'))),
@@ -181,9 +201,10 @@ _SPECS = (
     ('coordinate', 'attention', 'Existing height/width attention with internal BatchNorm.', CoordinateAttention,
      (_CHANNELS, _p('reduction', default=32))),
     ('batch_norm', 'normalization', 'PyTorch BatchNorm2d as used in existing HYSo blocks.', nn.BatchNorm2d,
-     (_p('num_features'),)),
+     (_p('num_features'), _p('eps', 'positive_float', 1e-5), _p('momentum', 'optional_momentum', .1),
+      _p('affine', 'bool', True), _p('track_running_stats', 'bool', True))),
     ('group_norm', 'normalization', 'PyTorch GroupNorm with explicit groups/channels.', nn.GroupNorm,
-     (_p('num_groups'), _p('num_channels'))),
+     (_p('num_groups'), _p('num_channels'), _p('eps', 'positive_float', 1e-5), _p('affine', 'bool', True))),
     ('relu', 'activation', 'Out-of-place ReLU used by ConvNormAct.', nn.ReLU, ()),
     ('silu', 'activation', 'Out-of-place SiLU used by existing residual/convolution blocks.', nn.SiLU, ()),
     ('hardswish', 'activation', 'Out-of-place HardSwish used by CoordinateAttention.', nn.Hardswish, ()),
@@ -202,6 +223,36 @@ _SPECS += (
     ('dropblock2d', 'regularization', DropBlock2D.__doc__, DropBlock2D,
      (_p('p', 'probability_closed', .1), _p('block_size', default=3))),
 )
+
+_SPECS += components.specifications(_p)
+
+
+def _dependencies(name):
+    dependencies = {
+        'conv2d': ['groups divides in_channels and out_channels', 'dilation changes the effective kernel'],
+        'conv_norm_act': ['groups divides both channel counts', 'normalization determines convolution bias'],
+        'depthwise_conv2d': ['groups=in_channels', 'out_channels=in_channels*depth_multiplier'],
+        'depthwise_separable_conv2d': ['intermediate_channels=in_channels*depth_multiplier'],
+        'spatial_separable_conv2d': ['H settings apply to the vertical stage, W settings to the horizontal stage'],
+        'factorized_conv2d': ['intermediate_channels <= min(in_channels,out_channels)', '1x1 reduction then KxK convolution'],
+        'conv_transpose2d': ['groups divides both channel counts', 'output_padding[i] < stride[i] or dilation[i]'],
+        'group_norm': ['num_groups divides num_channels'],
+        'prelu': ['num_parameters is 1 or the incoming channel count'],
+        'max_pool2d': ['stride=None uses kernel_size', 'padding[i] <= floor(kernel_size[i]/2)'],
+        'avg_pool2d': ['stride=None uses kernel_size', 'padding[i] <= floor(kernel_size[i]/2)', 'count_include_pad controls the mean divisor'],
+        'channel_layer_norm': ['normalizes C at each N,H,W position, external layout stays NCHW'],
+        'instance_norm': ['spatial sample count H*W > 1 when using input statistics'],
+    }
+    return dependencies.get(name, [])
+
+
+def _common_errors(category):
+    return {
+        'convolution': ['Match incoming channels and group divisors.', 'Use positive output geometry including every internal stage.'],
+        'normalization': ['Match channels and use positive finite eps.', 'Check training/eval statistics requirements.'],
+        'activation': ['Use only the documented parameters.', 'PReLU requires one slope or one per channel.'],
+        'pooling': ['Use positive output sizes and legal padding.', 'Check ceil-mode right-boundary correction.'],
+    }.get(category, ['Use the closed parameter schema described by models show.'])
 
 if DEVELOPMENT:
     _M3_NORM = _p('norm', 'choice', 'batch', ('batch', 'group', None), 'M3 normalization; group uses gcd(8, channels).')
@@ -230,13 +281,15 @@ _IO = {
     'channel_mixing': ('Floating NCHW with matching channels.', 'Same NCHW shape; validated channel partition.'),
     'regularization': ('Nonempty floating NCHW.', 'Same shape and dtype; explicit training-only masking.'),
     'convolution': ('Floating [N,in_channels,H,W]; groups divides both channel counts.',
-                    '[N,out_channels,floor((H+2*pH-kH)/sH)+1,floor((W+2*pW-kW)/sW)+1]; positive spatial output.'),
+                    'Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See parameter_dependencies and preflight.'),
+    'pooling': ('Floating nonempty NCHW; legal window/padding or positive adaptive output_size.',
+                'Floating NCHW with unchanged channels; global average returns [N,C,1,1].'),
     'residual': ('Floating [N,in_channels,H,W]; attention channels equal out_channels.',
                  '[N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.'),
     'attention': ('Floating [N,channels,H,W], all dimensions positive.',
                   'Same NCHW shape; multiplicative gates, no channel or spatial resizing.'),
-    'normalization': ('Floating NCHW; C=num_features (BatchNorm) or num_channels (GroupNorm); groups divide C.',
-                      'Same NCHW shape; native batch/statistics constraints apply.'),
+    'normalization': ('Floating NCHW; C matches num_features, num_channels or channels. GroupNorm groups divide C.',
+                      'Same NCHW shape; channel LayerNorm normalizes C per spatial position. Native statistics constraints apply.'),
     'activation': ('Floating nonempty NCHW in Builder v1.', 'Same NCHW shape; out-of-place activation.'),
     'identity': ('Floating nonempty NCHW in Builder v1.', 'Same tensor/shape; no parameters.'),
     'model': ('Floating nonempty [N,input_channels,H,W]; normal model.to(device/dtype) semantics.',
@@ -260,7 +313,7 @@ class ModelRegistry:
         self._entries = MappingProxyType({name: ComponentSpec(
             name, category, description, ctor, params,
             _IO[category][0], _IO[category][1],
-            (('Existing canonical constructor; CPU construction only.' if name in ('conv_norm_act','conv2d','residual','se','cbam','eca','coordinate','batch_norm','group_norm','relu','silu','hardswish','identity','modular_cnn') else 'Closed mobile/edge constructor or torchvision adapter; CPU construction only.' if name in M4_FAMILIES+M4_BLOCKS else 'Closed M3 constructor / torchvision adapter; CPU construction only.'),
+            (('HYSo/PyTorch component; CPU construction only.' if name in components.NEW_NAMES or name in ('conv_norm_act','conv2d','residual','se','cbam','eca','coordinate','batch_norm','group_norm','relu','silu','hardswish','identity','modular_cnn','channel_shuffle','dropblock2d') else 'Closed mobile/edge constructor or torchvision adapter; CPU construction only.' if name in M4_FAMILIES+M4_BLOCKS else 'Closed M3 constructor / torchvision adapter; CPU construction only.'),
              'Builder v1: linear connections; no external skip/concat/DAG.',
              'BatchNorm requires N*H*W>1 while training; GroupNorm requires valid group statistics.',
              'SE/CBAM keep max(1, channels//reduction); CBAM/ECA kernels must be odd.',
@@ -300,17 +353,24 @@ class ModelRegistry:
             if kind in ('positive_int', 'odd_int'):
                 valid = type(v) is int and 1 <= v <= 8192
                 if kind == 'odd_int': valid = valid and v % 2 == 1
-            elif kind in ('pair', 'padding'):
+            elif kind in ('pair', 'padding', 'optional_pair'):
                 values = [v, v] if type(v) is int else v
                 valid = type(values) is list and len(values) == 2 and all(
                     type(x) is int and (0 if kind == 'padding' else 1) <= x <= 8192 for x in values)
                 if valid: v = values
+                if kind == 'optional_pair' and v is None:
+                    valid = True
             elif kind == 'int_list':
                 valid = type(v) is list and 1 <= len(v) <= 16 and all(type(x) is int and 1 <= x <= 8192 for x in v)
             elif kind in ('positive_float', 'probability'):
                 valid = type(v) in (int,float) and abs(v)<=1e308 and math.isfinite(v) and (v>0 if kind=='positive_float' else 0<=v<1)
             elif kind == 'optional_probability':
                 valid = v is None or type(v) in (int,float) and 0 <= v < 1
+            elif kind == 'optional_momentum':
+                valid = v is None or type(v) in (int,float) and 0 <= v <= 1
+            elif kind in ('finite_float', 'nonnegative_float'):
+                valid = type(v) in (int,float) and abs(v) <= 1e308 and math.isfinite(v)
+                if kind == 'nonnegative_float': valid = valid and v >= 0
             elif kind == 'probability_closed':
                 valid = type(v) in (int,float) and 0 <= v <= 1
             elif kind == 'bool': valid = type(v) is bool
@@ -328,15 +388,17 @@ class ModelRegistry:
                                        code='INVALID_OUTPUT_HEAD' if field.name == 'num_classes' else 'INVALID_PARAMETER',
                                        expected=dict(parameter=field.name, kind=kind, choices=list(field.choices)), actual=v)
             result[field.name] = v
-        if name in ('conv_norm_act', 'conv2d') and any(result[k] % result['groups'] for k in ('in_channels', 'out_channels')):
-            raise ModelConfigError('groups must divide both channel counts', code='GROUP_DIVISIBILITY_ERROR',
-                                   expected='groups divides in_channels and out_channels', actual=result)
+        components.validate(name, result, ModelConfigError)
         if name == 'channel_shuffle' and result['channels'] % result['groups']:
+            divisors = [v for v in range(1, result['channels']+1) if result['channels'] % v == 0]
             raise ModelConfigError('groups must divide channels', code='GROUP_DIVISIBILITY_ERROR',
-                                   expected='groups divides channels', actual=result)
+                                   expected=divisors, actual=result['groups'],
+                                   suggestion=f'Geçerli groups değerleri {divisors}.')
         if name == 'group_norm' and result['num_channels'] % result['num_groups']:
+            divisors = [v for v in range(1, result['num_channels']+1) if result['num_channels'] % v == 0]
             raise ModelConfigError('num_groups must divide num_channels', code='GROUP_DIVISIBILITY_ERROR',
-                                   expected='num_groups divides num_channels', actual=result)
+                                   expected=divisors, actual=result['num_groups'],
+                                   suggestion=f'Geçerli num_groups değerleri {divisors}.')
         if name == 'residual' and result['attention'] is not None:
             if result['attention']['params']['channels'] != result['out_channels']:
                 raise ModelConfigError('residual attention channels must equal out_channels', code='CHANNEL_MISMATCH',

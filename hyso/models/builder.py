@@ -14,6 +14,7 @@ from torch import nn
 
 from .registry import ModelConfigError, ModelRegistry, _plain
 from ._profile import DEVELOPMENT
+from . import components
 
 M4_FAMILIES = ()
 M4_BLOCKS = ()
@@ -26,6 +27,8 @@ _MAX_PARAMETERS = 10_000_000
 
 def _cost(name, p):
     """Conservative parameter bound, computed before any tensor allocation."""
+    if name in components.NEW_NAMES:
+        return components.parameter_count(name, p)
     if name in M4_BLOCKS:
         return block_cost(name,p)
     if name in ('basic_residual','bottleneck','preactivation','wide_residual','resnext_bottleneck'):
@@ -53,7 +56,7 @@ def _cost(name, p):
         if name == 'coordinate': return 3*c*hidden + 3*hidden + 2*c
         return 2*c*hidden + hidden + c + (2*p['kernel_size']**2+1 if name == 'cbam' else 0)
     if name in ('batch_norm', 'group_norm'):
-        return 2*p.get('num_features', p.get('num_channels', 0))
+        return components.parameter_count(name, p)
     return 0
 
 
@@ -63,9 +66,24 @@ def _shape(name, p, shape):
     if c != expected:
         raise ModelConfigError(f'{name}: incoming channels {c}, expected {expected}',
                                code='CHANNEL_MISMATCH', expected=expected, actual=c)
-    if name in M4_BLOCKS:
+    if name == 'prelu' and p['num_parameters'] not in (1, c):
+        raise ModelConfigError('PReLU num_parameters must be 1 or incoming channels',
+                               code='CHANNEL_MISMATCH', expected=[1,c], actual=p['num_parameters'])
+    if name == 'instance_norm' and h*w == 1 and not p['track_running_stats']:
+        raise ModelConfigError('InstanceNorm without running statistics requires H*W > 1 in train and eval',
+                               code='STATISTICS_REQUIREMENT', expected='H*W > 1', actual=h*w,
+                               suggestion='H*W değerini 1 üzerine çıkarın veya track_running_stats=True ile eval modunu kullanın.')
+    if name in components.CONVOLUTIONS | components.POOLING:
+        stages = components.stages(name, p, shape)
+        for index, stage in enumerate(stages):
+            if min(stage) <= 0 or max(stage) > 8192:
+                code = 'INTERMEDIATE_SHAPE_ERROR' if index < len(stages)-1 else 'SPATIAL_DIMENSION_ERROR'
+                raise ModelConfigError(f'{name}: stage {index} produces invalid CHW {stage}',
+                                       code=code, expected='CHW in 1..8192', actual=list(stage))
+        c,h,w = stages[-1]
+    elif name in M4_BLOCKS:
         c,h,w = block_shape(name,p,shape)
-    elif name in ('conv2d', 'conv_norm_act'):
+    elif name == 'conv_norm_act':
         k, s, pad = p['kernel_size'], p['stride'], p['padding']
         h, w = ((v + 2*padding - kernel)//stride + 1 for v, padding, kernel, stride in zip((h,w),pad,k,s))
         c = p['out_channels']
@@ -130,9 +148,12 @@ class BuiltClassifier(nn.Module):
         for i, block in enumerate(self.features):
             try:
                 x = block(x)
+            except ModelConfigError as error:
+                raise error.at_layer(i)
             except ValueError as error:
+                code = 'STATISTICS_REQUIREMENT' if isinstance(block, (nn.BatchNorm2d, nn.GroupNorm, nn.InstanceNorm2d)) else 'INVALID_PARAMETER'
                 raise ModelConfigError(f'block {i} rejected its input/statistics: {error}',
-                                       layer_index=i, expected='valid block input/statistics', actual=list(x.shape)) from error
+                                       code=code, layer_index=i, expected='valid block input/statistics', actual=list(x.shape)) from error
         return self.classifier(torch.flatten(self.pool(x), 1))
 
 
@@ -246,7 +267,8 @@ class ModelBuilder:
         return _plain(self._config)
 
     @classmethod
-    def preflight(cls, config: dict[str, Any]) -> dict[str, Any]:
+    def preflight(cls, config: dict[str, Any], *, batch_size: int = 1,
+                  activation_limit: int = 16_777_216) -> dict[str, Any]:
         """Validate architecture data and infer symbolic-N shapes without weights.
 
         Sequential profiles expose exact per-layer CHW geometry and the existing
@@ -254,11 +276,17 @@ class ModelBuilder:
         configuration validation, with spatial shapes explicitly unspecified.
         After a failure, independent scalar/block errors may also be reported.
         Downstream shapes are omitted when a predecessor cannot be validated.
+        batch_size is an explicit activation-count assumption, while statistical
+        conditions retain symbolic N. activation_limit is an advisory per-tensor
+        element threshold and preserves acceptance of existing configurations.
         """
-        report = dict(valid=False, diagnostics=[], input_shape=None, output_shape=None,
+        report = dict(valid=False, diagnostics=[], warnings=[], input_shape=None, output_shape=None,
                       feature_shape=None, layers=[], parameter_estimate=None,
                       shape_scope='configuration_only')
         try:
+            if type(batch_size) is not int or batch_size < 1 or type(activation_limit) is not int or activation_limit < 1:
+                raise ModelConfigError('preflight batch_size and activation_limit must be positive integers',
+                                       expected='positive integers', actual=dict(batch_size=batch_size, activation_limit=activation_limit))
             checked, shape = cls._validate(config)
         except ModelConfigError as error:
             report['diagnostics'].append(error.to_dict())
@@ -294,15 +322,43 @@ class ModelBuilder:
         report['shape_scope'] = 'sequential_nchw'
         current = tuple(checked['input_shape'])
         report['input_shape'] = ['N', *current]
+        elements = [batch_size*current[0]*current[1]*current[2]]
+        report['parameter_estimate_kind'] = 'conservative_upper_bound'
+        report['activation_estimate'] = dict(batch_size=batch_size, warning_threshold=activation_limit,
+                                              scope='input, sequential boundaries and new convolution internal stages',
+                                              peak_tensor_elements=elements[0], summed_tensor_elements=elements[0],
+                                              memory_guarantee=False)
+        if elements[0] > activation_limit:
+            report['warnings'].append(ModelConfigError('input activation exceeds the advisory element threshold',
+                code='RESOURCE_LIMIT_WARNING', expected=activation_limit, actual=elements[0]).to_dict())
         cost = 0
         for index, block in enumerate(checked['blocks']):
             output = _shape(block['name'], block['params'], current)
+            name, params = block['name'], block['params']
+            stages = components.stages(name, params, current) if name in components.CONVOLUTIONS | components.POOLING else [output]
+            stage_elements = [batch_size*c*h*w for c,h,w in stages]
+            elements.extend(stage_elements)
+            warnings = [ModelConfigError(requirement, code='STATISTICS_REQUIREMENT', layer_index=index,
+                        expected=requirement, actual=dict(shape=['N', *current], batch='symbolic')).to_dict()
+                        for requirement in components.statistics_requirements(name, params, current)]
+            if max(stage_elements) > activation_limit:
+                warnings.append(ModelConfigError('layer activation exceeds the advisory element threshold',
+                                code='RESOURCE_LIMIT_WARNING', layer_index=index,
+                                expected=activation_limit, actual=max(stage_elements)).to_dict())
+            estimate = _cost(name, params)
+            exact = components.parameter_count(name, params) if name in components.NEW_NAMES | {'conv2d','batch_norm','group_norm','relu','silu','hardswish','identity'} else None
             report['layers'].append(dict(index=index, name=block['name'],
-                                         input_shape=['N', *current], output_shape=['N', *output]))
-            cost += _cost(block['name'], block['params'])
+                                         input_shape=['N', *current], output_shape=['N', *output],
+                                         intermediate_shapes=[['N', *s] for s in stages[:-1]],
+                                         parameter_estimate=estimate, parameter_estimate_kind='conservative_upper_bound',
+                                         parameter_count=exact, activation_elements=stage_elements, warnings=warnings))
+            report['warnings'].extend(warnings)
+            cost += estimate
             current = output
         report['feature_shape'] = ['N', *shape]
         report['parameter_estimate'] = cost + (shape[0]+1)*classes
+        report['activation_estimate']['peak_tensor_elements'] = max(elements)
+        report['activation_estimate']['summed_tensor_elements'] = sum(elements)
         return report
 
     def add(self, name: str, **params: Any) -> ModelBuilder:

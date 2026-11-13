@@ -11,18 +11,19 @@ or registration of arbitrary Python callables is provided by this JSON profile.
 
 | Category | Names | Existing implementation |
 |---|---|---|
-| Convolution | conv_norm_act, conv2d | HYSo ConvNormAct; torch.nn.Conv2d primitive already used by HYSo |
+| Convolution | conv_norm_act, conv2d, pointwise_conv2d, depthwise_conv2d, depthwise_separable_conv2d, spatial_separable_conv2d, factorized_conv2d, conv_transpose2d | HYSo composition over PyTorch convolution operators |
 | Residual | residual | Existing ResidualBlock, including its own internal projection/addition |
 | Attention | se, cbam, eca, coordinate | SEBlock, CBAMBlock, ECAAttention, CoordinateAttention |
-| Normalization | batch_norm, group_norm | torch.nn.BatchNorm2d / GroupNorm used by existing blocks |
-| Activation | relu, silu, hardswish | Existing-use torch.nn.ReLU / SiLU / Hardswish; out of place |
+| Normalization | batch_norm, group_norm, channel_layer_norm, instance_norm | Native normalization and explicit NCHW channel LayerNorm |
+| Activation | relu, silu, hardswish, leaky_relu, prelu, gelu, mish, hardsigmoid | Closed out-of-place PyTorch activation operators |
+| Pooling | max_pool2d, avg_pool2d, adaptive_avg_pool2d, adaptive_max_pool2d, global_avg_pool2d | NCHW spatial reductions |
 | Identity | identity | torch.nn.Identity |
 | Full model | modular_cnn | Exactly the original ModularCNN class |
 
-The catalog exposes supported constructor subsets, not every native PyTorch
-option: no JSON device/dtype, dilation, callable normalization/activation or
-in-place activation. Grouped/depthwise/pointwise convolutions are configurations
-of existing convolution entries, not newly implemented convolution families.
+The catalog exposes documented constructor subsets of native PyTorch operators.
+JSON accepts closed component parameters with explicit dilation on
+Conv2d and the new convolution entries. Device/dtype remain explicit Module.to()
+operations. Activation and normalization choices use fixed Registry entries.
 SE/CBAM keep the original max(1, channels//reduction) hidden width; CBAM/ECA kernels
 must be odd. Groups must divide channels. BatchNorm/GroupNorm retain their native
 batch/statistics requirements; `eval()` changes BatchNorm behavior normally.
@@ -31,10 +32,12 @@ Legacy BottleneckResidualBlock/BottleneckSEBlock and ELO/CEMO training wrappers
 remain directly usable but are outside v1's normalized JSON adapters. Their
 legacy options/callable constructors are not silently translated. EMA is a
 training utility, not a model block. Absent attention/CNN families are not listed.
-Flattened-head LayerNorm, dropout/stochastic-depth controls and internal sigmoid
-gates are not advertised as selectable v1 NCHW entries. Pooling/Linear are the
-fixed classifier head, not free graph nodes. Their existing implementations are
-preserved; exclusion from this catalog does not mean they are missing from HYSo.
+Stage 13.5.2 adds channel LayerNorm with an NCHW public interface, InstanceNorm,
+five additional activations, five pooling entries and six convolution entries.
+Pooling preserves NCHW and composes with the existing implicit classifier head.
+The commercial catalog contains 34 entries including the previous 16. The
+[component guide](custom-cnn-builder-components.md) describes the complete
+parameter, geometry, cost and runtime-statistics contracts.
 
 ## Architecture and shape contract
 
