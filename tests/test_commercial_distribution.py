@@ -93,6 +93,16 @@ samples = {
     'max_pool2d': dict(kernel_size=2), 'avg_pool2d': dict(kernel_size=3,padding=1),
     'adaptive_avg_pool2d': dict(output_size=[2,3]),
     'adaptive_max_pool2d': dict(output_size=[2,3]), 'global_avg_pool2d': {},
+    'bottleneck_residual': dict(in_channels=4,out_channels=4,intermediate_channels=8),
+    'preactivation_residual': dict(in_channels=4,out_channels=4,intermediate_channels=8),
+    'wide_residual_block': dict(in_channels=4,out_channels=4,intermediate_channels=8),
+    'grouped_bottleneck': dict(in_channels=4,out_channels=4,intermediate_channels=8,groups=2),
+    'inverted_bottleneck': dict(in_channels=4,out_channels=4,expansion_ratio=2),
+    'gated_residual': dict(in_channels=4,out_channels=4,intermediate_channels=8),
+    'spatial_attention': dict(channels=4), 'channel_attention': dict(channels=4),
+    'spatial_self_attention': dict(channels=4),
+    'multihead_spatial_attention': dict(channels=4,num_heads=2),
+    'dropout': dict(p=.2), 'dropout2d': dict(p=.2), 'drop_path': dict(p=.2), 'gaussian_noise': dict(std=.1),
 }
 from hyso.models.components import NEW_NAMES
 assert set(samples) | {'modular_cnn'} | NEW_NAMES == {s.name for s in ModelRegistry().list()}
@@ -116,6 +126,9 @@ for dtype in (torch.float32, torch.float64):
 architecture = (ModelBuilder((4,8,8),3).add('conv_norm_act',in_channels=4,out_channels=4)
                 .add('depthwise_separable_conv2d',in_channels=4,out_channels=4)
                 .add('channel_layer_norm',channels=4).add('gelu').add('avg_pool2d',kernel_size=3,padding=1,stride=1)
+                .add('bottleneck_residual',in_channels=4,out_channels=4,intermediate_channels=8)
+                .add('multihead_spatial_attention',channels=4,num_heads=2)
+                .add('drop_path',p=.1)
                 .add('residual',in_channels=4,out_channels=4)
                 .add('channel_shuffle',channels=4).add('dropblock2d',p=.1))
 model = architecture.build()

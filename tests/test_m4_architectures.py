@@ -223,7 +223,7 @@ def test_license_excluded_sources_are_unavailable():
     import hyso.models as models
     from hyso.models.m4_config import M4_FAMILIES
     from hyso.models.m4_registry import M4_BLOCKS
-    assert len(ModelRegistry().list()) == 62
+    assert len(ModelRegistry().list()) == 76
     assert len(M4_FAMILIES) == 7 and len(M4_BLOCKS) == 10
     assert not hasattr(models, 'FasterNet') and not hasattr(models, 'PartialConv')
     for name in ('fasternet', 'partial_conv'):

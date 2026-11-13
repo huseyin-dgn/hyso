@@ -15,6 +15,7 @@ from torch import nn
 from .registry import ModelConfigError, ModelRegistry, _plain
 from ._profile import DEVELOPMENT
 from . import components
+from . import advanced
 
 M4_FAMILIES = ()
 M4_BLOCKS = ()
@@ -27,6 +28,8 @@ _MAX_PARAMETERS = 10_000_000
 
 def _cost(name, p):
     """Conservative parameter bound, computed before any tensor allocation."""
+    if name in advanced.NEW_NAMES:
+        return advanced.describe(name,p,(p.get('in_channels',p.get('channels',1)),1,1),1,ModelConfigError)['parameter_count']
     if name in components.NEW_NAMES:
         return components.parameter_count(name, p)
     if name in M4_BLOCKS:
@@ -73,7 +76,9 @@ def _shape(name, p, shape):
         raise ModelConfigError('InstanceNorm without running statistics requires H*W > 1 in train and eval',
                                code='STATISTICS_REQUIREMENT', expected='H*W > 1', actual=h*w,
                                suggestion='H*W değerini 1 üzerine çıkarın veya track_running_stats=True ile eval modunu kullanın.')
-    if name in components.CONVOLUTIONS | components.POOLING:
+    if name in advanced.NEW_NAMES:
+        c,h,w = advanced.describe(name,p,shape,1,ModelConfigError)['stages'][-1]
+    elif name in components.CONVOLUTIONS | components.POOLING:
         stages = components.stages(name, p, shape)
         for index, stage in enumerate(stages):
             if min(stage) <= 0 or max(stage) > 8192:
@@ -336,22 +341,40 @@ class ModelBuilder:
             output = _shape(block['name'], block['params'], current)
             name, params = block['name'], block['params']
             stages = components.stages(name, params, current) if name in components.CONVOLUTIONS | components.POOLING else [output]
+            details = None
+            if name in advanced.NEW_NAMES:
+                try:
+                    details = advanced.describe(name,params,current,batch_size,ModelConfigError)
+                except ModelConfigError as error:
+                    report.update(valid=False, output_shape=None, feature_shape=None, layers=[])
+                    report['diagnostics'].append(error.at_layer(index).to_dict())
+                    return report
+                stages = details['stages']
             stage_elements = [batch_size*c*h*w for c,h,w in stages]
             elements.extend(stage_elements)
             warnings = [ModelConfigError(requirement, code='STATISTICS_REQUIREMENT', layer_index=index,
                         expected=requirement, actual=dict(shape=['N', *current], batch='symbolic')).to_dict()
                         for requirement in components.statistics_requirements(name, params, current)]
+            if details is not None:
+                warnings.extend(ModelConfigError(requirement,code='STATISTICS_REQUIREMENT',layer_index=index,
+                                expected=requirement,actual=dict(batch='symbolic')).to_dict()
+                                for requirement in details['requirements'])
             if max(stage_elements) > activation_limit:
                 warnings.append(ModelConfigError('layer activation exceeds the advisory element threshold',
                                 code='RESOURCE_LIMIT_WARNING', layer_index=index,
                                 expected=activation_limit, actual=max(stage_elements)).to_dict())
             estimate = _cost(name, params)
             exact = components.parameter_count(name, params) if name in components.NEW_NAMES | {'conv2d','batch_norm','group_norm','relu','silu','hardswish','identity'} else None
+            if details is not None:
+                exact = details['parameter_count']
             report['layers'].append(dict(index=index, name=block['name'],
                                          input_shape=['N', *current], output_shape=['N', *output],
                                          intermediate_shapes=[['N', *s] for s in stages[:-1]],
                                          parameter_estimate=estimate, parameter_estimate_kind='conservative_upper_bound',
                                          parameter_count=exact, activation_elements=stage_elements, warnings=warnings))
+            if details is not None:
+                report['layers'][-1].update(attention_cost=details['attention'],projection=details['projection'],
+                                            residual_active=details['residual_active'])
             report['warnings'].extend(warnings)
             cost += estimate
             current = output

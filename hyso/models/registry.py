@@ -20,6 +20,7 @@ from .attention import ECAAttention, CoordinateAttention
 from ._profile import DEVELOPMENT
 from .regularization import ChannelShuffle, DropBlock2D
 from . import components
+from . import advanced
 
 M4_FAMILIES = ()
 M4_BLOCKS = ()
@@ -32,6 +33,7 @@ from .modular import ModularCNN
 
 
 _DIAGNOSTICS = {
+    'ATTENTION_RESOURCE_LIMIT': ('Attention token veya matris sınırı aşıldı.', 'Pooling ile H/W boyutlarını azaltın veya spatial/channel attention ya da ECA kullanın.'),
     'INVALID_OUTPUT_PADDING': ('Çıkış padding değeri geçersiz.', 'Her eksende output_padding değerini stride veya dilation değerinden küçük seçin.'),
     'INVALID_POOLING_CONFIGURATION': ('Pooling ayarları geçersiz.', 'Pozitif kernel/stride ve kernel yarısını aşmayan padding kullanın.'),
     'INTERMEDIATE_SHAPE_ERROR': ('Ara tensor boyutu geçersiz.', 'Ara kanal ve spatial boyutların 1..8192 aralığında olmasını sağlayın.'),
@@ -146,10 +148,11 @@ class ComponentSpec:
         for p in self.parameters:
             row = dict(name=p.name, kind=p.kind, description=p.description,
                        required=p.required, choices=list(p.choices))
-            if p.kind in ('positive_int', 'odd_int', 'pair', 'optional_pair', 'padding', 'int_list'):
+            if p.kind in ('positive_int', 'optional_positive_int', 'odd_int', 'pair', 'optional_pair', 'padding', 'int_list'):
                 row['constraints'] = dict(minimum=0 if p.kind == 'padding' else 1,
                                           maximum=8192, odd=p.kind == 'odd_int')
                 if p.kind == 'int_list': row['constraints']['max_items'] = 16
+                if p.kind == 'optional_positive_int': row['constraints']['nullable'] = True
                 if p.kind in ('pair', 'optional_pair', 'padding'):
                     row['constraints']['pair_length'] = 2
                     row['constraints']['nullable'] = p.kind == 'optional_pair'
@@ -165,12 +168,15 @@ class ComponentSpec:
             if not p.required:
                 row['default'] = _plain(p.default)
             params.append(row)
-        return dict(name=self.name, category=self.category, description=self.description,
+        data = dict(name=self.name, category=self.category, description=self.description,
                     constructor=self.constructor.__module__+'.'+self.constructor.__qualname__,
                     parameters=params, input_condition=self.input_condition,
                     output_condition=self.output_condition, compatibility=list(self.compatibility),
                     layout='NCHW', parameter_dependencies=_dependencies(self.name),
                     common_errors=_common_errors(self.category))
+        if self.name in advanced.NEW_NAMES:
+            data.update(advanced.metadata(self.name))
+        return data
 
 
 def _p(name, kind='positive_int', default=..., choices=(), description=None):
@@ -225,6 +231,7 @@ _SPECS += (
 )
 
 _SPECS += components.specifications(_p)
+_SPECS += advanced.specifications(_p)
 
 
 def _dependencies(name):
@@ -313,7 +320,7 @@ class ModelRegistry:
         self._entries = MappingProxyType({name: ComponentSpec(
             name, category, description, ctor, params,
             _IO[category][0], _IO[category][1],
-            (('HYSo/PyTorch component; CPU construction only.' if name in components.NEW_NAMES or name in ('conv_norm_act','conv2d','residual','se','cbam','eca','coordinate','batch_norm','group_norm','relu','silu','hardswish','identity','modular_cnn','channel_shuffle','dropblock2d') else 'Closed mobile/edge constructor or torchvision adapter; CPU construction only.' if name in M4_FAMILIES+M4_BLOCKS else 'Closed M3 constructor / torchvision adapter; CPU construction only.'),
+            (('HYSo/PyTorch component; CPU construction only.' if name in components.NEW_NAMES | advanced.NEW_NAMES or name in ('conv_norm_act','conv2d','residual','se','cbam','eca','coordinate','batch_norm','group_norm','relu','silu','hardswish','identity','modular_cnn','channel_shuffle','dropblock2d') else 'Closed mobile/edge constructor or torchvision adapter; CPU construction only.' if name in M4_FAMILIES+M4_BLOCKS else 'Closed M3 constructor / torchvision adapter; CPU construction only.'),
              'Builder v1: linear connections; no external skip/concat/DAG.',
              'BatchNorm requires N*H*W>1 while training; GroupNorm requires valid group statistics.',
              'SE/CBAM keep max(1, channels//reduction); CBAM/ECA kernels must be odd.',
@@ -350,7 +357,9 @@ class ModelRegistry:
                                        expected=field.name, actual='missing')
             v = p.get(field.name, _plain(field.default))
             kind = field.kind
-            if kind in ('positive_int', 'odd_int'):
+            if kind == 'optional_positive_int':
+                valid = v is None or type(v) is int and 1 <= v <= 8192
+            elif kind in ('positive_int', 'odd_int'):
                 valid = type(v) is int and 1 <= v <= 8192
                 if kind == 'odd_int': valid = valid and v % 2 == 1
             elif kind in ('pair', 'padding', 'optional_pair'):
@@ -389,6 +398,10 @@ class ModelRegistry:
                                        expected=dict(parameter=field.name, kind=kind, choices=list(field.choices)), actual=v)
             result[field.name] = v
         components.validate(name, result, ModelConfigError)
+        advanced.validate(name, result, ModelConfigError)
+        if name == 'residual' and result['attention'] is not None and result['attention']['name'] in advanced.ATTENTION:
+            raise ModelConfigError('use advanced residual attention options or append the attention as a separate block',
+                                   code='UNSUPPORTED_COMPONENT', expected='legacy residual attention class', actual=result['attention']['name'])
         if name == 'channel_shuffle' and result['channels'] % result['groups']:
             divisors = [v for v in range(1, result['channels']+1) if result['channels'] % v == 0]
             raise ModelConfigError('groups must divide channels', code='GROUP_DIVISIBILITY_ERROR',

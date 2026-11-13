@@ -3,7 +3,9 @@
 Bu rehber Aşama 13.5.2 bileşenlerini açıklar. Bir katman görüntünün kanal sayısını,
 yüksekliğini veya genişliğini değiştirir. Registry kullanılabilir yapı taşlarını ve
 parametrelerini listeler. Builder bunları sırayla bağlar ve sonuna sınıflandırma
-başlığını ekler. Ticari profilde 34 Registry girdisi bulunur. Önceki 16 isim korunur.
+başlığını ekler. Ticari profilde 48 Registry girdisi bulunur. Aşama 13.5.2'nin
+34 girdisi korunur. İleri residual, attention ve regularization mekanizmaları
+[ileri bloklar rehberinde](custom-cnn-builder-advanced-blocks.md) açıklanır.
 
 ## İlk çalışan zincir
 

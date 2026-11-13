@@ -44,11 +44,11 @@ def cpu_only(monkeypatch):
 def test_a_registry_metadata_and_previous_names():
     assert set(SAMPLES) == components.NEW_NAMES
     registry = ModelRegistry()
-    assert len(registry.list()) == 62
+    assert len(registry.list()) == 76
     old = {'conv2d','conv_norm_act','residual','se','cbam','eca','coordinate','batch_norm',
            'group_norm','relu','silu','hardswish','identity','modular_cnn','channel_shuffle','dropblock2d'}
     assert old | components.NEW_NAMES <= {s.name for s in registry.list()}
-    assert len(_DIAGNOSTICS) == 14
+    assert len(_DIAGNOSTICS) == 15
     for name in SAMPLES:
         row = registry.get(name).to_dict()
         assert row['layout'] == 'NCHW' and row['description'] and row['common_errors']

@@ -57,7 +57,8 @@ ModularCNN ve geliştirme profilindeki named modeller eski config validation
 yollarını kullanır. Bu profillerde preflight shape_scope='configuration_only'
 döndürür. Spatial input belirtilmediği için H/W ve feature_shape bilinmiyor
 olarak bırakılır. Ticari Registry önceki 16 girdiyi korur ve Aşama 13.5.2 ile
-34 girdiye çıkar. Hazır ailelerin ticari dışlamaları korunur.
+34 girdiye çıkar. Aşama 13.5.3 ile toplam 48 olur. Hazır ailelerin ticari
+dışlamaları korunur.
 
 ## Yapılandırılmış hatalar
 
@@ -160,3 +161,14 @@ ve CLI exit-code sözleşmesi korunur.
 
 Tüm bileşenlerin parametreleri, matematiği ve örnekleri
 [bileşen rehberinde](custom-cnn-builder-components.md) yer alır.
+
+## Aşama 13.5.3 ileri bloklar
+
+Yeni residual blokların projection, residual_active ve attention_cost alanları
+preflight katman raporuna eklenir. İç convolution ve normalization maliyetleri
+exact parameter_count hesabına dahildir. Önceki 14 tanılama korunur.
+ATTENTION_RESOURCE_LIMIT token veya attention matris sınırı aşımını bildirir.
+En fazla 1024 token ve batch/head dahil 4.194.304 matris elemanı kabul edilir.
+Runtime gerçek batch ile QKV hesaplamasından önce aynı sınırı denetler.
+Mevcut advisory aktivasyon uyarıları geçerli eski modellerin kabulünü korur.
+Sözleşmeler ve örnekler [ileri bloklar rehberinde](custom-cnn-builder-advanced-blocks.md) yer alır.

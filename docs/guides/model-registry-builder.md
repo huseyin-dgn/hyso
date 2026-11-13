@@ -35,9 +35,13 @@ training utility, not a model block. Absent attention/CNN families are not liste
 Stage 13.5.2 adds channel LayerNorm with an NCHW public interface, InstanceNorm,
 five additional activations, five pooling entries and six convolution entries.
 Pooling preserves NCHW and composes with the existing implicit classifier head.
-The commercial catalog contains 34 entries including the previous 16. The
+The commercial catalog contains 48 entries including all 34 Stage 13.5.2 entries. The
 [component guide](custom-cnn-builder-components.md) describes the complete
 parameter, geometry, cost and runtime-statistics contracts.
+
+Stage 13.5.3 adds six generic residual blocks, four attention entries and four
+regularization entries. The [advanced guide](custom-cnn-builder-advanced-blocks.md)
+documents internal projections, train/eval behavior and mandatory token budgets.
 
 ## Architecture and shape contract
 

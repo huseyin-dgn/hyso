@@ -69,6 +69,7 @@
     "hyso/models/WithSE.py",
     "hyso/models/__init__.py",
     "hyso/models/_profile.py",
+    "hyso/models/advanced.py",
     "hyso/models/attention.py",
     "hyso/models/bcam.py",
     "hyso/models/blocks.py",
