@@ -79,6 +79,7 @@ def run(
     mean=None,
     std=None,
     dataset_origin="caller_supplied",
+    dataset_provenance=None,
 ):
     """Run only on explicit local paths; create a fresh output/experiment store.
 
@@ -171,6 +172,23 @@ def run(
         training=settings.to_dict(),
         seed=seed,
     )
+    if dataset_provenance is not None:
+        # Optional caller metadata; never promoted to native P26 evidence.
+        context["dataset_provenance"] = json.loads(
+            json.dumps(dataset_provenance, allow_nan=False)
+        )
+    context["model_config_id"] = hashlib.sha256(
+        json.dumps(config, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    context["split_ids"] = {
+        split: hashlib.sha256(
+            json.dumps(
+                [row for row in manifest["samples"] if row["split"] == split],
+                sort_keys=True, separators=(",", ":"),
+            ).encode()
+        ).hexdigest()
+        for split in manifest["split_counts"]
+    }
     _write(output / "dataset-manifest.json", manifest)
     _write(output / "training-result.json", training.to_dict())
     checkpoint = output / "model.pth"
@@ -188,8 +206,13 @@ def run(
         if selected
         else restored_base
     )
+    def validate_metadata(metadata):
+        if metadata["metrics"] != context:
+            raise ValueError("Checkpoint model/data/training metadata differs")
+
     checkpoint_info = load_training_checkpoint(
-        checkpoint, restored, map_location="cpu", capture_evidence=True
+        checkpoint, restored, map_location="cpu", capture_evidence=True,
+        validate_metadata=validate_metadata,
     )
     restored.eval()
     # Validation (or train if validation is absent) checks restoration, never model selection on test.
