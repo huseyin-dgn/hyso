@@ -2,8 +2,9 @@
 
 This opt-in adapter presents two different kinds of evidence together. It does
 not move a trusted source receipt to the isolated model used for inference.
-Existing evaluate_classification, analysis.compare_models and reporting defaults
-retain their signatures, schemas and behavior.
+Existing calls to evaluate_classification, analysis.compare_models and reporting
+keep their default schemas and behavior. Evaluation now also accepts the explicit
+CPU-only `capture_receiver_runtime` opt-in described below.
 
 ## Evaluate with separate source provenance
 
@@ -148,3 +149,72 @@ It checks mutation, wrong expected identity, JSON trust loss and artifact hash
 mismatch without accessing any user SQLite workspace. No real-data quality,
 CUDA/native performance, independent dataset lineage, or arbitrary-code sandbox
 claim is made.
+
+## Verify the actual isolated receiver explicitly
+
+13.5.11 adds a separate, opt-in association version 2. Default calls above still
+emit version 1 with a limited source association. Existing version 1 files retain
+that meaning and are never silently upgraded.
+
+```python
+association = evaluate_graph_classification(
+    loaded_model, sequential_test_loader,
+    class_names=["a", "b"], split="test", source_id="my-dataset",
+    context={"dataset_id": "my-dataset", "split": "test",
+             "preprocessing_id": "my-explicit-transform-v1"},
+    expected_checkpoint_sha256=known_checkpoint_sha,
+    capture_receiver_runtime=True,
+)
+view = association.to_dict()
+assert view["schema_version"] == 2
+assert view["verification"]["graph_v2"] == "verified"       # live source receipt
+assert view["verification"]["receiver_runtime"] == "verified"
+assert view["relation"]["status"] == "verified"             # same actual execution
+assert view["evaluation"]["producer_evidence"]["checkpoint"]["status"] == "missing"
+```
+
+Core runs the existing evaluation loop once. After deepcopy/eval, immediately
+before and after each actual candidate call, and before publication, it checks
+the same exact receiver, the current source receipt, independent full receiver
+Graph contract/state equality, eval modes and storage isolation. There is no
+source receipt on the receiver and no second inference. `capture_structure=True`
+can also be used; the embedded EvaluationResult stays schema2 or schema3.
+
+This path requires a live supported Graph v2 source receipt, a nonempty complete
+sequential CPU evaluation, exact Tensor batches, and the existing closed CPU
+fp32/fp64 component profile. It conservatively rejects shared/view tensor storage,
+hooks, subclasses, instance forward overrides and observed installed callable or
+code changes. Unsupported state or any failed/mismatched observation raises an
+error and publishes no receiver authority. The Core option also requires
+`capture_evidence=True` when used directly with evaluate_classification; it does
+not insert new fields into EvaluationResult.
+
+`receiver_binding` uses its own `hyso.graph_receiver_binding` version 1, containing
+opaque Core-issued object/capture tokens, exact evaluation/checkpoint/state
+references, independent receiver contract, pre/post commitments and actual
+stream/batch accounting. Those are retained statements. The process-local
+verification view belongs to the original typed result and actual Core capture.
+The adapter keeps that capture/isolated receiver alive for its result lifetime,
+holds the source weakly, and revalidates both on a live view. Keep the source alive.
+Observed source/receiver mutation makes the live binding unavailable. Copies,
+constructors and JSON readers, including another process, have no such authority;
+their receiver view is `unverified`, even when retained fields say `native`.
+
+Comparison version 2 supports old/new or new/new associations and reports each
+source's actual binding separately. Existing P26 comparability and Advisor policies
+remain unchanged. Verified runtime does not authenticate dataset lineage, make
+different streams comparable or establish statistical superiority. Reporting and
+ExperimentManager artifact SHA verification cannot mint source or receiver trust.
+
+The contract assumes trusted installed Core/PyTorch at import and quiescent
+supported objects. It detects observations at the stated boundaries; it does not
+attest an adversarial interpreter, concurrent hostile mutation, private-registry
+tampering or transient mutate-and-restore behavior entirely between observations.
+It proves no CUDA behavior or universal Graph support. Queries rebuild bounded
+reference metadata but do not run inference/training.
+
+The short example selects the new path explicitly:
+
+```powershell
+python -B -m examples.models.graph_evidence_workflow --output C:/local-qa/fresh-receiver --capture-receiver-runtime
+```
