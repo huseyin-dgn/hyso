@@ -7,6 +7,9 @@ has been retired; no browser, HTTP server or frontend dependency is required.
 Start with the [Python engineering workflow](docs/guides/python-first-workflow.md)
 and [runnable CPU example](examples/models/python_first.py).
 
+For explicit local PNG/JPEG datasets, see the [file-backed classification guide](docs/guides/file-image-classification.md)
+and [short CPU training/evaluation example](examples/models/image_classification.py).
+
 ## Installation and imports
 
 Metadata minimums: Python >=3.10, Torch >=2.2.2, torchvision >=0.17.2. Install a

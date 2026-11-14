@@ -247,6 +247,19 @@ checks = run_model_checks(graph.to_config(), tests=('structure','forward','backw
 assert all(c['status']=='PASS' for c in checks['cases']), checks
 assert len(compare_architectures([graph.to_config(),graph.to_config()])['columns']) == 2
 assert diagnose_results([]) == []
+from hyso.datasets import load_image_splits
+from PIL import Image
+file_root = target.parent / (target.name + '-image-files')
+for split_index, split in enumerate(('train','val','test')):
+    for label, name in enumerate(('alpha','beta')):
+        folder = file_root / split / name
+        folder.mkdir(parents=True)
+        Image.new('RGB',(6,6),(split_index*47+label*13,41+label*19,83+split_index)).save(folder/'image.png')
+file_splits = load_image_splits(file_root,image_size=(4,4),channels=3)
+assert file_splits.to_dict()['split_counts']==dict(train=2,val=2,test=2)
+from hyso import TrainingConfig
+file_loaders = file_splits.make_loaders(TrainingConfig(epochs=1,batch_size=2,validation=True,shuffle=True),seed=7)
+assert next(iter(file_loaders[0]))[0].shape==(2,3,4,4)
 print('commercial installed blocks/JSON/training/CLI/Python PASS')
 """
 

@@ -11,6 +11,12 @@ with HYSo installed in the selected Python environment.
 | `analysis/` | Typed native CPU/preflight, retained artifacts, training and ORT analysis, comparisons |
 | `models/` | M3 residual/dense families, attention, custom Builder CNN, short CPU training and state_dict |
 | `models/python_first.py` | End-to-end branching graph, selected output, real CPU training/inference/benchmark, comparison, ExperimentManager and Advisor |
+| `models/image_classification.py` | Explicit PNG/JPEG train/val/test directories, Builder or branching Graph CNN, short CPU training, inference, checkpoint and reports |
+
+Use `python -m examples.models.image_classification --dataset C:/my-images --output C:/local-hyso/image-run-01 --model graph --epochs 2`
+from the checkout with a fresh output directory. The dataset must already exist;
+this command does not download images. See the [file-backed classification guide](../docs/guides/file-image-classification.md)
+for split/channel contracts, Python calls and checkpoint evidence limitations.
 
 Run `python -m examples.models.python_first --output C:/local-hyso/python-demo-01`
 with a fresh local output directory. It creates/migrates only its own empty example

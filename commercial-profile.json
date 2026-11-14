@@ -63,6 +63,7 @@
     "hyso/cli/models.py",
     "hyso/cli/presentation.py",
     "hyso/cli/train.py",
+    "hyso/datasets.py",
     "hyso/evaluation.py",
     "hyso/experiments/__init__.py",
     "hyso/experiments/manager.py",
