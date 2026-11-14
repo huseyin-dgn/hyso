@@ -1,8 +1,11 @@
 # HYSo
 
-PyTorch classification models, model-independent training, explicit performance
-analysis, evidence reports and local experiment tracking. Use the Python API or
-the installed `hyso` terminal interface.
+HYSo is a Python-first PyTorch CNN engineering, training, evaluation, benchmarking and performance analysis framework.
+
+Use the Python API or the installed `hyso` terminal interface. The web product
+has been retired; no browser, HTTP server or frontend dependency is required.
+Start with the [Python engineering workflow](docs/guides/python-first-workflow.md)
+and [runnable CPU example](examples/models/python_first.py).
 
 ## Installation and imports
 
@@ -29,11 +32,12 @@ long runs. Retained reports and comparisons never start new measurements.
 See the [CLI guide](docs/guides/cli.md) and [working offline examples](examples/cli/README.md)
 for source/factory contracts, exit codes, JSON output and no-clobber exports.
 
-M3 adds configurable ResNet, PreActResNet, WideResNet, ResNeXt and DenseNet
+The development source checkout's M3 adds configurable ResNet, PreActResNet, WideResNet, ResNeXt and DenseNet
 families, residual blocks and SimAM/Triplet/Selective Kernel attention. See
 [model architectures](docs/guides/model-architectures.md) and
 [CPU model examples](examples/models/README.md) for exact topology, Builder JSON
 and state_dict boundaries. `hyso models show resnet` describes its parameters.
+M3/M4 development modules remain excluded from commercial wheel/sdist profiles.
 
 ```python
 from hyso import ModularCNN, Trainer, BenchmarkRunner, ExperimentManager
@@ -328,8 +332,23 @@ checkpoint v1, BenchmarkRunner, measurement APIs, pairwise comparisons,
 ExperimentManager, evidence reports and read-only Advisor interpretation.
 ONNX provider observation exists; it is not a general export/deployment pipeline.
 
-Not implemented: arbitrary graph/multi-family model plugins, general CLI,
-graphical UI, TensorRT/OpenVINO/TFLite/CoreML/Edge deployment adapters.
+GraphModelBuilder implements validated schema3 DAGs, named inputs/outputs,
+branches, skip connections and fusion. The seven-group CLI is implemented.
+For single-Tensor training/evaluation/benchmarking, explicitly select a graph
+output with `hyso.models.output.GraphTensorOutput`; parameters and autograd are
+shared with the original graph. Use `task="multiclass"` or `task="binary"` for
+classification training guards. Multi-input dataset/loss orchestration and
+regression/embedding training are outside that adapter's supported profile.
+
+`hyso.model_checks` provides explicit bounded CPU smoke/gradient/strict state_dict
+checks on isolated weights. Its allocation-free preflight is separate from
+execution. `hyso.architecture_comparison.compare_architectures` compares multiple
+architecture descriptions; optional exact CPU parameter counting is explicit.
+The existing binary `analysis.compare_models` evidence API is unchanged.
+See the [component reference](docs/guides/component-engineering-reference.md).
+
+Not implemented: arbitrary model plugins, graphical UI,
+TensorRT/OpenVINO/TFLite/CoreML/Edge deployment adapters.
 See the [architecture roadmap](docs/roadmap/hyso-architecture-roadmap-v1.md) and
 [performance backlog](docs/roadmap/hyso-performance-backlog-v1.1.md); dated rows are
 historical and should be read alongside current code and reports.

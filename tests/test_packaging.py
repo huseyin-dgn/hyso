@@ -17,36 +17,80 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 DEVELOPMENT_MODULES = {
-    "hyso/models/m4_blocks.py", "hyso/models/m4_reparam.py", "hyso/models/m4_config.py",
-    "hyso/models/mobile_architectures.py", "hyso/models/reparam_architectures.py", "hyso/models/m4_registry.py",
-    "hyso/models/architectures.py", "hyso/models/m3_residual.py", "hyso/models/m3_attention.py",
-    "hyso/__main__.py", "hyso/cli/__init__.py", "hyso/cli/main.py", "hyso/cli/common.py",
-    "hyso/cli/models.py", "hyso/cli/train.py", "hyso/cli/analysis.py",
-    "hyso/cli/experiments.py", "hyso/cli/presentation.py",
-    "hyso/analysis/sources.py", "hyso/analysis/native_execution.py", "hyso/analysis/native_adapters.py",
-    "hyso/reporting/__init__.py", "hyso/reporting/catalog.py", "hyso/reporting/report.py", "hyso/reporting/render.py",
+    "hyso/models/output.py",
+    "hyso/model_checks.py",
+    "hyso/model_observations.py",
+    "hyso/architecture_comparison.py",
+    "hyso/models/m4_blocks.py",
+    "hyso/models/m4_reparam.py",
+    "hyso/models/m4_config.py",
+    "hyso/models/mobile_architectures.py",
+    "hyso/models/reparam_architectures.py",
+    "hyso/models/m4_registry.py",
+    "hyso/models/architectures.py",
+    "hyso/models/m3_residual.py",
+    "hyso/models/m3_attention.py",
+    "hyso/__main__.py",
+    "hyso/cli/__init__.py",
+    "hyso/cli/main.py",
+    "hyso/cli/common.py",
+    "hyso/cli/models.py",
+    "hyso/cli/train.py",
+    "hyso/cli/analysis.py",
+    "hyso/cli/experiments.py",
+    "hyso/cli/presentation.py",
+    "hyso/analysis/sources.py",
+    "hyso/analysis/native_execution.py",
+    "hyso/analysis/native_adapters.py",
+    "hyso/reporting/__init__.py",
+    "hyso/reporting/catalog.py",
+    "hyso/reporting/report.py",
+    "hyso/reporting/render.py",
     "hyso/experiments/workflow.py",
-    "hyso/analysis/model_comparison.py", "hyso/advisor/model_comparison_presentation.py",
-    "hyso/analysis/catalog.py", "hyso/analysis/execution.py", "hyso/analysis/_analysis_resources.py",
-    "hyso/training/config.py", "hyso/training/session.py",
-    "hyso/models/registry.py", "hyso/models/builder.py",
-    "hyso/performance/_module_activity.py", "hyso/performance/_windows_camera.py",
-    "hyso/evaluation.py", "hyso/quality.py", "hyso/_quality_memory.py",
-    "hyso/performance/_cpu_layer_memory.py", "hyso/performance/_layer_allocator.py",
-    "hyso/performance/_layer_memory.py", "hyso/performance/_loader_diagnostics.py",
-    "hyso/performance/_loader_task_iterator.py", "hyso/performance/_operator_activity.py",
-    "hyso/performance/_profile_evidence.py", "hyso/performance/_stability_diagnostics.py",
-    "hyso/performance/_transfer_activity.py", "hyso/performance/layer_overhead.py",
-    "hyso/performance/roofline.py", "hyso/performance/roofline_counters.py",
-    "hyso/performance/_loader_dataset_trace.py", "hyso/performance/_loader_event_channel.py",
-    "hyso/performance/_loader_stage_trace.py", "hyso/performance/_loader_task_trace.py",
-    "hyso/performance/_loader_trace_groups.py", "hyso/performance/_loader_trace_validation.py",
-    "hyso/performance/_loader_worker_lifecycle.py", "hyso/performance/_loader_worker_trace.py",
-    "hyso/performance/_runtime_worker.py", "hyso/performance/devices.py",
-    "hyso/performance/energy.py", "hyso/performance/memory_trend.py",
-    "hyso/performance/providers.py", "hyso/performance/runtime_result.py",
-    "hyso/performance/stability.py", "hyso/performance/streaming.py",
-    "hyso/performance/worker_task_result.py", "hyso/performance/worker_trace_result.py",
+    "hyso/analysis/model_comparison.py",
+    "hyso/advisor/model_comparison_presentation.py",
+    "hyso/analysis/catalog.py",
+    "hyso/analysis/execution.py",
+    "hyso/analysis/_analysis_resources.py",
+    "hyso/training/config.py",
+    "hyso/training/session.py",
+    "hyso/models/registry.py",
+    "hyso/models/builder.py",
+    "hyso/performance/_module_activity.py",
+    "hyso/performance/_windows_camera.py",
+    "hyso/evaluation.py",
+    "hyso/quality.py",
+    "hyso/_quality_memory.py",
+    "hyso/performance/_cpu_layer_memory.py",
+    "hyso/performance/_layer_allocator.py",
+    "hyso/performance/_layer_memory.py",
+    "hyso/performance/_loader_diagnostics.py",
+    "hyso/performance/_loader_task_iterator.py",
+    "hyso/performance/_operator_activity.py",
+    "hyso/performance/_profile_evidence.py",
+    "hyso/performance/_stability_diagnostics.py",
+    "hyso/performance/_transfer_activity.py",
+    "hyso/performance/layer_overhead.py",
+    "hyso/performance/roofline.py",
+    "hyso/performance/roofline_counters.py",
+    "hyso/performance/_loader_dataset_trace.py",
+    "hyso/performance/_loader_event_channel.py",
+    "hyso/performance/_loader_stage_trace.py",
+    "hyso/performance/_loader_task_trace.py",
+    "hyso/performance/_loader_trace_groups.py",
+    "hyso/performance/_loader_trace_validation.py",
+    "hyso/performance/_loader_worker_lifecycle.py",
+    "hyso/performance/_loader_worker_trace.py",
+    "hyso/performance/_runtime_worker.py",
+    "hyso/performance/devices.py",
+    "hyso/performance/energy.py",
+    "hyso/performance/memory_trend.py",
+    "hyso/performance/providers.py",
+    "hyso/performance/runtime_result.py",
+    "hyso/performance/stability.py",
+    "hyso/performance/streaming.py",
+    "hyso/performance/worker_task_result.py",
+    "hyso/performance/worker_trace_result.py",
     "hyso/performance/_saved_activation.py",
     "hyso/performance/isolated_training_memory.py",
     "hyso/performance/_training_process.py",
@@ -56,26 +100,44 @@ DEVELOPMENT_MODULES = {
     "hyso/performance/dataloader.py",
     "hyso/performance/training_details.py",
     "hyso/performance/training.py",
-    "hyso/performance/transfers.py", "hyso/performance/_transfer_worker.py",
-    "hyso/performance/utilization.py", "hyso/performance/_telemetry.py",
-    "hyso/performance/profiling.py", "hyso/performance/_profile_worker.py", "hyso/performance/_operation_models.py",
-    "hyso/performance/capacity.py", "hyso/performance/_batch_worker.py",
+    "hyso/performance/transfers.py",
+    "hyso/performance/_transfer_worker.py",
+    "hyso/performance/utilization.py",
+    "hyso/performance/_telemetry.py",
+    "hyso/performance/profiling.py",
+    "hyso/performance/_profile_worker.py",
+    "hyso/performance/_operation_models.py",
+    "hyso/performance/capacity.py",
+    "hyso/performance/_batch_worker.py",
     "hyso/performance/sweeps.py",
-    "hyso/performance/pipeline.py", "hyso/performance/cold.py", "hyso/performance/_cold_worker.py",
+    "hyso/performance/pipeline.py",
+    "hyso/performance/cold.py",
+    "hyso/performance/_cold_worker.py",
     "hyso/performance/memory.py",
-    "hyso/performance/__init__.py", "hyso/performance/inference.py", "hyso/performance/result.py",
-    "hyso/experiments/__init__.py", "hyso/experiments/manager.py",
-    "hyso/benchmark/__init__.py", "hyso/benchmark/runner.py", "hyso/benchmark/result.py",
+    "hyso/performance/__init__.py",
+    "hyso/performance/inference.py",
+    "hyso/performance/result.py",
+    "hyso/experiments/__init__.py",
+    "hyso/experiments/manager.py",
+    "hyso/benchmark/__init__.py",
+    "hyso/benchmark/runner.py",
+    "hyso/benchmark/result.py",
     "hyso/training/resume.py",
-    "hyso/training/__init__.py", "hyso/training/trainer.py",
+    "hyso/training/__init__.py",
+    "hyso/training/trainer.py",
     "hyso/models/modular.py",
     "hyso/models/attention.py",
     "hyso/models/blocks.py",
     "hyso/checkpoint.py",
-    "hyso/__init__.py", "hyso/models/__init__.py", "hyso/models/bcam.py",
-    "hyso/models/WithSE.py", "hyso/models/fit.py",
-    "hyso/augmentation/__init__.py", "hyso/augmentation/augmentation.py",
-    "hyso/callbacks/__init__.py", "hyso/callbacks/callbacks.py",
+    "hyso/__init__.py",
+    "hyso/models/__init__.py",
+    "hyso/models/bcam.py",
+    "hyso/models/WithSE.py",
+    "hyso/models/fit.py",
+    "hyso/augmentation/__init__.py",
+    "hyso/augmentation/augmentation.py",
+    "hyso/callbacks/__init__.py",
+    "hyso/callbacks/callbacks.py",
     "hyso/_architecture_coverage.py",
     "hyso/_architecture_rules.py",
     "hyso/_evaluation_evidence.py",
@@ -119,21 +181,59 @@ DEVELOPMENT_MODULES = {
     "hyso/structure.py",
     "hyso/structure_comparison.py",
 }
-DEVELOPMENT_MODULES |= {'hyso/models/components.py', 'hyso/models/advanced.py', 'hyso/models/sampling.py', 'hyso/models/graph.py', 'hyso/models/graph_ops.py'}
-DEVELOPMENT_MODULES |= {'hyso/models/_profile.py', 'hyso/models/_development.py', 'hyso/models/regularization.py'}
-PROFILE = json.loads((ROOT / 'commercial-profile.json').read_text(encoding='utf-8'))
-MODULES = set(PROFILE['python_files'])
+DEVELOPMENT_MODULES |= {
+    "hyso/models/components.py",
+    "hyso/models/advanced.py",
+    "hyso/models/sampling.py",
+    "hyso/models/graph.py",
+    "hyso/models/graph_ops.py",
+}
+DEVELOPMENT_MODULES |= {
+    "hyso/models/_profile.py",
+    "hyso/models/_development.py",
+    "hyso/models/regularization.py",
+}
+PROFILE = json.loads((ROOT / "commercial-profile.json").read_text(encoding="utf-8"))
+MODULES = set(PROFILE["python_files"])
 
-DEPENDENCIES = {"torch", "torchvision", "numpy", "matplotlib", "seaborn",
-                "scikit-learn", "tqdm", "torchsummary"}
-CONFIG_FILES = ("pyproject.toml", "setup.cfg", "MANIFEST.in", "LICENSE", "THIRD_PARTY_NOTICES.md", "setup.py", "commercial-profile.json")
+DEPENDENCIES = {
+    "torch",
+    "torchvision",
+    "numpy",
+    "matplotlib",
+    "seaborn",
+    "scikit-learn",
+    "tqdm",
+    "torchsummary",
+}
+CONFIG_FILES = (
+    "pyproject.toml",
+    "setup.cfg",
+    "MANIFEST.in",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "setup.py",
+    "commercial-profile.json",
+)
 
 
 def command(args, cwd):
-    env = dict(os.environ, PIP_CONFIG_FILE=os.devnull, PIP_DISABLE_PIP_VERSION_CHECK="1",
-               PYTHONDONTWRITEBYTECODE="1", CUDA_VISIBLE_DEVICES="-1", MPLBACKEND="Agg")
-    result = subprocess.run([sys.executable, "-I", "-B", *args], cwd=cwd,
-                            env=env, capture_output=True, text=True, timeout=240)
+    env = dict(
+        os.environ,
+        PIP_CONFIG_FILE=os.devnull,
+        PIP_DISABLE_PIP_VERSION_CHECK="1",
+        PYTHONDONTWRITEBYTECODE="1",
+        CUDA_VISIBLE_DEVICES="-1",
+        MPLBACKEND="Agg",
+    )
+    result = subprocess.run(
+        [sys.executable, "-I", "-B", *args],
+        cwd=cwd,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=240,
+    )
     assert result.returncode == 0, result.stdout + result.stderr
     return result.stdout
 
@@ -148,36 +248,56 @@ def distributions(tmp_path_factory):
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / name, target)
     # Realistic unwanted content must stay out of both archives.
-    for name in ("docs/audit/sentinel.md", "tests/test_sentinel.py",
-                 "hyso/experiments/experiments.sqlite3", "hyso/experiments/artifacts/sentinel.json",
-                 "hyso/dist/old.whl", "hyso/models/weights.pth",
-                 "hyso/models/__pycache__/sentinel.pyc"):
+    for name in (
+        "docs/audit/sentinel.md",
+        "tests/test_sentinel.py",
+        "hyso/experiments/experiments.sqlite3",
+        "hyso/experiments/artifacts/sentinel.json",
+        "hyso/dist/old.whl",
+        "hyso/models/weights.pth",
+        "hyso/models/__pycache__/sentinel.pyc",
+    ):
         target = stage / name
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text("excluded", encoding="utf-8")
     dist = work / "dist"
-    log = command(["-m", "build", "--no-isolation", "--sdist", "--wheel",
-                   "--outdir", str(dist), str(stage)], work)
+    log = command(
+        [
+            "-m",
+            "build",
+            "--no-isolation",
+            "--sdist",
+            "--wheel",
+            "--outdir",
+            str(dist),
+            str(stage),
+        ],
+        work,
+    )
     (work / "build.log").write_text(log, encoding="utf-8")
     return work, next(dist.glob("*.whl")), next(dist.glob("*.tar.gz"))
 
 
 def test_canonical_packaging_configuration():
-    assert {path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")} == DEVELOPMENT_MODULES
-    assert len(MODULES) == 157
+    assert {
+        path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")
+    } == DEVELOPMENT_MODULES
+    assert len(MODULES) == 161
     assert MODULES.isdisjoint(PROFILE["excluded_python_files"])
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
     assert not (ROOT / "hyso/setup.cfg").exists()
     cfg = configparser.ConfigParser()
     cfg.read(ROOT / "setup.cfg", encoding="utf-8")
-    assert not cfg.has_option('metadata','author_email')
+    assert not cfg.has_option("metadata", "author_email")
     assert cfg["metadata"]["name"] == "hyso"
     assert cfg["metadata"]["version"] == "0.2.0"
     assert cfg["options"]["python_requires"] == ">=3.10"
     assert cfg["options.packages.find"]["where"] == "."
     for name in DEVELOPMENT_MODULES:
-        ast.parse((ROOT / name).read_text(encoding="utf-8-sig"), feature_version=(3, 10))
+        ast.parse(
+            (ROOT / name).read_text(encoding="utf-8-sig"), feature_version=(3, 10)
+        )
 
 
 def test_wheel_and_sdist_content_and_metadata(distributions):
@@ -187,30 +307,67 @@ def test_wheel_and_sdist_content_and_metadata(distributions):
     with zipfile.ZipFile(wheel) as archive:
         wheel_names = set(archive.namelist())
         assert archive.read("hyso/py.typed") == (ROOT / "hyso/py.typed").read_bytes()
-        wheel_meta = email.message_from_bytes(archive.read("hyso-0.2.0.dist-info/METADATA"))
+        wheel_meta = email.message_from_bytes(
+            archive.read("hyso-0.2.0.dist-info/METADATA")
+        )
         assert {name for name in wheel_names if name.endswith(".py")} == MODULES
-        assert archive.read("hyso-0.2.0.dist-info/top_level.txt").decode().split() == ["hyso"]
+        assert archive.read("hyso-0.2.0.dist-info/top_level.txt").decode().split() == [
+            "hyso"
+        ]
         license_names = [name for name in wheel_names if name.endswith("/LICENSE")]
         assert len(license_names) == 1
         assert archive.read(license_names[0]) == (ROOT / "LICENSE").read_bytes()
-        notices = [name for name in wheel_names if name.endswith("/THIRD_PARTY_NOTICES.md")]
+        notices = [
+            name for name in wheel_names if name.endswith("/THIRD_PARTY_NOTICES.md")
+        ]
         assert len(notices) == 1
-        assert archive.read(notices[0]) == (ROOT / "THIRD_PARTY_NOTICES.md").read_bytes()
+        assert (
+            archive.read(notices[0]) == (ROOT / "THIRD_PARTY_NOTICES.md").read_bytes()
+        )
         for name in MODULES:
             assert archive.read(name) == (ROOT / name).read_bytes()
     with tarfile.open(sdist) as archive:
         names = {name.removeprefix("hyso-0.2.0/") for name in archive.getnames()}
-        sdist_meta = email.message_from_bytes(archive.extractfile("hyso-0.2.0/PKG-INFO").read())
-        sdist_requires = archive.extractfile("hyso-0.2.0/hyso.egg-info/requires.txt").read().decode().splitlines()
-        assert {name for name in names if name.endswith(".py")} == MODULES | {"setup.py"}
+        sdist_meta = email.message_from_bytes(
+            archive.extractfile("hyso-0.2.0/PKG-INFO").read()
+        )
+        sdist_requires = (
+            archive.extractfile("hyso-0.2.0/hyso.egg-info/requires.txt")
+            .read()
+            .decode()
+            .splitlines()
+        )
+        assert {name for name in names if name.endswith(".py")} == MODULES | {
+            "setup.py"
+        }
         assert set(CONFIG_FILES) <= names
-        assert archive.extractfile("hyso-0.2.0/hyso/py.typed").read() == (ROOT / "hyso/py.typed").read_bytes()
+        assert (
+            archive.extractfile("hyso-0.2.0/hyso/py.typed").read()
+            == (ROOT / "hyso/py.typed").read_bytes()
+        )
         # setuptools adds egg_info settings to the sdist's setup.cfg.
-        for name in ("LICENSE", "THIRD_PARTY_NOTICES.md", "pyproject.toml", "MANIFEST.in", *MODULES):
-            assert archive.extractfile("hyso-0.2.0/" + name).read() == (ROOT / name).read_bytes()
+        for name in (
+            "LICENSE",
+            "THIRD_PARTY_NOTICES.md",
+            "pyproject.toml",
+            "MANIFEST.in",
+            *MODULES,
+        ):
+            assert (
+                archive.extractfile("hyso-0.2.0/" + name).read()
+                == (ROOT / name).read_bytes()
+            )
     for name in wheel_names | names:
-        assert "sentinel" not in name and not name.endswith((".pth", ".pt", ".ckpt", ".pyc", ".sqlite3", ".db"))
-        assert not any(part in {"docs", "tests", "__pycache__", "dist", "build"} for part in Path(name).parts)
+        assert "studio" not in Path(name).parts and not name.endswith(
+            (".html", ".css", ".js")
+        )
+        assert "sentinel" not in name and not name.endswith(
+            (".pth", ".pt", ".ckpt", ".pyc", ".sqlite3", ".db")
+        )
+        assert not any(
+            part in {"docs", "tests", "__pycache__", "dist", "build"}
+            for part in Path(name).parts
+        )
     for metadata in (wheel_meta, sdist_meta):
         assert metadata["Name"] == "hyso" and metadata["Version"] == "0.2.0"
         assert metadata["Requires-Python"] == ">=3.10"
@@ -218,24 +375,40 @@ def test_wheel_and_sdist_content_and_metadata(distributions):
         # Email metadata may use CRLF; compare every content line unchanged.
         assert description.strip() == "HYSo Python library."
     requirements = [Requirement(value) for value in wheel_meta.get_all("Requires-Dist")]
-    section=None;sdist_requirements=[]
+    section = None
+    sdist_requirements = []
     for value in sdist_requires:
-        if not value.strip():continue
-        if value.startswith('['):
-            assert value=='[deployment]'
-            section='deployment';continue
-        sdist_requirements.append(Requirement(value+('; extra == "deployment"' if section else '')))
-    assert {str(item) for item in sdist_requirements} == {str(item) for item in requirements}
+        if not value.strip():
+            continue
+        if value.startswith("["):
+            assert value == "[deployment]"
+            section = "deployment"
+            continue
+        sdist_requirements.append(
+            Requirement(value + ('; extra == "deployment"' if section else ""))
+        )
+    assert {str(item) for item in sdist_requirements} == {
+        str(item) for item in requirements
+    }
     assert {item.name for item in requirements if item.marker is None} == DEPENDENCIES
-    optional={item.name:item for item in requirements if item.marker is not None}
-    assert set(optional)=={'onnx','onnxruntime'}
-    assert str(optional['onnx'].specifier)=='==1.20.0'
-    assert str(optional['onnxruntime'].specifier)=='==1.23.2'
-    assert all(item.marker.evaluate({'extra':'deployment'}) and not item.marker.evaluate({'extra':''})
-               for item in optional.values())
-    assert wheel_meta['Author-email'] is None and sdist_meta['Author-email'] is None
-    assert str(next(item.specifier for item in requirements if item.name == "torch")) == ">=2.2.2"
-    assert str(next(item.specifier for item in requirements if item.name == "torchvision")) == ">=0.17.2"
+    optional = {item.name: item for item in requirements if item.marker is not None}
+    assert set(optional) == {"onnx", "onnxruntime"}
+    assert str(optional["onnx"].specifier) == "==1.20.0"
+    assert str(optional["onnxruntime"].specifier) == "==1.23.2"
+    assert all(
+        item.marker.evaluate({"extra": "deployment"})
+        and not item.marker.evaluate({"extra": ""})
+        for item in optional.values()
+    )
+    assert wheel_meta["Author-email"] is None and sdist_meta["Author-email"] is None
+    assert (
+        str(next(item.specifier for item in requirements if item.name == "torch"))
+        == ">=2.2.2"
+    )
+    assert (
+        str(next(item.specifier for item in requirements if item.name == "torchvision"))
+        == ">=0.17.2"
+    )
     assert not next(item.specifier for item in requirements if item.name == "numpy")
 
 
@@ -638,9 +811,23 @@ def test_installed_public_entry_points_and_typing(distributions, kind):
     """Minimal installed discovery smoke, independent of long native fixtures."""
     work, wheel, sdist = distributions
     target = work / ("entry-points-" + kind)
-    command(["-m", "pip", "--isolated", "--no-cache-dir", "install", "--no-index",
-             "--no-deps", "--no-build-isolation", "--no-compile", "--target", str(target),
-             str(wheel if kind == "wheel" else sdist)], work)
+    command(
+        [
+            "-m",
+            "pip",
+            "--isolated",
+            "--no-cache-dir",
+            "install",
+            "--no-index",
+            "--no-deps",
+            "--no-build-isolation",
+            "--no-compile",
+            "--target",
+            str(target),
+            str(wheel if kind == "wheel" else sdist),
+        ],
+        work,
+    )
     code = """
 import pathlib, sys, typing
 target = pathlib.Path(sys.argv[1]).resolve()
@@ -723,7 +910,7 @@ else:
 assert not torch.cuda.is_initialized()
 print('installed discovery/typing PASS')
 """
-    assert 'installed discovery/typing PASS' in command(["-c", code, str(target)], work)
+    assert "installed discovery/typing PASS" in command(["-c", code, str(target)], work)
 
 
 @pytest.mark.parametrize("kind", ["wheel", "sdist"])
@@ -731,21 +918,58 @@ def test_installed_distribution_import_and_cpu_forward(distributions, kind):
     work, wheel, sdist = distributions
     target = work / ("installed-" + kind)
     artifact = wheel if kind == "wheel" else sdist
-    command(["-m", "pip", "--isolated", "--no-cache-dir", "install", "--no-index",
-             "--no-deps", "--no-build-isolation", "--no-compile",
-             "--target", str(target), str(artifact)], work)
-    observed = json.loads(command(["-c", SMOKE, str(target), str(ROOT / "tests/trainer_replay_support.py"), str(ROOT / "tests/fixture_support.py")], work).strip().splitlines()[-1])
+    command(
+        [
+            "-m",
+            "pip",
+            "--isolated",
+            "--no-cache-dir",
+            "install",
+            "--no-index",
+            "--no-deps",
+            "--no-build-isolation",
+            "--no-compile",
+            "--target",
+            str(target),
+            str(artifact),
+        ],
+        work,
+    )
+    observed = json.loads(
+        command(
+            [
+                "-c",
+                SMOKE,
+                str(target),
+                str(ROOT / "tests/trainer_replay_support.py"),
+                str(ROOT / "tests/fixture_support.py"),
+            ],
+            work,
+        )
+        .strip()
+        .splitlines()[-1]
+    )
     assert Path(observed["source"]).resolve().is_relative_to(target.resolve())
     assert observed["manual_integration"] is True
     assert observed["training_timing"] is True
-    assert observed['isolated_activation'] is True
-    assert observed['performance_guide'] and observed['performance_samples'] == 1000 and observed['performance_images'] == 80
-    assert observed['memory_guide'] and observed['rss_backend'].startswith('windows.' if os.name == 'nt' else 'linux.')
-    assert observed['sweep_guide'] and observed['sweep_precision_points'] == 4
-    assert observed['capacity_guide'] and observed['capacity_proven_max'] == 3
-    assert observed['profiling_guide'] and observed['profiling_tiny_flops'] == 5320
-    assert observed['telemetry_guide'] and observed['telemetry_cpu_samples'] >= 2
-    assert observed['pipeline_guide'] and observed['pipeline_samples'] == 4 and observed['cold_trials']['measured'] == 1
+    assert observed["isolated_activation"] is True
+    assert (
+        observed["performance_guide"]
+        and observed["performance_samples"] == 1000
+        and observed["performance_images"] == 80
+    )
+    assert observed["memory_guide"] and observed["rss_backend"].startswith(
+        "windows." if os.name == "nt" else "linux."
+    )
+    assert observed["sweep_guide"] and observed["sweep_precision_points"] == 4
+    assert observed["capacity_guide"] and observed["capacity_proven_max"] == 3
+    assert observed["profiling_guide"] and observed["profiling_tiny_flops"] == 5320
+    assert observed["telemetry_guide"] and observed["telemetry_cpu_samples"] >= 2
+    assert (
+        observed["pipeline_guide"]
+        and observed["pipeline_samples"] == 4
+        and observed["cold_trials"]["measured"] == 1
+    )
     assert observed["cpu_models"] == 3 and observed["cuda_initialized"] is False
     assert Path(observed["trainer_source"]).resolve().is_relative_to(target.resolve())
     assert len(observed["trainer_history"]["train_loss"]) == 1
@@ -753,15 +977,27 @@ def test_installed_distribution_import_and_cpu_forward(distributions, kind):
     assert observed["lifecycle_epochs"] == 2
     assert observed["saved_epochs"] == 2
     assert observed["restored_updates"] == 4
-    assert observed["replay"]["epochs"] == 5 and observed["replay"]["resumed_attempts"] == 4
+    assert (
+        observed["replay"]["epochs"] == 5
+        and observed["replay"]["resumed_attempts"] == 4
+    )
     assert observed["replay"]["exact_bytes"] and observed["replay"]["rng_equal"]
     assert observed["cpu_benchmarks"] == 2
-    assert observed["benchmark_exports"] == 6 and observed["benchmark_comparisons"] == ['compatible', 'compatible', 'incompatible']
+    assert observed["benchmark_exports"] == 6 and observed["benchmark_comparisons"] == [
+        "compatible",
+        "compatible",
+        "incompatible",
+    ]
     assert Path(observed["benchmark_source"]).resolve().is_relative_to(target.resolve())
-    assert Path(observed["experiment_source"]).resolve().is_relative_to(target.resolve())
+    assert (
+        Path(observed["experiment_source"]).resolve().is_relative_to(target.resolve())
+    )
     assert observed["experiment_snapshot"]["status"] == "completed"
     assert observed["experiment_snapshot"]["metric_count"] == 1
-    assert {row["configuration"]["precision"] for row in observed["benchmarks"]} == {"fp32", "fp64"}
+    assert {row["configuration"]["precision"] for row in observed["benchmarks"]} == {
+        "fp32",
+        "fp64",
+    }
     (work / (kind + "-smoke.json")).write_text(json.dumps(observed), encoding="utf-8")
 
 

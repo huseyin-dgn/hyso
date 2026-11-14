@@ -1,0 +1,2276 @@
+{
+  "conv_norm_act": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "conv_norm_act",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "in_channels": 4,
+          "out_channels": 4,
+          "kernel_size": [
+            3,
+            3
+          ],
+          "stride": [
+            1,
+            1
+          ],
+          "padding": [
+            1,
+            1
+          ],
+          "groups": 1,
+          "norm": "batch",
+          "activation": "silu"
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "conv2d": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "conv2d",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "in_channels": 4,
+          "out_channels": 4,
+          "kernel_size": [
+            3,
+            3
+          ],
+          "stride": [
+            1,
+            1
+          ],
+          "padding": [
+            1,
+            1
+          ],
+          "groups": 1,
+          "bias": true,
+          "dilation": [
+            1,
+            1
+          ]
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "residual": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "residual",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "in_channels": 4,
+          "out_channels": 4,
+          "stride": [
+            1,
+            1
+          ],
+          "norm": "batch",
+          "attention": null
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "se": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "se",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "channels": 4,
+          "reduction": 8
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "cbam": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "cbam",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "channels": 4,
+          "reduction": 16,
+          "kernel_size": 7
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "eca": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "eca",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "channels": 4,
+          "kernel_size": 3
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "coordinate": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "coordinate",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "channels": 4,
+          "reduction": 32
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "batch_norm": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "batch_norm",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "num_features": 4,
+          "eps": 1e-05,
+          "momentum": 0.1,
+          "affine": true,
+          "track_running_stats": true
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "group_norm": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "group_norm",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "num_groups": 2,
+          "num_channels": 4,
+          "eps": 1e-05,
+          "affine": true
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "relu": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "relu",
+        "inputs": [
+          "image"
+        ],
+        "params": {}
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "silu": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "silu",
+        "inputs": [
+          "image"
+        ],
+        "params": {}
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "hardswish": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "hardswish",
+        "inputs": [
+          "image"
+        ],
+        "params": {}
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "identity": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "identity",
+        "inputs": [
+          "image"
+        ],
+        "params": {}
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "channel_shuffle": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "channel_shuffle",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "channels": 4,
+          "groups": 2
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "dropblock2d": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "dropblock2d",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "p": 0.1,
+          "block_size": 3
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "pointwise_conv2d": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "pointwise_conv2d",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "in_channels": 4,
+          "out_channels": 4,
+          "stride": [
+            1,
+            1
+          ],
+          "bias": true
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "depthwise_conv2d": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "depthwise_conv2d",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "in_channels": 4,
+          "depth_multiplier": 1,
+          "kernel_size": [
+            3,
+            3
+          ],
+          "stride": [
+            1,
+            1
+          ],
+          "padding": [
+            1,
+            1
+          ],
+          "dilation": [
+            1,
+            1
+          ],
+          "bias": true
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "depthwise_separable_conv2d": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "depthwise_separable_conv2d",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "in_channels": 4,
+          "out_channels": 4,
+          "depth_multiplier": 1,
+          "kernel_size": [
+            3,
+            3
+          ],
+          "stride": [
+            1,
+            1
+          ],
+          "padding": [
+            1,
+            1
+          ],
+          "dilation": [
+            1,
+            1
+          ],
+          "bias": true
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "spatial_separable_conv2d": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "spatial_separable_conv2d",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "in_channels": 4,
+          "out_channels": 4,
+          "intermediate_channels": 4,
+          "kernel_size": [
+            3,
+            3
+          ],
+          "stride": [
+            1,
+            1
+          ],
+          "padding": [
+            1,
+            1
+          ],
+          "dilation": [
+            1,
+            1
+          ],
+          "bias": true
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "factorized_conv2d": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "factorized_conv2d",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "in_channels": 4,
+          "out_channels": 4,
+          "intermediate_channels": 4,
+          "kernel_size": [
+            3,
+            3
+          ],
+          "stride": [
+            1,
+            1
+          ],
+          "padding": [
+            1,
+            1
+          ],
+          "dilation": [
+            1,
+            1
+          ],
+          "bias": true
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "conv_transpose2d": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "conv_transpose2d",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "in_channels": 4,
+          "out_channels": 4,
+          "kernel_size": [
+            3,
+            3
+          ],
+          "stride": [
+            1,
+            1
+          ],
+          "padding": [
+            1,
+            1
+          ],
+          "dilation": [
+            1,
+            1
+          ],
+          "bias": true,
+          "groups": 1,
+          "output_padding": [
+            0,
+            0
+          ]
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "channel_layer_norm": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "channel_layer_norm",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "channels": 4,
+          "eps": 1e-05,
+          "affine": true
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "instance_norm": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "instance_norm",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "num_features": 4,
+          "eps": 1e-05,
+          "momentum": 0.1,
+          "affine": false,
+          "track_running_stats": false
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "leaky_relu": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "leaky_relu",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "negative_slope": 0.01
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "prelu": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "prelu",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "num_parameters": 1,
+          "init": 0.25
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "gelu": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "gelu",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "approximate": "none"
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "mish": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "mish",
+        "inputs": [
+          "image"
+        ],
+        "params": {}
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "hardsigmoid": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "hardsigmoid",
+        "inputs": [
+          "image"
+        ],
+        "params": {}
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "max_pool2d": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "max_pool2d",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "kernel_size": [
+            3,
+            3
+          ],
+          "stride": null,
+          "padding": [
+            0,
+            0
+          ],
+          "dilation": [
+            1,
+            1
+          ],
+          "ceil_mode": false
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "avg_pool2d": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "avg_pool2d",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "kernel_size": [
+            3,
+            3
+          ],
+          "stride": null,
+          "padding": [
+            0,
+            0
+          ],
+          "ceil_mode": false,
+          "count_include_pad": true
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "adaptive_avg_pool2d": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "adaptive_avg_pool2d",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "output_size": [
+            4,
+            4
+          ]
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "adaptive_max_pool2d": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "adaptive_max_pool2d",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "output_size": [
+            4,
+            4
+          ]
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "global_avg_pool2d": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "global_avg_pool2d",
+        "inputs": [
+          "image"
+        ],
+        "params": {}
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "bottleneck_residual": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "bottleneck_residual",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "in_channels": 4,
+          "out_channels": 4,
+          "intermediate_channels": 4,
+          "kernel_size": 3,
+          "stride": [
+            1,
+            1
+          ],
+          "dilation": [
+            1,
+            1
+          ],
+          "normalization": "batch",
+          "activation": "silu",
+          "attention": "none",
+          "dropout": 0.0,
+          "drop_path": 0.0
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "preactivation_residual": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "preactivation_residual",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "in_channels": 4,
+          "out_channels": 4,
+          "intermediate_channels": 4,
+          "kernel_size": 3,
+          "stride": [
+            1,
+            1
+          ],
+          "dilation": [
+            1,
+            1
+          ],
+          "normalization": "batch",
+          "activation": "silu",
+          "attention": "none",
+          "dropout": 0.0,
+          "drop_path": 0.0
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "wide_residual_block": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "wide_residual_block",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "in_channels": 4,
+          "out_channels": 4,
+          "intermediate_channels": 4,
+          "kernel_size": 3,
+          "stride": [
+            1,
+            1
+          ],
+          "dilation": [
+            1,
+            1
+          ],
+          "normalization": "batch",
+          "activation": "silu",
+          "attention": "none",
+          "dropout": 0.0,
+          "drop_path": 0.0
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "grouped_bottleneck": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "grouped_bottleneck",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "in_channels": 4,
+          "out_channels": 4,
+          "intermediate_channels": 4,
+          "kernel_size": 3,
+          "stride": [
+            1,
+            1
+          ],
+          "dilation": [
+            1,
+            1
+          ],
+          "normalization": "batch",
+          "activation": "silu",
+          "attention": "none",
+          "dropout": 0.0,
+          "drop_path": 0.0,
+          "groups": 1
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "inverted_bottleneck": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "inverted_bottleneck",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "in_channels": 4,
+          "out_channels": 4,
+          "expansion_ratio": 2,
+          "kernel_size": 3,
+          "stride": [
+            1,
+            1
+          ],
+          "dilation": [
+            1,
+            1
+          ],
+          "normalization": "batch",
+          "activation": "silu",
+          "attention": "none",
+          "dropout": 0.0,
+          "drop_path": 0.0
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "gated_residual": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "gated_residual",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "in_channels": 4,
+          "out_channels": 4,
+          "intermediate_channels": 4,
+          "kernel_size": 3,
+          "stride": [
+            1,
+            1
+          ],
+          "dilation": [
+            1,
+            1
+          ],
+          "normalization": "batch",
+          "activation": "silu",
+          "attention": "none",
+          "dropout": 0.0,
+          "drop_path": 0.0,
+          "gate_init": 1.0,
+          "learnable_gate": true
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "spatial_attention": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "spatial_attention",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "channels": 4,
+          "kernel_size": 7
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "channel_attention": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "channel_attention",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "channels": 4,
+          "reduction": 8
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "spatial_self_attention": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "spatial_self_attention",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "channels": 4,
+          "embedding_dim": 4,
+          "dropout": 0.0
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "multihead_spatial_attention": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "multihead_spatial_attention",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "channels": 4,
+          "embedding_dim": 4,
+          "num_heads": 4,
+          "dropout": 0.0
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "dropout": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "dropout",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "p": 0.5
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "dropout2d": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "dropout2d",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "p": 0.5
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "drop_path": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "drop_path",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "p": 0.0
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "gaussian_noise": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "gaussian_noise",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "std": 0.1
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "resize": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "resize",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "output_size": [
+            4,
+            4
+          ],
+          "scale_factor": null,
+          "mode": "nearest",
+          "align_corners": null
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "pixel_shuffle": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "pixel_shuffle",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "upscale_factor": 2
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "pixel_unshuffle": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "pixel_unshuffle",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "downscale_factor": 2
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "flatten": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "flatten",
+        "inputs": [
+          "image"
+        ],
+        "params": {}
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "permute": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "permute",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "dims": [
+            0,
+            1,
+            3,
+            2
+          ]
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "reshape": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "reshape",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "shape": [
+            4,
+            8,
+            8
+          ]
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "classification_head": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "classification_head",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "in_features": 4,
+          "pooling": "avg",
+          "num_classes": 2,
+          "dropout": 0.0
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "regression_head": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "regression_head",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "in_features": 4,
+          "pooling": "avg",
+          "output_features": 2
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "embedding_head": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "embedding_head",
+        "inputs": [
+          "image"
+        ],
+        "params": {
+          "in_features": 4,
+          "pooling": "avg",
+          "embedding_dim": 4,
+          "normalize": false,
+          "eps": 1e-12
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "add": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      },
+      "skip": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "add",
+        "inputs": [
+          "image",
+          "skip"
+        ],
+        "params": {}
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "concat": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      },
+      "skip": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "concat",
+        "inputs": [
+          "image",
+          "skip"
+        ],
+        "params": {
+          "axis": 1
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "multiply": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      },
+      "skip": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "multiply",
+        "inputs": [
+          "image",
+          "skip"
+        ],
+        "params": {}
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  },
+  "weighted_sum": {
+    "format": "hyso.model_config",
+    "schema_version": 3,
+    "kind": "graph",
+    "inputs": {
+      "image": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      },
+      "skip": {
+        "shape": [
+          4,
+          8,
+          8
+        ],
+        "layout": "NCHW",
+        "dtype": "floating",
+        "device": "model"
+      }
+    },
+    "nodes": [
+      {
+        "id": "example",
+        "component": "weighted_sum",
+        "inputs": [
+          "image",
+          "skip"
+        ],
+        "params": {
+          "weights": [
+            1,
+            1
+          ],
+          "learnable": false
+        }
+      }
+    ],
+    "outputs": {
+      "result": "example"
+    }
+  }
+}

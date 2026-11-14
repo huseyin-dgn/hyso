@@ -1,35 +1,43 @@
 """Exercise the commercial wheel/sdist independently of checkout-only models."""
-import json
+
 import zipfile
 import tarfile
 
 import pytest
 
+from test_packaging import ROOT, MODULES, PROFILE, command
+from test_packaging import distributions as distributions
+
 pytestmark = pytest.mark.commercial_profile
 
-from test_packaging import ROOT, MODULES, PROFILE, distributions, command
 
-
-@pytest.mark.parametrize('kind', ['wheel', 'sdist'])
-def test_commercial_archive_allowlist(distributions, kind):
+@pytest.mark.parametrize("kind", ["wheel", "sdist"])
+def test_commercial_archive_allowlist(distributions, kind):  # noqa: F811 - pytest fixture injection
     _, wheel, sdist = distributions
-    if kind == 'wheel':
+    if kind == "wheel":
         with zipfile.ZipFile(wheel) as archive:
-            payload = {name: archive.read(name) for name in archive.namelist()
-                       if name.endswith('.py')}
+            payload = {
+                name: archive.read(name)
+                for name in archive.namelist()
+                if name.endswith(".py")
+            }
         assert set(payload) == MODULES
     else:
         with tarfile.open(sdist) as archive:
-            payload = {member.name.removeprefix('hyso-0.2.0/'): archive.extractfile(member).read()
-                       for member in archive.getmembers()
-                       if member.isfile() and member.name.endswith('.py')}
-        assert set(payload) == MODULES | {'setup.py'}
-    assert not set(payload) & set(PROFILE['excluded_python_files'])
+            payload = {
+                member.name.removeprefix("hyso-0.2.0/"): archive.extractfile(
+                    member
+                ).read()
+                for member in archive.getmembers()
+                if member.isfile() and member.name.endswith(".py")
+            }
+        assert set(payload) == MODULES | {"setup.py"}
+    assert not set(payload) & set(PROFILE["excluded_python_files"])
     for name in MODULES:
         assert payload[name] == (ROOT / name).read_bytes()
 
 
-COMMERCIAL_SMOKE = r'''
+COMMERCIAL_SMOKE = r"""
 import ast, io, json, os, pathlib, sys, importlib.util
 from contextlib import redirect_stdout
 target = pathlib.Path(sys.argv[1]).resolve()
@@ -220,22 +228,50 @@ clone.load_state_dict(model.state_dict(),strict=True)
 model.eval();clone.eval()
 for name,value in model(inputs).items(): assert torch.equal(value,clone(inputs)[name])
 def no_allocate(*args,**kwargs): raise AssertionError('graph preview allocated weights')
+original_module_init, original_empty = torch.nn.Module.__init__, torch.empty
 torch.nn.Module.__init__ = no_allocate
 torch.empty = no_allocate
 assert GraphModelBuilder.preflight(graph.to_config())['valid']
 stream = io.StringIO()
 with redirect_stdout(stream): assert main(['models','preview',str(path),'--json']) == 0
 assert json.loads(stream.getvalue())['result']['validation']['outputs']['embedding']['layout'] == 'NC'
-print('commercial installed blocks/JSON/training/CLI PASS')
-'''
+torch.nn.Module.__init__, torch.empty = original_module_init, original_empty
+from hyso.models.output import GraphTensorOutput
+from hyso.model_checks import run_model_checks
+from hyso.architecture_comparison import compare_architectures
+from hyso.model_observations import diagnose_results
+assert importlib.util.find_spec('hyso.studio') is None
+selected = GraphTensorOutput(graph.build(), 'classification', task='multiclass').eval()
+assert selected(torch.ones(2,4,8,8)).shape == (2,3)
+checks = run_model_checks(graph.to_config(), tests=('structure','forward','backward','serialization'))
+assert all(c['status']=='PASS' for c in checks['cases']), checks
+assert len(compare_architectures([graph.to_config(),graph.to_config()])['columns']) == 2
+assert diagnose_results([]) == []
+print('commercial installed blocks/JSON/training/CLI/Python PASS')
+"""
 
 
-@pytest.mark.parametrize('kind', ['wheel', 'sdist'])
-def test_installed_commercial_core(distributions, kind):
+@pytest.mark.parametrize("kind", ["wheel", "sdist"])
+def test_installed_commercial_core(distributions, kind):  # noqa: F811 - pytest fixture injection
     work, wheel, sdist = distributions
-    target = work / ('commercial-' + kind)
-    command(['-m', 'pip', '--isolated', '--no-cache-dir', 'install', '--no-index',
-             '--no-deps', '--no-build-isolation', '--no-compile', '--target', str(target),
-             str(wheel if kind == 'wheel' else sdist)], work)
-    assert 'commercial installed blocks/JSON/training/CLI PASS' in command(
-        ['-c', COMMERCIAL_SMOKE, str(target)], work)
+    target = work / ("commercial-" + kind)
+    command(
+        [
+            "-m",
+            "pip",
+            "--isolated",
+            "--no-cache-dir",
+            "install",
+            "--no-index",
+            "--no-deps",
+            "--no-build-isolation",
+            "--no-compile",
+            "--target",
+            str(target),
+            str(wheel if kind == "wheel" else sdist),
+        ],
+        work,
+    )
+    assert "commercial installed blocks/JSON/training/CLI/Python PASS" in command(
+        ["-c", COMMERCIAL_SMOKE, str(target)], work
+    )

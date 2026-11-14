@@ -104,8 +104,14 @@ def _structure(config,report):
                 dependencies[other].remove(key)
                 if not dependencies[other]:heapq.heappush(ready,other)
     if len(order)!=len(nodes):
-        unresolved=sorted(set(nodes)-set(order))
-        report['diagnostics'].append(_error('cycle blocks nodes '+', '.join(unresolved),layer_id=unresolved[0],actual=unresolved).to_dict())
+        unresolved=set(nodes)-set(order)
+        cycles=_cycles(nodes)
+        members=set().union(*map(set,cycles))
+        report['cycles']=cycles
+        report['blocked_nodes']=sorted(unresolved-members)
+        for cycle in cycles:
+            report['diagnostics'].append(_error('cycle contains nodes '+', '.join(cycle),
+                layer_id=cycle[0],actual=dict(cycle_members=cycle)).to_dict())
     reachable=set();pending=list(c['outputs'].values())
     while pending:
         key=pending.pop()
@@ -118,6 +124,29 @@ def _structure(config,report):
     c['nodes']=[nodes[key] for key in sorted(nodes)]
     c['outputs']=dict(sorted(c['outputs'].items()))
     return c,nodes
+
+
+def _cycles(nodes):
+    """Deterministic Tarjan SCCs. Graph admission bounds recursion to 64 nodes."""
+    indices={};low={};stack=[];active=set();cycles=[]
+    def visit(key):
+        indices[key]=low[key]=len(indices)
+        stack.append(key);active.add(key)
+        for ref in sorted(set(nodes[key]['inputs'])&set(nodes)):
+            if ref not in indices:
+                visit(ref);low[key]=min(low[key],low[ref])
+            elif ref in active:
+                low[key]=min(low[key],indices[ref])
+        if low[key]==indices[key]:
+            component=[]
+            while True:
+                member=stack.pop();active.remove(member);component.append(member)
+                if member==key:break
+            if len(component)>1 or key in nodes[key]['inputs']:
+                cycles.append(sorted(component))
+    for key in sorted(nodes):
+        if key not in indices:visit(key)
+    return sorted(cycles)
 
 
 def _describe(name,p,sources,batch_size):
@@ -152,7 +181,7 @@ def _describe(name,p,sources,batch_size):
 
 
 def _analyze(config,batch_size=1,activation_limit=16_777_216):
-    report=dict(valid=False,diagnostics=[],warnings=[],topological_order=[],nodes={},edges=[],inputs={},outputs={},
+    report=dict(valid=False,diagnostics=[],warnings=[],cycles=[],blocked_nodes=[],topological_order=[],nodes={},edges=[],inputs={},outputs={},
                 parameter_count=None,parameter_estimate=None,activation_estimate=None,attention_cost={})
     try:
         if type(batch_size) is not int or batch_size<1 or type(activation_limit) is not int or activation_limit<1:
@@ -171,6 +200,8 @@ def _analyze(config,batch_size=1,activation_limit=16_777_216):
         report['nodes'][key]=dict(id=key,component=row['component'],input_references=row['inputs'],input_shapes=[],
                                   output_shape=None,rank=None,layout=None,parameter_count=None,parameter_estimate=None,warnings=[],
                                   ports=dict(inputs=[dict(index=i,reference=r) for i,r in enumerate(row['inputs'])],output='tensor'))
+        report['nodes'][key]['cycle_member']=any(key in cycle for cycle in report['cycles'])
+        report['nodes'][key]['blocked_by_cycle']=key in report['blocked_nodes']
     for key in report['topological_order']:
         row=nodes[key];node=report['nodes'][key]
         try:

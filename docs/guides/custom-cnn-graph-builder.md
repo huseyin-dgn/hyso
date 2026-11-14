@@ -206,7 +206,10 @@ Node raporunda ports, component metadata, input references/shapes, output shape,
 rank/layout, maliyet, status ve hata/uyarı işaretleri bulunur.
 
 Cycle, missing ref, self-loop, duplicate ID, disconnected node ve yanlış output
-referansı yapısal hata üretir. Cycle raporu bloke olan ID'leri verir. Bağımsız
+referansı yapısal hata üretir. `cycles` gerçek strongly connected component
+üyelerini, `blocked_nodes` döngüler nedeniyle bloke olan diğer ID'leri verir.
+Her cycle tanısının `layer_id` değeri o döngünün gerçek bir üyesidir. Node
+raporundaki `cycle_member` ve `blocked_by_cycle` alanları bu ayrımı taşır. Bağımsız
 dalların scalar ve shape kontrolleri sürer. Geçersiz dalın downstream shape'i None
 kalır ve blocked olarak işaretlenir. Yeni GRAPH_STRUCTURE_ERROR,
 GRAPH_SHAPE_ERROR ve GRAPH_LIMIT_ERROR kodları önceki ModelConfigError alanlarını

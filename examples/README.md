@@ -10,6 +10,13 @@ with HYSo installed in the selected Python environment.
 | `advisor/` | Manual recommendations from retained analysis/comparison evidence |
 | `analysis/` | Typed native CPU/preflight, retained artifacts, training and ORT analysis, comparisons |
 | `models/` | M3 residual/dense families, attention, custom Builder CNN, short CPU training and state_dict |
+| `models/python_first.py` | End-to-end branching graph, selected output, real CPU training/inference/benchmark, comparison, ExperimentManager and Advisor |
+
+Run `python -m examples.models.python_first --output C:/local-hyso/python-demo-01`
+with a fresh local output directory. It creates/migrates only its own empty example
+experiment store; no previous user workspace is accessed. Synthetic fixture values
+do not establish model quality. The preserved 60 component configurations in
+`models/component-configs.json` use standard Core Builder JSON without UI metadata.
 
 Future model construction, training and analysis examples belong in separate
 workflow directories when their executable scripts and tests are added. The

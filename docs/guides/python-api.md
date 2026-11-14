@@ -1,5 +1,9 @@
 # Python API discovery and help
 
+The current [Python-first workflow](python-first-workflow.md) covers graph output
+selection, isolated model checks and architecture comparison. The web product
+is retired; the Python API and seven existing CLI groups are the product interfaces.
+
 | Component | Convenience import | Canonical module / principal APIs |
 |---|---|---|
 | Model | from hyso import ModularCNN | hyso.models.modular; named blocks in hyso.models |
