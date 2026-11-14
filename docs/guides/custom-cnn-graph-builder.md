@@ -65,7 +65,9 @@ Bu kısıtlar Graph Builder'da da geçerlidir.
 ## Dört fusion operatörü
 
 Fusion operatörleri Graph Builder'ın kapalı operatör kümesidir. Registry'nin
-57 ticari girdisine eklenmez. Lineer ModelBuilder bu isimleri kabul etmez.
+57 ticari profil girdisine eklenmez. Development checkout profilinde Registry
+85 girdi sunar; bu dört fusion işlemi her iki profilde de ayrı Graph işlemleridir.
+Lineer ModelBuilder bu isimleri kabul etmez.
 Graph preview her fusion'ın metadata ve parametre özetini sağlar.
 
 | Operatör | Matematiksel sözleşme | Parametreler |
