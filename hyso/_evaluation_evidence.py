@@ -7,6 +7,7 @@ import hashlib
 import json
 import sys
 import weakref
+from collections import OrderedDict
 
 import torch
 
@@ -31,10 +32,170 @@ def model_hash(model):
 # Process-local receipts belong to the exact model object, never its attributes,
 # a caller-provided path/hash, a deepcopy, or a deserialized receipt dictionary.
 _CHECKPOINTS = {}
+_GRAPH_CHECKPOINTS = {}
 
 
 def forget_checkpoint(model):
     _CHECKPOINTS.pop(id(model), None)
+    _GRAPH_CHECKPOINTS.pop(id(model), None)
+
+
+def _contract_digest(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"),
+                                     allow_nan=False).encode()).hexdigest()
+
+
+def _serialized_state_digest(fingerprints):
+    if fingerprints is None:
+        raise ValueError("unsupported serialized graph state")
+    return _contract_digest({key: value.hex() for key, value in fingerprints.items()})
+
+
+def _graph_contract(model):
+    """Conservative typed CPU profile; reconstruct structure, never execute forward.
+
+    Trusts the installed closed constructors, not arbitrary subclasses, hooks,
+    instance callables or caller metadata. Modes/gradients are not serialized.
+    Fresh reference allocation is capped and preserves the caller CPU RNG.
+    """
+    from .models.graph import GraphModel, GraphModelBuilder
+    from .models.output import GraphTensorOutput
+    if sys.byteorder != "little":
+        raise NotImplementedError("Graph evidence v2 requires little-endian CPU")
+    import torch.nn.modules.module as module_runtime
+    if any(value for name, value in vars(module_runtime).items()
+           if name.startswith("_global_") and name.endswith("hooks")):
+        raise ValueError("global module hooks unsupported")
+    if type(model) is GraphTensorOutput:
+        graph = model.graph
+        selected = model.output_name
+    elif type(model) is GraphModel:
+        graph, selected = model, None
+    else:
+        raise ValueError("exact GraphModel/GraphTensorOutput required")
+    if type(graph) is not GraphModel:
+        raise ValueError("custom Graph subclasses unsupported")
+    anchor = graph._buffers.get("_contract")
+    if (type(anchor) is not torch.Tensor or anchor.shape != (0,)
+            or anchor.device.type != "cpu" or anchor.dtype not in (torch.float32, torch.float64)):
+        raise ValueError("CPU fp32/fp64 empty Graph contract required")
+    config = GraphModel.to_config(graph)
+    allowed = {"conv_norm_act", "conv2d", "pointwise_conv2d", "identity", "relu", "silu",
+               "batch_norm", "global_avg_pool2d", "flatten", "classification_head",
+               "add", "multiply", "concat", "weighted_sum"}
+    if any(row["component"] not in allowed for row in config["nodes"]):
+        raise ValueError("Graph component outside the v2 evidence profile")
+    # Metadata-only Core admission supplies a parameter budget before allocation.
+    report = GraphModelBuilder.preflight(config)
+    if (not report["valid"] or type(report["parameter_estimate"]) is not int
+            or not 0 <= report["parameter_estimate"] <= 1_000_000):
+        raise ValueError("Graph contract reference exceeds 1M parameter budget")
+    with torch.random.fork_rng(devices=[]):
+        reference = GraphModelBuilder.from_config(config).build().to(dtype=anchor.dtype, device="cpu")
+        if selected is not None:
+            reference = GraphTensorOutput(reference, selected)
+
+    def plain(value):
+        if value is None or type(value) in (str, int, bool, float):
+            return value
+        if type(value) in (list, tuple, set):
+            items = sorted(value) if type(value) is set else value
+            return [type(value).__name__, [plain(v) for v in items]]
+        if type(value) in (dict, OrderedDict) and all(type(k) is str for k in value):
+            return {k: plain(v) for k, v in value.items()}
+        raise ValueError("custom runtime metadata unsupported")
+
+    seen, tensors = set(), set()
+    def signature(actual, expected):
+        if type(actual) is not type(expected) or id(actual) in seen:
+            raise ValueError("custom or aliased Graph module unsupported")
+        seen.add(id(actual))
+        a, e = vars(actual), vars(expected)
+        omit = {"_modules", "_parameters", "_buffers", "training"}
+        attrs = plain({k: v for k, v in a.items() if k not in omit})
+        if _contract_digest(attrs) != _contract_digest(plain({k: v for k, v in e.items() if k not in omit})):
+            raise ValueError("runtime module behavior differs from closed constructor")
+        result = dict(type=type(actual).__module__ + "." + type(actual).__qualname__, attributes=attrs)
+        for field in ("_parameters", "_buffers"):
+            aa, ee = a[field], e[field]
+            if type(aa) is not dict or list(aa) != list(ee):
+                raise ValueError("registered Graph tensor names differ")
+            schema = {}
+            for name, expected_tensor in ee.items():
+                tensor = aa[name]
+                if expected_tensor is None:
+                    if tensor is not None:
+                        raise ValueError("unexpected Graph tensor")
+                    schema[name] = None
+                    continue
+                if (type(tensor) is not type(expected_tensor) or id(tensor) in tensors
+                        or tensor.device.type != "cpu" or tensor.layout != torch.strided
+                        or tensor.dtype != expected_tensor.dtype or tensor.shape != expected_tensor.shape
+                        or tensor.requires_grad != expected_tensor.requires_grad):
+                    raise ValueError("Graph tensor schema/device/dtype/alias mismatch")
+                tensors.add(id(tensor))
+                schema[name] = [str(tensor.dtype), list(tensor.shape), tensor.requires_grad]
+            result[field] = schema
+        if type(a["_modules"]) is not dict or list(a["_modules"]) != list(e["_modules"]):
+            raise ValueError("Graph module topology differs")
+        result["children"] = {name: signature(a["_modules"][name], child)
+                              for name, child in e["_modules"].items()}
+        return result
+
+    runtime = signature(model, reference)
+    state = torch.nn.Module.state_dict(model)
+    return dict(format="hyso.graph_checkpoint_contract", schema_version=2,
+                configuration=config, adapter_output=selected, device="cpu", dtype=str(anchor.dtype),
+                torch_version=str(torch.__version__),
+                runtime_sha256=_contract_digest(runtime),
+                serialized_state_sha256=_serialized_state_digest(checkpoint_state_fingerprints(state)))
+
+
+def validate_graph_contract(model, contract, fingerprints):
+    """Check saved tensor commitment AND separately reconstructed runtime metadata."""
+    actual = _graph_contract(model)
+    expected = dict(actual, serialized_state_sha256=_serialized_state_digest(fingerprints))
+    if type(contract) is not dict or _contract_digest(contract) != _contract_digest(expected):
+        raise ValueError("Graph checkpoint contract/state mismatch")
+
+
+def remember_graph_checkpoint(model, artifact_sha256, fingerprints, contract):
+    try:
+        validate_graph_contract(model, contract, fingerprints)
+        if _serialized_state_digest(checkpoint_state_fingerprints(model.state_dict())) != contract["serialized_state_sha256"]:
+            return
+        state = model_hash(model)
+    except (TypeError, ValueError, RuntimeError, AttributeError, KeyError, NotImplementedError):
+        return
+    key = id(model)
+    def expired(ref):
+        entry = _GRAPH_CHECKPOINTS.get(key)
+        if entry is not None and entry[0] is ref:
+            _GRAPH_CHECKPOINTS.pop(key, None)
+    # Freeze plain metadata; never retain caller-mutable dictionaries.
+    frozen = json.dumps(contract, sort_keys=True, allow_nan=False)
+    _GRAPH_CHECKPOINTS[key] = (weakref.ref(model, expired), state, artifact_sha256, frozen)
+
+
+def graph_checkpoint_evidence(model, state=None):
+    """Separate v2 proof; never upgrades P26 v1 schema2/3 checkpoint evidence."""
+    missing = dict(format="hyso.graph_checkpoint_evidence", schema_version=2, status="missing",
+                   checkpoint_sha256=None, model_state_sha256=None, contract=None,
+                   source=None, reason="no_matching_graph_contract_receipt")
+    entry = _GRAPH_CHECKPOINTS.get(id(model))
+    if entry is None or entry[0]() is not model:
+        return missing
+    try:
+        current = model_hash(model)
+        contract = _graph_contract(model)
+        if (entry[1] != current or (state is not None and state != current)
+                or _contract_digest(contract) != _contract_digest(json.loads(entry[3]))):
+            return missing
+    except (TypeError, ValueError, RuntimeError, AttributeError, KeyError, NotImplementedError):
+        return missing
+    return dict(format="hyso.graph_checkpoint_evidence", schema_version=2, status="native",
+                checkpoint_sha256=entry[2], model_state_sha256=current, contract=contract,
+                source="hyso.load_training_checkpoint.graph_contract.v2", reason=None)
 
 
 def checkpoint_state_fingerprints(state):

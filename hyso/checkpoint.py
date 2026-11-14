@@ -16,7 +16,7 @@ import tempfile
 
 import torch
 
-__all__ = ["save_training_checkpoint", "load_training_checkpoint", "TrainingCheckpointError"]
+__all__ = ["save_training_checkpoint", "load_training_checkpoint", "TrainingCheckpointError", "graph_checkpoint_evidence"]
 FORMAT_VERSION = 1
 _FIELDS = {"format", "format_version", "model", "optimizer", "scheduler", "scaler",
            "ema", "completed_epochs", "history", "metrics", "rng_state"}
@@ -173,8 +173,11 @@ def _model_state(target, state, name):
 def _validate(payload, model, optimizer, scheduler, scaler, ema, restore_rng):
     if type(payload) is not dict or payload.get("format") != "hyso.training":
         raise TrainingCheckpointError("not a HYSo full training checkpoint (model-only files are separate)")
-    if type(payload.get("format_version")) is not int or payload["format_version"] != FORMAT_VERSION:
+    if type(payload.get("format_version")) is not int or payload["format_version"] not in (FORMAT_VERSION, 2):
         raise TrainingCheckpointError("unsupported training checkpoint format_version")
+    if payload["format_version"] == 2 and (type(payload.get("model")) is not dict
+            or "graph_contract" not in payload["model"]):
+        raise TrainingCheckpointError("unsupported training checkpoint format_version 2 without explicit Graph contract")
     if set(payload) != _FIELDS:
         raise TrainingCheckpointError("invalid checkpoint fields; missing=" + str(sorted(_FIELDS - set(payload)))
                                       + "; unexpected=" + str(list(set(payload) - _FIELDS)))
@@ -195,6 +198,8 @@ def _validate(payload, model, optimizer, scheduler, scaler, ema, restore_rng):
         if target is None:
             continue
         fields = {"type", "state_dict"}
+        if name == "model" and payload["format_version"] == 2:
+            fields.add("graph_contract")
         if name == "optimizer":
             fields.add("param_names")
         if name == "ema":
@@ -205,6 +210,13 @@ def _validate(payload, model, optimizer, scheduler, scaler, ema, restore_rng):
             raise TrainingCheckpointError(name + ": invalid state_dict")
         if name == "model":
             _model_state(target, saved["state_dict"], name)
+            if payload["format_version"] == 2:
+                from ._evaluation_evidence import validate_graph_contract, checkpoint_state_fingerprints
+                try:
+                    validate_graph_contract(target, saved["graph_contract"],
+                                            checkpoint_state_fingerprints(saved["state_dict"]))
+                except (TypeError, ValueError, RuntimeError, AttributeError, KeyError, NotImplementedError) as error:
+                    raise TrainingCheckpointError("Graph contract validation failed: " + str(error)) from error
         elif name == "ema":
             if (not isinstance(getattr(target, "ema_model", None), torch.nn.Module)
                     or saved["model_type"] != _type_name(target.ema_model)
@@ -257,19 +269,33 @@ def _validate(payload, model, optimizer, scheduler, scaler, ema, restore_rng):
 
 def save_training_checkpoint(path, model, *, optimizer=None, scheduler=None,
                              scaler=None, ema=None, completed_epochs=0,
-                             history=None, metrics=None, include_rng=False):
-    """Atomically save version 1 state. Omitted components are recorded as None.
+                             history=None, metrics=None, include_rng=False, graph_contract=False):
+    """Atomically save state. Omitted components are recorded as None.
 
     RNG capture is opt-in (Python, NumPy, CPU torch, and already-initialized CUDA).
     Call at a completed optimizer/epoch boundary; in-flight gradients are not saved.
+    graph_contract=True explicitly selects checkpoint v2 for the bounded typed
+    Graph CPU profile. Default v1 bytes/schema and legacy loading stay unchanged.
     """
     if not isinstance(model, torch.nn.Module):
         raise TrainingCheckpointError("model must be a torch.nn.Module")
+    if type(graph_contract) is not bool:
+        raise TrainingCheckpointError("graph_contract must be bool")
+    contract = None
+    if graph_contract:
+        from ._evaluation_evidence import _graph_contract
+        try:
+            contract = _graph_contract(model)
+        except (TypeError, ValueError, RuntimeError, AttributeError, KeyError, NotImplementedError) as error:
+            raise TrainingCheckpointError("Graph contract capture failed: " + str(error)) from error
     payload = {"format": "hyso.training", "format_version": FORMAT_VERSION,
                "model": _component(model, "model"), "optimizer": None, "scheduler": None,
                "scaler": None, "ema": None, "completed_epochs": completed_epochs,
                "history": _safe(history, "history"), "metrics": _safe(metrics, "metrics"),
                "rng_state": _safe(_rng_state()) if include_rng else None}
+    if contract is not None:
+        payload["format_version"] = 2
+        payload["model"]["graph_contract"] = contract
     for name, obj in (("optimizer", optimizer), ("scheduler", scheduler), ("scaler", scaler)):
         if obj is not None:
             payload[name] = _component(obj, name)
@@ -298,7 +324,7 @@ def save_training_checkpoint(path, model, *, optimizer=None, scheduler=None,
 
 def load_training_checkpoint(path, model, *, optimizer=None, scheduler=None,
                              scaler=None, ema=None, map_location="cpu", restore_rng=False,
-                             validate_metadata=None, capture_evidence=False):
+                             validate_metadata=None, capture_evidence=False, expected_sha256=None):
     """Strictly restore caller-created components and return epoch/history/metrics.
 
     Presence, component types, model tensor schemas and optimizer parameter order
@@ -309,12 +335,19 @@ def load_training_checkpoint(path, model, *, optimizer=None, scheduler=None,
     with weights_only=True. A process-local receipt binds the restored CPU model
     state to that artifact for opt-in P26 evidence. No path/hash declaration is
     accepted. Snapshot memory is bounded; large artifacts spill to a temp file.
+    expected_sha256 checks that same private snapshot before deserialization;
+    it is an integrity constraint, not proof of authorship. Explicit v2 Graph
+    checkpoints also validate reconstructed contract metadata before mutation.
+    Their receipt is queried separately through graph_checkpoint_evidence.
     """
     if type(capture_evidence) is not bool:
         raise TrainingCheckpointError("capture_evidence must be bool")
+    if expected_sha256 is not None and (type(expected_sha256) is not str or len(expected_sha256) != 64
+            or any(c not in "0123456789abcdef" for c in expected_sha256)):
+        raise TrainingCheckpointError("expected_sha256 must be a lowercase SHA-256")
     artifact_sha256 = None
     try:
-        if capture_evidence:
+        if capture_evidence or expected_sha256 is not None:
             # Deserialize the same snapshot that was hashed, avoiding a second
             # path read and any file replacement race between hash and load.
             with tempfile.SpooledTemporaryFile(max_size=8*1024**2, mode="w+b") as snapshot:
@@ -337,8 +370,10 @@ def load_training_checkpoint(path, model, *, optimizer=None, scheduler=None,
                     finally:
                         path.seek(position)
                 snapshot.seek(0)
+                if expected_sha256 is not None and digest.hexdigest() != expected_sha256:
+                    raise TrainingCheckpointError("checkpoint SHA-256 mismatch")
                 payload = torch.load(snapshot, map_location=map_location, weights_only=True)
-                artifact_sha256 = digest.hexdigest()
+                artifact_sha256 = digest.hexdigest() if capture_evidence else None
         else:
             payload = torch.load(path, map_location=map_location, weights_only=True)
         payload = _safe(payload, "checkpoint")
@@ -389,6 +424,16 @@ def load_training_checkpoint(path, model, *, optimizer=None, scheduler=None,
         raise TrainingCheckpointError("component restore failed; previous state restored: " + str(error)) from error
     if artifact_sha256 is not None:
         remember_checkpoint(model, artifact_sha256, loaded_fingerprints)
+        if payload["format_version"] == 2:
+            from ._evaluation_evidence import remember_graph_checkpoint
+            remember_graph_checkpoint(model, artifact_sha256, loaded_fingerprints,
+                                      payload["model"]["graph_contract"])
     return {"completed_epochs": payload["completed_epochs"], "history": payload["history"],
             "metrics": payload["metrics"], "rng_state": payload["rng_state"], "rng_restored": bool(restore_rng)}
+
+
+def graph_checkpoint_evidence(model):
+    """Query separate process-local Graph v2 proof; legacy P26 v1 is unchanged."""
+    from ._evaluation_evidence import graph_checkpoint_evidence as evidence
+    return evidence(model)
 
