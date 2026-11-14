@@ -14,6 +14,7 @@ from .report import AnalysisContext
 from .model_comparison import ModelComparisonResult, ModelComparisonSource, compare_models
 from ..checkpoint import graph_checkpoint_evidence
 from ..evaluation import EvaluationResult, evaluate_classification
+from .._graph_receiver import receiver_statement, receiver_verification, validate_statement
 
 
 class GraphEvidenceError(ValueError):
@@ -29,6 +30,13 @@ _LIMITS = [
     "dataset origin and preprocessing identity remain caller-declared",
     "retained JSON, report integrity and experiment artifact hashes are not native receipts",
     "no CUDA, hardware performance, global winner or improvement certification",
+]
+_RUNTIME_LIMITS = [
+    "source Graph v2 checkpoint receipt is not transferred to the isolated receiver",
+    "receiver binding requires explicit native CPU capture on the actual inference object",
+    "pre/post and per-forward observations assume trusted quiescent installed Core/PyTorch",
+    "no guarantee against concurrent hostile Python or transient mutate-and-restore behavior",
+    *_LIMITS[3:],
 ]
 
 
@@ -74,7 +82,7 @@ def _receipt_statement(data):
         raise GraphEvidenceError("invalid_receipt_status")
 
 
-def _body(data, format_name, fields):
+def _body(data, format_name, fields, versions=(1,)):
     data = plain(data)
     if type(data) is not dict:
         raise GraphEvidenceError("plain_versioned_statement_required")
@@ -85,7 +93,7 @@ def _body(data, format_name, fields):
             data.pop(optional)  # Persisted claims never supply process-local authority.
     if (set(data) != fields | {"format", "schema_version", "content_sha256"}
             or data["format"] != format_name or type(data["schema_version"]) is not int
-            or data["schema_version"] != 1
+            or data["schema_version"] not in versions
             or data["content_sha256"] != digest({k: v for k, v in data.items() if k != "content_sha256"})):
         raise GraphEvidenceError("invalid_association_schema_or_integrity")
     if len(canonical(data).encode()) > 32 * 1024**2:
@@ -120,8 +128,12 @@ class GraphEvaluationResult(_Export):
     _payload: str
 
     def __init__(self, data):
+        version = data.get("schema_version") if type(data) is dict else None
+        fields = {"evaluation", "source_receipt", "record", "context"}
+        if version == 2:
+            fields.add("receiver_binding")
         d = _body(data, "hyso.graph_evaluation_association",
-                  {"evaluation", "source_receipt", "record", "context"})
+                  fields, versions=(1, 2))
         evaluation = EvaluationResult(d["evaluation"]).to_dict()
         if evaluation["schema_version"] not in (2, 3) or evaluation["source"]["kind"] != "model_inference":
             raise GraphEvidenceError("native_evaluation_statement_required")
@@ -135,6 +147,8 @@ class GraphEvaluationResult(_Export):
         if (d["source_receipt"]["status"] == "native"
                 and d["source_receipt"]["model_state_sha256"] != evaluation["source"]["model_state_sha256"]):
             raise GraphEvidenceError("source_and_evaluated_named_state_mismatch")
+        if version == 2:
+            validate_statement(d["receiver_binding"], evaluation, d["source_receipt"])
         object.__setattr__(self, "_payload", canonical(d))
 
     @property
@@ -164,6 +178,14 @@ class GraphEvaluationResult(_Export):
             named_state_match=d["source_receipt"]["status"] == "native",
             isolated_receiver_receipt="not_transferred", runtime_equivalence="not_observed",
             scope="source_receipt_and_observed_named_tensors_only")
+        if d["schema_version"] == 2:
+            entry = _EVALUATIONS.get(id(self))
+            original = entry is not None and entry[0]() is self and entry[1] == self._payload
+            runtime = receiver_verification(entry[3], d["receiver_binding"]) if original else "unverified"
+            binding = "verified" if runtime == "verified" and v["graph_v2"] == "verified" else "unavailable"
+            v.update(receiver_runtime=runtime, inference_binding=binding)
+            d["relation"].update(status=binding, runtime_equivalence=runtime,
+                scope="source_v2_and_actual_core_observed_receiver_same_evaluation")
         return d
 
     def analysis_source(self, model_id):
@@ -177,13 +199,16 @@ class GraphEvaluationResult(_Export):
 
 def evaluate_graph_classification(model, loader, *, class_names, split, source_id=None, context=None,
         task="multiclass", zero_division=0, max_samples=1000000, capture_structure=False,
-        expected_checkpoint_sha256=None, expected_model_state_sha256=None):
-    """Call the existing evaluator once; capture only a LIMITED source association.
+        expected_checkpoint_sha256=None, expected_model_state_sha256=None, capture_receiver_runtime=False):
+    """Call the existing evaluator once; default is the legacy LIMITED association.
 
-    No claim is made about a v2 receipt or runtime contract on its deepcopy.
+    Explicit capture_receiver_runtime=True creates association v2 from Core's
+    observations on the actual isolated receiver, without transferring a receipt.
     Expected identities constrain an existing source receipt, never create one.
     """
     declared = _context(context, source_id, split)
+    if type(capture_receiver_runtime) is not bool:
+        raise GraphEvidenceError("capture_receiver_runtime must be bool")
     before = graph_checkpoint_evidence(model)
     for field, expected in [("checkpoint_sha256", expected_checkpoint_sha256),
                             ("model_state_sha256", expected_model_state_sha256)]:
@@ -191,18 +216,24 @@ def evaluate_graph_classification(model, loader, *, class_names, split, source_i
             fingerprint(expected)
             if before["status"] != "native" or before[field] != expected:
                 raise GraphEvidenceError("expected_source_identity_mismatch:" + field)
+    options = {"capture_receiver_runtime": True} if capture_receiver_runtime else {}
     evaluation = evaluate_classification(model, loader, class_names=class_names, split=split,
         source_id=source_id, task=task, zero_division=zero_division, max_samples=max_samples,
-        capture_evidence=True, capture_structure=capture_structure)
+        capture_evidence=True, capture_structure=capture_structure, **options)
     after = graph_checkpoint_evidence(model)
     if canonical(before) != canonical(after):
         raise GraphEvidenceError("source_contract_changed_during_evaluation")
     d = dict(format="hyso.graph_evaluation_association", schema_version=1, evaluation=evaluation.to_dict(),
              source_receipt=after, record=EvidenceRecord.from_native(evaluation.to_dict(), feature_id="P26").to_dict(),
              context=declared)
+    if capture_receiver_runtime:
+        d.update(schema_version=2, receiver_binding=receiver_statement(evaluation))
     d["content_sha256"] = digest(d)
     result = GraphEvaluationResult(d)
-    _remember(_EVALUATIONS, result, weakref.ref(model))
+    if capture_receiver_runtime:
+        _remember(_EVALUATIONS, result, weakref.ref(model), evaluation)
+    else:
+        _remember(_EVALUATIONS, result, weakref.ref(model))
     return result
 
 
@@ -231,10 +262,14 @@ class GraphComparisonResult(_Export):
     _payload: str
 
     def __init__(self, data):
-        d = _body(data, "hyso.graph_evidence_comparison", {"sources", "legacy", "metrics", "status", "diagnostics"})
+        d = _body(data, "hyso.graph_evidence_comparison", {"sources", "legacy", "metrics", "status", "diagnostics"},
+                  versions=(1, 2))
         if type(d["sources"]) is not dict or set(d["sources"]) != {"baseline", "candidate"}:
             raise GraphEvidenceError("exactly_two_graph_associations_required")
         a, b = [GraphEvaluationResult(d["sources"][key]) for key in ("baseline", "candidate")]
+        version = 2 if any(json.loads(x._payload)["schema_version"] == 2 for x in (a, b)) else 1
+        if d["schema_version"] != version:
+            raise GraphEvidenceError("comparison_association_version_mismatch")
         expected = _compare(a, b)
         if canonical(expected) != canonical({key: d[key] for key in expected}):
             raise GraphEvidenceError("comparison_derivation_mismatch")
@@ -258,7 +293,8 @@ def compare_graph_evaluations(baseline, candidate):
     """Retained P26 comparison plus explicit v2 scope; no architecture/performance inference."""
     if type(baseline) is not GraphEvaluationResult or type(candidate) is not GraphEvaluationResult:
         raise GraphEvidenceError("typed_graph_associations_required")
-    d = dict(format="hyso.graph_evidence_comparison", schema_version=1,
+    version = 2 if any(json.loads(x._payload)["schema_version"] == 2 for x in (baseline, candidate)) else 1
+    d = dict(format="hyso.graph_evidence_comparison", schema_version=version,
              sources={"baseline": json.loads(baseline._payload), "candidate": json.loads(candidate._payload)},
              **_compare(baseline, candidate))
     d["content_sha256"] = digest(d)
@@ -281,7 +317,7 @@ def report_section(result, language, level, catalog):
     else:
         section = _comparison_section(result.legacy_comparison, language, level, catalog)
         views, legacy = d["verification"], "see separate P26 source records"
-        relation = {side: "limited" if view["graph_v2"] == "verified" else "unavailable"
+        relation = {side: view.get("inference_binding", "limited" if view["graph_v2"] == "verified" else "unavailable")
                     for side, view in views.items()}
         for metric, row in zip(section["metrics"], d["metrics"]):
             if row["status"] != "COMPARABLE":
@@ -293,9 +329,13 @@ def report_section(result, language, level, catalog):
     section.update(kind="graph_evidence", raw=d,
                    graph_evidence=dict(graph_v2=proof.get("source", proof), legacy_p26=legacy,
                        cross_evidence_binding=relation, authority="process_local_at_report_creation_or_retained_statement"))
-    section["limits"] = [*section["limits"], *_LIMITS, *d.get("diagnostics", [])]
+    limits = _RUNTIME_LIMITS if d["schema_version"] == 2 else _LIMITS
+    if d["schema_version"] == 2:
+        section["graph_evidence"]["receiver_runtime"] = {key: v.get("receiver_runtime", "not_observed")
+                                                        for key, v in views.items()}
+    section["limits"] = [*section["limits"], *limits, *d.get("diagnostics", [])]
     for key, value in [("Legacy P26 checkpoint", legacy), ("Graph v2 source contract", proof),
                         ("Cross-evidence binding", relation), ("Dataset origin", "declared;not_verified")]:
         section["metrics"].append(_metric(key, key, value, None, "evidence_scope", "recorded",
-            dict(verification=views), "Source provenance is separate from isolated inference evidence.", _LIMITS))
+            dict(verification=views), "Source provenance is separate from isolated inference evidence.", limits))
     return section

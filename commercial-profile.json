@@ -8,6 +8,7 @@
     "hyso/_architecture_rules.py",
     "hyso/_evaluation_evidence.py",
     "hyso/_evaluation_structure.py",
+    "hyso/_graph_receiver.py",
     "hyso/_quality_memory.py",
     "hyso/_structure_native.py",
     "hyso/advisor/__init__.py",

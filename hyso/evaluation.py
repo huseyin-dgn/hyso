@@ -15,6 +15,7 @@ from .checkpoint import _rng_state, _restore_rng
 from ._evaluation_evidence import (model_hash, EvaluationStreamCapture, producer_evidence,
                                    validate_producer_evidence)
 from ._evaluation_structure import build_structure_binding, validate_structure_binding
+from ._graph_receiver import _ReceiverCapture
 
 __all__ = ["EvaluationResult", "evaluate_predictions", "evaluate_classification", "evaluation_capabilities"]
 
@@ -114,7 +115,7 @@ def _metrics(raw, config):
 
 @dataclass(frozen=True, init=False)
 class EvaluationResult:
-    __slots__ = ("_payload",)
+    __slots__ = ("_payload", "__weakref__")
     _payload: str
 
     def __init__(self, data):
@@ -272,7 +273,8 @@ def _model_hash(model,*,allow_device=False):
 
 
 def evaluate_classification(model, loader, *, class_names, split, task="multiclass", zero_division=0,
-                            source_id=None, max_samples=1000000, capture_evidence=False, capture_structure=False,device='cpu'):
+                            source_id=None, max_samples=1000000, capture_evidence=False, capture_structure=False,device='cpu',
+                            capture_receiver_runtime=False):
     """Inference on an isolated deepcopy; default CPU, explicit device opt-in.
 
     Finite standard sequential map-style loaders, num_workers=0, no drop-last.
@@ -288,8 +290,16 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
     nonempty evaluation. Schema 3 binds matching pre/post structure snapshots
     of the actual isolated forward receiver, without extra inference or any
     assertion of original/copy behavior or architecture equivalence.
+    capture_receiver_runtime=True requires capture_evidence=True, nonempty CPU
+    inference and a live supported Graph v2 source receipt. Core observes the
+    exact isolated receiver before/after every forward. The separate process-local
+    binding does not change EvaluationResult schema1/2/3 or legacy P26 evidence.
     """
     config = _metadata(task, class_names, split, zero_division)
+    if type(capture_receiver_runtime) is not bool:
+        raise ValueError('capture_receiver_runtime must be bool')
+    if capture_receiver_runtime and (not capture_evidence or torch.device(device).type != 'cpu'):
+        raise ValueError('receiver runtime capture requires CPU native evidence')
     execution_device=torch.device(device)
     if execution_device.type not in ('cpu','cuda'):raise NotImplementedError('evaluation device unsupported')
     if execution_device.type=='cuda':
@@ -322,6 +332,9 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
             raise ValueError("finite evaluation budget exceeded")
         if capture_structure and expected == 0:
             raise ValueError('structure binding requires nonempty evaluation')
+        if capture_receiver_runtime and expected == 0:
+            raise ValueError('receiver binding requires nonempty evaluation')
+        receiver_capture = _ReceiverCapture(model) if capture_receiver_runtime else None
         def state_hash_of(value):return _model_hash(value,allow_device=execution_device.type=='cuda')
         state_hash = state_hash_of(model)
         candidate = copy.deepcopy(model)
@@ -336,6 +349,8 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
         baseline = state_hash_of(candidate)
         if capture_evidence and baseline != state_hash:
             raise ValueError("isolated model state differs from original")
+        if receiver_capture is not None:
+            receiver_capture.start(candidate)
         structure_before = None
         if capture_structure:
             from .structure import capture_model_structure
@@ -366,7 +381,11 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
                 _labels(normalized,len(class_names))
                 if stream is not None:
                     stream.update(inputs, labels)
+                if receiver_capture is not None:
+                    receiver_capture.before(candidate, inputs, labels)
                 logits = candidate(inputs.clone().to(execution_device))
+                if receiver_capture is not None:
+                    receiver_capture.after(candidate, logits)
                 if (not isinstance(logits,torch.Tensor) or logits.device != execution_device
                         or logits.dtype not in (torch.float32,torch.float64) or not torch.isfinite(logits).all()):
                     raise ValueError("finite CPU tensor logits required")
@@ -390,13 +409,16 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
             structure = (structure_before, structure_after, baseline, post_state)
         if state_hash_of(model) != state_hash:
             raise ValueError("original model changed during evaluation")
-        return _result(dict(targets=targets,predictions=predictions,prediction_type="logits"),config,
+        result = _result(dict(targets=targets,predictions=predictions,prediction_type="logits"),config,
             dict(kind="model_inference",source_id=source_id,model_type=type(model).__module__+"."+type(model).__qualname__,
                  model_state_sha256=state_hash,device=str(execution_device),execution="isolated_deepcopy_eval_inference_mode",
                  dataset_type=type(loader.dataset).__module__+"."+type(loader.dataset).__qualname__,
                  sampler="sequential",num_workers=0),dict(expected_samples=expected,batch_sizes=sizes),
             evidence=producer_evidence(model, state_hash, stream, config, source_id) if stream is not None else None,
             structure=structure)
+        if receiver_capture is not None:
+            receiver_capture.finish(candidate, result)
+        return result
     finally:
         _restore_rng(rng)
         if generator is not None:loader.generator.set_state(generator)

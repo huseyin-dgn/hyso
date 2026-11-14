@@ -21,7 +21,7 @@ def write(path, value):
         json.dump(value, stream, indent=2, allow_nan=False)
 
 
-def run(output):
+def run(output, *, capture_receiver_runtime=False):
     output = Path(output).resolve()
     repo = Path(__file__).resolve().parents[2]
     if output == repo or output.is_relative_to(repo):
@@ -33,10 +33,11 @@ def run(output):
     labels = torch.tensor([0, 1, 0, 1])
     train = DataLoader(TensorDataset(train_x, labels), batch_size=2, shuffle=False)
     test = DataLoader(TensorDataset(test_x, labels), batch_size=2, shuffle=False)
-    context = dict(dataset_id="synthetic-stage13-5-10", split="test", preprocessing_id="fixed_fp32_identity")
+    context = dict(dataset_id="synthetic-stage13-5-11-closure" if capture_receiver_runtime else "synthetic-stage13-5-10",
+        split="test", preprocessing_id="fixed_fp32_identity")
     settings = TrainingConfig(epochs=1, batch_size=2, shuffle=False, validation=False,
         device="cpu", precision="fp32", optimizer="sgd", learning_rate=0.01)
-    models, associations, trainings, paths = [], [], [], []
+    models, associations, trainings, paths, initial_views = [], [], [], [], []
     store = output / "experiments"
     manager = ExperimentManager(store)
     manager.close()
@@ -76,9 +77,11 @@ def run(output):
             with torch.no_grad():
                 assert torch.equal(source(test_x), restored(test_x))
             result = evaluate_graph_classification(restored, test, class_names=["a", "b"], split="test",
-                source_id=context["dataset_id"], context=context, expected_checkpoint_sha256=sha)
+                source_id=context["dataset_id"], context=context, expected_checkpoint_sha256=sha,
+                capture_receiver_runtime=capture_receiver_runtime)
             assert result.to_dict()["verification"]["graph_v2"] == "verified"
-            assert result.to_dict()["relation"]["status"] == "limited"
+            assert result.to_dict()["relation"]["status"] == ("verified" if capture_receiver_runtime else "limited")
+            initial_views.append(result.to_dict()["verification"])
             assert result.evaluation.to_dict()["producer_evidence"]["checkpoint"]["status"] == "missing"
             models.append(restored)
             associations.append(result)
@@ -97,7 +100,8 @@ def run(output):
                 artifacts.append((artifact, file))
             tr.finish()
             er = manager.create_run(experiment["id"], "evaluation", config=metadata,
-                provenance={"source": "native evaluation; separate source v2; limited copy binding"})
+                provenance={"source": "native evaluation; separate source v2; " + (
+                    "Core-observed receiver binding" if capture_receiver_runtime else "limited copy binding")})
             er.start()
             for artifact in inputs:
                 manager.link_artifact(er.id, artifact["id"], role="input")
@@ -150,10 +154,15 @@ def run(output):
             accuracy=[v.evaluation.to_dict()["metrics"]["accuracy"] for v in associations],
             comparison_status=compared.to_dict()["status"], claims=compared.legacy_comparison.to_dict()["claims"],
             legacy_p26=[v.evaluation.to_dict()["producer_evidence"]["checkpoint"]["status"] for v in associations],
-            graph_v2_at_report_creation=["verified", "verified"], cross_binding="limited;isolated runtime unobserved",
+            graph_v2_at_report_creation=[v["graph_v2"] for v in initial_views],
+            cross_binding="verified;supported quiescent CPU receiver" if capture_receiver_runtime else "limited;isolated runtime unobserved",
             imported_json_status="unverified", mutation_status="missing", wrong_identity_rejected=wrong_identity_rejected,
             experiment_id=experiment["id"], run_ids=run_ids, artifact_verification=checks,
             negative_artifact_check=negative, checkpoint_sha256=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths])
+        if capture_receiver_runtime:
+            summary.update(receiver_runtime_at_report_creation=[v["receiver_runtime"] for v in initial_views],
+                inference_binding_at_report_creation=[v["inference_binding"] for v in initial_views],
+                mutation_receiver_runtime=mutation["verification"]["receiver_runtime"])
         write(output / "summary.json", summary)
         return summary
     finally:
@@ -163,4 +172,6 @@ def run(output):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
-    print(json.dumps(run(parser.parse_args().output)))
+    parser.add_argument("--capture-receiver-runtime", action="store_true")
+    args = parser.parse_args()
+    print(json.dumps(run(args.output, capture_receiver_runtime=args.capture_receiver_runtime)))
