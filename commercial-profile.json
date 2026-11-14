@@ -38,6 +38,7 @@
     "hyso/analysis/evidence.py",
     "hyso/analysis/execution.py",
     "hyso/analysis/feature_plan.py",
+    "hyso/analysis/graph_evidence.py",
     "hyso/analysis/isolated_bridge.py",
     "hyso/analysis/model_comparison.py",
     "hyso/analysis/native_adapters.py",

@@ -214,6 +214,9 @@ def _advisor_section(report, language, level):
 
 
 def _source(result, context, language, level, catalog):
+    from ..analysis.graph_evidence import GraphEvaluationResult, GraphComparisonResult, report_section
+    if type(result) in (GraphEvaluationResult, GraphComparisonResult):
+        return report_section(result, language, level, catalog)
     from ..advisor.recommendations import RecommendationReport
     if type(result) is RecommendationReport:
         view = result.to_display_dict(language=language, level=level)
