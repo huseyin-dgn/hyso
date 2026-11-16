@@ -375,7 +375,7 @@ def test_cli_renders_saved_strict_result(capsys, tmp_path, format):
     assert "INCOMPATIBLE" in text and "strict_declared_context_v1" in text
 
 
-@pytest.mark.parametrize("kind", ["missing", "bad-json", "unsupported", "no-context", "strict-flag"])
+@pytest.mark.parametrize("kind", ["missing", "bad-json", "unsupported", "no-context", "invalid-policy"])
 def test_cli_invalid_inputs_and_missing_features_are_explicit(capsys, tmp_path, kind):
     path = tmp_path / "input.json"
     path.write_text("{" if kind == "bad-json" else "{}", encoding="utf8")
@@ -385,12 +385,14 @@ def test_cli_invalid_inputs_and_missing_features_are_explicit(capsys, tmp_path, 
         value = evaluation()
         from hyso.analysis import EvidenceIndex, EvidenceRecord
         EvidenceIndex([EvidenceRecord.from_native(value.to_dict(), feature_id="P26")]).to_json(path, overwrite=True)
-    if kind == "strict-flag":
-        args = ("compare", path, path, "--baseline-model", "A", "--candidate-model", "B", "--features", "P26", "--context-policy", "strict")
+    if kind == "invalid-policy":
+        args = ("compare", path, path, "--baseline-model", "A", "--candidate-model", "B", "--features", "P26", "--context-policy", "unknown")
     else:
         args = ("reports", "render", path)
     code, envelope = invoke(capsys, *args)
     assert code == 2 and envelope["status"] == "error"
+    if kind == "invalid-policy":
+        assert "invalid choice" in envelope["error"]
 
 
 def test_cli_artifact_mismatch_and_unsupported_kind_are_distinct(capsys, manager, tmp_path):

@@ -11,6 +11,8 @@ def register(sub):
     q.add_argument('--baseline-model', required=True, help='Explicit baseline model label in retained evidence.')
     q.add_argument('--candidate-model', required=True, help='Explicit candidate model label in retained evidence.')
     q.add_argument('--features', nargs='+', required=True, help='Explicit comparison feature selection, e.g. P01 P02 P11 P26.')
+    q.add_argument('--context-policy', choices=('legacy', 'strict'), default='legacy',
+                   help='Comparison context policy; strict requires P26 and consistent recorded declarations. Default: legacy.')
     presentation_options(q, formats=('json', 'markdown'), levels=False)
     p = command(sub, 'advisor', 'Generate manual recommendations from validated retained evidence; no capture or optimization.', run, export=False)
     s = p.add_subparsers(dest='action', required=True)
@@ -39,7 +41,8 @@ def _comparison(args):
             return ModelComparisonSource.from_execution(result, model)
         require(type(result) is UnifiedAnalysisReport, 'compare accepts validated execution or UnifiedAnalysisReport JSON files.')
         return ModelComparisonSource(model, result)
-    return compare_models(source(args.baseline, args.baseline_model), source(args.candidate, args.candidate_model), features=args.features)
+    return compare_models(source(args.baseline, args.baseline_model), source(args.candidate, args.candidate_model),
+                          features=args.features, context_policy=args.context_policy)
 
 
 def run(args):

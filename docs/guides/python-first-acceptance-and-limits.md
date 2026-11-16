@@ -271,14 +271,29 @@ python -m hyso analysis run --features P01 --model-id qa-model --device cpu
 
 | İş | Python | CLI sınırı |
 | --- | --- | --- |
-| Strict P26 karşılaştırma | `compare_models(..., context_policy="strict")` | `compare` henüz context-policy/strict seçeneği sunmaz; mevcut default legacydir |
+| Strict P26 karşılaştırma | `compare_models(..., context_policy="strict")` | `compare --context-policy strict` aynı native policyyi seçer; flag yoksa veya `legacy` ise mevcut default korunur |
 | Hazır strict sonuç sunumu | Typed reader + `create_report` | `reports render` kaydedilmiş ModelComparisonResult strict schema2yi sunabilir |
 | Graph sonucu sunumu | Typed Graph readerları + `create_report` | `read_result` GraphEvaluation/GraphComparison dispatch sunmaz |
 | PresentationReport yeniden açma | `PresentationReport.from_json` ve kendi exportları | `reports render` PresentationReport girdi dispatchi sunmaz |
 | EvaluationResult sunumu | Yukarıdaki EvidenceRecord/Index adapterı | EvaluationResult doğrudan CLI/report girdisi değildir |
 | Analysis execution | Açık policy/preflight ile ayrı yürütme API'leri | `run --execute` ayrıca exact `--authorize` ve gerekli workload izinlerini ister; plan/list feature kabulü değildir |
 
-CLIde yeni `--strict` veya `--context-policy` bayrağı varmış gibi kullanmayın.
+Hazır analysis raporlarıyla gerçek strict CLI sözdizimi:
+
+```powershell
+python -m hyso compare baseline-analysis.json candidate-analysis.json --baseline-model A --candidate-model B --features P26 --context-policy strict --format json --output strict-comparison.json
+```
+
+`--context-policy {legacy,strict}` yalnız mevcut generic iki-model karşılaştırma
+yoluna aktarılır; ek `--strict` bayrağı yoktur. Strict için P26 seçilmemişse native
+validation hatası CLI exit 2 üretir. Geçerli `INCOMPATIBLE` veya
+`INSUFFICIENT_EVIDENCE` sonucu ise exit 0 ile dönebilir; komutun tamamlanması
+kanıtın karşılaştırılabilir olduğu anlamına gelmez. Eksik context tamamlanmaz.
+Python ve CLI aynı strict eligibility/schema2 kurallarını kullanır; CLI girdileri
+hazır UnifiedAnalysisReport veya AnalysisExecutionResult ile sınırlıdır. Pythonun
+explicit record/standalone structure/benchmark kaynak seçenekleri ve Graph
+comparison readerları bu bayrakla CLIye eklenmez; CLI `include_structure=False`
+varsayılanını korur. Kaydedilmiş strict sonucu render etme yolu değişmez.
 [Native executor rehberi](native-analysis-executor.md) kaynak/izin/protokol
 kontratlarını açıklar. Eski P01–P35 A/B 35/35 sonuçları tarihsel declared scope
 kabulüdür; CLI kataloğunda görünmek yeni cihaz veya workload kabulü sağlamaz.

@@ -21,8 +21,13 @@ native ve external SHA kapsamlarını açıklar.
 
 The [main comparison guide](python-first-acceptance-and-limits.md#karsilastirma)
 defines required declarations, INCOMPATIBLE/INSUFFICIENT_EVIDENCE outcomes and
-recursive difference suppression. CLI has no strict/context-policy selection;
-saved strict rendering is a separate capability in the [Python/CLI matrix](python-first-acceptance-and-limits.md#cli).
+recursive difference suppression. CLI `compare --context-policy {legacy,strict}`
+delegates to the same native policy; omission preserves the legacy default.
+Strict requires P26. CLI sources remain retained analysis/execution files;
+Python-only explicit record/structure/benchmark inputs and Graph comparison are
+not added. Valid INCOMPATIBLE/INSUFFICIENT_EVIDENCE results can return exit 0;
+invocation success is separate from evidence eligibility. See the concrete command
+and saved strict rendering route in the [Python/CLI matrix](python-first-acceptance-and-limits.md#cli).
 The [strict closure](../reports/stage13-5-14-strict-comparison-closure.md) retains
 the exact accepted scope and unchanged legacy-default behavior.
 
