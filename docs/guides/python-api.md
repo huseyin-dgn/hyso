@@ -4,6 +4,10 @@ The current [Python-first workflow](python-first-workflow.md) covers graph outpu
 selection, isolated model checks and architecture comparison. The web product
 is retired; the Python API and seven existing CLI groups are the product interfaces.
 
+Türkçe [kullanım ve kabul rehberi](python-first-acceptance-and-limits.md), strict
+opt-in, state/protocol kimlikleri, evaluation/reporting ve artifact migration
+tarifleriyle Python–CLI destek farklarını tek yerde toplar.
+
 | Component | Convenience import | Canonical module / principal APIs |
 |---|---|---|
 | Model | from hyso import ModularCNN | hyso.models.modular; named blocks in hyso.models |
@@ -82,6 +86,8 @@ contracts; ONNX placement observation alone does not provide them.
 
 This function only reads JSON and compares the requested evidence. Model IDs A/B
 must match retained record associations. No model, checkpoint or factory is loaded.
+This example explicitly keeps the legacy policy; use the [strict opt-in recipe](python-first-acceptance-and-limits.md#karsilastirma)
+when the declared P26 context must also be checked.
 
 ```python
 from hyso import analysis
@@ -92,7 +98,8 @@ def compare_saved_models(report_a_path, report_b_path):
     source_b = analysis.ModelComparisonSource(
         "B", analysis.UnifiedAnalysisReport.from_json(report_b_path))
     return analysis.compare_models(source_a, source_b,
-        features=("P01", "P02", "P10", "P11", "P26"), include_structure=True)
+        features=("P01", "P02", "P10", "P11", "P26"), include_structure=True,
+        context_policy="legacy")
 
 # comparison = compare_saved_models("model-a-report.json", "model-b-report.json")
 # print(comparison.to_markdown(language="tr"))

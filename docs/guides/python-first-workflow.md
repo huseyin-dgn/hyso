@@ -2,6 +2,10 @@
 
 HYSo is a Python-first PyTorch CNN engineering, training, evaluation, benchmarking and performance analysis framework.
 
+Türkçe [kullanım ve kabul sınırları](python-first-acceptance-and-limits.md), bu iş
+akışının destek matrisini, strict seçim ve kanıt kimliklerini, kısa evaluation/
+Reporting/store tariflerini ve güncel CUDA/B4 sınırlarını bir araya getirir.
+
 Install Python >=3.10 and a compatible Torch/torchvision pair, then `python -m pip install -e .`. Use `python -m hyso --help` or `hyso --help`. Existing groups are models, train, analysis, compare, advisor, experiments and reports. Dry-run and explicit workload/resource authorization contracts are unchanged.
 
 ## Select a graph output explicitly

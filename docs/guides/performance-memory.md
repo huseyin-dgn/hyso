@@ -4,6 +4,44 @@
 türleridir; BenchmarkResult schema1 ve inference P01/P02 ölçümleri değişmez.
 RAM byte'ı, logical tensor byte'ı ve serialized file byte'ı farklı scope'lardır.
 
+<a id="bellek-alanlari"></a>
+## Bellek alanları ve kabul sınırı
+
+| Metrik | Birim / gözlem kapsamı | Çıkarılamayacak sonuç |
+| --- | --- | --- |
+| Process RSS | Byte; current process working set, native OS gözlemi | Runtime, allocator ve observer payı dahil; model-only bellek değildir |
+| Sampled maximum RSS | Byte; timestamped RSS örneklerinin maksimumu | Örnekler arasındaki kısa allocationları kaçırabilir; gerçek mutlak peak değildir |
+| Lifetime HWM | Byte; OS process ömrü boyunca yüksek-su işareti | Startup ve önceki işleri içerir; benchmark aralığının veya modelin peak'i değildir |
+| RAM delta | Byte; iki belirtilmiş RSS gözlemi arasındaki fark | Negatif olabilir; transient peak veya model-exclusive allocation hesabı değildir |
+| Logical parameter bytes | Byte; desteklenen tensor kimlik/dtype konvansiyonuyla parametre elemanları | Fiziksel RAM/VRAM, aktivasyon veya checkpoint dosya boyutu değildir |
+| Serialized checkpoint bytes | Byte; belirli serialization dosyasının gerçek stat/size gözlemi | Header, metadata ve format etkisi vardır; logical state veya runtime RAM ile eşitlenmez |
+| GPU allocated | Byte; seçilen process/device allocatorındaki canlı tensor allocationları | Cihazın toplam fiziksel VRAM tüketimi veya başka süreçler değildir |
+| GPU reserved | Byte; allocatorın ayırdığı, canlı ve cache alanları | Allocated ile toplanmaz; reserved eksi allocated her zaman kullanılabilir sistem VRAM'i değildir |
+| GPU peak allocated/reserved | Byte; belirtilmiş sayaç/reset yaşam aralığındaki allocator maksimumları | Reset edilmediyse dar workload peak'i denemez; allocated ve reserved ayrı alanlardır |
+| Model-exclusive peak memory | 13.5.16 fixture için **NOT_MEASURED** | RSS delta, sampled maximum veya ayrı worker HWM'si bunun yerine geçirilemez |
+
+Mevcut CPU API `measure_memory` lifetime HWM'yi resetlemez. GPU sayaçlarına ait
+device, synchronization, reset yöntemi ve başlangıç/bitiş scopeu ayrıca kayıtlı
+olmalıdır; peak reset yan etkisi yalnız açıkça yetkilendirilmiş owned pencereye
+aittir. CPU RSS ölçümü CUDA allocated/reserved/peak ölçmüş olmaz. 13.5.16da CUDA
+çalıştırılmadı; bu sayaçlar için sayısal sonuç yoktur. Kayıtlı RSS/HWM tabloları
+yalnız o iki child ve belirtilmiş process pencereleri için geçerlidir.
+`tracemalloc` Python allocation gözlemi native Torch tensor belleğiyle eşdeğer
+değildir. Eksik counter `null` ve gerekçeli durum olarak kalır; sıfır uydurulmaz.
+
+### FLOPs/MACs ve coverage
+
+`hyso.performance.analyze_flops` desteklenen gözlenmiş ATen çağrıları ve versioned
+operation-count konvansiyonuyla analitik FLOPs/MACs hesabı yapar. Parametre sayısı,
+latency, RAM veya donanım FLOP counterı değildir. Coverage, unsupported operatorler,
+input/batch ve source profile kimliği birlikte okunmalıdır; eksik coverage tam
+model hesabı gibi sunulmaz. Geçerli profiledan offline türetme ile recipe üzerinden
+yeni capture farklıdır; yeni capture gerçek iş yürütür. 13.5.16 fixture
+FLOPs/MACs **NOT_MEASURED** kalır. [Profiling rehberi](performance-profiling.md)
+mevcut APIyi; [ana kabul rehberi](python-first-acceptance-and-limits.md#olcum-sinirlari)
+diğer ölçülmeyen alanları ve [tail rehberi](performance-inference.md#latency-tail-throughput)
+latency/throughput ayrımını açıklar.
+
 ## Native current-process RSS
 
 Aşağıdaki Python blokları sırayla aynı oturumda çalışır. Yerel CPU tensor/model

@@ -5,6 +5,37 @@ batch forward süresidir; mevcut derived serial service rate sustained throughpu
 değildir. Yeni throughput, host completion penceresinde gerçekten tamamlanan image
 sayısının wall seconds'a oranıdır; kamera/display/E2E FPS değildir.
 
+<a id="latency-tail-throughput"></a>
+## Descriptive latency, tail eligibility ve throughput
+
+| Alan | Hesap / birim | Geçerlilik sınırı |
+| --- | --- | --- |
+| Descriptive p50/p90/p95 | Gerçek measured batch latency örneklerinden ms/batch; median ve sıralı quantile | Küçük/correlated örnekler de betimlenebilir; bu bir strict tail PASS değildir |
+| TailPolicy eligibility | Varsayılan `min_samples=1000`, `min_tail_samples=10`; n≥1000 ve (1−q)n≥10 | Örnek eşiği sağlanmazsa value=null, status=insufficient_samples; eşik sağlansa bile bağımsızlık/CI kurulmaz |
+| Bağımsız örnek / confidence interval | Ayrı deney tasarımı, etkin örnek sayısı ve istatistiksel yöntem gerektirir | Warm repeat sayısı veya pooled n tek başına bağımsız trial ya da güven aralığı değildir |
+| Derived serial service rate | `batch × n × 1000 / sum(latency_ms)`; images/s | Yalnız ölçülen seri forward sürelerinin türevi; ayrı tamamlanma penceresi ölçümü değildir |
+| Completion throughput | `completed_images / elapsed_wall_seconds`; images/s | Gerçek tamamlanma, loop/queue bookkeeping ve terminal tail kapsamını içerir; bare forward latency scopeuyla aynı değildir |
+
+Warmup ve measured örnekler ayrı tutulmalıdır; süreler monotonic clock ve doğru
+birimle kaydedilir. CPU forward synchronous tamamlanır; CUDAda asynchronous host
+dispatch kernel completion süresi değildir. Seçilen API'nin event/terminal
+synchronization kontratı gerekir. Batch latencyyi ms/image diye yeniden adlandırmak
+ve latency türevini camera/E2E FPS gibi sunmak doğru değildir.
+
+13.5.16da her model/batch/child celli 3×40 = **120** measured örnek içerir.
+Kayıtlı p90/p95 descriptive istatistiklerdir; default TailPolicy sonucu
+**insufficient_samples** kalır. İki childın örnekleri birleştirilerek veya eşikler
+düşürülerek strict kabul üretilmez. Default1000/10 koşulu sağlanan bir sonuç bile
+istatistiksel üstünlük veya confidence interval kanıtı değildir. [Kayıtlı matris](../reports/stage13-5-16-benchmark-matrix.md)
+ham scope ve örnek sayılarını korur; [karşılaştırma rehberi](two-model-comparison.md)
+bundan ayrı native comparison eligibility koşullarını açıklar.
+
+Mevcut CUDA API örneği aşağıda bir capability tarifidir; yeni admission veya
+13.5.16 CUDA kabulü değildir. Güncel **CUDA BLOCKED / execution NOT_TESTED** ve
+**B4 ROOT_CAUSE_UNRESOLVED** sınırları [ana rehberde](python-first-acceptance-and-limits.md#destek-matrisi)
+yer alır. [Bellek alanları](performance-memory.md#bellek-alanlari) process RSS,
+logical bytes ve GPU allocator sayaçlarını latencyden ayrı tutar.
+
 ## CPU ve P99
 
 Bu örnekler sırayla aynı Python oturumunda çalışır. Dosyalar yeni bir geçici dizine

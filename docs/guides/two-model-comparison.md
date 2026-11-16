@@ -6,6 +6,26 @@ an explicit feature selection are required. The existing FeaturePlanRequest
 two-model/known-ID/duplicate-selection validation remains authoritative. Selecting
 a feature does not compare dependencies or start missing tests.
 
+Türkçe [karşılaştırma politika ve kimlik rehberi](python-first-acceptance-and-limits.md#karsilastirma)
+aynı-state replikasyonu, eski/yeni checkpoint ve farklı mimari karşılaştırmasını
+ayırır; [kanıt/protokol bölümü](python-first-acceptance-and-limits.md#kanit-protokol)
+native ve external SHA kapsamlarını açıklar.
+
+## Explicit strict policy
+
+| Selection | Result schema | Scope |
+| --- | --- | --- |
+| `compare_models(..., context_policy='legacy')` | schema1 | Existing default |
+| `compare_models(..., context_policy='strict')` | schema2 | Explicit opt-in; P26 must be selected |
+| `compare_graph_evaluations(..., context_policy='strict')` | Graph schema3 | Explicit strict Graph path; legacy retains source-dependent schema1/2 |
+
+The [main comparison guide](python-first-acceptance-and-limits.md#karsilastirma)
+defines required declarations, INCOMPATIBLE/INSUFFICIENT_EVIDENCE outcomes and
+recursive difference suppression. CLI has no strict/context-policy selection;
+saved strict rendering is a separate capability in the [Python/CLI matrix](python-first-acceptance-and-limits.md#cli).
+The [strict closure](../reports/stage13-5-14-strict-comparison-closure.md) retains
+the exact accepted scope and unchanged legacy-default behavior.
+
 ## Source and metric coverage
 
 Sources accept an existing UnifiedAnalysisReport, or use
@@ -70,7 +90,8 @@ Standalone snapshots have declared model associations. Bound P26 references
 retain their original state/structure/checkpoint distinctions and native binding.
 No live capture is attempted when snapshots are absent.
 
-Result format is `hyso.two_model_comparison`, schema 1. Raw selected sources,
+Result format is `hyso.two_model_comparison`: schema1 for the legacy default,
+schema2 for explicit strict policy. Raw selected sources,
 native contracts, eligibility reasons, references and numerical differences are
 retained. Values are candidate B minus baseline A. Percent change uses A as the
 denominator; a zero baseline yields null percent and retains the absolute change.
