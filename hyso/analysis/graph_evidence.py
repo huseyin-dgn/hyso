@@ -11,7 +11,8 @@ import weakref
 from ._codec import canonical, digest, export, plain, read_json, fingerprint
 from .evidence import EvidenceIndex, EvidenceRecord
 from .report import AnalysisContext
-from .model_comparison import ModelComparisonResult, ModelComparisonSource, compare_models
+from .model_comparison import (ModelComparisonResult, ModelComparisonSource, compare_models,
+                               _STRICT_CONTEXT_POLICY)
 from ..checkpoint import graph_checkpoint_evidence
 from ..evaluation import EvaluationResult, evaluate_classification
 from .._graph_receiver import receiver_statement, receiver_verification, validate_statement
@@ -237,8 +238,24 @@ def evaluate_graph_classification(model, loader, *, class_names, split, source_i
     return result
 
 
-def _compare(a, b):
+def _compare(a, b, context_policy='legacy'):
     legacy = compare_models(a.analysis_source("baseline"), b.analysis_source("candidate"), features="P26").to_dict()
+    if context_policy == 'strict':
+        effective = compare_models(a.analysis_source("baseline"), b.analysis_source("candidate"),
+                                   features="P26", context_policy='strict').to_dict()
+        metrics = [dict(metric=row['metric'], status=row['status'], difference=row['difference'],
+                        reasons=row['reasons']) for row in effective['metrics']]
+        status = ('INCOMPATIBLE' if any(row['status'] == 'INCOMPATIBLE' for row in metrics) else
+                  'COMPARABLE' if all(row['status'] == 'COMPARABLE' for row in metrics) else 'INSUFFICIENT_EVIDENCE')
+        # These are explicit value-free export markers for the referenced metrics.
+        # The referenced schema1 artifact is retained separately by its caller.
+        reference = dict(format='hyso.graph_legacy_comparison_reference', schema_version=1,
+            comparison_sha256=legacy['content_sha256'], export='reference_only',
+            metrics=[dict(metric=row['metric'], status='NOT_EXPORTED', difference=None) for row in legacy['metrics']])
+        diagnostics = sorted({reason for row in metrics for reason in row['reasons']
+                              if reason.startswith(('missing_declared_', 'declared_condition_', 'conflicting_declared_'))})
+        return dict(legacy=reference, effective=effective, context_policy=plain(_STRICT_CONTEXT_POLICY),
+                    metrics=metrics, status=status, diagnostics=diagnostics)
     contexts = [json.loads(x._payload)["context"] for x in (a, b)]
     diagnostics = []
     for field in ("dataset_id", "split", "preprocessing_id"):
@@ -262,22 +279,33 @@ class GraphComparisonResult(_Export):
     _payload: str
 
     def __init__(self, data):
-        d = _body(data, "hyso.graph_evidence_comparison", {"sources", "legacy", "metrics", "status", "diagnostics"},
-                  versions=(1, 2))
+        version = data.get('schema_version') if type(data) is dict else None
+        fields = {"sources", "legacy", "metrics", "status", "diagnostics"}
+        if version == 3:
+            fields |= {'effective', 'context_policy'}
+        d = _body(data, "hyso.graph_evidence_comparison", fields, versions=(1, 2, 3))
         if type(d["sources"]) is not dict or set(d["sources"]) != {"baseline", "candidate"}:
             raise GraphEvidenceError("exactly_two_graph_associations_required")
         a, b = [GraphEvaluationResult(d["sources"][key]) for key in ("baseline", "candidate")]
-        version = 2 if any(json.loads(x._payload)["schema_version"] == 2 for x in (a, b)) else 1
-        if d["schema_version"] != version:
+        expected_version = 2 if any(json.loads(x._payload)["schema_version"] == 2 for x in (a, b)) else 1
+        if version != 3 and version != expected_version:
             raise GraphEvidenceError("comparison_association_version_mismatch")
-        expected = _compare(a, b)
+        expected = _compare(a, b, context_policy='strict' if version == 3 else 'legacy')
         if canonical(expected) != canonical({key: d[key] for key in expected}):
             raise GraphEvidenceError("comparison_derivation_mismatch")
         object.__setattr__(self, "_payload", canonical(d))
 
     @property
     def legacy_comparison(self):
-        return ModelComparisonResult(json.loads(self._payload)["legacy"])
+        """Historical schema1/2 typed artifact; schema3 exports a reference only."""
+        data = json.loads(self._payload)
+        return None if data['schema_version'] == 3 else ModelComparisonResult(data["legacy"])
+
+    @property
+    def effective_comparison(self):
+        """Validated effective comparison for the selected envelope policy."""
+        data = json.loads(self._payload)
+        return ModelComparisonResult(data['effective']) if data['schema_version'] == 3 else self.legacy_comparison
 
     def to_dict(self):
         d = json.loads(self._payload)
@@ -289,14 +317,18 @@ class GraphComparisonResult(_Export):
         return d
 
 
-def compare_graph_evaluations(baseline, candidate):
+def compare_graph_evaluations(baseline, candidate, *, context_policy='legacy'):
     """Retained P26 comparison plus explicit v2 scope; no architecture/performance inference."""
     if type(baseline) is not GraphEvaluationResult or type(candidate) is not GraphEvaluationResult:
         raise GraphEvidenceError("typed_graph_associations_required")
+    if type(context_policy) is not str or context_policy not in ('legacy', 'strict'):
+        raise GraphEvidenceError('unsupported_context_policy')
     version = 2 if any(json.loads(x._payload)["schema_version"] == 2 for x in (baseline, candidate)) else 1
+    if context_policy == 'strict':
+        version = 3
     d = dict(format="hyso.graph_evidence_comparison", schema_version=version,
              sources={"baseline": json.loads(baseline._payload), "candidate": json.loads(candidate._payload)},
-             **_compare(baseline, candidate))
+             **_compare(baseline, candidate, context_policy))
     d["content_sha256"] = digest(d)
     result = GraphComparisonResult(d)
     _remember(_COMPARISONS, result, baseline, candidate)
@@ -315,7 +347,7 @@ def report_section(result, language, level, catalog):
         legacy = d["evaluation"]["producer_evidence"]["checkpoint"]["status"]
         relation = d["relation"]["status"]
     else:
-        section = _comparison_section(result.legacy_comparison, language, level, catalog)
+        section = _comparison_section(result.effective_comparison, language, level, catalog)
         views, legacy = d["verification"], "see separate P26 source records"
         relation = {side: view.get("inference_binding", "limited" if view["graph_v2"] == "verified" else "unavailable")
                     for side, view in views.items()}
@@ -329,8 +361,10 @@ def report_section(result, language, level, catalog):
     section.update(kind="graph_evidence", raw=d,
                    graph_evidence=dict(graph_v2=proof.get("source", proof), legacy_p26=legacy,
                        cross_evidence_binding=relation, authority="process_local_at_report_creation_or_retained_statement"))
-    limits = _RUNTIME_LIMITS if d["schema_version"] == 2 else _LIMITS
-    if d["schema_version"] == 2:
+    if d.get('context_policy') is not None:
+        section['graph_evidence']['context_policy'] = d['context_policy']
+    limits = _RUNTIME_LIMITS if d["schema_version"] in (2, 3) else _LIMITS
+    if d["schema_version"] in (2, 3):
         section["graph_evidence"]["receiver_runtime"] = {key: v.get("receiver_runtime", "not_observed")
                                                         for key, v in views.items()}
     section["limits"] = [*section["limits"], *limits, *d.get("diagnostics", [])]

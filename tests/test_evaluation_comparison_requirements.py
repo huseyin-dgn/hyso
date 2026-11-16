@@ -1,7 +1,6 @@
-"""Explicit stage 13.5.14 acceptance probes for unmet requirements.
+"""Stage 13.5.14 probes selecting explicit strict context policy.
 
-Four failures occur on the retained P26 policy and are reported as failures in
-the acceptance ledger. These tests use ordinary collection and assertions.
+The original assertion bodies are retained in the closure evidence ledger.
 """
 
 import pytest
@@ -9,8 +8,16 @@ import pytest
 from test_evaluation_comparison_acceptance import (
     bounded_cpu_work, classifier, graph_capture, produce, source,
 )
-from hyso.analysis import compare_models
-from hyso.analysis.graph_evidence import compare_graph_evaluations
+from hyso.analysis import compare_models as _compare_models
+from hyso.analysis.graph_evidence import compare_graph_evaluations as _compare_graph_evaluations
+
+
+def compare_models(*args, **kwargs):
+    return _compare_models(*args, context_policy="strict", **kwargs)
+
+
+def compare_graph_evaluations(*args, **kwargs):
+    return _compare_graph_evaluations(*args, context_policy="strict", **kwargs)
 
 
 @pytest.mark.parametrize("field", ["dataset_id", "preprocessing_id"])

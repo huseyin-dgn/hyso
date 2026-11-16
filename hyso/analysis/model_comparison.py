@@ -34,6 +34,9 @@ _LIMITS = (
     'structure_metadata_is_not_executed_behavior_or_an_automatic_P11_measurement',
     'no_workload_or_checkpoint_access;no_acceptance_or_VERIFIED_IMPROVEMENT_claim',
 )
+_CONTEXT_FIELDS = ('dataset_id', 'split', 'preprocessing_id')
+_STRICT_CONTEXT_POLICY = dict(id='strict_declared_context_v1', version=1,
+    required_fields=list(_CONTEXT_FIELDS), authority='caller_declared_consistency')
 
 
 class ModelComparisonError(ValueError):
@@ -173,7 +176,38 @@ def _benchmark_diagnostic(a, b, record_a, record_b):
     return compare_results(BenchmarkResult(raw[0]),BenchmarkResult(raw[1]))
 
 
-def _derive(a, b, features, include_structure):
+def _strict_context_check(a, b, record_a, record_b):
+    """Reconcile selected-record and report declarations, retaining missing facts."""
+    contexts = []
+    reasons = []
+    for side, source, record in (('baseline', a, record_a), ('candidate', b, record_b)):
+        dataset = source.to_dict()['report']['context']['dataset']
+        scope = {} if record is None else record['scope']
+        native = {} if record is None or record['native_payload'] is None else record['native_payload']
+        context = {}
+        for field in _CONTEXT_FIELDS:
+            values = [scope.get(field), dataset.get(field)]
+            if field == 'split':
+                values.append(native.get('configuration', {}).get('split'))
+            values = [value for value in values if value is not None]
+            if any(type(value) is not str or not value.strip() for value in values):
+                raise ModelComparisonError('invalid_strict_context_declaration:' + field)
+            if len(set(values)) > 1:
+                reasons.append('conflicting_declared_condition:' + side + ':' + field)
+            context[field] = values[0] if values else None
+        contexts.append(context)
+    for field in _CONTEXT_FIELDS:
+        left, right = (context[field] for context in contexts)
+        if left is None or right is None:
+            reasons.append('missing_declared_condition:' + field)
+        elif left != right:
+            reasons.append('declared_condition_mismatch:' + field)
+    incompatible = any(reason.startswith(('conflicting_', 'declared_condition_mismatch:')) for reason in reasons)
+    status = 'INCOMPATIBLE' if incompatible else 'INSUFFICIENT_EVIDENCE' if reasons else 'COMPARABLE'
+    return status, reasons
+
+
+def _derive(a, b, features, include_structure, context_policy='legacy'):
     # Local imports retain the old Advisor <-> Analysis initialization boundary.
     from ..advisor import (NativeMetric, NativeMetricResolver, ComparisonContract,
         P26QualityComparisonContract, P26BoundQualityComparisonContract,
@@ -181,6 +215,10 @@ def _derive(a, b, features, include_structure):
     from ..advisor.performance import _SEMANTICS
     from ..structure_comparison import compare_model_structures
     request = FeaturePlanRequest('selected',(ModelContext(a.model_id),ModelContext(b.model_id)),features=features)
+    if type(context_policy) is not str or context_policy not in ('legacy', 'strict'):
+        raise ModelComparisonError('unsupported_context_policy')
+    if context_policy == 'strict' and 'P26' not in request.features:
+        raise ModelComparisonError('strict_context_requires_P26')
     if type(include_structure) is not bool:
         raise ModelComparisonError('include_structure_must_be_boolean')
     ra = NativeMetricResolver(UnifiedAnalysisReport(a.to_dict()['report']))
@@ -194,6 +232,9 @@ def _derive(a, b, features, include_structure):
             continue
         if feature=='P01':
             benchmark = _benchmark_diagnostic(a,b,ra.record(ia),rb.record(ib))
+        context_status, context_reasons = ('COMPARABLE', [])
+        if feature == 'P26' and context_policy == 'strict':
+            context_status, context_reasons = _strict_context_check(a, b, ra.record(ia), rb.record(ib))
         for metric_name in _METRICS[feature]:
             metric = NativeMetric(metric_name)
             row = dict(feature_id=feature,metric=metric_name,preferred_direction=_SEMANTICS[metric][2],
@@ -219,6 +260,11 @@ def _derive(a, b, features, include_structure):
                 if feature=='P01' and benchmark and benchmark['status'] not in ('not_available','compatible'):
                     row.update(status='INCOMPATIBLE' if benchmark['status']=='incompatible' else 'INSUFFICIENT_EVIDENCE',
                                difference=None,reasons=row['reasons']+['original_benchmark_conditions_not_compatible'])
+            if feature == 'P26' and context_status != 'COMPARABLE':
+                status = ('INCOMPATIBLE' if 'INCOMPATIBLE' in (row['status'], context_status)
+                          else 'INSUFFICIENT_EVIDENCE')
+                row.update(status=status, difference=None, comparison=None,
+                           reasons=row['reasons'] + context_reasons)
             rows.append(row)
     structure = dict(status='NOT_SELECTED',comparison=None,reasons=['structure_comparison_not_requested'])
     structure_object = None
@@ -257,6 +303,10 @@ def _derive(a, b, features, include_structure):
         metrics=rows,structure=structure,benchmark_compatibility=benchmark,
         claims=dict(global_winner=None,statistical_superiority='not_established',acceptance='NOT_EVALUATED'),
         limitations=list(_LIMITS))
+    if context_policy == 'strict':
+        data.update(schema_version=2, context_policy=plain(_STRICT_CONTEXT_POLICY),
+                    policy='strict_declared_context_v1;' + data['policy'])
+        data['limitations'].append('strict_context_checks_declared_consistency;origin_and_preprocessing_authority_not_upgraded')
     data['content_sha256'] = digest(data)
     return data,structure_object
 
@@ -272,10 +322,11 @@ class ModelComparisonResult:
             d = plain(data)
             if len(canonical(d).encode('utf-8'))>_MAX_BYTES:
                 raise ModelComparisonError('comparison_size_limit')
-            if d.get('format')!='hyso.two_model_comparison' or type(d.get('schema_version')) is not int or d['schema_version']!=1:
+            if d.get('format')!='hyso.two_model_comparison' or type(d.get('schema_version')) is not int or d['schema_version'] not in (1, 2):
                 raise ModelComparisonError('unsupported_comparison_version')
             a,b = (ModelComparisonSource._restore(d['sources'][side]) for side in ('baseline','candidate'))
-            expected,structure = _derive(a,b,d['selection']['features'],d['selection']['include_structure'])
+            context_policy = 'strict' if d['schema_version'] == 2 else 'legacy'
+            expected,structure = _derive(a,b,d['selection']['features'],d['selection']['include_structure'],context_policy)
             if canonical(d)!=canonical(expected):
                 raise ModelComparisonError('comparison_derivation_or_integrity_mismatch')
         except ModelComparisonError:
@@ -318,16 +369,22 @@ class ModelComparisonResult:
 
 
 def compare_models(baseline: ModelComparisonSource, candidate: ModelComparisonSource, *,
-                   features: str | Sequence[str], include_structure: bool = False) -> ModelComparisonResult:
+                   features: str | Sequence[str], include_structure: bool = False,
+                   context_policy: str = 'legacy') -> ModelComparisonResult:
     """Compare exactly two existing sources, only explicit feature IDs.
 
     Uses compare_performance/P26 policies and optional original benchmark/structure
     compatibility. No missing test is run. No caller metadata is promoted into a
     producer capture. P29 compare_performance_quality is deliberately not called:
     that API performs new measurements. No global winner is computed.
+
+    context_policy='strict' explicitly selects schema2 and declared-context policy
+    v1 for P26. Dataset, split and preprocessing declarations must be present and
+    agree across selected records and report contexts. Native eligibility still
+    applies. Declaration consistency retains caller-declared authority.
     """
     if type(baseline) is not ModelComparisonSource or type(candidate) is not ModelComparisonSource:
         raise ModelComparisonError('exactly_two_retained_model_sources_required')
     selected = (features,) if type(features) is str else features
-    data,_ = _derive(baseline,candidate,selected,include_structure)
+    data,_ = _derive(baseline,candidate,selected,include_structure,context_policy)
     return ModelComparisonResult(data)
