@@ -5,6 +5,7 @@ import html
 import io
 import json
 import math
+import re
 import textwrap
 
 
@@ -71,7 +72,11 @@ def _escape(value, words):
 
 
 def _md(value, words):
-    return _escape(value, words).replace("|", "&#124;").replace("\n", " ").replace("`", "&#96;").replace("[", "&#91;").replace("]", "&#93;")
+    text = (_escape(value, words).replace("|", "&#124;").replace("\n", " ")
+            .replace("`", "&#96;").replace("[", "&#91;").replace("]", "&#93;")
+            .replace("\\", "&#92;").replace("*", "&#42;").replace("~", "&#126;"))
+    # Intraword underscores are literal Markdown and preserve metric identifiers.
+    return re.sub(r"(?<!\w)_|_(?!\w)", "&#95;", text)
 
 
 def _table(headers, rows, words):
