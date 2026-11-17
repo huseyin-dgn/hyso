@@ -13,6 +13,7 @@ import torch
 from torch import nn
 
 from hyso.models.WithSE import EMA
+from hyso.models.output import GraphTensorOutput
 from hyso.callbacks.callbacks import EarlyStopping, ModelCheckpoint, LRSchedulerCallback
 
 
@@ -22,6 +23,7 @@ class Trainer:
     Supports CPU/CUDA float32/float64 and CUDA FP16 AMP with FP32 master weights.
     Move the model before creating the optimizer; this class never moves it.
     Loaders must be finite, sized iterables of (input_tensor, target_tensor).
+    CPU two-input GraphTensorOutput also accepts ({name: tensor}, target_tensor).
     Inputs retain their dtype; binary floating targets are cast to logits dtype.
     History describes predictions before each batch's optimizer update, with
     loss weighted by actual sample count and accuracy expressed as a percentage.
@@ -221,6 +223,10 @@ class Trainer:
                 module.training = training
 
     def _validate_setup(self):
+        if type(self.model) is GraphTensorOutput and len(self.model.graph.to_config()['inputs']) == 2:
+            if self.device.type != 'cpu' or self.amp:
+                raise ValueError('named Graph training supports CPU without AMP only')
+            GraphTensorOutput(self.model.graph, self.model.output_name, task=self.task, named_inputs=True)
         if type(self.amp) is not bool:
             raise TypeError("amp must be a bool")
         if type(self.accum_steps) is not int:
@@ -428,15 +434,27 @@ class Trainer:
         if not isinstance(batch, (tuple, list)) or len(batch) != 2:
             raise ValueError("each batch must contain (inputs, targets)")
         inputs, targets = batch
-        if not isinstance(inputs, torch.Tensor) or not isinstance(targets, torch.Tensor):
+        named = type(inputs) is dict
+        if named:
+            if type(self.model) is not GraphTensorOutput or len(self.model.graph.to_config()['inputs']) != 2:
+                raise TypeError('named inputs require a two-input GraphTensorOutput')
+            if set(inputs) != set(self.model.graph.to_config()['inputs']):
+                raise ValueError('graph input names mismatch')
+            values = list(inputs.values())
+        else:
+            values = [inputs]
+        if not all(isinstance(x, torch.Tensor) for x in values) or not isinstance(targets, torch.Tensor):
             raise TypeError("inputs and targets must be tensors")
-        if inputs.ndim == 0 or inputs.shape[0] == 0:
+        if any(x.ndim == 0 or x.shape[0] == 0 for x in values):
             raise ValueError("inputs must have a nonempty batch dimension")
-        if inputs.dtype not in (torch.float32, torch.float64):
+        if any(x.dtype not in (torch.float32, torch.float64) for x in values):
             raise TypeError("inputs must have float32 or float64 dtype")
-        if self.amp and inputs.dtype != torch.float32:
+        if self.amp and any(x.dtype != torch.float32 for x in values):
             raise TypeError("amp requires float32 inputs")
-        size = inputs.shape[0]
+        size = values[0].shape[0]
+        if named and (any(x.shape[0] != size for x in values) or any(x.device.type != 'cpu' for x in values)
+                      or targets.device.type != 'cpu'):
+            raise ValueError('named Graph inputs must share a CPU batch dimension')
         if self.task == "multiclass":
             if targets.shape != (size,):
                 raise ValueError("multiclass targets must have shape (B,)")
@@ -451,7 +469,7 @@ class Trainer:
                 raise TypeError("binary targets must have floating dtype")
             if not torch.isfinite(targets).all() or not ((targets == 0) | (targets == 1)).all():
                 raise ValueError("binary targets must be finite hard labels 0 or 1")
-        return inputs.to(self.device), targets.to(self.device), size
+        return inputs if named else inputs.to(self.device), targets.to(self.device), size
 
     def _loss_and_correct(self, logits, targets, size):
         if not isinstance(logits, torch.Tensor):

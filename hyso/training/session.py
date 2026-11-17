@@ -121,6 +121,8 @@ class TrainingSession:
                     if len(shape)!=3 or (type(model) is ModularCNN and shape[0]!=model.input_channels) or (type(model) in (BuiltClassifier,BuiltSequential) and shape!=model.input_shape):
                         raise TrainingConfigError('TensorDataset input shape does not match the known model contract')
         checkpoint_mode=c['save_last_to'] is not None or c['resume_from'] is not None
+        if checkpoint_mode and type(model) is GraphTensorOutput and len(model.graph.to_config()['inputs']) != 1:
+            raise TrainingConfigError('multi-input Graph automatic checkpoint/resume is unsupported')
         if checkpoint_mode and (type(model) not in (ModularCNN, GraphTensorOutput) or model_config is None):
             raise TrainingConfigError('automatic checkpoint/resume requires standard ModularCNN or GraphTensorOutput plus separate model_config; BuiltClassifier is unsupported')
         if on_epoch is not None:
