@@ -85,7 +85,41 @@ def _table(headers, rows, words):
 
 
 def _metric_rows(source, words, language):
+    if source['kind'] == 'comparison':
+        rows = []
+        for metric in source['metrics']:
+            # Older saved PresentationReport sources lack these display fields.
+            native = metric.get('comparison') or {}
+            difference = native.get('difference')
+            pair = difference if type(difference) is dict else native
+            baseline = metric.get('baseline', pair.get('baseline', {}).get('value'))
+            candidate = metric.get('candidate', pair.get('candidate', {}).get('value'))
+            rows.append([metric['label'], baseline, candidate, metric['value'], metric['unit'],
+                         metric.get('percent_change'), metric.get('percentage_point_change'),
+                         _status(metric['status'], language), metric.get('reason')])
+        return rows
     return [[m["label"], m["value"], m["unit"], _status(m["status"], language), m["domain"]] for m in source["metrics"]]
+
+
+def _metric_headers(source, words):
+    if source['kind'] == 'comparison':
+        return [words['metric'], 'A', 'B', 'B−A', words['unit'], words['percent'], words['pp'],
+                words['status'], words['reason']]
+    return [words['metric'], words['value'], words['unit'], words['status'], 'Domain']
+
+
+def _comparison_observations(source, words, *, as_html):
+    view = source.get('recommendations') or source.get('advisor') or {}
+    observations = view.get('comparison_observations', [])
+    if not observations:
+        return '' if as_html else []
+    headers = [words['advisor'], words['guidance'], words['protocol']]
+    rows = [[o['statement'], o['guidance'], o['evidence']] for o in observations]
+    if as_html:
+        return '<h3>' + words['advisor'] + '</h3>' + _table(headers, rows, words)
+    return ['', '### ' + words['advisor'], '', '| ' + ' | '.join(headers) + ' |',
+            '|' + '---|' * len(headers),
+            *['| ' + ' | '.join(_md(value, words) for value in row) + ' |' for row in rows]]
 
 
 def _fragment(link):
@@ -318,7 +352,7 @@ def html_report(data):
         if not source.get("recommendations"):
             parts.append("<h3>" + words["metrics"] + "</h3>")
         if source["metrics"]:
-            parts.append(_table([words["metric"], words["value"], words["unit"], words["status"], "Domain"], _metric_rows(source, words, language), words))
+            parts.append(_table(_metric_headers(source, words), _metric_rows(source, words, language), words))
         elif not source.get("recommendations"):
             parts.append("<p>" + words["empty"] + "</p>")
         for metric in source["metrics"]:
@@ -333,6 +367,10 @@ def html_report(data):
         for chart in source["charts"]:
             parts += ["<figure>" + _svg(chart, words) + "<figcaption>" + _escape(chart["domain"], words) + " · " + words["chart_data"] + "</figcaption>",
                       "<details><summary>" + words["protocol"] + "</summary><pre>" + _escape(chart["scope"], words) + "</pre></details></figure>"]
+        for table in source.get('tables', []):
+            parts += ['<h3>' + _escape(table['title'], words) + '</h3>',
+                      _table(table['headers'], table['rows'], words)]
+        parts.append(_comparison_observations(source, words, as_html=True))
         parts.append(_recommendations(source, words, language, as_html=True))
         actions = _actions(source)
         if actions:
@@ -378,7 +416,9 @@ def markdown(data):
                 lines.append("| " + feature["feature_id"] + " | " + _status(feature["status"], language) + " | " + _md(info["explanations"][data["level"]] + " " + feature["reason"], words) + " |")
             lines.append("")
         if not source.get("recommendations"):
-            lines += ["| " + " | ".join([words["metric"], words["value"], words["unit"], words["status"], "Domain"]) + " |", "|---|---:|---|---|---|"]
+            headers = _metric_headers(source, words)
+            separator = "|" + "---|" * len(headers) if source['kind'] == 'comparison' else "|---|---:|---|---|---|"
+            lines += ["| " + " | ".join(headers) + " |", separator]
         for row in _metric_rows(source, words, language):
             lines.append("| " + " | ".join(_md(value, words) for value in row) + " |")
         for metric in source["metrics"]:
@@ -391,6 +431,12 @@ def markdown(data):
                 lines += ["", "[" + words["guidance"] + "](" + _fragment(link) + ")"]
         for chart in source["charts"]:
             lines += ["", "### " + _md(chart["title"], words), "", words["chart_data"], "", _md(chart["scope"], words)]
+        for table in source.get('tables', []):
+            lines += ['', '### ' + _md(table['title'], words), '',
+                      '| ' + ' | '.join(_md(h, words) for h in table['headers']) + ' |',
+                      '|' + '---|' * len(table['headers'])]
+            lines.extend('| ' + ' | '.join(_md(value, words) for value in row) + ' |' for row in table['rows'])
+        lines.extend(_comparison_observations(source, words, as_html=False))
         lines.extend(_recommendations(source, words, language, as_html=False))
         actions = _actions(source)
         if actions:

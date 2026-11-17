@@ -155,6 +155,61 @@ def _training_section(result, language, level):
                 metrics=metrics, charts=charts, features=[], advisor=None, limits=limits)
 
 
+def _comparison_tables(data, language):
+    """Project retained structure fields; never capture or calculate new metadata."""
+    tables = []
+
+    def table(title_tr, title_en, headers, rows):
+        if rows:
+            tables.append(dict(title=_text(language, title_tr, title_en), headers=headers, rows=rows))
+
+    sides = [data['sources'][side] for side in ('baseline', 'candidate')]
+    table('Modeller ve kanıt kaynakları', 'Models and evidence sources',
+          [_text(language, 'Alan', 'Field'), 'A', 'B'], [
+        ['model_id', *[s['model_id'] for s in sides]],
+        ['selected_record_ids', *[s['records'] for s in sides]],
+        ['report_id', *[s['report']['report_id'] for s in sides]],
+        ['selected_features', data['selection']['features'], data['selection']['features']],
+    ])
+    structure = data['structure']
+    table('Yapı kanıtının kapsamı', 'Structure evidence scope',
+          [_text(language, 'Alan', 'Field'), _text(language, 'Değer', 'Value')],
+          [[key, structure.get(key)] for key in ('status', 'scope', 'reasons', 'original_profile_sha256')])
+    comp = structure['comparison']
+    if comp is not None:
+        table('Yapı kaynakları', 'Structure sources', [_text(language, 'Alan', 'Field'), 'A', 'B'], [
+            ['snapshot_reference', comp['baseline'], comp['candidate']],
+            ['structure_comparison_sha256', comp['content_sha256'], comp['content_sha256']],
+            ['coverage', comp['coverage'], comp['coverage']],
+        ])
+        table('Kayıtlı modül türleri', 'Registered module types',
+            [_text(language, 'Tür', 'Type'), *[prefix + ' ' + _text(language, 'modül', 'modules') for prefix in ('A', 'B', 'B−A')],
+             *[prefix + ' ' + _text(language, 'yol', 'paths') for prefix in ('A', 'B', 'B−A')]],
+            [[r['name'], r['unique_modules']['baseline']['value'], r['unique_modules']['candidate']['value'],
+              r['unique_modules']['difference'], r['registered_paths']['baseline']['value'],
+              r['registered_paths']['candidate']['value'], r['registered_paths']['difference']]
+             for r in comp['module_type_differences']])
+        table('Tensor dtype bilgileri', 'Tensor dtype metadata',
+            [_text(language, 'Kayıt', 'Registration'), 'dtype', _text(language, 'Metrik', 'Metric'), 'A', 'B', 'B−A',
+             _text(language, 'Durum', 'Status')],
+            [[r['kind'], r['dtype'], key, r[key]['baseline'], r[key]['candidate'], r[key]['difference'], r[key]['status']]
+             for r in comp['dtype_differences'] for key in ('tensor_count', 'elements', 'logical_bytes')])
+        table('Eklenen / kaldırılan modül yolları', 'Added / removed module paths',
+            [_text(language, 'Yalnız A', 'A only'), _text(language, 'Yalnız B', 'B only')],
+            [[comp['removed_paths'], comp['added_paths']]])
+        fields = [_text(language, 'Yol / tensor', 'Path / tensor'), _text(language, 'Alan', 'Field'), 'A', 'B',
+                  _text(language, 'Durum', 'Status')]
+        table('Modül ve config farkları', 'Module and configuration differences', fields,
+            [[r['path'], f['field'], f['baseline'], f['candidate'], f['status']]
+             for r in comp['changed_paths'] for f in r['metadata_changes'] + r['configuration_changes']])
+        table('State tensor metadata farkları', 'State tensor metadata differences', fields,
+            [[r['owner_path'] + ':' + r['kind'] + ':' + r['name'], f['field'], f['baseline'], f['candidate'], f['status']]
+             for r in comp['tensor_differences'] for f in r['changes']])
+        table('Yapı kanıtının sınırları', 'Structure evidence limits', [_text(language, 'Açıklama', 'Explanation')],
+            [[item] for item in comp['limitations']] + [[item] for item in comp['evidence_gaps']])
+    return tables
+
+
 def _comparison_section(result, language, level, catalog):
     data = result.to_dict()
     view = result.to_display_dict(language=language)
@@ -166,7 +221,8 @@ def _comparison_section(result, language, level, catalog):
         metric = _metric(row["metric"], row["label"], None if difference is None else difference["difference"],
             row["unit"], row["domain"], row["status"], dict(scope=row["scope"], models=view["models"]),
             row["explanation"] + " " + info["explanations"][level], [info["limits"], *data["limitations"]], feature=feature)
-        metric.update(comparison=native, reason=row["reasons"], percent_change=row["percent_change"],
+        metric.update(comparison=native, baseline=row['baseline'], candidate=row['candidate'],
+                      reason=row["reasons"], percent_change=row["percent_change"],
                       percentage_point_change=row["percentage_point_change"])
         metrics.append(metric)
         if row["status"] == "COMPARABLE" and difference is not None:
@@ -178,6 +234,13 @@ def _comparison_section(result, language, level, catalog):
     if structure["comparison"] is not None:
         labels = {
             "parameter_elements": _text(language, "Kayıtlı parametre elemanı", "Registered parameter elements"),
+            "trainable_elements": _text(language, "Eğitilebilir parametre elemanı", "Trainable parameter elements"),
+            "frozen_elements": _text(language, "Dondurulmuş parametre elemanı", "Frozen parameter elements"),
+            "unique_parameter_tensors": _text(language, "Benzersiz parametre tensor sayısı", "Unique parameter tensors"),
+            "unique_buffer_tensors": _text(language, "Benzersiz buffer tensor sayısı", "Unique buffer tensors"),
+            "unique_modules": _text(language, "Benzersiz kayıtlı modül sayısı", "Unique registered modules"),
+            "registered_module_paths": _text(language, "Kayıtlı modül yolu sayısı", "Registered module paths"),
+            "cross_category_tensors": _text(language, "Ortak parametre/buffer tensor sayısı", "Cross-category tensors"),
             "buffer_elements": _text(language, "Kayıtlı buffer elemanı", "Registered buffer elements"),
             "parameter_logical_bytes": _text(language, "Yapı kaydındaki parametre baytları", "Registered structure parameter bytes"),
             "buffer_logical_bytes": _text(language, "Yapı kaydındaki buffer baytları", "Registered structure buffer bytes"),
@@ -189,14 +252,39 @@ def _comparison_section(result, language, level, catalog):
             label = labels.get(row["metric"], row["metric"])
             metric = _metric(row["metric"], label, row["difference"], row["unit"], "registered_structure", row["status"],
                 dict(scope=structure.get("scope")), limits[0], limits)
-            metric.update(comparison=row, percent_change=row["percent_change"], percentage_point_change=None)
+            metric.update(comparison=row, baseline=row['baseline']['value'], candidate=row['candidate']['value'],
+                          percent_change=row["percent_change"], percentage_point_change=None)
             metrics.append(metric)
-            if row["status"] == "computed" and row["metric"] in labels:
+            if row["status"] == "computed" and row["metric"] in (
+                    'parameter_elements', 'buffer_elements', 'parameter_logical_bytes',
+                    'buffer_logical_bytes', 'tensor_union_logical_bytes'):
                 charts.append(_chart("bar", label, row["unit"], "registered_structure",
                     [dict(label=view["models"][side], x=[view["models"][side]], y=[row[side]["value"]]) for side in ("baseline", "candidate")],
                     dict(scope=structure.get("scope"), limitations=limits), [row["metric"]]))
+    tables = _comparison_tables(data, language)
+    p12_observations = []
+    if 'P12' in data['selection']['features']:
+        from ..advisor.p12_observation import observe_p12
+        for side, source in data['sources'].items():
+            ids = source['records'].get('P12', [])
+            if len(ids) != 1:
+                continue
+            record = next(r for r in source['report']['index']['records'] if r['record_id'] == ids[0])
+            if record['native_payload'] is not None:
+                p12_observations.append(dict(model_id=source['model_id'], side=side,
+                    observation=observe_p12(EvidenceRecord(record), version=1).to_dict()))
+        if p12_observations:
+            tables.append(dict(title=_text(language, 'P12 kayıtlı gözlemleri; karşılaştırma farkı yok',
+                                                     'Retained P12 observations; no comparison difference'),
+                headers=['Model', 'MAC/batch', 'logical_FLOP/batch', _text(language, 'Kanıt', 'Evidence')],
+                rows=[[p['model_id'], p['observation']['metrics']['macs_per_batch']['value'],
+                       p['observation']['metrics']['logical_flops_per_batch']['value'],
+                       dict(record_id=p['observation']['evidence_reference']['record_id'],
+                            comparison_eligibility=p['observation']['comparison_eligibility'],
+                            limitations=p['observation']['limitations'])] for p in p12_observations]))
     return dict(kind="comparison", title=_text(language, "İki model karşılaştırması", "Two-model comparison"), raw=data,
-                metrics=metrics, charts=charts, features=[], advisor=view, limits=data["limitations"])
+                metrics=metrics, charts=charts, features=[], advisor=view, tables=tables,
+                p12_observations=p12_observations, limits=data["limitations"])
 
 
 def _advisor_section(report, language, level):

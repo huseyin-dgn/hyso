@@ -236,7 +236,12 @@ class RecommendationReport:
                                          description=metadata[record_features[(item["side"], m["reference"]["record_id"])]]
                                                              ["explanations"][level]) for m in item["observations"]]
             cards.append(card)
+        comparison_observations = []
+        if data["source"]["kind"] == "comparison":
+            comparison_observations = ModelComparisonResult(data["source"]["data"]).to_display_dict(
+                language=language)["comparison_observations"]
         return dict(format="hyso.advisor.recommendations.display", language=language, level=level,
+                    comparison_observations=comparison_observations,
                     recommendations=cards, areas=[dict(a, label=AREAS[a["area"]][0 if language == "tr" else 1])
                                                    for a in data["areas"]],
                     sources=data["sources"], comparison=data["source"]["data"] if data["source"]["kind"] == "comparison" else None,

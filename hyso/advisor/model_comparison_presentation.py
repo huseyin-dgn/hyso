@@ -38,6 +38,10 @@ def to_display_dict(result, *, language: str = 'en') -> dict[str,Any]:
                     {'favorable':'An observed favorable direction for B on this metric.',
                      'unfavorable':'An observed unfavorable direction for B on this metric.',
                      'unchanged':'No observed change on this metric.'})[effect]
+            direction = {'increase': ('daha yüksek', 'higher'), 'decrease': ('daha düşük', 'lower'),
+                         'unchanged': ('aynı', 'unchanged')}[difference['observed_direction']][index]
+            text = (f"Model B ({data['sources']['candidate']['model_id']}): {label} {direction}; karşılaştırılan kayıtlı koşullar kapsamında. " if tr else
+                    f"Model B ({data['sources']['candidate']['model_id']}): {direction} observed {label} under the compared recorded conditions. ") + text
             if row['feature_id']=='P10':
                 text = ('Süreç genelindeki RSS farkıdır; modelin bellek üstünlüğünü göstermez.' if tr else
                         'Process-wide RSS difference; it does not show model-exclusive memory superiority.')
@@ -45,6 +49,34 @@ def to_display_dict(result, *, language: str = 'en') -> dict[str,Any]:
                 text += ' Yüzdesel değişim tanımsızdır.' if tr else ' Relative percent is undefined.'
         view['explanation'] = text
         rows.append(view)
+    comparison_observations = []
+    for native, row in zip(data['metrics'], rows):
+        if row['status'] != 'COMPARABLE' or native['difference'] is None:
+            continue
+        comparison_observations.append(dict(kind='observation', metric=row['metric'],
+            statement=row['explanation'],
+            guidance=('Model seçimini kendiniz yapmadan önce bu ölçütü kalite, gecikme, throughput ve bellek kanıtlarıyla birlikte inceleyin.' if tr else
+                      'Review this metric alongside quality, latency, throughput and memory evidence before manually choosing a model.'),
+            evidence=dict(comparison_sha256=data['content_sha256'],
+                baseline=native['difference']['baseline']['reference'],
+                candidate=native['difference']['candidate']['reference']),
+            manual_only=True, automatically_applied=False))
+    structure = data['structure']
+    if structure['comparison'] is not None:
+        for row in structure['comparison']['summary_differences']:
+            if row['metric'] != 'parameter_elements' or row['status'] != 'computed' or row['difference'] is None:
+                continue
+            direction = ('daha fazla' if row['difference'] > 0 else 'daha az' if row['difference'] < 0 else 'aynı sayıda') if tr else (
+                'more' if row['difference'] > 0 else 'fewer' if row['difference'] < 0 else 'the same number of')
+            comparison_observations.append(dict(kind='observation', metric=row['metric'],
+                statement=(f'Model B, kayıtlı snapshot kapsamında {direction} parametre elemanına sahiptir.' if tr else
+                           f'Model B has {direction} parameter elements within the retained snapshot scope.'),
+                guidance=('Kapasite ve mantıksal depolama ihtiyacını ayrıca değerlendirin; bu sayı accuracy, çalışma süresi veya gerçek dosya boyutunu kanıtlamaz.' if tr else
+                          'Review capacity and logical storage needs separately; this count does not establish accuracy, runtime or actual artifact size.'),
+                evidence=dict(comparison_sha256=data['content_sha256'],
+                    structure_comparison_sha256=structure['comparison']['content_sha256'],
+                    baseline=structure['comparison']['baseline'], candidate=structure['comparison']['candidate'],
+                    association=structure['scope']), manual_only=True, automatically_applied=False))
     observations = {}
     for side,source in data['sources'].items():
         selected = _selected_report(ModelComparisonSource._restore(source),data['selection']['features'])
@@ -53,6 +85,7 @@ def to_display_dict(result, *, language: str = 'en') -> dict[str,Any]:
         presentation_only=True,authoritative_evidence=False,source_comparison_sha256=data['content_sha256'],
         models={side:source['model_id'] for side,source in data['sources'].items()},metrics=rows,
         structure=data['structure'],advisor_observations=observations,
+        comparison_observations=comparison_observations,
         summary=('Genel kazanan belirlenmedi. Farklar gözlemseldir; istatistiksel üstünlük veya kabul PASS sonucu değildir.' if tr else
                  'No overall winner. Differences are observational, not statistical superiority or acceptance PASS.'),
         limitations=data['limitations'])
