@@ -187,7 +187,8 @@ def test_experiment_artifact_integrity_does_not_create_native_receipt(tmp_path):
         manager.close()
 
 
-def legacy_golden():
+def _legacy_golden_payload():
+    """Fixed retained inputs; current presentation over unchanged schema1 comparison."""
     from hyso.analysis import EvidenceRecord, EvidenceScope, EvidenceIndex, AnalysisContext, ModelComparisonSource, compare_models
     from hyso.training import TrainingResult
     class Fixed(datetime):
@@ -207,12 +208,40 @@ def legacy_golden():
         training = TrainingResult((root / "examples/reporting/fixtures/training-result-v1.json").read_text())
         data = dict(comparison=comparison.to_dict(), report=create_report(training, comparison,
             language="en", level="technical").to_dict())
+    return data
+
+
+def legacy_golden():
+    data = _legacy_golden_payload()
     return hashlib.sha256(json.dumps(data, sort_keys=True, separators=(",", ":"),
         ensure_ascii=False, allow_nan=False).encode()).hexdigest()
 
 
 def test_legacy_comparison_and_reporting_golden():
-    assert legacy_golden() == "eb66ee58d77155529d83db358cb5e0567fa8882c44ce9d7d9ee10e6664cc7b6e"
+    # bb748e2 froze the pre-0a0a6ef presentation (eb66ee58...). 0a0a6ef added
+    # explicit A/B values, source tables and evidence-linked comparison advice.
+    # Freeze that current full presentation; retain the original comparison below.
+    assert legacy_golden() == "6949809c6a68dbc86d3368db2ea44bc6e672eeca927b5bbedd9485d7c9bddb87"
+
+
+def test_legacy_comparison_golden_survives_presentation_extensions():
+    data = _legacy_golden_payload()
+    # Independently reproduced at bb748e2, 0a0a6ef^, 0a0a6ef and current HEAD.
+    assert digest(data['comparison']) == '9f280c1913e82fae70fe1f5c3909a75c5ae7e005718b6fcf04be1d1050ea0baa'
+    section = data['report']['sources'][1]
+    assert section['raw'] == data['comparison']
+    assert data['report']['presentation_only'] and not data['report']['authoritative_evidence']
+    assert [table['title'] for table in section['tables']] == ['Models and evidence sources', 'Structure evidence scope']
+    assert section['p12_observations'] == []
+    for displayed, native in zip(section['metrics'], data['comparison']['metrics']):
+        difference = native['difference']
+        assert (displayed['baseline'], displayed['candidate'], displayed['value']) == (
+            difference['baseline']['value'], difference['candidate']['value'], difference['difference'])
+        assert displayed['status'] == native['status'] == 'COMPARABLE'
+    observations = section['advisor']['comparison_observations']
+    assert {row['metric'] for row in observations} == {'test_accuracy', 'test_macro_f1'}
+    assert all(row['manual_only'] and not row['automatically_applied']
+               and row['evidence']['comparison_sha256'] == data['comparison']['content_sha256'] for row in observations)
 
 
 def test_forged_snapshot_and_comparison_json_remain_unverified(tmp_path):
