@@ -124,9 +124,11 @@ shows save and resume with matching settings.
 
 ### Two named classification losses
 
-This separate profile uses `Trainer` directly; TrainingConfig/TrainingSession
-still configure one classification loss. The existing fit loop can train exactly
-two selected classification heads on a raw one-input CPU fp32 Graph:
+The existing fit loop can train exactly two selected classification heads on a
+raw CPU fp32 Graph with one Tensor input or two explicitly named inputs. Use
+`Trainer` directly, or pass explicit `loss_fn` and `loss_weights` dictionaries to
+`TrainingConfig.prepare` / `TrainingSession`. These live PyTorch losses remain
+separate from TrainingConfig JSON. Existing single-loss calls are unchanged:
 
 ```python
 import torch
@@ -151,9 +153,35 @@ Use explicit matching output/target/loss/weight names; extra Graph outputs are
 not automatically losses. Standard mean, unweighted CrossEntropyLoss (>=2
 classes) or BCEWithLogitsLoss (one logit, binary labels) are supported per head.
 Weights must be finite and positive. SGD/Adam are supported without AMP,
-accumulation, clipping, scheduler, EMA, early stopping or automatic checkpoint/
-resume. Train/validation losses are weighted totals; accuracy series are `None`.
-No per-head evaluation result or general multi-task metric schema is created.
+accumulation, clipping, scheduler, EMA or early stopping. Train/validation losses
+are weighted totals; accuracy series are `None`. Head loss types and weights
+are retained in `settings()['effective']['named_losses']`; the effective task is
+`per_head_classification`. A mixed CE/BCE pair does not become one multiclass task.
+
+Single-input automatic save/resume uses `NamedTargetDataset(input_tensor,
+{'a': targets_a, 'b': targets_b})`, exact Graph `model_config` and the original
+total epoch budget. Dataset target names must exactly match loss/output names;
+their insertion order is immaterial. The existing v2 strict serializer retains
+model/optimizer/history/RNG and the named loss/data plan. A continuation digest
+guards optimizer/history bytes in this new profile. Missing fields, altered
+mapping/weights/config/data or optimizer state fail before continuing updates.
+Raw Graph state retains its original keys; GraphTensorOutput checkpoints retain
+their existing `graph.` prefix. No prefix conversion or schema downgrade occurs.
+
+For two inputs, pass `NamedTargetDataset({'image': x, 'hint': hint}, targets)`.
+Inputs are routed by explicit Graph names. Two-input/two-output training has
+**no automatic checkpoint/resume**; passing save_last_to/resume_from fails
+explicitly before an iterator or update. General multi-task, CUDA, regression,
+segmentation and distributed training remain outside this bounded profile.
+
+`hyso.analysis.evaluate_graph_heads` separately evaluates two selected heads
+using the original classification evaluator. Its current profile requires a
+single-input CPU fp32 Graph, a sequential standard NamedTargetDataset loader,
+and explicit per-head target/task/class_names/split/dataset_id/preprocessing_id.
+It returns separate accuracy, macro precision/recall/F1, confusion matrices,
+sample counts and provenance through `result.head(output).evaluation`.
+There is no overall_accuracy. Two-input head evaluation is unsupported. See the
+[runnable multi-head workflow](python-first-workflow.md#multi-head-workflow).
 
 To persist results, explicitly create/start an ExperimentManager training run
 (use a dedicated non-synced store), call `result.log_to(run)`, then finish it.

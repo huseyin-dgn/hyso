@@ -40,6 +40,7 @@
     "hyso/analysis/execution.py",
     "hyso/analysis/feature_plan.py",
     "hyso/analysis/graph_evidence.py",
+    "hyso/analysis/graph_heads.py",
     "hyso/analysis/isolated_bridge.py",
     "hyso/analysis/model_comparison.py",
     "hyso/analysis/native_adapters.py",
@@ -163,6 +164,7 @@
     "hyso/structure_comparison.py",
     "hyso/training/__init__.py",
     "hyso/training/config.py",
+    "hyso/training/data.py",
     "hyso/training/resume.py",
     "hyso/training/session.py",
     "hyso/training/trainer.py"

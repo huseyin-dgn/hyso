@@ -198,6 +198,7 @@ class TrainingSession:
                 {key:getattr(t.early_stopping,key) for key in ('patience','delta','restore_best_weights')})
         if t._multi_loss:
             from .resume import _loss_plan
+            result['task'] = 'per_head_classification'
             result['named_losses'] = _loss_plan(t)
         return result
 

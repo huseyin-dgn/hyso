@@ -82,6 +82,10 @@ when EMA is enabled. Legacy EBO/CEMO/CNNSENormalWithFit training APIs remain val
 profile, exact model_config and compatible loaders. Two-input Graph resume uses
 explicit names and `hyso.training.NamedTensorDataset`; see the
 [CPU Graph workflow and resume examples](docs/guides/python-first-workflow.md#graph-training-and-saved-results).
+Raw Graphs also support two explicitly weighted classification losses, including
+single-input automatic v2 resume and separate head evaluation. Two-input/two-head
+training is supported with automatic resume/evaluation disabled. See the
+[multi-head examples](docs/guides/python-first-workflow.md#multi-head-workflow).
 
 ## TrainingConfig: separate requested and applied settings
 

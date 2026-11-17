@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEVELOPMENT_MODULES = {
     "hyso/_graph_receiver.py",
     "hyso/analysis/graph_evidence.py",
+    "hyso/analysis/graph_heads.py",
     "hyso/datasets.py",
     "hyso/models/output.py",
     "hyso/model_checks.py",
@@ -128,6 +129,7 @@ DEVELOPMENT_MODULES = {
     "hyso/training/resume.py",
     "hyso/training/__init__.py",
     "hyso/training/trainer.py",
+    "hyso/training/data.py",
     "hyso/models/modular.py",
     "hyso/models/attention.py",
     "hyso/models/blocks.py",

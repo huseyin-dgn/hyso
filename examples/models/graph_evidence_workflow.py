@@ -8,7 +8,7 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset
 
 from hyso import GraphModelBuilder, TrainingConfig, ExperimentManager, analysis, advisor
-from hyso.training import NamedTensorDataset
+from hyso.training import NamedTensorDataset, NamedTargetDataset
 from hyso.architecture_comparison import compare_architectures
 from hyso.models.output import GraphTensorOutput
 from hyso.checkpoint import save_training_checkpoint, load_training_checkpoint
@@ -61,6 +61,92 @@ def train_named(output, *, resume_from=None):
         checkpoint=str(checkpoint if checkpoint.exists() else Path(resume_from)),
         completed_epochs=len(result.history['train_loss']), total_epoch_budget=2)
     write(output / 'summary.json', summary)
+    return summary
+
+
+def train_heads(output, *, resume_from=None, two_inputs=False, variant='A'):
+    """Two explicit heads; optional second input has no automatic resume/evaluation."""
+    if variant not in ('A','B') or two_inputs and resume_from is not None:
+        raise ValueError('Use variant A/B; two-input multi-loss resume is unsupported')
+    output=output_directory(output)
+    torch.set_num_threads(1)
+    torch.random.default_generator.manual_seed(13619)
+    width=2 if variant=='A' else 3
+    inputs={'image':[1,4,4]}
+    if two_inputs:inputs['hint']=[1,4,4]
+    builder=(GraphModelBuilder(inputs)
+        .add('left','conv2d',['image'],in_channels=1,out_channels=width)
+        .add('right','conv2d',['hint' if two_inputs else 'image'],in_channels=1,out_channels=width)
+        .add('disease_head','classification_head',['left'],in_features=width,num_classes=2)
+        .add('severity_head','classification_head',['right'],in_features=width,num_classes=3)
+        .outputs(disease='disease_head',severity='severity_head'))
+    graph=builder.build()
+    x=torch.arange(64,dtype=torch.float32).reshape(4,1,4,4)/64
+    targets={'disease':torch.tensor([0,1,0,1]),'severity':torch.tensor([0,2,1,2])}
+    data=NamedTargetDataset({'hint':x.flip(-1),'image':x} if two_inputs else x,targets)
+    path=output/'last.pth'
+    config=TrainingConfig(epochs=2,batch_size=2,optimizer='adam',learning_rate=.01,validation=False,
+        save_last_to=None if two_inputs else str(path),resume_from=None if resume_from is None else str(resume_from))
+    train,_=config.make_loaders(data)
+    session=config.prepare(graph,train,model_config=builder.to_config(),
+        loss_fn={name:torch.nn.CrossEntropyLoss() for name in targets},loss_weights={'disease':.3,'severity':1.2})
+    training=session.fit()
+    write(output/'training.json',training.to_dict())
+    checkpoint=None if two_inputs else path if path.exists() else Path(resume_from)
+    heads={name:dict(target=name,task='multiclass',class_names=labels,split='test',
+        dataset_id='synthetic-two-heads',preprocessing_id='fixed-fp32')
+        for name,labels in [('disease',['absent','present']),('severity',['low','medium','high'])]}
+    evaluation=None
+    if not two_inputs:
+        sha=hashlib.sha256(checkpoint.read_bytes()).hexdigest()
+        load_training_checkpoint(checkpoint,graph,optimizer=session.trainer.optimizer,
+            scaler=session.trainer.scaler,capture_evidence=True,expected_sha256=sha)
+        evaluation=analysis.evaluate_graph_heads(graph,DataLoader(data,batch_size=2),heads=heads,
+            capture_structure=True,expected_checkpoint_sha256=sha)
+        evaluation.to_json(output/'heads.json')
+    store=output/'experiments'
+    manager=ExperimentManager(store);manager.close();ExperimentManager.migrate_store(store)
+    manager=ExperimentManager(store)
+    try:
+        experiment=manager.create_experiment('Multi-head Graph '+variant)
+        record=manager.create_workflow_run(experiment['id'],'training',model_ids=[variant],
+            architectures={variant:builder},training_config=config,protocol={'heads':heads,'association':'caller_declared'})
+        record.start();training.log_to(record);record.record_result(training)
+        cp=None if checkpoint is None else record.add_artifact(checkpoint,kind='checkpoint',ownership='reference',retain_locator=True)
+        artifact=None
+        if evaluation is not None:
+            artifact=record.add_artifact(output/'heads.json',kind='graph_multi_head_evaluation',ownership='copy',
+                metadata={'checkpoint_artifact_id':cp['id']})
+        record.finish()
+        opened=None if artifact is None else manager.open_result(artifact['id'])['result']
+        summary=dict(model_variant=variant,history=training.history,applied_updates=training.to_dict()['applied_updates'],
+            checkpoint=None if checkpoint is None else str(checkpoint),experiment_id=experiment['id'],run_id=record.id,
+            evaluation_artifact_id=None if artifact is None else artifact['id'],
+            per_head_metrics=None if opened is None else {name:opened.head(name).evaluation.to_dict()['metrics'] for name in heads},
+            imported_graph_trust=None if opened is None else opened.to_dict()['verification']['graph_v2'],
+            unsupported='two-input multi-loss automatic resume and head evaluation' if two_inputs else None)
+        write(output/'summary.json',summary)
+        return summary
+    finally:manager.close()
+
+
+def compare_saved_heads(paths, output, *, head_pairs):
+    """Compare two saved statements; no training, inference or P12 capture."""
+    if len(paths)!=2:raise ValueError('Select exactly two saved multi-head results')
+    output=output_directory(output)
+    results=[analysis.MultiHeadGraphEvaluationResult.from_json(path) for path in paths]
+    comparisons=analysis.compare_graph_heads(*results,head_pairs=head_pairs)
+    recommendations=[advisor.recommend(comparison) for comparison in comparisons.values()]
+    for (head,comparison),recommendation in zip(comparisons.items(),recommendations):
+        comparison.to_json(output/(head+'-comparison.json'))
+        recommendation.to_json(output/(head+'-advisor.json'))
+    for language in ('tr','en'):
+        report=create_report(*results,*comparisons.values(),*recommendations,language=language)
+        for suffix,export in [('json',report.to_json),('md',report.to_markdown),('html',report.to_html)]:
+            export(output/(language+'.'+suffix))
+    summary={head:dict(metrics=c.to_dict()['metrics'],structure=c.to_dict()['structure']['status'])
+             for head,c in comparisons.items()}
+    write(output/'summary.json',summary)
     return summary
 
 
@@ -267,15 +353,28 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--capture-receiver-runtime", action="store_true")
-    parser.add_argument('--named-training', action='store_true', help='Two-input CPU training/checkpoint example')
-    parser.add_argument('--resume-from', type=Path, help='Last checkpoint from --named-training; same total budget')
+    modes=parser.add_mutually_exclusive_group()
+    modes.add_argument('--named-training', action='store_true', help='Two-input CPU training/checkpoint example')
+    modes.add_argument('--multi-head', action='store_true', help='Two-head CPU training, checkpoint and saved evaluation')
+    modes.add_argument('--compare-heads', type=Path, nargs=2, metavar=('A','B'), help='Compare two saved heads.json files')
+    parser.add_argument('--two-inputs', action='store_true', help='Bounded --multi-head training without resume/evaluation')
+    parser.add_argument('--variant', choices=('A','B'), default='A')
+    parser.add_argument('--resume-from', type=Path, help='Last compatible training checkpoint; same total budget')
     args = parser.parse_args()
+    if args.capture_receiver_runtime and (args.named_training or args.multi_head or args.compare_heads):
+        parser.error('--capture-receiver-runtime belongs to the original evaluation example')
+    if (args.two_inputs or args.variant!='A') and not args.multi_head:
+        parser.error('--two-inputs/--variant require --multi-head')
     if args.named_training:
-        if args.capture_receiver_runtime:
-            parser.error('--capture-receiver-runtime belongs to the evaluation example')
         result = train_named(args.output, resume_from=args.resume_from)
+    elif args.multi_head:
+        result = train_heads(args.output,resume_from=args.resume_from,two_inputs=args.two_inputs,variant=args.variant)
+    elif args.compare_heads:
+        if args.resume_from is not None:parser.error('--resume-from requires a training example')
+        result = compare_saved_heads(args.compare_heads,args.output,
+            head_pairs={'disease':'disease','severity':'severity'})
     else:
         if args.resume_from is not None:
-            parser.error('--resume-from requires --named-training')
+            parser.error('--resume-from requires --named-training or --multi-head')
         result = run(args.output, capture_receiver_runtime=args.capture_receiver_runtime)
     print(json.dumps(result))

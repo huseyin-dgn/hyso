@@ -218,6 +218,10 @@ class TrainingConfig:
         config for CPU GraphTensorOutput classification (fp32/fp64, None/StepLR,
         no EMA/early stopping). on_epoch is a Python observer, never JSON;
         it is incompatible with that callback-free checkpoint profile.
+        Explicit loss_fn/loss_weights dictionaries configure the bounded raw
+        Graph two-head CPU fp32 path; they are separate from config JSON. Its
+        single-input automatic resume requires NamedTargetDataset, SGD/Adam,
+        no scheduler/EMA/early stopping/accumulation/clipping or callbacks.
         """
         from .session import TrainingSession
         return TrainingSession(self,model,train_loader,val_loader,model_config=model_config,

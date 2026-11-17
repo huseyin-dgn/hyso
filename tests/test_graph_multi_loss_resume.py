@@ -52,6 +52,7 @@ def test_multi_loss_resume_exact_continuation(tmp_path, monkeypatch, optimizer, 
     continued = session(graph, path=path, source=path, optimizer=optimizer, binary=binary,
         ds=dataset(binary, reverse=True), losses=dict(reversed(list(criteria(binary).items()))))
     actual = continued.fit()
+    assert continued.settings()['effective']['task'] == 'per_head_classification'
     assert actual.history == expected.history
     assert actual.history['train_acc'] == actual.history['val_acc'] == [None, None]
     assert torch.equal(torch.get_rng_state(), rng)

@@ -77,9 +77,74 @@ with `INSUFFICIENT_EVIDENCE`. Synthetic quality is not a real-dataset claim;
 logical operation counts would not establish device speed or energy use.
 Presentations retain `presentation_only=true`, `authoritative_evidence=false`.
 
-For two selected classification losses on a raw one-input Graph, use the
+For two selected classification losses on a raw Graph, use the
 [bounded Trainer recipe](training-config.md#two-named-classification-losses).
-It has no automatic resume and defines no combined accuracy.
+Single-input multi-loss automatic resume is supported; combined accuracy is undefined.
+
+<a id="multi-head-workflow"></a>
+## Multi-head workflow
+
+The same example file provides explicit two-head CPU workflows:
+
+```powershell
+# disease (2 classes) + severity (3 classes), weighted loss, 2 epochs, v2 checkpoint.
+python -m examples.models.graph_evidence_workflow --multi-head --output C:/local-hyso/heads-A
+# Resume only with the same variant, names, loss weights, data and total budget.
+python -m examples.models.graph_evidence_workflow --multi-head --resume-from C:/local-hyso/heads-A/last.pth --output C:/local-hyso/heads-A-resumed
+# A second explicitly chosen small architecture, with the same evaluation protocol.
+python -m examples.models.graph_evidence_workflow --multi-head --variant B --output C:/local-hyso/heads-B
+# Saved statements only: no model construction, training, inference or profiler.
+python -m examples.models.graph_evidence_workflow --compare-heads C:/local-hyso/heads-A/heads.json C:/local-hyso/heads-B/heads.json --output C:/local-hyso/head-reports
+# Optional combined named-input/two-output training; no automatic resume or evaluation.
+python -m examples.models.graph_evidence_workflow --multi-head --two-inputs --output C:/local-hyso/named-heads
+```
+
+`train_heads` constructs the Graph, `NamedTargetDataset` and explicit loss/weight
+dictionaries (`disease=.3`, `severity=1.2`), then calls
+`TrainingConfig.prepare(..., model_config=builder.to_config(), loss_fn=...,
+loss_weights=...).fit()`. Single-input mode saves/restores the existing strict
+v2 checkpoint and explicitly calls `analysis.evaluate_graph_heads`.
+The example reuses four synthetic samples for training and evaluation; it is
+an API demonstration, with no held-out quality or device-performance claim.
+`training.json` holds weighted total history (accuracy series are null);
+`heads.json` retains each head's independent evaluation. `summary.json` contains
+per-head accuracy/F1/confusion matrices and real checkpoint/store/run/artifact
+references. An already completed resume remains a no-op.
+
+The evaluation head specs explicitly supply each output's target field, task,
+ordered class_names, split, dataset_id and preprocessing_id. Missing declared
+identities can be explicit `None`; they do not become verified provenance.
+The existing CPU evaluator runs once per selected head, with isolated copies,
+native per-head streams and preserved source state/RNG. This is not a shared
+single-forward multi-task evaluator. Binary and multiclass heads keep separate
+label spaces. No overall_accuracy is generated.
+
+The example records training and `graph_multi_head_evaluation` generic artifacts
+in its own ExperimentManager store, then uses `manager.open_result`. SHA checks
+verify saved bytes. A raw Graph checkpoint receipt is kept separately and is
+never transferred to per-head Tensor adapters. Imported results show
+`graph_v2=unverified`; architecture metadata and artifact hashes cannot restore
+process-local authority.
+
+`compare_saved_heads` reads the two files through
+`MultiHeadGraphEvaluationResult.from_json` and calls
+`analysis.compare_graph_heads(..., head_pairs={'disease':'disease',
+'severity':'severity'})`. That adapter uses existing `compare_models` results,
+strict context gates and native P26/structure checks. Pairing is explicit and
+currently requires equal output names; semantic head renaming is unsupported.
+Equal names alone do not establish eligibility. Label/stream/protocol mismatch
+keeps INCOMPATIBLE; missing context/evidence keeps INSUFFICIENT_EVIDENCE.
+Each selected adapter executes the full Graph. Registered structure snapshots
+cover that full Graph, including both heads; they are not head-only parameter
+or execution counts. Repeated structure values across head pairs must not be summed.
+
+Each head has its own `*-comparison.json` and `*-advisor.json`. TR/EN
+JSON/Markdown/HTML reports retain the same values, units and eligibility, and
+keep `presentation_only=true`, `authoritative_evidence=false`. Existing
+`hyso reports render` can reopen the saved presentation without a workload.
+No P12 profiler runs; absent native MACs/FLOPs differences remain null. Native
+P12 comparisons on separately retained model-level sources keep their existing
+API and scope; head metadata does not supply operation-count evidence.
 
 ## Explicit user-model checks
 
