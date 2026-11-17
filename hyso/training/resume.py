@@ -20,6 +20,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from hyso import checkpoint
 from hyso.models.bcam import _resume_loader_plan
 from hyso.models.modular import ModularCNN
+from hyso.models.output import GraphTensorOutput
 from hyso.models.WithSE import EMA
 from hyso.callbacks.callbacks import EarlyStopping
 
@@ -53,6 +54,24 @@ def _structure(model):
 
 def _model_plan(trainer):
     model = trainer.model
+    if type(model) is GraphTensorOutput:
+        # Reuse the checkpoint v2 closed Graph runtime contract; no new serializer.
+        from hyso._evaluation_evidence import _graph_contract
+        if (str(trainer.device) != 'cpu' or trainer.amp or trainer.ema is not None
+                or trainer.early_stopping is not None
+                or (trainer.scheduler is not None and type(trainer.scheduler) is not torch.optim.lr_scheduler.StepLR)):
+            raise checkpoint.TrainingCheckpointError('Graph resume supports CPU fp32/fp64, no EMA/early stopping, and None/StepLR scheduler')
+        try:
+            GraphTensorOutput(model.graph, model.output_name, task=trainer.task)
+            contract = _graph_contract(model)
+        except (TypeError, ValueError, RuntimeError, NotImplementedError) as error:
+            raise checkpoint.TrainingCheckpointError('Graph resume contract: ' + str(error)) from error
+        config = contract['configuration']
+        if (len(config['inputs']) != 1 or len(next(iter(config['inputs'].values()))['shape']) != 3
+                or _plain(trainer.model_config) != config):
+            raise checkpoint.TrainingCheckpointError('Graph resume requires one CHW input and exact graph model_config')
+        contract.pop('serialized_state_sha256')  # State changes at every update; v2 validates it separately.
+        return _plain(dict(type=_type(model), config=config, graph_contract=contract))
     if type(model) is not ModularCNN:
         # TypeError also makes the unsupported save_last_to model boundary clear.
         raise TypeError("save_last_to requires the standard ModularCNN checkpoint profile")
@@ -115,7 +134,17 @@ def _data_plan(trainer, loader):
     if len(loader.dataset.tensors) != 2:
         raise checkpoint.TrainingCheckpointError("checkpoint TensorDataset requires inputs and targets")
     inputs, targets = loader.dataset.tensors
-    if (inputs.ndim != 4 or inputs.shape[1] != trainer.model.input_channels
+    graph = type(trainer.model) is GraphTensorOutput
+    if graph:
+        config = trainer.model.graph.to_config()
+        shape = next(iter(config['inputs'].values()))['shape']
+        head = next(n for n in config['nodes'] if n['id'] == config['outputs'][trainer.model.output_name])
+        classes = head['params']['num_classes']
+        shape_matches = list(inputs.shape[1:]) == shape
+    else:
+        classes = trainer.model.num_classes
+        shape_matches = inputs.ndim == 4 and inputs.shape[1] == trainer.model.input_channels
+    if (inputs.ndim != 4 or not shape_matches
             or any(size <= 0 for size in inputs.shape)
             or inputs.dtype not in (torch.float32, torch.float64) or not torch.isfinite(inputs).all()):
         raise checkpoint.TrainingCheckpointError("checkpoint inputs must be finite CPU classification NCHW tensors")
@@ -123,7 +152,7 @@ def _data_plan(trainer, loader):
     if trainer.task == "multiclass":
         if (targets.shape != (count,) or targets.dtype != torch.long
                 or (targets == trainer.loss_fn.ignore_index).any()
-                or ((targets < 0) | (targets >= trainer.model.num_classes)).any()):
+                or ((targets < 0) | (targets >= classes)).any()):
             raise checkpoint.TrainingCheckpointError("checkpoint multiclass targets must be valid hard class indices")
     elif (targets.shape not in ((count,), (count, 1)) or not targets.is_floating_point()
           or not torch.isfinite(targets).all() or not ((targets == 0) | (targets == 1)).all()):
@@ -252,7 +281,7 @@ def prepare_save(trainer, train_loader, val_loader, epochs, path):
     if trainer.ema is not None and type(trainer.ema) is not EMA:
         raise checkpoint.TrainingCheckpointError("checkpoint save requires the native EMA")
     scaler = trainer.scaler.state_dict()
-    plan = _plain(dict(profile="modular-tensor-v1", epochs=epochs, task=trainer.task, model=model,
+    plan = _plain(dict(profile="graph-tensor-v1" if type(trainer.model) is GraphTensorOutput else "modular-tensor-v1", epochs=epochs, task=trainer.task, model=model,
                        loss=dict(type=_type(trainer.loss_fn), reduction=trainer.loss_fn.reduction,
                                  ignore_index=getattr(trainer.loss_fn, "ignore_index", None),
                                  label_smoothing=getattr(trainer.loss_fn, "label_smoothing", None)),
@@ -311,7 +340,7 @@ def save_last(trainer, destination, plan, train_loader, val_loader):
                                         completed_epochs=completed, history=trainer.history,
                                         metrics={"generic_trainer": dict(schema_version=1, plan=plan,
                                                                          progress=_plain(progress), early_stopping=early)},
-                                        include_rng=True)
+                                        include_rng=True, graph_contract=type(trainer.model) is GraphTensorOutput)
 
 
 def _check_optimizer_plan(current, original, scheduler):
@@ -374,6 +403,8 @@ def _stage_early(trainer, saved, losses):
 
 def _stage_restore(trainer, payload, expected_plan):
     """Validate every native component and the complete Trainer namespace before apply."""
+    if type(trainer.model) is GraphTensorOutput:
+        _require(payload.get('format_version') == 2, 'Graph resume requires the existing v2 Graph checkpoint contract')
     scheduler = trainer.scheduler
     # Native 2.2.2 Plateau adds _last_lr only on its first step. Stage the
     # equivalent initialized schema on a copy; never mutate the live preflight.

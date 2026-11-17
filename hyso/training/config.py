@@ -213,8 +213,9 @@ class TrainingConfig:
                 on_epoch: Callable[[dict[str,Any]],None] | None=None) -> TrainingSession:
         """Validate before updates, create native optimizer/scheduler and one Trainer.
 
-        Model config is separate; required for the existing ModularCNN-only
-        automatic checkpoint profile. on_epoch is a Python observer, never JSON;
+        Model config is separate: ModularCNN constructor fields or the exact Graph
+        config for CPU GraphTensorOutput classification (fp32/fp64, None/StepLR,
+        no EMA/early stopping). on_epoch is a Python observer, never JSON;
         it is incompatible with that callback-free checkpoint profile.
         """
         from .session import TrainingSession
