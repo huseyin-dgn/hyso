@@ -14,6 +14,7 @@ from torch import nn
 
 from hyso.models.WithSE import EMA
 from hyso.models.output import GraphTensorOutput
+from hyso.models.graph import GraphModel
 from hyso.callbacks.callbacks import EarlyStopping, ModelCheckpoint, LRSchedulerCallback
 
 
@@ -24,6 +25,10 @@ class Trainer:
     Move the model before creating the optimizer; this class never moves it.
     Loaders must be finite, sized iterables of (input_tensor, target_tensor).
     CPU two-input GraphTensorOutput also accepts ({name: tensor}, target_tensor).
+    For one-input CPU fp32 GraphModel, an explicit two-name loss_fn dictionary
+    plus matching positive loss_weights trains two classification heads. History
+    loss is the weighted total; both accuracy series are None. This profile uses
+    SGD/Adam without accumulation/scheduler/EMA/early stopping or automatic resume.
     Inputs retain their dtype; binary floating targets are cast to logits dtype.
     History describes predictions before each batch's optimizer update, with
     loss weighted by actual sample count and accuracy expressed as a percentage.
@@ -43,18 +48,19 @@ class Trainer:
     """
 
     def __init__(self, model: nn.Module, *, optimizer: torch.optim.Optimizer,
-                 loss_fn: nn.Module, device: str | torch.device = "cpu", task: str = "multiclass",
+                 loss_fn: nn.Module | dict[str, nn.Module], device: str | torch.device = "cpu", task: str = "multiclass",
                  scheduler: _typing.Any = None, amp: bool = False, accum_steps: int = 1,
                  grad_clip: float | None = None, ema_decay: float | None = None,
                  early_stopping: EarlyStopping | None = None,
                  callbacks: _typing.Sequence[_typing.Callable[[str, dict[str, _typing.Any]], None]] = (),
-                 model_config: dict[str, _typing.Any] | None = None) -> None:
+                 model_config: dict[str, _typing.Any] | None = None,
+                 loss_weights: dict[str, float] | None = None) -> None:
         """Configure one caller-owned classification training lifecycle.
 
         Args:
             model: Eager nn.Module, already on device before optimizer creation.
             optimizer: Standard non-fused SGD, Adam or AdamW bound to model.
-            loss_fn: Supported mean-reduction classification loss (CE or BCE logits).
+            loss_fn: Mean classification loss, or two explicit Graph output/loss pairs.
             device: Explicit CPU/CUDA device; the model is not moved implicitly.
             task: 'multiclass' or 'binary'; targets must match the loss contract.
             scheduler: Supported bare PyTorch scheduler; Trainer owns stepping.
@@ -65,6 +71,7 @@ class Trainer:
             early_stopping: Optional standard HYSo EarlyStopping instance.
             callbacks: Synchronous observers called with (event, independent logs).
             model_config: Exact ModularCNN constructor configuration for resume.
+            loss_weights: Explicit positive weights matching both named Graph losses.
 
         Raises:
             TypeError: Unsupported model/optimizer/loss or callback contract.
@@ -93,7 +100,13 @@ class Trainer:
             raise NotImplementedError("only CPU and CUDA devices are supported")
         self.model = model
         self.optimizer = optimizer
-        self.loss_fn = loss_fn
+        self.loss_fn = dict(loss_fn) if type(loss_fn) is dict else loss_fn
+        self._multi_loss = type(loss_fn) is dict
+        if loss_weights is not None and type(loss_weights) is not dict:
+            raise TypeError('loss_weights must be an explicit dictionary')
+        self.loss_weights = None if loss_weights is None else dict(loss_weights)
+        if not self._multi_loss and loss_weights is not None:
+            raise ValueError('loss_weights requires explicit named Graph losses')
         self.device = requested
         self.task = task
         self.scheduler = scheduler
@@ -210,19 +223,22 @@ class Trainer:
                     with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=self.amp):
                         loss, batch_correct = self._loss_and_correct(target(inputs), labels, size)
                     summed += loss.item() * size
-                    correct += batch_correct
+                    correct = None if batch_correct is None else correct + batch_correct
                     samples += size
             if seen != count or not samples:
                 raise ValueError("val_loader yielded fewer batches than len() or no samples")
             loss = summed / samples
             if not math.isfinite(loss):
                 raise FloatingPointError("nonfinite validation loss encountered")
-            return loss, 100. * correct / samples
+            return loss, None if correct is None else 100. * correct / samples
         finally:
             for module, training in modes:
                 module.training = training
 
     def _validate_setup(self):
+        if self._multi_loss:
+            self._validate_multi_loss()
+            return
         if type(self.model) is GraphTensorOutput and len(self.model.graph.to_config()['inputs']) == 2:
             if self.device.type != 'cpu' or self.amp:
                 raise ValueError('named Graph training supports CPU without AMP only')
@@ -277,6 +293,43 @@ class Trainer:
         self._validate_scheduler()
         if hasattr(self, "ema"):
             self._validate_ema()
+
+    def _head_context(self, name):
+        """Reuse the existing classification checks without another fit engine."""
+        context = copy.copy(self)
+        context._multi_loss = False
+        context.loss_fn = self.loss_fn[name]
+        context.loss_weights = None
+        context.task = 'multiclass' if type(context.loss_fn) is nn.CrossEntropyLoss else 'binary'
+        return context
+
+    def _validate_multi_loss(self):
+        if (type(self.model) is not GraphModel or len(self.model.to_config()['inputs']) != 1
+                or self.device.type != 'cpu' or self.amp or self.accum_steps != 1
+                or self.scheduler is not None or self.ema_decay is not None
+                or self.early_stopping is not None or self.grad_clip is not None
+                or type(self.optimizer) not in (torch.optim.SGD, torch.optim.Adam)):
+            raise ValueError('two-output Graph training requires one input, CPU fp32, SGD/Adam; no AMP, accumulation, scheduler, EMA or early stopping')
+        if (len(self.loss_fn) != 2 or any(type(k) is not str for k in self.loss_fn)
+                or type(self.loss_weights) is not dict or set(self.loss_weights) != set(self.loss_fn)):
+            raise ValueError('two explicit output losses and matching explicit loss_weights are required')
+        if any(type(w) not in (int, float) or not math.isfinite(w) or w <= 0 for w in self.loss_weights.values()):
+            raise ValueError('loss_weights must be finite positive numbers')
+        if any(t.is_floating_point() and t.dtype != torch.float32 for t in [*self.model.parameters(), *self.model.buffers()]):
+            raise ValueError('two-output Graph training requires CPU fp32')
+        config = self.model.to_config()
+        nodes = {n['id']: n for n in config['nodes']}
+        for name, criterion in self.loss_fn.items():
+            if type(criterion) not in (nn.CrossEntropyLoss, nn.BCEWithLogitsLoss):
+                raise TypeError('each named loss must be standard CrossEntropyLoss or BCEWithLogitsLoss')
+            head = nodes.get(config['outputs'].get(name))
+            if head is None or head['component'] != 'classification_head':
+                raise ValueError('each selected output must name an explicit classification_head')
+            classes = head['params']['num_classes']
+            if (type(criterion) is nn.CrossEntropyLoss and classes < 2 or
+                    type(criterion) is nn.BCEWithLogitsLoss and classes != 1):
+                raise ValueError('selected classification head width does not match its loss')
+            self._head_context(name)._validate_setup()
 
     def _validate_scheduler(self, *, fresh=False, total_steps=None):
         scheduler = self.scheduler
@@ -434,6 +487,12 @@ class Trainer:
         if not isinstance(batch, (tuple, list)) or len(batch) != 2:
             raise ValueError("each batch must contain (inputs, targets)")
         inputs, targets = batch
+        if self._multi_loss:
+            if type(targets) is not dict or set(targets) != set(self.loss_fn):
+                raise ValueError('targets must explicitly match the selected output names')
+            prepared = {name: self._head_context(name)._batch((inputs, targets[name])) for name in self.loss_fn}
+            first = next(iter(prepared.values()))
+            return first[0], {name: value[1] for name, value in prepared.items()}, first[2]
         named = type(inputs) is dict
         if named:
             if type(self.model) is not GraphTensorOutput or len(self.model.graph.to_config()['inputs']) != 2:
@@ -472,6 +531,14 @@ class Trainer:
         return inputs if named else inputs.to(self.device), targets.to(self.device), size
 
     def _loss_and_correct(self, logits, targets, size):
+        if self._multi_loss:
+            if type(logits) is not dict or any(name not in logits for name in self.loss_fn):
+                raise ValueError('Graph forward must return every explicitly selected output')
+            losses = {name: self._head_context(name)._loss_and_correct(logits[name], targets[name], size)[0]
+                      for name in self.loss_fn}
+            loss = sum(self.loss_weights[name] * value for name, value in losses.items())
+            if not torch.isfinite(loss):raise FloatingPointError('nonfinite weighted total loss')
+            return loss, None  # No model-wide accuracy is defined for two tasks.
         if not isinstance(logits, torch.Tensor):
             raise TypeError("model forward must return tensor logits")
         allowed = (torch.float16, torch.float32) if self.amp else (torch.float32, torch.float64)
@@ -512,6 +579,8 @@ class Trainer:
         Returns:
             Independent lists under train_loss, train_acc, val_loss and val_acc.
             Accuracy is a percentage. Without validation, val_loss/val_acc entries are None.
+            With two named losses, train_loss/val_loss are weighted totals and
+            train_acc/val_acc are None; no model-wide accuracy is inferred.
 
         Save requires callbacks=(), standard num_workers=0 TensorDataset loaders
         and all seven ModularCNN constructor fields in model_config. It saves
@@ -520,6 +589,8 @@ class Trainer:
         """
         if type(epochs) is not int or epochs <= 0:
             raise ValueError("epochs must be a positive Python int")
+        if self._multi_loss and (save_last_to is not None or resume_from is not None):
+            raise ValueError('multi-loss automatic checkpoint/resume is unsupported')
         self._validate_setup()
         count = self._loader_length(train_loader, "train_loader")
         if val_loader is not None:
@@ -621,7 +692,7 @@ class Trainer:
                             recorder.attempt_end(self.update_count, window_samples)
                         window_samples = 0
                     total_loss += loss.detach().item() * size
-                    total_correct += correct
+                    total_correct = None if correct is None else total_correct + correct
                     total_samples += size
                 if seen != count or total_samples == 0:
                     raise ValueError("train_loader yielded fewer batches than len() or no samples")
@@ -650,7 +721,7 @@ class Trainer:
                 if self.early_stopping is not None:
                     self.early_stopping(val_loss, self.evaluation_model)
                 self.history["train_loss"].append(epoch_loss)
-                self.history["train_acc"].append(100.0 * total_correct / total_samples)
+                self.history["train_acc"].append(None if total_correct is None else 100.0 * total_correct / total_samples)
                 self.history["val_loss"].append(val_loss)
                 self.history["val_acc"].append(val_acc)
                 self._emit("epoch_end", len(self.history["train_loss"]))
