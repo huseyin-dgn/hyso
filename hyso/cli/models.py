@@ -17,6 +17,8 @@ def register(sub):
                        ('inspect', 'Allocate a new untrained CPU model and inspect parameter/buffer shapes; no forward or checkpoint loading.')]:
         q = command(s, name, desc, run)
         q.add_argument('input', type=Path, help='ModelBuilder architecture JSON, not weights or a trained checkpoint.')
+        if name == 'preview':
+            q.add_argument('--batch-size', type=int, help='Positive batch-size assumption for GraphModelBuilder preview only; no allocation or forward.')
         if name == 'inspect':
             q.add_argument('--execute', action='store_true', help='Explicitly authorize new CPU model allocation for inspection.')
 
@@ -37,6 +39,10 @@ def run(args):
                     model_constructed=False)
         if args.action in ('validate', 'summary','preview'):
             data['validation'] = builder.preflight(config)
+        if args.action == 'preview' and args.batch_size is not None:
+            require(config['kind'] == 'graph', '--batch-size is supported only for graph preview.', code=4)
+            require(args.batch_size > 0, '--batch-size must be a positive integer.')
+            data['validation'] = builder.preview(batch_size=args.batch_size)
         if args.action == 'summary':
             data['summary'] = dict(kind=config['kind'], family=config.get('name'), options=config.get('params',{}), input_shape=config.get('input_shape'),
                 num_classes=config.get('num_classes', config.get('params', {}).get('num_classes')),
