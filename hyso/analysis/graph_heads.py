@@ -156,3 +156,65 @@ def evaluate_graph_heads(model, loader, *, heads, capture_structure=False,
     result = MultiHeadGraphEvaluationResult(data)
     _remember(_EVALUATIONS,result,weakref.ref(model))
     return result
+
+
+def compare_graph_heads(baseline, candidate, *, head_pairs, model_ids=('A','B'),
+                        features=('P26','P12'), include_structure=True):
+    """Compare only explicitly paired equal output names through compare_models.
+
+    This bounded adapter does not infer semantic equivalence or rename heads.
+    Matching names remain caller declarations; native label/stream/protocol and
+    strict declared-context gates independently decide numeric eligibility.
+    Returns separate existing ModelComparisonResults, never a model-wide winner.
+    """
+    from .model_comparison import compare_models
+    if type(baseline) is not MultiHeadGraphEvaluationResult or type(candidate) is not MultiHeadGraphEvaluationResult:
+        raise GraphEvidenceError('two_retained_multi_head_results_required')
+    if (type(head_pairs) is not dict or not 1 <= len(head_pairs) <= 2
+            or any(type(a) is not str or type(b) is not str or a != b for a,b in head_pairs.items())):
+        raise GraphEvidenceError('explicit_equal_head_names_required;semantic_head_renaming_unsupported')
+    if (type(model_ids) not in (tuple,list) or len(model_ids) != 2
+            or any(type(m) is not str or not m for m in model_ids) or model_ids[0] == model_ids[1]):
+        raise GraphEvidenceError('two_distinct_explicit_model_ids_required')
+    return {a:compare_models(baseline.analysis_source(model_ids[0]+':'+a,head=a),
+        candidate.analysis_source(model_ids[1]+':'+b,head=b),features=features,
+        include_structure=include_structure,context_policy='strict') for a,b in head_pairs.items()}
+
+
+def report_section(result, language, level, catalog):
+    """Use existing P26 presentation and rendering with explicit per-head labels."""
+    from .graph_evidence import report_section as single_section, _LIMITS
+    from ..reporting.report import _metric
+    data = result.to_dict();metrics=[];charts=[];features=[]
+    for name,row in data['heads'].items():
+        head = result.head(name);part = single_section(head,language,level,catalog)
+        evaluation=head.evaluation.to_dict();values=evaluation['metrics']
+        scope = dict(output=name,target=row['spec']['target'],context=head.to_dict()['context'],
+            evaluation_id=evaluation['evaluation_id'],source_sha256=evaluation['source_sha256'])
+        for metric in part['metrics']:
+            metric['key'] = name+'.'+metric['key']
+            metric['label'] = name+' · '+metric['label']
+            metric['scope']['head'] = scope
+            metrics.append(metric)
+        for chart in part['charts']:
+            chart['title'] = name+' · '+chart['title'];charts.append(chart)
+        features.extend(part['features'])
+        for key,value,unit in [('macro_precision',values['averages']['macro']['precision'],'fraction'),
+                ('macro_recall',values['averages']['macro']['recall'],'fraction'),
+                ('sample_count',values['sample_count'],'sample'),
+                ('confusion_matrix',values['confusion_matrix'],None),
+                ('label_mapping',evaluation['configuration']['class_names'],None),
+                ('evaluation_protocol',row['spec'],None)]:
+            metrics.append(_metric(name+'.'+key,name+' · '+key,value,unit,'head_evaluation',
+                'recorded' if value is not None else 'insufficient_evidence',scope,
+                'Per-head result; no aggregate accuracy. Context identities remain declared.',_LIMITS,feature='P26'))
+    for key,value in [('model_state_sha256',data['model_state_sha256']),
+                      ('checkpoint_sha256',data['source_receipt']['checkpoint_sha256']),
+                      ('graph_source_verification',data['verification'])]:
+        metrics.append(_metric(key,key,value,None,'source_identity',
+            'recorded' if value is not None else 'insufficient_evidence',{},
+            'Raw Graph source association is separate from each isolated head evaluation.',_LIMITS))
+    return dict(kind='graph_multi_head_evaluation',
+        title='Graph head değerlendirmeleri' if language=='tr' else 'Graph head evaluations',
+        raw=data,metrics=metrics,charts=charts,features=features,advisor=None,
+        limits=[*_LIMITS,'no overall accuracy;head metrics and protocols remain separate'])

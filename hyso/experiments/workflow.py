@@ -16,7 +16,7 @@ _OPEN_RESULT_KINDS = frozenset(_RESULT_KINDS.values()) | {
     'graph_evaluation_association', 'graph_evidence_comparison', 'analysis_report', 'presentation_report',
     'graph_multi_head_evaluation',
 }
-_REPORT_RESULT_KINDS = _OPEN_RESULT_KINDS - {'presentation_report', 'graph_multi_head_evaluation'}
+_REPORT_RESULT_KINDS = _OPEN_RESULT_KINDS - {'presentation_report'}
 _REASONS = {
     "verified": "Registered size and SHA256 match the current bytes.",
     "missing": "Registered file is missing or moved. Supply path for a relocated reference.",

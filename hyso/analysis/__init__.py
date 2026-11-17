@@ -26,12 +26,12 @@ __all__ += ['ArtifactSource', 'OperationPolicy', 'NativeBinding', 'RetainedSourc
             'InferenceSource', 'PipelineSource', 'RecipeSource', 'EvaluationSource',
             'QualitySource', 'TrainingSource', 'ProtocolSource', 'RooflineSource', 'RuntimeSource']
 
-__all__ += ['MultiHeadGraphEvaluationResult', 'evaluate_graph_heads']
+__all__ += ['MultiHeadGraphEvaluationResult', 'evaluate_graph_heads', 'compare_graph_heads']
 
 
 def __getattr__(name):
     # evaluation imports analysis._codec while its public types initialize.
-    if name in ('MultiHeadGraphEvaluationResult', 'evaluate_graph_heads'):
+    if name in ('MultiHeadGraphEvaluationResult', 'evaluate_graph_heads', 'compare_graph_heads'):
         from importlib import import_module
         value = getattr(import_module('.graph_heads', __name__), name)
         globals()[name] = value
