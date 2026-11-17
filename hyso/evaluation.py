@@ -286,6 +286,9 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
     iteration. Hashes identify ordered post-collation tensors independently of
     batch partitioning; they do not verify origin, split or preprocessing code.
     The default retains schema 1 and does not hash dataset content.
+    Exact two-input GraphTensorOutput supports CPU fp32 named dictionaries;
+    native streams use separate name-bound hashing semantics. Tensor-only
+    stream bytes are unchanged. Receiver-runtime capture is not supported there.
     capture_structure=True additionally requires capture_evidence=True and
     nonempty evaluation. Schema 3 binds matching pre/post structure snapshots
     of the actual isolated forward receiver, without extra inference or any
@@ -301,6 +304,10 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
     if capture_receiver_runtime and (not capture_evidence or torch.device(device).type != 'cpu'):
         raise ValueError('receiver runtime capture requires CPU native evidence')
     execution_device=torch.device(device)
+    from .models.output import GraphTensorOutput
+    named_inputs = (type(model) is GraphTensorOutput and len(model.graph.to_config()['inputs']) == 2)
+    if named_inputs and (execution_device.type != 'cpu' or capture_receiver_runtime):
+        raise NotImplementedError('named Graph evaluation requires CPU without receiver runtime capture')
     if execution_device.type not in ('cpu','cuda'):raise NotImplementedError('evaluation device unsupported')
     if execution_device.type=='cuda':
         if capture_evidence or capture_structure:raise NotImplementedError('CUDA producer/structure capture unsupported')
@@ -355,17 +362,28 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
         if capture_structure:
             from .structure import capture_model_structure
             structure_before = capture_model_structure(candidate)
-        stream = EvaluationStreamCapture() if capture_evidence else None
+        names = sorted(model.graph.to_config()['inputs']) if named_inputs else None
+        stream = EvaluationStreamCapture(names) if capture_evidence else None
         targets, predictions, sizes = [], [], []
         with torch.inference_mode():
             for batch_index, batch in enumerate(loader):
                 if batch_index >= expected_batches or not isinstance(batch, (tuple,list)) or len(batch) != 2:
                     raise ValueError("unexpected or invalid evaluation batch")
                 inputs, labels = batch
-                if (not isinstance(inputs, torch.Tensor) or inputs.device.type != "cpu" or inputs.dtype not in (torch.float32,torch.float64)
-                        or inputs.ndim < 1 or not torch.isfinite(inputs).all()):
+                if named_inputs:
+                    if type(inputs) is not dict or set(inputs) != set(names):
+                        raise ValueError('named Graph evaluation input names mismatch')
+                    values = [inputs[name] for name in names]
+                else:
+                    values = [inputs]
+                if any(not isinstance(x, torch.Tensor) or x.device.type != 'cpu'
+                       or x.dtype not in ((torch.float32,) if named_inputs else (torch.float32,torch.float64))
+                       or x.ndim < 1 or not torch.isfinite(x).all() for x in values):
                     raise ValueError("finite CPU floating inputs required")
-                n = inputs.shape[0]
+                n = values[0].shape[0]
+                if named_inputs and any(x.shape[0] != n or list(x.shape[1:]) != model.graph.to_config()['inputs'][name]['shape']
+                                        for name,x in zip(names,values)):
+                    raise ValueError('named Graph evaluation input batch/shape mismatch')
                 expected_batch = min(loader.batch_size, expected-len(targets))
                 if n < 1 or n != expected_batch or not isinstance(labels,torch.Tensor) or labels.device.type != "cpu":
                     raise ValueError("missing samples or invalid targets")
@@ -383,7 +401,8 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
                     stream.update(inputs, labels)
                 if receiver_capture is not None:
                     receiver_capture.before(candidate, inputs, labels)
-                logits = candidate(inputs.clone().to(execution_device))
+                prepared = {name:inputs[name].clone() for name in names} if named_inputs else inputs.clone().to(execution_device)
+                logits = candidate(prepared)
                 if receiver_capture is not None:
                     receiver_capture.after(candidate, logits)
                 if (not isinstance(logits,torch.Tensor) or logits.device != execution_device

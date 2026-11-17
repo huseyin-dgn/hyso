@@ -14,6 +14,8 @@ import torch
 
 STREAM_METHOD = "sha256_ordered_tensor_samples_le_v1"
 STREAM_SCOPE = "ordered_post_collation_inputs_and_targets"
+NAMED_STREAM_METHOD = 'sha256_ordered_named_tensor_samples_le_v1'
+NAMED_STREAM_SCOPE = 'ordered_post_collation_named_inputs_and_targets'
 STATE_METHOD = "sha256_named_parameters_and_buffers_v1"
 CHECKPOINT_METHOD = "hyso.load_training_checkpoint.snapshot_sha256.v1"
 
@@ -272,15 +274,28 @@ def _tensor_sample(tensor):
 class EvaluationStreamCapture:
     """O(1) hash state plus one contiguous sample; batch boundaries excluded."""
 
-    def __init__(self):
+    def __init__(self, input_names=None):
+        self.input_names = None if input_names is None else tuple(sorted(input_names))
         self.count = 0
         self.inputs = hashlib.sha256(b"hyso.p26.inputs.v1\0")
         self.targets = hashlib.sha256(b"hyso.p26.targets.v1\0")
         self.pairs = hashlib.sha256(b"hyso.p26.pairs.v1\0")
 
     def update(self, inputs, labels):
-        for index in range(inputs.shape[0]):
-            x, y = _tensor_sample(inputs[index]), _tensor_sample(labels[index])
+        named = self.input_names is not None
+        if named and (type(inputs) is not dict or tuple(sorted(inputs)) != self.input_names):
+            raise ValueError('named evaluation stream input names mismatch')
+        for index in range(labels.shape[0] if named else inputs.shape[0]):
+            if named:
+                sample = hashlib.sha256(b'hyso.p26.named_input_sample.v1\0')
+                for name in self.input_names:
+                    encoded = name.encode('utf8')
+                    sample.update(len(encoded).to_bytes(8,'big')); sample.update(encoded)
+                    sample.update(_tensor_sample(inputs[name][index]))
+                x = sample.digest()
+            else:
+                x = _tensor_sample(inputs[index])
+            y = _tensor_sample(labels[index])
             self.inputs.update(x); self.targets.update(y)
             self.pairs.update(x); self.pairs.update(y)
             self.count += 1
@@ -290,11 +305,14 @@ class EvaluationStreamCapture:
             result = hasher.copy()
             result.update(self.count.to_bytes(8, "big"))
             return result.hexdigest()
-        return dict(status="native", method=STREAM_METHOD, scope=STREAM_SCOPE,
+        result = dict(status="native", method=STREAM_METHOD, scope=STREAM_SCOPE,
                     source="evaluate_classification.validated_batches_before_forward",
                     sample_count=self.count, batch_partition_invariant=True,
                     inputs_sha256=final(self.inputs), targets_sha256=final(self.targets),
                     paired_sha256=final(self.pairs))
+        if self.input_names is not None:
+            result.update(method=NAMED_STREAM_METHOD,scope=NAMED_STREAM_SCOPE,input_names=list(self.input_names))
+        return result
 
 
 def producer_evidence(model, state, stream, config, source_id):
@@ -334,11 +352,20 @@ def validate_producer_evidence(evidence, source, config, sample_count):
         require(checkpoint == dict(status="missing", sha256=None, model_state_sha256=None,
                                   source=None, reason="no_matching_trusted_load_receipt"))
     stream = evidence["evaluated_stream"]
-    require(type(stream) is dict and set(stream) == {
+    require(type(stream) is dict)
+    named = stream.get('method') == NAMED_STREAM_METHOD
+    fields = {
         "status", "method", "scope", "source", "sample_count", "batch_partition_invariant",
-        "inputs_sha256", "targets_sha256", "paired_sha256"})
-    require(stream["status"] == "native" and stream["method"] == STREAM_METHOD
-            and stream["scope"] == STREAM_SCOPE and stream["batch_partition_invariant"] is True
+        "inputs_sha256", "targets_sha256", "paired_sha256"}
+    if named:
+        fields.add('input_names')
+        names = stream.get('input_names')
+        require(type(names) is list and len(names) == 2 and all(type(n) is str and n for n in names)
+                and names == sorted(set(names)))
+        require(source['model_type'] == 'hyso.models.output.GraphTensorOutput')
+    require(set(stream) == fields)
+    require(stream["status"] == "native" and stream["method"] == (NAMED_STREAM_METHOD if named else STREAM_METHOD)
+            and stream["scope"] == (NAMED_STREAM_SCOPE if named else STREAM_SCOPE) and stream["batch_partition_invariant"] is True
             and stream["source"] == "evaluate_classification.validated_batches_before_forward"
             and type(stream["sample_count"]) is int and stream["sample_count"] == sample_count
             and all(sha(stream[key]) for key in ("inputs_sha256", "targets_sha256", "paired_sha256")))

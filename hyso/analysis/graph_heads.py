@@ -14,12 +14,12 @@ from torch.utils.data._utils.collate import default_collate
 from ._codec import canonical, digest, plain, fingerprint
 from .graph_evidence import (GraphEvaluationResult, GraphEvidenceError, _Export, _body,
     _context, _receipt_statement, _contract_statement, _remember, _EVALUATIONS, evaluate_graph_classification)
-from .._evaluation_evidence import _graph_contract, model_hash
+from .._evaluation_evidence import _graph_contract, model_hash, STREAM_METHOD, NAMED_STREAM_METHOD
 from ..checkpoint import graph_checkpoint_evidence
 from ..evaluation import _metadata
 from ..models.graph import GraphModel, GraphModelBuilder
 from ..models.output import GraphTensorOutput
-from ..training.data import NamedTargetDataset
+from ..training.data import NamedTargetDataset, NamedTensorDataset
 
 
 def _spec(value):
@@ -77,6 +77,10 @@ class MultiHeadGraphEvaluationResult(_Export):
             if result['source_receipt']['status'] != 'missing':
                 raise GraphEvidenceError('raw_graph_receipt_must_not_transfer_to_head_adapter')
             stream = evaluation['producer_evidence']['evaluated_stream']
+            input_names = sorted(config['inputs'])
+            if (len(input_names) == 2 and (stream['method'] != NAMED_STREAM_METHOD or stream.get('input_names') != input_names)
+                    or len(input_names) == 1 and stream['method'] != STREAM_METHOD):
+                raise GraphEvidenceError('head_native_input_contract_mismatch')
             shared.append((stream['sample_count'],stream['inputs_sha256'],evaluation['source']['model_state_sha256']))
         if shared[0] != shared[1] or len({r['spec']['target'] for r in d['heads'].values()}) != 2:
             raise GraphEvidenceError('heads_must_preserve_shared_input_state_and_distinct_targets')
@@ -102,7 +106,7 @@ def evaluate_graph_heads(model, loader, *, heads, capture_structure=False,
                          expected_checkpoint_sha256=None):
     """Explicit two-head CPU fp32 evaluation, using the original evaluator twice.
 
-    Requires the closed single-input NamedTargetDataset profile. Each head spec
+    Requires the closed one- or two-input NamedTargetDataset profile. Each head spec
     names its target, task, ordered class_names, split, dataset_id and
     preprocessing_id (unknown identities may explicitly be None). No report,
     advice or comparison calls this execution function implicitly.
@@ -110,28 +114,33 @@ def evaluate_graph_heads(model, loader, *, heads, capture_structure=False,
     if type(model) is not GraphModel or type(heads) is not dict or len(heads) != 2:
         raise GraphEvidenceError('raw_GraphModel_and_two_explicit_heads_required')
     contract = _graph_contract(model)
-    if len(contract['configuration']['inputs']) != 1 or contract['dtype'] != 'torch.float32':
-        raise GraphEvidenceError('two_head_evaluation_requires_single_input_CPU_fp32')
+    input_config = contract['configuration']['inputs']
+    count = len(input_config)
+    if count not in (1,2) or contract['dtype'] != 'torch.float32':
+        raise GraphEvidenceError('two_head_evaluation_requires_one_or_two_inputs_CPU_fp32')
     if (type(loader) is not DataLoader or type(loader.dataset) is not NamedTargetDataset
             or type(loader.sampler) is not SequentialSampler or type(loader.batch_sampler) is not BatchSampler
             or loader.num_workers != 0 or loader.drop_last or loader.pin_memory
             or loader.collate_fn is not default_collate or loader.generator is not None):
         raise GraphEvidenceError('two_head_evaluation_requires_standard_sequential_NamedTargetDataset_loader')
     dataset = loader.dataset
-    if (set(vars(dataset)) != {'target_names','tensors'} or type(dataset.target_names) is not tuple
+    if (set(vars(dataset)) != ({'target_names','tensors','input_names'} if count == 2 else {'target_names','tensors'})
+            or count == 2 and (type(dataset.input_names) is not tuple or dataset.input_names != tuple(sorted(input_config)))
+            or type(dataset.target_names) is not tuple
             or dataset.target_names != tuple(sorted(dataset.target_names))
-            or type(dataset.tensors) is not tuple or len(dataset.tensors) != 3
+            or type(dataset.tensors) is not tuple or len(dataset.tensors) != count+2
             or loader.batch_sampler.sampler is not loader.sampler
             or loader.batch_sampler.batch_size != loader.batch_size
             or loader.batch_sampler.drop_last != loader.drop_last):
         raise GraphEvidenceError('closed_NamedTargetDataset_required')
     # Revalidate mutable dataset fields through its closed constructor.
-    NamedTargetDataset(dataset.tensors[0], dict(zip(dataset.target_names,dataset.tensors[1:])))
+    inputs = dict(zip(dataset.input_names,dataset.tensors[:2])) if count == 2 else dataset.tensors[0]
+    NamedTargetDataset(inputs, dict(zip(dataset.target_names,dataset.tensors[count:])))
     specs = {name:_spec(value) for name,value in heads.items()}
     if {s['target'] for s in specs.values()} != set(dataset.target_names):
         raise GraphEvidenceError('explicit_head_target_mapping_mismatch')
-    inputs = dataset.tensors[0]
-    if inputs.dtype != torch.float32 or list(inputs.shape[1:]) != next(iter(contract['configuration']['inputs'].values()))['shape']:
+    values = inputs if count == 2 else {next(iter(input_config)):inputs}
+    if any(x.dtype != torch.float32 or list(x.shape[1:]) != input_config[name]['shape'] for name,x in values.items()):
         raise GraphEvidenceError('head_input_contract_mismatch')
     receipt = graph_checkpoint_evidence(model)
     if expected_checkpoint_sha256 is not None and (receipt['status'] != 'native'
@@ -139,9 +148,10 @@ def evaluate_graph_heads(model, loader, *, heads, capture_structure=False,
         raise GraphEvidenceError('expected_source_identity_mismatch:checkpoint_sha256')
     state = model_hash(model); rows = {}
     for name,spec in specs.items():
-        adapter = GraphTensorOutput(model,name,task=spec['task'])
-        target = dataset.tensors[1+dataset.target_names.index(spec['target'])]
-        selected = DataLoader(TensorDataset(inputs,target),batch_size=loader.batch_size,shuffle=False)
+        adapter = GraphTensorOutput(model,name,task=spec['task'],named_inputs=count == 2)
+        target = dataset.tensors[count+dataset.target_names.index(spec['target'])]
+        selected = DataLoader(NamedTensorDataset(inputs,target) if count == 2 else TensorDataset(inputs,target),
+                              batch_size=loader.batch_size,shuffle=False)
         result = evaluate_graph_classification(adapter,selected,class_names=spec['class_names'],
             task=spec['task'],split=spec['split'],source_id=spec['dataset_id'],
             context={k:spec[k] for k in ('dataset_id','split','preprocessing_id')},
