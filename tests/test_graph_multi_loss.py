@@ -108,8 +108,8 @@ def test_only_explicit_classification_outputs_can_have_losses(name):
 @pytest.mark.parametrize('option',['save_last_to','resume_from'])
 def test_multi_loss_automatic_resume_stays_unsupported(tmp_path,option):
     graph=model();trainer=Trainer(graph,optimizer=torch.optim.SGD(graph.parameters(),lr=.1),
-        loss_fn=criteria(),loss_weights={'one':1.,'two':1.})
-    with pytest.raises(ValueError,match='multi-loss automatic'):
+        loss_fn=criteria(),loss_weights={'one':1.,'two':1.},model_config=graph.to_config())
+    with pytest.raises((ValueError,RuntimeError),match='NamedTargetDataset'):
         trainer.fit(DataLoader(Samples(),batch_size=2),epochs=1,**{option:tmp_path/'never.pth'})
     assert trainer.update_count==0 and not (tmp_path/'never.pth').exists()
 

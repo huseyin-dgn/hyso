@@ -21,7 +21,8 @@ from hyso import checkpoint
 from hyso.models.bcam import _resume_loader_plan
 from hyso.models.modular import ModularCNN
 from hyso.models.output import GraphTensorOutput
-from .data import NamedTensorDataset
+from hyso.models.graph import GraphModel
+from .data import NamedTensorDataset, NamedTargetDataset
 from hyso.models.WithSE import EMA
 from hyso.callbacks.callbacks import EarlyStopping
 
@@ -55,6 +56,14 @@ def _structure(model):
 
 def _model_plan(trainer):
     model = trainer.model
+    if trainer._multi_loss:
+        from hyso._evaluation_evidence import _graph_contract
+        trainer._validate_multi_loss()
+        if _plain(trainer.model_config) != model.to_config():
+            raise checkpoint.TrainingCheckpointError('multi-loss checkpoint requires exact Graph model_config')
+        contract = _graph_contract(model)
+        contract.pop('serialized_state_sha256')
+        return _plain(dict(type=_type(model), config=model.to_config(), graph_contract=contract))
     if type(model) is GraphTensorOutput:
         # Reuse the checkpoint v2 closed Graph runtime contract; no new serializer.
         from hyso._evaluation_evidence import _graph_contract
@@ -122,6 +131,30 @@ def _model_plan(trainer):
 def _data_plan(trainer, loader):
     if loader is None:
         return None
+    if trainer._multi_loss:
+        dataset = loader.dataset if type(loader) is DataLoader else None
+        if (type(dataset) is not NamedTargetDataset or set(vars(dataset)) != {'target_names', 'tensors'}
+                or dataset.target_names != tuple(sorted(trainer.loss_fn))
+                or type(dataset.tensors) is not tuple or len(dataset.tensors) != 3):
+            raise checkpoint.TrainingCheckpointError('multi-loss checkpoint requires matching NamedTargetDataset')
+        proxy = copy.copy(loader)
+        object.__setattr__(proxy, 'dataset', TensorDataset(*dataset.tensors))
+        plan = _resume_loader_plan(proxy)
+        if (loader.worker_init_fn is not None or any(callable(v) for k,v in vars(loader).items() if k != 'collate_fn')
+                or loader.batch_sampler.sampler is not loader.sampler
+                or loader.batch_sampler.batch_size != loader.batch_size
+                or loader.batch_sampler.drop_last != loader.drop_last):
+            raise checkpoint.TrainingCheckpointError('multi-loss checkpoint requires standard loader settings')
+        inputs = dataset.tensors[0]
+        config = trainer.model.to_config()
+        if (list(inputs.shape[1:]) != next(iter(config['inputs'].values()))['shape']
+                or inputs.dtype != torch.float32 or not torch.isfinite(inputs).all()):
+            raise checkpoint.TrainingCheckpointError('multi-loss checkpoint input contract mismatch')
+        for name, targets in zip(dataset.target_names, dataset.tensors[1:]):
+            _data_plan_named_targets(trainer._head_context(name), targets, len(dataset))
+        return _plain(dict(type=_type(loader), dataset_type=_type(dataset), target_names=list(dataset.target_names),
+            target_mapping={name:name for name in dataset.target_names}, num_workers=loader.num_workers,
+            pin_memory=loader.pin_memory, pin_memory_device=getattr(loader,'pin_memory_device',''), **plan))
     if type(loader) is DataLoader and type(loader.dataset) is NamedTensorDataset:
         dataset=loader.dataset
         if (type(trainer.model) is not GraphTensorOutput or len(trainer.model.graph.to_config()['inputs']) != 2
@@ -311,6 +344,32 @@ def _early_state(trainer):
                 best_loss=best_loss, best_state=best_state)
 
 
+def _loss_plan(trainer):
+    if trainer._multi_loss:
+        return _plain(dict(type='named_classification', heads={name:_loss_plan(trainer._head_context(name))
+            for name in sorted(trainer.loss_fn)}, weights=trainer.loss_weights))
+    return dict(type=_type(trainer.loss_fn), reduction=trainer.loss_fn.reduction,
+                ignore_index=getattr(trainer.loss_fn, 'ignore_index', None),
+                label_smoothing=getattr(trainer.loss_fn, 'label_smoothing', None))
+
+
+def _continuation_digest(optimizer, history):
+    """Commit existing plain metadata to exact native optimizer tensor bytes."""
+    from hyso._evaluation_evidence import checkpoint_state_fingerprints
+    def encode(value):
+        if type(value) is torch.Tensor:
+            fingerprints = checkpoint_state_fingerprints({'value': value})
+            if fingerprints is None:
+                raise checkpoint.TrainingCheckpointError('unsupported optimizer tensor commitment')
+            return ['tensor', fingerprints['value'].hex()]
+        if type(value) is dict:
+            return ['dict', [[encode(k), encode(value[k])] for k in sorted(value, key=repr)]]
+        if type(value) in (list, tuple):
+            return [type(value).__name__, [encode(v) for v in value]]
+        return [type(value).__name__, _plain(value)]
+    return hashlib.sha256(json.dumps(encode([optimizer, history]), separators=(',', ':')).encode()).hexdigest()
+
+
 def prepare_save(trainer, train_loader, val_loader, epochs, path):
     """Validate the bounded save profile before iterator creation or updates."""
     if not isinstance(path, (str, Path)):
@@ -328,10 +387,8 @@ def prepare_save(trainer, train_loader, val_loader, epochs, path):
     if trainer.ema is not None and type(trainer.ema) is not EMA:
         raise checkpoint.TrainingCheckpointError("checkpoint save requires the native EMA")
     scaler = trainer.scaler.state_dict()
-    plan = _plain(dict(profile="graph-tensor-v1" if type(trainer.model) is GraphTensorOutput else "modular-tensor-v1", epochs=epochs, task=trainer.task, model=model,
-                       loss=dict(type=_type(trainer.loss_fn), reduction=trainer.loss_fn.reduction,
-                                 ignore_index=getattr(trainer.loss_fn, "ignore_index", None),
-                                 label_smoothing=getattr(trainer.loss_fn, "label_smoothing", None)),
+    plan = _plain(dict(profile='graph-multiloss-v1' if trainer._multi_loss else "graph-tensor-v1" if type(trainer.model) is GraphTensorOutput else "modular-tensor-v1", epochs=epochs, task=trainer.task, model=model,
+                       loss=_loss_plan(trainer),
                        optimizer=_optimizer_plan(trainer), scheduler=_scheduler_plan(trainer),
                        device=str(trainer.device), amp=trainer.amp, accum_steps=trainer.accum_steps,
                        grad_clip=trainer.grad_clip, scaler=dict(type=_type(trainer.scaler), initial_state=scaler),
@@ -350,6 +407,8 @@ def prepare_save(trainer, train_loader, val_loader, epochs, path):
 def save_last(trainer, destination, plan, train_loader, val_loader):
     """Save a coherent completed epoch, before best-weight finalization."""
     trainer._validate_setup()
+    if trainer._multi_loss and _loss_plan(trainer) != plan['loss']:
+        raise checkpoint.TrainingCheckpointError('named loss configuration changed during training')
     if _model_plan(trainer) != plan["model"] or _data_plan(trainer, train_loader) != plan["train_loader"] or _data_plan(trainer, val_loader) != plan["val_loader"]:
         raise checkpoint.TrainingCheckpointError("model or data plan changed during training")
     current_optimizer = _optimizer_plan(trainer)
@@ -379,6 +438,8 @@ def save_last(trainer, destination, plan, train_loader, val_loader):
                     early_stop=False if early is None else early["early_stop"],
                     model_modes={name: module.training for name, module in trainer.model.named_modules()},
                     ema_modes=None if trainer.ema is None else {name: module.training for name, module in trainer.ema.ema_model.named_modules()})
+    if trainer._multi_loss:
+        progress['continuation_sha256'] = _continuation_digest(trainer.optimizer.state_dict(), trainer.history)
     if any(type(flag) is not bool for flag in progress["model_modes"].values()) or (
             progress["ema_modes"] is not None and any(type(flag) is not bool for flag in progress["ema_modes"].values())):
         raise checkpoint.TrainingCheckpointError("model mode maps must contain bool flags")
@@ -387,7 +448,7 @@ def save_last(trainer, destination, plan, train_loader, val_loader):
                                         completed_epochs=completed, history=trainer.history,
                                         metrics={"generic_trainer": dict(schema_version=1, plan=plan,
                                                                          progress=_plain(progress), early_stopping=early)},
-                                        include_rng=True, graph_contract=type(trainer.model) is GraphTensorOutput)
+                                        include_rng=True, graph_contract=type(trainer.model) in (GraphTensorOutput, GraphModel))
 
 
 def _check_optimizer_plan(current, original, scheduler):
@@ -450,7 +511,7 @@ def _stage_early(trainer, saved, losses):
 
 def _stage_restore(trainer, payload, expected_plan):
     """Validate every native component and the complete Trainer namespace before apply."""
-    if type(trainer.model) is GraphTensorOutput:
+    if type(trainer.model) in (GraphTensorOutput, GraphModel):
         _require(payload.get('format_version') == 2, 'Graph resume requires the existing v2 Graph checkpoint contract')
     scheduler = trainer.scheduler
     # Native 2.2.2 Plateau adds _last_lr only on its first step. Stage the
@@ -474,12 +535,17 @@ def _stage_restore(trainer, payload, expected_plan):
     for key, values in history.items():
         _require(type(values) is list and len(values) == completed, "invalid history length")
         for value in values:
-            if key.startswith("val_") and plan["val_loader"] is None:
+            if (key.startswith("val_") and plan["val_loader"] is None
+                    or key.endswith('acc') and plan['profile'] == 'graph-multiloss-v1'):
                 _require(value is None, "validation history must be None without validation")
             else:
                 _require(type(value) in (int, float) and math.isfinite(value) and value >= 0
                          and (not key.endswith("acc") or value <= 100), "invalid finite history metric")
     fields = {"completed_epochs", "microbatches", "attempts", "updates", "ema_updates", "early_stop", "model_modes", "ema_modes"}
+    if plan['profile'] == 'graph-multiloss-v1':
+        fields.add('continuation_sha256')
+        _require(progress.get('continuation_sha256') == _continuation_digest(payload['optimizer']['state_dict'], history),
+                 'multi-loss optimizer/history commitment mismatch')
     _require(type(progress) is dict and set(progress) == fields, "invalid progress fields")
     for key in ("completed_epochs", "microbatches", "attempts", "updates", "ema_updates"):
         _require(type(progress[key]) is int and progress[key] >= 0, "progress counters must be nonnegative integers")

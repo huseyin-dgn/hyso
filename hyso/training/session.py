@@ -18,6 +18,7 @@ from .trainer import Trainer
 from ..models.modular import ModularCNN
 from ..models.builder import BuiltClassifier, BuiltSequential
 from ..models.output import GraphTensorOutput
+from ..models.graph import GraphModel
 from .data import NamedTensorDataset
 from ..callbacks.callbacks import EarlyStopping
 
@@ -102,6 +103,7 @@ class TrainingSession:
     """
     def __init__(self, config: TrainingConfig, model: nn.Module, train_loader: DataLoader,
                  val_loader: DataLoader | None=None, *, model_config: dict[str,Any] | None=None,
+                 loss_fn=None, loss_weights: dict[str,float] | None=None,
                  on_epoch: Callable[[dict[str,Any]],None] | None=None) -> None:
         if type(config) is not TrainingConfig: raise TrainingConfigError('TrainingConfig required')
         self.config=config;c=config.to_dict();self._c=c
@@ -125,7 +127,9 @@ class TrainingSession:
         if checkpoint_mode and type(model) is GraphTensorOutput and len(model.graph.to_config()['inputs']) != 1:
             if any(loader is not None and type(loader.dataset) is not NamedTensorDataset for loader in (train_loader,val_loader)):
                 raise TrainingConfigError('multi-input Graph automatic checkpoint/resume requires NamedTensorDataset')
-        if checkpoint_mode and (type(model) not in (ModularCNN, GraphTensorOutput) or model_config is None):
+        if loss_fn is not None and type(loss_fn) is not dict:
+            raise TrainingConfigError('explicit session loss_fn must map exactly two Graph outputs')
+        if checkpoint_mode and (type(model) not in (ModularCNN, GraphTensorOutput, GraphModel) or model_config is None):
             raise TrainingConfigError('automatic checkpoint/resume requires standard ModularCNN or GraphTensorOutput plus separate model_config; BuiltClassifier is unsupported')
         if on_epoch is not None:
             if checkpoint_mode: raise TrainingConfigError('on_epoch is incompatible with the existing callback-free checkpoint profile')
@@ -152,10 +156,10 @@ class TrainingSession:
         elif c['scheduler']=='onecycle': native=torch.optim.lr_scheduler.OneCycleLR(optimizer,total_steps=steps,**sched)
         self._epochs=[];self._mark=None;self._on_epoch=on_epoch;self._checkpoint_mode=checkpoint_mode
         self.train_loader,self.val_loader=train_loader,val_loader
-        self.trainer=Trainer(model,optimizer=optimizer,loss_fn=nn.CrossEntropyLoss() if c['task']=='multiclass' else nn.BCEWithLogitsLoss(),
+        self.trainer=Trainer(model,optimizer=optimizer,loss_fn=loss_fn if loss_fn is not None else nn.CrossEntropyLoss() if c['task']=='multiclass' else nn.BCEWithLogitsLoss(),
             device=c['device'],task=c['task'],scheduler=native,amp=c['precision']=='amp_fp16',accum_steps=c['accum_steps'],
             grad_clip=c['grad_clip'],ema_decay=c['ema_decay'],early_stopping=None if early is None else EarlyStopping(**early,verbose=False),
-            callbacks=() if checkpoint_mode else (self._observe,),model_config=model_config)
+            callbacks=() if checkpoint_mode else (self._observe,),model_config=model_config,loss_weights=loss_weights)
         # Use the existing metadata preflight, not a second checkpoint serializer.
         if checkpoint_mode:
             from .resume import prepare_save
@@ -177,7 +181,7 @@ class TrainingSession:
             for key in ('step_size','gamma','T_max','eta_min','factor','patience','threshold','cooldown','min_lrs','eps','mode',
                         'total_steps','cycle_momentum','_schedule_phases','last_epoch'):
                 if hasattr(t.scheduler,key): actual_scheduler[key]=_plain(getattr(t.scheduler,key))
-        return dict(device=str(t.device),precision=self._c['precision'],amp=t.amp,
+        result = dict(device=str(t.device),precision=self._c['precision'],amp=t.amp,
             task=t.task,loss_type=type(t.loss_fn).__name__,
             model_floating_dtypes=sorted({str(x.dtype) for x in [*t.model.parameters(),*t.model.buffers()] if x.is_floating_point()}),
             model_devices=sorted({str(x.device) for x in [*t.model.parameters(),*t.model.buffers()]}),
@@ -192,6 +196,10 @@ class TrainingSession:
             ema_decay=None if t.ema is None else t.ema.decay,
             early_stopping=None if t.early_stopping is None else
                 {key:getattr(t.early_stopping,key) for key in ('patience','delta','restore_best_weights')})
+        if t._multi_loss:
+            from .resume import _loss_plan
+            result['named_losses'] = _loss_plan(t)
+        return result
 
     def settings(self) -> dict[str,Any]:
         """Detached requested, resolved and actual native settings; no workload execution.

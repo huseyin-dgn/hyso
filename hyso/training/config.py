@@ -210,6 +210,7 @@ class TrainingConfig:
 
     def prepare(self, model: nn.Module, train_loader: DataLoader, val_loader: DataLoader | None=None, *,
                 model_config: dict[str,Any] | None=None,
+                loss_fn=None, loss_weights: dict[str,float] | None=None,
                 on_epoch: Callable[[dict[str,Any]],None] | None=None) -> TrainingSession:
         """Validate before updates, create native optimizer/scheduler and one Trainer.
 
@@ -219,4 +220,5 @@ class TrainingConfig:
         it is incompatible with that callback-free checkpoint profile.
         """
         from .session import TrainingSession
-        return TrainingSession(self,model,train_loader,val_loader,model_config=model_config,on_epoch=on_epoch)
+        return TrainingSession(self,model,train_loader,val_loader,model_config=model_config,
+            loss_fn=loss_fn,loss_weights=loss_weights,on_epoch=on_epoch)

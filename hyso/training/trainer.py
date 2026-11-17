@@ -28,7 +28,8 @@ class Trainer:
     For one-input CPU fp32 GraphModel, an explicit two-name loss_fn dictionary
     plus matching positive loss_weights trains two classification heads. History
     loss is the weighted total; both accuracy series are None. This profile uses
-    SGD/Adam without accumulation/scheduler/EMA/early stopping or automatic resume.
+    SGD/Adam without accumulation/scheduler/EMA/early stopping. Automatic v2
+    resume additionally requires exact model_config and NamedTargetDataset.
     Inputs retain their dtype; binary floating targets are cast to logits dtype.
     History describes predictions before each batch's optimizer update, with
     loss weighted by actual sample count and accuracy expressed as a percentage.
@@ -301,6 +302,7 @@ class Trainer:
         context.loss_fn = self.loss_fn[name]
         context.loss_weights = None
         context.task = 'multiclass' if type(context.loss_fn) is nn.CrossEntropyLoss else 'binary'
+        context.model = GraphTensorOutput(self.model, name, task=context.task)
         return context
 
     def _validate_multi_loss(self):
@@ -589,8 +591,6 @@ class Trainer:
         """
         if type(epochs) is not int or epochs <= 0:
             raise ValueError("epochs must be a positive Python int")
-        if self._multi_loss and (save_last_to is not None or resume_from is not None):
-            raise ValueError('multi-loss automatic checkpoint/resume is unsupported')
         self._validate_setup()
         count = self._loader_length(train_loader, "train_loader")
         if val_loader is not None:
