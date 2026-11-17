@@ -22,7 +22,7 @@ def register(sub):
     presentation_options(q)
     p = command(sub, 'reports', 'Present validated saved results using hyso.reporting; no measurements.', run, export=False)
     s = p.add_subparsers(dest='action', required=True)
-    q = command(s, 'render', 'Render TrainingResult, UnifiedAnalysisReport, execution, EvidenceIndex, comparison (including retained Graph comparison) or Advisor recommendations.', run)
+    q = command(s, 'render', 'Render saved PresentationReport, TrainingResult, UnifiedAnalysisReport, execution, EvidenceIndex, comparison (including retained Graph comparison) or Advisor recommendations. Saved PresentationReport retains its recorded language/level; those options apply to other sources.', run)
     q.add_argument('input', type=Path)
     q.add_argument('--context', type=Path, help='AnalysisContext keyword JSON required for execution/EvidenceIndex inputs.')
     q.add_argument('--advisor-source', type=Path, help='Original UnifiedAnalysisReport required to validate a raw AdvisorReport; not needed for recommendations.')
@@ -46,7 +46,7 @@ def _comparison(args):
 
 
 def run(args):
-    from hyso.reporting import create_report, report_experiment
+    from hyso.reporting import PresentationReport, create_report, report_experiment
     output_check(args, inputs=[getattr(args, n, None) for n in ('input', 'context', 'baseline', 'candidate', 'advisor_source')])
     if args.group == 'compare':
         result = _comparison(args)
@@ -74,8 +74,12 @@ def run(args):
                 validate_advisor_report(source, read_result(args.advisor_source))
             else:
                 require(args.advisor_source is None, '--advisor-source applies only to raw AdvisorReport inputs.')
-            result = create_report(source, context=analysis_context(args.context),
-                                   language=args.language, level=args.level)
+            if type(source) is PresentationReport:
+                require(args.context is None, '--context cannot modify a saved PresentationReport.')
+                result = source
+            else:
+                result = create_report(source, context=analysis_context(args.context),
+                                       language=args.language, level=args.level)
         raw = getattr(result, 'to_' + args.format)()
         data = result.to_dict()
     export_text(args, raw)
