@@ -29,20 +29,33 @@ class NamedTensorDataset(Dataset):
 
 
 class NamedTargetDataset(Dataset):
-    """One CPU input tensor and exactly two explicit classification target names."""
+    """One Tensor or two named CPU inputs; exactly two named classification targets.
+
+    Automatic multi-loss resume is restricted to the single-input profile.
+    """
     def __init__(self, inputs, targets):
         if (type(targets) is not dict or len(targets) != 2
                 or any(type(k) is not str or not k for k in targets)):
             raise ValueError('two explicit target names required')
         self.target_names = tuple(sorted(targets))
-        self.tensors = (inputs,) + tuple(targets[name] for name in self.target_names)
+        if type(inputs) is dict:
+            if len(inputs) != 2 or any(type(k) is not str or not k for k in inputs):
+                raise ValueError('exactly two explicit input names required')
+            self.input_names = tuple(sorted(inputs))
+            input_tensors = tuple(inputs[name] for name in self.input_names)
+        else:
+            input_tensors = (inputs,)
+        self.tensors = input_tensors + tuple(targets[name] for name in self.target_names)
         if (any(type(t) is not torch.Tensor or t.device.type != 'cpu' or t.layout != torch.strided
                 or t.requires_grad or t.ndim == 0 for t in self.tensors)
-                or not len(inputs) or any(len(t) != len(inputs) for t in self.tensors)):
+                or not len(self.tensors[0]) or any(len(t) != len(self.tensors[0]) for t in self.tensors)):
             raise ValueError('matching nonempty dense CPU tensors without gradients required')
 
     def __len__(self):
         return len(self.tensors[0])
 
     def __getitem__(self, index):
-        return self.tensors[0][index], {name: t[index] for name, t in zip(self.target_names, self.tensors[1:])}
+        named = hasattr(self, 'input_names')
+        inputs = ({name:t[index] for name,t in zip(self.input_names,self.tensors[:2])}
+                  if named else self.tensors[0][index])
+        return inputs, {name:t[index] for name,t in zip(self.target_names,self.tensors[2 if named else 1:])}

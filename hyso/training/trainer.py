@@ -25,7 +25,7 @@ class Trainer:
     Move the model before creating the optimizer; this class never moves it.
     Loaders must be finite, sized iterables of (input_tensor, target_tensor).
     CPU two-input GraphTensorOutput also accepts ({name: tensor}, target_tensor).
-    For one-input CPU fp32 GraphModel, an explicit two-name loss_fn dictionary
+    For one- or two-input CPU fp32 GraphModel, an explicit two-name loss_fn dictionary
     plus matching positive loss_weights trains two classification heads. History
     loss is the weighted total; both accuracy series are None. This profile uses
     SGD/Adam without accumulation/scheduler/EMA/early stopping. Automatic v2
@@ -302,16 +302,17 @@ class Trainer:
         context.loss_fn = self.loss_fn[name]
         context.loss_weights = None
         context.task = 'multiclass' if type(context.loss_fn) is nn.CrossEntropyLoss else 'binary'
-        context.model = GraphTensorOutput(self.model, name, task=context.task)
+        context.model = GraphTensorOutput(self.model, name, task=context.task,
+            named_inputs=len(self.model.to_config()['inputs']) == 2)
         return context
 
     def _validate_multi_loss(self):
-        if (type(self.model) is not GraphModel or len(self.model.to_config()['inputs']) != 1
+        if (type(self.model) is not GraphModel or len(self.model.to_config()['inputs']) not in (1,2)
                 or self.device.type != 'cpu' or self.amp or self.accum_steps != 1
                 or self.scheduler is not None or self.ema_decay is not None
                 or self.early_stopping is not None or self.grad_clip is not None
                 or type(self.optimizer) not in (torch.optim.SGD, torch.optim.Adam)):
-            raise ValueError('two-output Graph training requires one input, CPU fp32, SGD/Adam; no AMP, accumulation, scheduler, EMA or early stopping')
+            raise ValueError('two-output Graph training requires one or two named inputs, CPU fp32, SGD/Adam; no AMP, accumulation, scheduler, EMA or early stopping')
         if (len(self.loss_fn) != 2 or any(type(k) is not str for k in self.loss_fn)
                 or type(self.loss_weights) is not dict or set(self.loss_weights) != set(self.loss_fn)):
             raise ValueError('two explicit output losses and matching explicit loss_weights are required')

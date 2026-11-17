@@ -59,6 +59,8 @@ def _model_plan(trainer):
     if trainer._multi_loss:
         from hyso._evaluation_evidence import _graph_contract
         trainer._validate_multi_loss()
+        if len(model.to_config()['inputs']) != 1:
+            raise checkpoint.TrainingCheckpointError('two-input multi-loss automatic checkpoint/resume is unsupported')
         if _plain(trainer.model_config) != model.to_config():
             raise checkpoint.TrainingCheckpointError('multi-loss checkpoint requires exact Graph model_config')
         contract = _graph_contract(model)
