@@ -78,8 +78,10 @@ assert len(history["train_loss"]) == 1
 Move the model **before** optimizer creation; Trainer does not move it. Model
 outputs are logits; history accuracy is a percentage. Use `evaluation_model`
 when EMA is enabled. Legacy EBO/CEMO/CNNSENormalWithFit training APIs remain valid.
-`save_last_to`/`resume_from` requires the documented standard ModularCNN profile,
-complete model_config and compatible loaders, not arbitrary checkpoint replay.
+`save_last_to`/`resume_from` requires the documented ModularCNN or selected Graph
+profile, exact model_config and compatible loaders. Two-input Graph resume uses
+explicit names and `hyso.training.NamedTensorDataset`; see the
+[CPU Graph workflow and resume examples](docs/guides/python-first-workflow.md#graph-training-and-saved-results).
 
 ## TrainingConfig: separate requested and applied settings
 
@@ -117,9 +119,9 @@ change is reported. No implicit device movement, dtype cast or seed is applied.
 CPU AMP is rejected. CUDA paths delegate to Trainer and were not exercised here.
 
 Loss/accuracy come from Trainer.history; observer epoch intervals and total fit
-wall time are UX timings, not P19/GPU evidence. Automatic save/resume retains the
-callback-free ModularCNN-only v1 profile: BuiltClassifier is not supported for
-that path and checkpoint-mode epoch timings are unavailable. Use
+wall time are UX timings, not P19/GPU evidence. Automatic save/resume is callback-free:
+ModularCNN uses v1 and supported GraphTensorOutput uses v2. BuiltClassifier is
+unsupported for that path and checkpoint-mode epoch timings are unavailable. Use
 `training_result.log_to(run)` to explicitly record history in an already-started
 ExperimentManager training run; manage run lifecycle and `manager.close()` yourself.
 See [training configuration](docs/guides/training-config.md) for exact scope.

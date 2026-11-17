@@ -26,7 +26,7 @@ the explicit action that activates requested training/checkpoint paths.
 | shuffle/drop_last | Standard training sampler and tail policy; validation is sequential/non-dropping |
 | num_workers | 0 only in this v1 UX profile; original Trainer remains independently available |
 | task | multiclass with CrossEntropyLoss, or binary with BCEWithLogitsLoss, native mean/unweighted losses |
-| save_last_to/resume_from | Existing callback-free ModularCNN-only checkpoint profile, not a new schema |
+| save_last_to/resume_from | Callback-free ModularCNN v1 or bounded selected Graph v2; exact model_config and admitted loaders |
 
 Profile defaults are explicit: optimizer weight_decay=0; SGD momentum/dampening=0,
 nesterov=False; Adam betas=(0.9,0.999), eps=1e-8. Step defaults step_size=1,
@@ -103,6 +103,57 @@ Broadening that profile needs a separately versioned, tested architecture-state
 binding. Existing component save/load/state_dict use stays available. With
 `ModelBuilder.modular(...)`, pass `builder.to_config()['params']` separately as
 `model_config`; the built model remains exactly ModularCNN.
+
+### Selected Graph automatic resume
+
+`GraphTensorOutput` supports CPU fp32/fp64 binary or multiclass automatic resume
+using the existing v2 strict Graph contract. Pass the exact Graph config as
+`model_config`; preserve topology, selected output, `graph.` state keys and total
+epoch budget. The bounded profile admits SGD/Adam/AdamW with no scheduler or
+StepLR, no AMP/EMA/early stopping or callbacks. The two-input examples use
+accum_steps=1 without clipping.
+Single-input resume retains the CHW TensorDataset profile. Two explicit inputs
+(CHW or vector shapes) require `named_inputs=True`, an explicit classification
+task and exactly `hyso.training.NamedTensorDataset({name: input_tensor, ...}, targets)`.
+Names bind inputs, independently of dictionary insertion order. Standard
+num_workers=0 loaders preserve the existing sampler/collate restrictions. Changed
+input names/shapes/bytes, labels, config, runtime or checkpoint state are rejected;
+this does not certify arbitrary datasets/transforms. The
+[runnable Graph example](python-first-workflow.md#graph-training-and-saved-results)
+shows save and resume with matching settings.
+
+### Two named classification losses
+
+This separate profile uses `Trainer` directly; TrainingConfig/TrainingSession
+still configure one classification loss. The existing fit loop can train exactly
+two selected classification heads on a raw one-input CPU fp32 Graph:
+
+```python
+import torch
+from torch.utils.data import DataLoader
+from hyso import GraphModelBuilder, Trainer
+
+graph = (GraphModelBuilder({'image': [1, 4, 4]})
+    .add('head_a', 'classification_head', ['image'], in_features=1, num_classes=2)
+    .add('head_b', 'classification_head', ['image'], in_features=1, num_classes=3)
+    .outputs(a='head_a', b='head_b').build())
+loader = DataLoader([(torch.zeros(1, 4, 4), {'a': 0, 'b': 2}),
+                     (torch.ones(1, 4, 4), {'a': 1, 'b': 0})], batch_size=2)
+trainer = Trainer(graph, optimizer=torch.optim.SGD(graph.parameters(), lr=.01),
+    loss_fn={'a': torch.nn.CrossEntropyLoss(), 'b': torch.nn.CrossEntropyLoss()},
+    loss_weights={'a': .3, 'b': 1.2})
+history = trainer.fit(loader, epochs=1)
+print(history['train_loss'])  # Sample-weighted mean of .3 * loss_a + 1.2 * loss_b.
+assert history['train_acc'] == [None]
+```
+
+Use explicit matching output/target/loss/weight names; extra Graph outputs are
+not automatically losses. Standard mean, unweighted CrossEntropyLoss (>=2
+classes) or BCEWithLogitsLoss (one logit, binary labels) are supported per head.
+Weights must be finite and positive. SGD/Adam are supported without AMP,
+accumulation, clipping, scheduler, EMA, early stopping or automatic checkpoint/
+resume. Train/validation losses are weighted totals; accuracy series are `None`.
+No per-head evaluation result or general multi-task metric schema is created.
 
 To persist results, explicitly create/start an ExperimentManager training run
 (use a dedicated non-synced store), call `result.log_to(run)`, then finish it.

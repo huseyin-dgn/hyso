@@ -21,9 +21,65 @@ graph = builder.build()
 model = GraphTensorOutput(graph, "logits", task="multiclass")
 ```
 
-Unknown names and multi-input graphs are rejected. Existing parameters are registered by reference, not copied. Autograd, device and dtype follow the shared graph. Move the model before optimizer creation. All graph outputs still execute. A wrapper state_dict has a `graph.` prefix; load into a matching wrapper or save `model.graph.state_dict()` for an unwrapped graph. The optional task guard supports classification heads with matching multiclass/binary widths. It does not advertise regression/embedding training or multi-loss orchestration.
+Unknown output names are rejected. Two-input CPU classification requires
+`named_inputs=True`, an explicit task and input dictionaries matching the Graph
+names. Existing parameters are registered by reference, not copied. Autograd,
+device and dtype follow the shared graph. Move the model before optimizer
+creation. All Graph outputs still execute. A wrapper state_dict has a `graph.`
+prefix; restore into a matching wrapper. The optional task guard requires
+classification heads with matching multiclass/binary widths. Evaluation and
+benchmark support remain governed by their own input contracts.
 
 Pass the selected Tensor module to existing TrainingConfig.prepare/TrainingSession, Trainer, evaluate_classification or BenchmarkRunner. Training changes the shared graph weights. Evaluation's isolated inference policy and benchmark state guards are unchanged. The adapter introduces no seed, dtype cast or device transfer.
+
+<a id="graph-training-and-saved-results"></a>
+## Graph training and saved results
+
+The existing [Graph example](../../examples/models/graph_evidence_workflow.py)
+now provides these small CPU workflows. Use fresh, local output directories
+outside the repository and synchronized folders:
+
+```powershell
+# Two named inputs -> TrainingSession -> automatic v2 checkpoint.
+python -m examples.models.graph_evidence_workflow --named-training --output C:/local-hyso/named-01
+# After interruption, use the last complete epoch and the same total budget (2).
+python -m examples.models.graph_evidence_workflow --named-training --resume-from C:/local-hyso/named-01/last.pth --output C:/local-hyso/named-02
+# Two trained Graphs -> evaluation -> saved experiment -> comparison/advice/reports.
+python -m examples.models.graph_evidence_workflow --output C:/local-hyso/graph-results-01
+```
+
+`train_named` builds a Graph with explicit `image`/`hint` inputs, wraps `logits`
+with `GraphTensorOutput(..., task="multiclass", named_inputs=True)`, and uses
+`NamedTensorDataset` plus `TrainingConfig.make_loaders`. It passes the exact
+`builder.to_config()` as `model_config` to `prepare`. The result's `history`,
+`applied_updates` and checkpoint path are written to `summary.json`. Resume
+restores the original two-epoch budget; a completed checkpoint is a no-op and
+may leave the new output directory without a newly written checkpoint.
+
+The evaluation workflow trains two tiny single-input models for one epoch each,
+saves/restores Graph v2 checkpoints, and calls `evaluate_graph_classification`
+with explicit dataset/split/preprocessing context and `capture_structure=True`.
+It saves architecture descriptions and evaluation associations in its own
+ExperimentManager store. `compare_saved` reopens the associations through
+`manager.open_result`, then calls `analysis_source`, `analysis.compare_models`
+with `features=("P26", "P12")`, `include_structure=True`, strict context policy,
+`advisor.recommend` and `report_experiment`. Reusing saved results launches no
+training, forward or profiler. Architecture descriptions remain metadata;
+verified file bytes do not restore process-local Graph receipt authority.
+
+Read `model-*/training.json` for history, `evaluation.json` for accuracy/macro F1
+(fractions), and `model.pth` for checkpoints. `saved-results/comparison.json`
+contains eligible B-A quality differences and registered parameter/structure
+counts; `architectures.json` describes the two Graphs. `advisor.json` contains
+manual advice. `saved-results/tr.*` and `en.*` provide JSON/Markdown/HTML.
+There is no P12 capture in this example: MACs/FLOPs differences remain `null`
+with `INSUFFICIENT_EVIDENCE`. Synthetic quality is not a real-dataset claim;
+logical operation counts would not establish device speed or energy use.
+Presentations retain `presentation_only=true`, `authoritative_evidence=false`.
+
+For two selected classification losses on a raw one-input Graph, use the
+[bounded Trainer recipe](training-config.md#two-named-classification-losses).
+It has no automatic resume and defines no combined accuracy.
 
 ## Explicit user-model checks
 
@@ -61,7 +117,7 @@ The 60 preserved component JSON examples in `examples/models/component-configs.j
 
 ## Existing APIs and limits
 
-- [TrainingConfig / TrainingSession](training-config.md): one Trainer.fit, requested/effective settings and unchanged ModularCNN-only automatic-resume scope.
+- [TrainingConfig / TrainingSession](training-config.md): one Trainer.fit, requested/effective settings, ModularCNN v1 and bounded Graph v2 automatic resume.
 - [Python API map](python-api.md): schema1/2/3 builders, evaluation, checkpoints and measurements.
 - [Selective analysis](selective-analysis.md) and [native P01–P35 analysis](native-analysis-executor.md): explicit prerequisites/authorization; selection is not certification.
 - [Comparison](two-model-comparison.md), [Advisor](performance-advisor.md), [ExperimentManager](experiment-workflow.md), [Reporting](result-reporting.md): retained evidence, explicit storage and read-only interpretation.

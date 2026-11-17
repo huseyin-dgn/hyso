@@ -7,13 +7,15 @@ from pathlib import Path
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from hyso import GraphModelBuilder, TrainingConfig, ExperimentManager
+from hyso import GraphModelBuilder, TrainingConfig, ExperimentManager, analysis, advisor
+from hyso.training import NamedTensorDataset
+from hyso.architecture_comparison import compare_architectures
 from hyso.models.output import GraphTensorOutput
 from hyso.checkpoint import save_training_checkpoint, load_training_checkpoint
 from hyso.analysis.graph_evidence import (
     GraphEvaluationResult, GraphEvidenceError, evaluate_graph_classification, compare_graph_evaluations,
 )
-from hyso.reporting import create_report
+from hyso.reporting import create_report, report_experiment
 
 
 def write(path, value):
@@ -21,12 +23,87 @@ def write(path, value):
         json.dump(value, stream, indent=2, allow_nan=False)
 
 
-def run(output, *, capture_receiver_runtime=False):
+def output_directory(output):
     output = Path(output).resolve()
     repo = Path(__file__).resolve().parents[2]
     if output == repo or output.is_relative_to(repo):
         raise ValueError("Use fresh isolated QA outside the repository")
     output.mkdir(parents=True, exist_ok=False)
+    return output
+
+
+def train_named(output, *, resume_from=None):
+    """Two named inputs, one selected head; resume keeps the total two-epoch budget.
+
+    Rerun into a fresh output directory after interruption, passing the last saved
+    checkpoint. Resuming an already completed budget performs no new updates.
+    """
+    output = output_directory(output)
+    torch.set_num_threads(1)
+    torch.random.default_generator.manual_seed(13618)
+    builder = (GraphModelBuilder({'image': [1, 4, 4], 'hint': [1, 4, 4]})
+        .add('merge', 'add', ['image', 'hint'])
+        .add('head', 'classification_head', ['merge'], in_features=1, num_classes=2)
+        .outputs(logits='head'))
+    model = GraphTensorOutput(builder.build(), 'logits', task='multiclass', named_inputs=True)
+    x = torch.arange(64, dtype=torch.float32).reshape(4, 1, 4, 4) / 64
+    dataset = NamedTensorDataset({'hint': x.flip(-1), 'image': x}, torch.tensor([0, 1, 0, 1]))
+    checkpoint = output / 'last.pth'
+    settings = TrainingConfig(epochs=2, batch_size=2, optimizer='adam', learning_rate=.01,
+        scheduler='step', scheduler_params={'step_size': 1, 'gamma': .8},
+        validation=False, save_last_to=str(checkpoint),
+        resume_from=None if resume_from is None else str(resume_from))
+    loader, _ = settings.make_loaders(dataset)
+    session = settings.prepare(model, loader, model_config=builder.to_config())
+    result = session.fit()
+    write(output / 'training.json', result.to_dict())
+    summary = dict(history=result.history, applied_updates=result.to_dict()['applied_updates'],
+        checkpoint=str(checkpoint if checkpoint.exists() else Path(resume_from)),
+        completed_epochs=len(result.history['train_loss']), total_epoch_budget=2)
+    write(output / 'summary.json', summary)
+    return summary
+
+
+def compare_saved(manager, experiment_id, artifact_ids, output):
+    """Interpret saved bytes only; architecture metadata never proves trained state."""
+    if len(artifact_ids) != 2:
+        raise ValueError('Select exactly two Graph evaluation artifacts')
+    output = Path(output)
+    output.mkdir()
+    opened = [manager.open_result(identity) for identity in artifact_ids]
+    if not all(value['status'] == 'verified' for value in opened):
+        raise ValueError('Both saved result artifacts must pass integrity checks')
+    results = [value['result'] for value in opened]
+    sources = [result.analysis_source(label) for label, result in zip(('A', 'B'), results)]
+    comparison = analysis.compare_models(*sources, features=('P26', 'P12'),
+        include_structure=True, context_policy='strict')
+    comparison.to_json(output / 'comparison.json')
+    recommendations = advisor.recommend(comparison)
+    recommendations.to_json(output / 'advisor.json')
+    configs = [result.to_dict()['source_receipt']['contract']['configuration'] for result in results]
+    write(output / 'architectures.json', compare_architectures(configs, names=['A', 'B']))
+    record = manager.create_workflow_run(experiment_id, 'comparison',
+        model_ids=['A', 'B'], comparison=comparison)
+    record.start()
+    saved = record.record_result(comparison, input_artifact_ids=artifact_ids)
+    for label, source in zip(('A', 'B'), sources):
+        path = output / (label + '-analysis.json')
+        analysis.UnifiedAnalysisReport(source.to_dict()['report']).to_json(path)
+        record.add_artifact(path, kind='analysis_report', ownership='copy', retain_locator=True)
+    record.finish()
+    assert manager.open_result(saved['id'])['result'].to_dict() == comparison.to_dict()
+    for language in ('tr', 'en'):
+        report = report_experiment(manager, experiment_id, language=language, level='expert')
+        for suffix, export in [('json', report.to_json), ('md', report.to_markdown), ('html', report.to_html)]:
+            export(output / (language + '.' + suffix))
+    data = comparison.to_dict()
+    return dict(metrics=data['metrics'], structure=data['structure']['status'],
+        saved_comparison_id=saved['id'], comparison_run_id=record.id, reports=str(output),
+        imported_graph_trust=[r.to_dict()['verification']['graph_v2'] for r in results])
+
+
+def run(output, *, capture_receiver_runtime=False):
+    output = output_directory(output)
     torch.set_num_threads(1)
     train_x = torch.arange(64, dtype=torch.float32).reshape(4, 1, 4, 4) / 64
     test_x = torch.arange(64, 128, dtype=torch.float32).reshape(4, 1, 4, 4) / 128
@@ -43,7 +120,7 @@ def run(output, *, capture_receiver_runtime=False):
     manager.close()
     ExperimentManager.migrate_store(store)
     manager = ExperimentManager(store)
-    artifacts, checks, run_ids = [], [], []
+    artifacts, checks, run_ids, evaluation_artifact_ids = [], [], [], []
     try:
         experiment = manager.create_experiment("Graph v2 source/evaluation scope")
         for index, activation in enumerate(["silu", "relu"]):
@@ -57,6 +134,15 @@ def run(output, *, capture_receiver_runtime=False):
                 .add("merge", "add", ["left", "stem"])
                 .add("head", "classification_head", ["merge"], in_features=2, num_classes=2)
                 .outputs(logits="head", features="merge"))
+            label = ('A', 'B')[index]
+            mr = manager.create_workflow_run(experiment['id'], 'model', model_ids=[label],
+                architectures={label: b}, protocol={'adapter_output': 'logits', 'state_dict_prefix': 'graph.'})
+            mr.start()
+            write(directory / 'architecture.json', b.to_config())
+            architecture_artifact = mr.add_artifact(directory / 'architecture.json', kind='graph_architecture', ownership='copy')
+            artifacts.append((architecture_artifact, directory / 'architecture.json'))
+            mr.finish()
+            run_ids.append(mr.id)
             def fresh():
                 return GraphTensorOutput(b.build(), "logits", task="multiclass").float().cpu()
             source = fresh()
@@ -78,7 +164,7 @@ def run(output, *, capture_receiver_runtime=False):
                 assert torch.equal(source(test_x), restored(test_x))
             result = evaluate_graph_classification(restored, test, class_names=["a", "b"], split="test",
                 source_id=context["dataset_id"], context=context, expected_checkpoint_sha256=sha,
-                capture_receiver_runtime=capture_receiver_runtime)
+                capture_receiver_runtime=capture_receiver_runtime, capture_structure=True)
             assert result.to_dict()["verification"]["graph_v2"] == "verified"
             assert result.to_dict()["relation"]["status"] == ("verified" if capture_receiver_runtime else "limited")
             initial_views.append(result.to_dict()["verification"])
@@ -107,8 +193,11 @@ def run(output, *, capture_receiver_runtime=False):
                 manager.link_artifact(er.id, artifact["id"], role="input")
             for file, kind in [(directory / "association.json", "graph_evaluation_association"),
                                (directory / "evaluation.json", "evaluation")]:
-                artifacts.append((er.add_artifact(file, kind=kind, ownership="reference",
-                    metadata={"receipt_scope": "retained_statement_bytes_not_process_local_trust"}), file))
+                artifact = er.add_artifact(file, kind=kind, ownership="reference", retain_locator=True,
+                    metadata={"receipt_scope": "retained_statement_bytes_not_process_local_trust"})
+                artifacts.append((artifact, file))
+                if kind == 'graph_evaluation_association':
+                    evaluation_artifact_ids.append(artifact['id'])
             er.finish()
             run_ids.extend([tr.id, er.id])
         compared = compare_graph_evaluations(*associations)
@@ -127,6 +216,8 @@ def run(output, *, capture_receiver_runtime=False):
             artifacts.append((rr.add_artifact(file, kind="report", ownership="reference"), file))
         rr.finish()
         run_ids.append(rr.id)
+        saved_comparison = compare_saved(manager, experiment['id'], evaluation_artifact_ids, output / 'saved-results')
+        run_ids.append(saved_comparison['comparison_run_id'])
         for artifact, file in artifacts:
             checks.append(manager.verify_artifact(artifact["id"], path=file))
         assert all(v["status"] == "verified" for v in checks)
@@ -134,9 +225,11 @@ def run(output, *, capture_receiver_runtime=False):
         assert imported.to_dict()["verification"]["graph_v2"] == "unverified"
         bad = output / "negative-artifact-copy.json"
         bad.write_text("{}", encoding="utf8")
-        negative = manager.verify_artifact(artifacts[0][0]["id"], path=bad)
+        probe_artifact, probe_file = next((artifact, file) for artifact, file in artifacts
+                                         if artifact['kind'] == 'checkpoint')
+        negative = manager.verify_artifact(probe_artifact['id'], path=bad)
         assert negative["status"] == "mismatch"
-        assert manager.verify_artifact(artifacts[0][0]["id"], path=artifacts[0][1])["status"] == "verified"
+        assert manager.verify_artifact(probe_artifact['id'], path=probe_file)["status"] == "verified"
         try:
             evaluate_graph_classification(models[0], test, class_names=["a", "b"], split="test",
                 expected_checkpoint_sha256="0" * 64)
@@ -158,6 +251,7 @@ def run(output, *, capture_receiver_runtime=False):
             cross_binding="verified;supported quiescent CPU receiver" if capture_receiver_runtime else "limited;isolated runtime unobserved",
             imported_json_status="unverified", mutation_status="missing", wrong_identity_rejected=wrong_identity_rejected,
             experiment_id=experiment["id"], run_ids=run_ids, artifact_verification=checks,
+            saved_comparison=saved_comparison,
             negative_artifact_check=negative, checkpoint_sha256=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths])
         if capture_receiver_runtime:
             summary.update(receiver_runtime_at_report_creation=[v["receiver_runtime"] for v in initial_views],
@@ -173,5 +267,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--capture-receiver-runtime", action="store_true")
+    parser.add_argument('--named-training', action='store_true', help='Two-input CPU training/checkpoint example')
+    parser.add_argument('--resume-from', type=Path, help='Last checkpoint from --named-training; same total budget')
     args = parser.parse_args()
-    print(json.dumps(run(args.output, capture_receiver_runtime=args.capture_receiver_runtime)))
+    if args.named_training:
+        if args.capture_receiver_runtime:
+            parser.error('--capture-receiver-runtime belongs to the evaluation example')
+        result = train_named(args.output, resume_from=args.resume_from)
+    else:
+        if args.resume_from is not None:
+            parser.error('--resume-from requires --named-training')
+        result = run(args.output, capture_receiver_runtime=args.capture_receiver_runtime)
+    print(json.dumps(result))

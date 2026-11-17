@@ -16,7 +16,7 @@ exportu bir web uygulaması değildir.
 | İş | Gerçek giriş noktası | Sorumluluk ve sınır |
 | --- | --- | --- |
 | Model oluşturma/düzenleme | `hyso.ModelBuilder`, `hyso.GraphModelBuilder` | Sequential schema1/2 veya DAG schema3; config ağırlık dosyası değildir |
-| Graph Tensor çıktısı | `hyso.models.output.GraphTensorOutput` | Tek girişli Graphın adlandırılmış çıktısı; aynı Graph ve parametreleri paylaşır |
+| Graph Tensor çıktısı | `hyso.models.output.GraphTensorOutput` | Tek giriş veya CPU sınıflandırmada iki açık named input; aynı Graph ve parametreleri paylaşır |
 | Eğitim | `hyso.TrainingConfig.prepare`, `hyso.TrainingSession.fit`, `hyso.Trainer.fit` | Açıkça istenen eğitim ağırlıkları günceller; Session bir mevcut Trainer.fit çağrısını yönetir |
 | Değerlendirme | `hyso.evaluate_predictions`, `hyso.evaluate_classification` | Hazır prediction skorlama ile gerçek model inference ayrı işlemlerdir |
 | Benchmark | `hyso.BenchmarkRunner.run`, `hyso.performance.measure_throughput` | Latency ve tamamlanan iş penceresi; ayrı zamanlama kapsamları |
@@ -38,15 +38,21 @@ vermez. [Python-first iş akışı](python-first-workflow.md) bu sınırları ay
 | Alan | Mevcut destek | Sınırlı veya desteklenmeyen kapsam |
 | --- | --- | --- |
 | CPU model iş akışı | Bounded Builder/Graph forward-backward, sınıflandırma eğitimi, evaluation, strict state restore ve kayıtlı CPU ölçümleri | Bütün component/topoloji/shape birleşimlerinin kabulü değildir; 13.5.12nin sınırlı 54 kombinasyonundan 36sı NOT_TESTED |
-| Graph | Raw çok girişli/çıkışlı DAG; tek giriş için explicit Tensor output adapterı | Genel multi-input TrainingSession/multi-loss köprüsü yok; adapter tüm Graph çıktılarını yürütür |
+| Graph | Raw çok girişli/çıkışlı DAG; tek veya iki açık named input ile seçilmiş Tensor classification çıktısı; CPU fp32 iki-head loss için doğrudan Trainer | İki-input yolunda named_inputs=True ve açık task gerekir; genel multi-task eğitim yok; adapter tüm Graph çıktılarını yürütür |
 | Task/head | Classification, regression ve embedding head oluşturma; mevcut Session/evaluation ile binary/multiclass sınıflandırma | Head oluşturabilmek genel regression/embedding/segmentation eğitim kabulü değildir |
-| Checkpoint | Mevcut `save_training_checkpoint` / `load_training_checkpoint` ve strict state_dict restore | Session automatic `save_last_to`/`resume_from` standart ModularCNN + model_config profiliyle sınırlı; Builder/Graph için tam resume kabulü yok |
+| Checkpoint | Mevcut strict restore; Session automatic ModularCNN v1 veya bounded GraphTensorOutput v2, exact model_config | Graph CPU fp32/fp64 tek seçilmiş classification output; iki girişte NamedTensorDataset gerekir; BuiltClassifier ve multi-loss automatic resume yok |
 | Graph checkpoint güveni | Eşleşen wrapper/state yapısı ve desteklenen açık receiver sözleşmeleri | `graph.` key prefixi korunmalı; import edilen dosya process-local live receiver otoritesini yeniden yaratmaz |
 | CUDA | Bazı public API'lerde CUDA profili bulunur; tarihsel scoped native kanıtlar korunur | 13.5.16 fixture CUDA kabulü yok; üretim CUDA saved-activation instrumentation kapalı, B4 açık |
 | CLI | `models`, `train`, `analysis`, `compare`, `advisor`, `experiments`, `reports` | Python API ile tüm girdi/politika seçenekleri eşit değil; [CLI ayrımı](#cli) geçerli |
 
-Geliştirme kaynağında **174**, commercial wheel/sdist allowlistinde **164** Python
-modülü vardır; on development dosyası bilinçli olarak dışlanır. 13.5.12deki Registry
+13.5.18 Python örnekleri ve kesin resume/loss sınırları için
+[Graph iş akışına](python-first-workflow.md#graph-training-and-saved-results) ve
+[training rehberine](training-config.md#selected-graph-automatic-resume) bakın.
+Bu dar CPU geliştirmesi CUDA/B4 kabul durumunu değiştirmez.
+
+13.5.16 kayıtlarında geliştirme kaynağında **174**, commercial wheel/sdist
+allowlistinde **164** Python modülü bulunuyordu; on development dosyası bilinçli
+olarak dışlanmıştı. Bu tarihsel envanter yeni modül kabulü değildir. 13.5.12deki Registry
 envanteri source için **85**, commercial için **57** kayıt içerir. Modül sayısı,
 Registry kaydı, Graph operatorü ve çalıştırılmış component sayısı farklıdır.
 Kaynakta bulunan named ailelerin hepsi kurulu commercial pakette bulunmaz.
