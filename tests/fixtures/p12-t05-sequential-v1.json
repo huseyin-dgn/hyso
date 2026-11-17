@@ -1,0 +1,1742 @@
+{
+  "actual": {
+    "measured_forwards": 2,
+    "warmup_forwards": 0
+  },
+  "diagnostics": {
+    "limitations": [
+      "Analytic dispatch counts and instrumented timings are not hardware FLOP counters or benchmark latency.",
+      "Only observed recipe/seed/input/control flow; no full NVIDIA kernel coverage claim.",
+      "Legacy event.kernels labels are excluded: they can be CPU operator names.",
+      "Hooks/shape capture/dispatch tracing change allocation and scheduling; perturbation is not quantified.",
+      "Owned inference worker only; parent model/hook/device/RNG/allocator handles never transferred.",
+      "CUDA Event elapsed intervals are inclusive instrumented stream intervals, not kernel attribution or benchmark latency.",
+      "CUDA Event objects are worker-local; exported evidence validates pairing/conversion, not independent replay of the GPU clock.",
+      "B4 native failure UNRESOLVED; risk OPEN."
+    ],
+    "warnings": []
+  },
+  "feature_ids": [
+    "P12"
+  ],
+  "format": "hyso.performance.operation_count",
+  "identity": {
+    "experiment_run_id": null,
+    "source_result_id": "29660bd3-d5fe-476a-b1ca-9ca97512fcd0"
+  },
+  "measurements": {
+    "aggregation": "sum_over_profiled_forwards; per_batch_is_mean_of_observed_forwards",
+    "batch_cardinality": 1,
+    "comparisons_per_batch": 768.0,
+    "comparisons_scope": "comparisons_per_batch is supported subtotal; total requires complete coverage",
+    "coverage": {
+      "basis": "observed_ATen_call_count; not fraction of FLOPs or kernels",
+      "modeled_call_fraction": 1.0,
+      "modeled_calls": 16,
+      "observed_calls": 16,
+      "unknown_calls": 0
+    },
+    "dynamic_control_flow": "only_executed_paths_for_recipe_seed_input_and_inference_mode",
+    "flop_scope": "ordinary_arithmetic_only; special operation counts are not FLOP-equivalent",
+    "per_forward": [
+      {
+        "batch_cardinality": 1,
+        "measurement_index": 0,
+        "status": "complete",
+        "supported_subtotal_flops": 52490,
+        "total_flops": 52490,
+        "total_macs": 25856
+      },
+      {
+        "batch_cardinality": 1,
+        "measurement_index": 1,
+        "status": "complete",
+        "supported_subtotal_flops": 52490,
+        "total_flops": 52490,
+        "total_macs": 25856
+      }
+    ],
+    "reason": null,
+    "root_ops_per_batch": {},
+    "status": "complete",
+    "supported_flops_per_batch": 52490.0,
+    "supported_subtotal_flops": 104980,
+    "supported_subtotal_macs": 51712,
+    "supported_subtotal_root_ops": {},
+    "supported_subtotal_transcendental_ops": {},
+    "total_comparisons_per_batch": 768.0,
+    "total_flops_per_batch": 52490.0,
+    "total_flops_per_sample": 52490.0,
+    "total_macs_per_batch": 25856.0,
+    "transcendental_ops_per_batch": {},
+    "unit": "logical_operation_count"
+  },
+  "protocol": {
+    "configuration": {
+      "allocation_lifetimes": false,
+      "cpu_memory_limit_bytes": 3221225472,
+      "cpu_memory_ownership": false,
+      "cuda_memory_fraction": null,
+      "input_limit_bytes": 1048576,
+      "max_cpu_result_bytes": 134217728,
+      "max_cpu_witness_items": 250000,
+      "max_events": 10000,
+      "max_trace_bytes": 8388608,
+      "measure_iterations": 2,
+      "profile_memory": false,
+      "timeout_seconds": 28,
+      "warmup_iterations": 0
+    },
+    "convention": {
+      "bias": "one addition per output element",
+      "comparisons": "separate; not FLOPs",
+      "flops": "add/subtract/multiply/divide only; FMA=2; comparisons, roots and transcendentals separate",
+      "fma_flops": 2,
+      "id": "aten_logical_v3",
+      "mac": "one multiply-accumulate",
+      "memory_layout_copy_cast": "zero arithmetic FLOPs; memory cost not counted",
+      "nonlinear_normalization": "unfused reference algebra; named special operations have no FLOP weight",
+      "scalar_policy": "dense reference evaluates alpha/beta scaling; no value-based runtime shortcut inference",
+      "scope": "observed dispatch calls; dense logical work, not hardware instructions",
+      "transposed_convolution": "valid input-kernel-output contributions; clipped scatter, FMA=2"
+    },
+    "id": "derive_from_profile",
+    "operation_model_version": 3,
+    "recipe": {
+      "artifact_path": null,
+      "artifact_sha256": null,
+      "device": "cpu",
+      "factory": "t05_fixture:build",
+      "factory_search_path": "C:\\Users\\hdgn5\\AppData\\Local\\hyso-stage13-5-17-t05-20261117",
+      "input_shape": [
+        1,
+        1,
+        8,
+        8
+      ],
+      "model_kwargs": {
+        "kind": "sequential",
+        "receipt_path": "C:\\Users\\hdgn5\\AppData\\Local\\hyso-stage13-5-17-t05-20261117\\child-1\\sequential\\factory-receipt.json"
+      },
+      "precision": "fp32",
+      "seed": 13516
+    },
+    "scope": "observed_profile_evidence",
+    "version": 1
+  },
+  "provenance": {
+    "environment": {
+      "cuda_build": "12.1",
+      "device": "cpu",
+      "gpu": null,
+      "package_source": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\hyso\\performance\\__init__.py",
+      "python": "3.10.18 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 13:08:55) [MSC v.1929 64 bit (AMD64)]",
+      "torch": "2.5.1+cu121"
+    },
+    "input": {
+      "content_sha256": "2f20cd03c9cd392a406c56232b0ff93a15f6d6d7da79086bfa14f55d4a4031b0",
+      "dtype": "torch.float32",
+      "recipe": "ones",
+      "shape": [
+        1,
+        1,
+        8,
+        8
+      ]
+    },
+    "model": {
+      "execution_mode": "owned_worker_eval",
+      "structural_descriptor": {
+        "modules": [
+          {
+            "name": "",
+            "native_config": {},
+            "qualified_class": "hyso.models.builder.BuiltSequential"
+          },
+          {
+            "name": "features",
+            "native_config": {},
+            "qualified_class": "torch.nn.modules.container.Sequential"
+          },
+          {
+            "name": "features.0",
+            "native_config": {
+              "dilation": [
+                1,
+                1
+              ],
+              "groups": 1,
+              "in_channels": 1,
+              "kernel_size": [
+                3,
+                3
+              ],
+              "out_channels": 4,
+              "padding": [
+                1,
+                1
+              ],
+              "padding_mode": "zeros",
+              "stride": [
+                1,
+                1
+              ]
+            },
+            "qualified_class": "torch.nn.modules.conv.Conv2d"
+          },
+          {
+            "name": "features.1",
+            "native_config": {
+              "inplace": false
+            },
+            "qualified_class": "torch.nn.modules.activation.ReLU"
+          },
+          {
+            "name": "features.2",
+            "native_config": {
+              "dilation": [
+                1,
+                1
+              ],
+              "groups": 1,
+              "in_channels": 4,
+              "kernel_size": [
+                3,
+                3
+              ],
+              "out_channels": 8,
+              "padding": [
+                1,
+                1
+              ],
+              "padding_mode": "zeros",
+              "stride": [
+                1,
+                1
+              ]
+            },
+            "qualified_class": "torch.nn.modules.conv.Conv2d"
+          },
+          {
+            "name": "features.3",
+            "native_config": {
+              "inplace": false
+            },
+            "qualified_class": "torch.nn.modules.activation.ReLU"
+          },
+          {
+            "name": "features.4",
+            "native_config": {},
+            "qualified_class": "hyso.models.sampling.Flatten"
+          },
+          {
+            "name": "head",
+            "native_config": {},
+            "qualified_class": "hyso.models.sampling.PredictionHead"
+          },
+          {
+            "name": "head.pool",
+            "native_config": {},
+            "qualified_class": "torch.nn.modules.linear.Identity"
+          },
+          {
+            "name": "head.dropout",
+            "native_config": {
+              "inplace": false,
+              "p": 0.0
+            },
+            "qualified_class": "torch.nn.modules.dropout.Dropout"
+          },
+          {
+            "name": "head.linear",
+            "native_config": {
+              "in_features": 512,
+              "out_features": 10
+            },
+            "qualified_class": "torch.nn.modules.linear.Linear"
+          }
+        ],
+        "tensors": [
+          {
+            "dtype": "torch.float32",
+            "kind": "parameter",
+            "name": "features.0.weight",
+            "object_alias": 0,
+            "requires_grad": true,
+            "shape": [
+              4,
+              1,
+              3,
+              3
+            ],
+            "storage_alias": 0,
+            "storage_offset": 0,
+            "stride": [
+              9,
+              9,
+              3,
+              1
+            ]
+          },
+          {
+            "dtype": "torch.float32",
+            "kind": "parameter",
+            "name": "features.0.bias",
+            "object_alias": 1,
+            "requires_grad": true,
+            "shape": [
+              4
+            ],
+            "storage_alias": 1,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ]
+          },
+          {
+            "dtype": "torch.float32",
+            "kind": "parameter",
+            "name": "features.2.weight",
+            "object_alias": 2,
+            "requires_grad": true,
+            "shape": [
+              8,
+              4,
+              3,
+              3
+            ],
+            "storage_alias": 2,
+            "storage_offset": 0,
+            "stride": [
+              36,
+              9,
+              3,
+              1
+            ]
+          },
+          {
+            "dtype": "torch.float32",
+            "kind": "parameter",
+            "name": "features.2.bias",
+            "object_alias": 3,
+            "requires_grad": true,
+            "shape": [
+              8
+            ],
+            "storage_alias": 3,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ]
+          },
+          {
+            "dtype": "torch.float32",
+            "kind": "parameter",
+            "name": "head.linear.weight",
+            "object_alias": 4,
+            "requires_grad": true,
+            "shape": [
+              10,
+              512
+            ],
+            "storage_alias": 4,
+            "storage_offset": 0,
+            "stride": [
+              512,
+              1
+            ]
+          },
+          {
+            "dtype": "torch.float32",
+            "kind": "parameter",
+            "name": "head.linear.bias",
+            "object_alias": 5,
+            "requires_grad": true,
+            "shape": [
+              10
+            ],
+            "storage_alias": 5,
+            "storage_offset": 0,
+            "stride": [
+              1
+            ]
+          }
+        ]
+      },
+      "weights_sha256": "db216080471214dee86d8c1b6ffe52bab7247031a83c4865d6d9a783a1466323"
+    }
+  },
+  "raw_evidence": {
+    "aten_calls": [
+      {
+        "arguments": {
+          "bias": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              4
+            ]
+          },
+          "dilation": [
+            1,
+            1
+          ],
+          "groups": 1,
+          "input": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              1,
+              8,
+              8
+            ]
+          },
+          "padding": [
+            1,
+            1
+          ],
+          "stride": [
+            1,
+            1
+          ],
+          "weight": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              4,
+              1,
+              3,
+              3
+            ]
+          }
+        },
+        "call_index": 0,
+        "measurement_index": 0,
+        "operator": "aten.conv2d.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            4,
+            8,
+            8
+          ]
+        }
+      },
+      {
+        "arguments": {
+          "self": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              4,
+              8,
+              8
+            ]
+          }
+        },
+        "call_index": 1,
+        "measurement_index": 0,
+        "operator": "aten.relu.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            4,
+            8,
+            8
+          ]
+        }
+      },
+      {
+        "arguments": {
+          "bias": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              8
+            ]
+          },
+          "dilation": [
+            1,
+            1
+          ],
+          "groups": 1,
+          "input": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              4,
+              8,
+              8
+            ]
+          },
+          "padding": [
+            1,
+            1
+          ],
+          "stride": [
+            1,
+            1
+          ],
+          "weight": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              8,
+              4,
+              3,
+              3
+            ]
+          }
+        },
+        "call_index": 2,
+        "measurement_index": 0,
+        "operator": "aten.conv2d.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            8,
+            8,
+            8
+          ]
+        }
+      },
+      {
+        "arguments": {
+          "self": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              8,
+              8,
+              8
+            ]
+          }
+        },
+        "call_index": 3,
+        "measurement_index": 0,
+        "operator": "aten.relu.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            8,
+            8,
+            8
+          ]
+        }
+      },
+      {
+        "arguments": {
+          "end_dim": -1,
+          "self": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              8,
+              8,
+              8
+            ]
+          },
+          "start_dim": 1
+        },
+        "call_index": 4,
+        "measurement_index": 0,
+        "operator": "aten.flatten.using_ints",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            512
+          ]
+        }
+      },
+      {
+        "arguments": {
+          "end_dim": -1,
+          "self": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              512
+            ]
+          },
+          "start_dim": 1
+        },
+        "call_index": 5,
+        "measurement_index": 0,
+        "operator": "aten.flatten.using_ints",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            512
+          ]
+        }
+      },
+      {
+        "arguments": {
+          "input": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              512
+            ]
+          },
+          "p": 0.0,
+          "train": false
+        },
+        "call_index": 6,
+        "measurement_index": 0,
+        "operator": "aten.dropout.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            512
+          ]
+        }
+      },
+      {
+        "arguments": {
+          "bias": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              10
+            ]
+          },
+          "input": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              512
+            ]
+          },
+          "weight": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              10,
+              512
+            ]
+          }
+        },
+        "call_index": 7,
+        "measurement_index": 0,
+        "operator": "aten.linear.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            10
+          ]
+        }
+      },
+      {
+        "arguments": {
+          "bias": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              4
+            ]
+          },
+          "dilation": [
+            1,
+            1
+          ],
+          "groups": 1,
+          "input": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              1,
+              8,
+              8
+            ]
+          },
+          "padding": [
+            1,
+            1
+          ],
+          "stride": [
+            1,
+            1
+          ],
+          "weight": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              4,
+              1,
+              3,
+              3
+            ]
+          }
+        },
+        "call_index": 8,
+        "measurement_index": 1,
+        "operator": "aten.conv2d.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            4,
+            8,
+            8
+          ]
+        }
+      },
+      {
+        "arguments": {
+          "self": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              4,
+              8,
+              8
+            ]
+          }
+        },
+        "call_index": 9,
+        "measurement_index": 1,
+        "operator": "aten.relu.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            4,
+            8,
+            8
+          ]
+        }
+      },
+      {
+        "arguments": {
+          "bias": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              8
+            ]
+          },
+          "dilation": [
+            1,
+            1
+          ],
+          "groups": 1,
+          "input": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              4,
+              8,
+              8
+            ]
+          },
+          "padding": [
+            1,
+            1
+          ],
+          "stride": [
+            1,
+            1
+          ],
+          "weight": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              8,
+              4,
+              3,
+              3
+            ]
+          }
+        },
+        "call_index": 10,
+        "measurement_index": 1,
+        "operator": "aten.conv2d.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            8,
+            8,
+            8
+          ]
+        }
+      },
+      {
+        "arguments": {
+          "self": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              8,
+              8,
+              8
+            ]
+          }
+        },
+        "call_index": 11,
+        "measurement_index": 1,
+        "operator": "aten.relu.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            8,
+            8,
+            8
+          ]
+        }
+      },
+      {
+        "arguments": {
+          "end_dim": -1,
+          "self": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              8,
+              8,
+              8
+            ]
+          },
+          "start_dim": 1
+        },
+        "call_index": 12,
+        "measurement_index": 1,
+        "operator": "aten.flatten.using_ints",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            512
+          ]
+        }
+      },
+      {
+        "arguments": {
+          "end_dim": -1,
+          "self": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              512
+            ]
+          },
+          "start_dim": 1
+        },
+        "call_index": 13,
+        "measurement_index": 1,
+        "operator": "aten.flatten.using_ints",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            512
+          ]
+        }
+      },
+      {
+        "arguments": {
+          "input": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              512
+            ]
+          },
+          "p": 0.0,
+          "train": false
+        },
+        "call_index": 14,
+        "measurement_index": 1,
+        "operator": "aten.dropout.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            512
+          ]
+        }
+      },
+      {
+        "arguments": {
+          "bias": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              10
+            ]
+          },
+          "input": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              512
+            ]
+          },
+          "weight": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              10,
+              512
+            ]
+          }
+        },
+        "call_index": 15,
+        "measurement_index": 1,
+        "operator": "aten.linear.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            10
+          ]
+        }
+      }
+    ],
+    "operations": [
+      {
+        "arguments": {
+          "bias": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              4
+            ]
+          },
+          "dilation": [
+            1,
+            1
+          ],
+          "groups": 1,
+          "input": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              1,
+              8,
+              8
+            ]
+          },
+          "padding": [
+            1,
+            1
+          ],
+          "stride": [
+            1,
+            1
+          ],
+          "weight": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              4,
+              1,
+              3,
+              3
+            ]
+          }
+        },
+        "call_index": 0,
+        "comparisons": 0,
+        "flops": 4864,
+        "macs": 2304,
+        "measurement_index": 0,
+        "operator": "aten.conv2d.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            4,
+            8,
+            8
+          ]
+        },
+        "policy": "dense_output_times_Cin_per_group_times_kernel_plus_bias",
+        "reason": null,
+        "root_ops": {},
+        "status": "modeled",
+        "transcendental_ops": {}
+      },
+      {
+        "arguments": {
+          "self": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              4,
+              8,
+              8
+            ]
+          }
+        },
+        "call_index": 1,
+        "comparisons": 256,
+        "flops": 0,
+        "macs": 0,
+        "measurement_index": 0,
+        "operator": "aten.relu.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            4,
+            8,
+            8
+          ]
+        },
+        "policy": "comparison_only_activation",
+        "reason": null,
+        "root_ops": {},
+        "status": "modeled",
+        "transcendental_ops": {}
+      },
+      {
+        "arguments": {
+          "bias": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              8
+            ]
+          },
+          "dilation": [
+            1,
+            1
+          ],
+          "groups": 1,
+          "input": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              4,
+              8,
+              8
+            ]
+          },
+          "padding": [
+            1,
+            1
+          ],
+          "stride": [
+            1,
+            1
+          ],
+          "weight": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              8,
+              4,
+              3,
+              3
+            ]
+          }
+        },
+        "call_index": 2,
+        "comparisons": 0,
+        "flops": 37376,
+        "macs": 18432,
+        "measurement_index": 0,
+        "operator": "aten.conv2d.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            8,
+            8,
+            8
+          ]
+        },
+        "policy": "dense_output_times_Cin_per_group_times_kernel_plus_bias",
+        "reason": null,
+        "root_ops": {},
+        "status": "modeled",
+        "transcendental_ops": {}
+      },
+      {
+        "arguments": {
+          "self": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              8,
+              8,
+              8
+            ]
+          }
+        },
+        "call_index": 3,
+        "comparisons": 512,
+        "flops": 0,
+        "macs": 0,
+        "measurement_index": 0,
+        "operator": "aten.relu.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            8,
+            8,
+            8
+          ]
+        },
+        "policy": "comparison_only_activation",
+        "reason": null,
+        "root_ops": {},
+        "status": "modeled",
+        "transcendental_ops": {}
+      },
+      {
+        "arguments": {
+          "end_dim": -1,
+          "self": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              8,
+              8,
+              8
+            ]
+          },
+          "start_dim": 1
+        },
+        "call_index": 4,
+        "comparisons": 0,
+        "flops": 0,
+        "macs": 0,
+        "measurement_index": 0,
+        "operator": "aten.flatten.using_ints",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            512
+          ]
+        },
+        "policy": "memory_layout_copy_cast_excluded",
+        "reason": null,
+        "root_ops": {},
+        "status": "modeled",
+        "transcendental_ops": {}
+      },
+      {
+        "arguments": {
+          "end_dim": -1,
+          "self": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              512
+            ]
+          },
+          "start_dim": 1
+        },
+        "call_index": 5,
+        "comparisons": 0,
+        "flops": 0,
+        "macs": 0,
+        "measurement_index": 0,
+        "operator": "aten.flatten.using_ints",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            512
+          ]
+        },
+        "policy": "memory_layout_copy_cast_excluded",
+        "reason": null,
+        "root_ops": {},
+        "status": "modeled",
+        "transcendental_ops": {}
+      },
+      {
+        "arguments": {
+          "input": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              512
+            ]
+          },
+          "p": 0.0,
+          "train": false
+        },
+        "call_index": 6,
+        "comparisons": 0,
+        "flops": 0,
+        "macs": 0,
+        "measurement_index": 0,
+        "operator": "aten.dropout.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            512
+          ]
+        },
+        "policy": "inference_dropout_identity",
+        "reason": null,
+        "root_ops": {},
+        "status": "modeled",
+        "transcendental_ops": {}
+      },
+      {
+        "arguments": {
+          "bias": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              10
+            ]
+          },
+          "input": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              512
+            ]
+          },
+          "weight": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              10,
+              512
+            ]
+          }
+        },
+        "call_index": 7,
+        "comparisons": 0,
+        "flops": 10250,
+        "macs": 5120,
+        "measurement_index": 0,
+        "operator": "aten.linear.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            10
+          ]
+        },
+        "policy": "linear_dense_plus_bias",
+        "reason": null,
+        "root_ops": {},
+        "status": "modeled",
+        "transcendental_ops": {}
+      },
+      {
+        "arguments": {
+          "bias": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              4
+            ]
+          },
+          "dilation": [
+            1,
+            1
+          ],
+          "groups": 1,
+          "input": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              1,
+              8,
+              8
+            ]
+          },
+          "padding": [
+            1,
+            1
+          ],
+          "stride": [
+            1,
+            1
+          ],
+          "weight": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              4,
+              1,
+              3,
+              3
+            ]
+          }
+        },
+        "call_index": 8,
+        "comparisons": 0,
+        "flops": 4864,
+        "macs": 2304,
+        "measurement_index": 1,
+        "operator": "aten.conv2d.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            4,
+            8,
+            8
+          ]
+        },
+        "policy": "dense_output_times_Cin_per_group_times_kernel_plus_bias",
+        "reason": null,
+        "root_ops": {},
+        "status": "modeled",
+        "transcendental_ops": {}
+      },
+      {
+        "arguments": {
+          "self": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              4,
+              8,
+              8
+            ]
+          }
+        },
+        "call_index": 9,
+        "comparisons": 256,
+        "flops": 0,
+        "macs": 0,
+        "measurement_index": 1,
+        "operator": "aten.relu.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            4,
+            8,
+            8
+          ]
+        },
+        "policy": "comparison_only_activation",
+        "reason": null,
+        "root_ops": {},
+        "status": "modeled",
+        "transcendental_ops": {}
+      },
+      {
+        "arguments": {
+          "bias": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              8
+            ]
+          },
+          "dilation": [
+            1,
+            1
+          ],
+          "groups": 1,
+          "input": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              4,
+              8,
+              8
+            ]
+          },
+          "padding": [
+            1,
+            1
+          ],
+          "stride": [
+            1,
+            1
+          ],
+          "weight": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              8,
+              4,
+              3,
+              3
+            ]
+          }
+        },
+        "call_index": 10,
+        "comparisons": 0,
+        "flops": 37376,
+        "macs": 18432,
+        "measurement_index": 1,
+        "operator": "aten.conv2d.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            8,
+            8,
+            8
+          ]
+        },
+        "policy": "dense_output_times_Cin_per_group_times_kernel_plus_bias",
+        "reason": null,
+        "root_ops": {},
+        "status": "modeled",
+        "transcendental_ops": {}
+      },
+      {
+        "arguments": {
+          "self": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              8,
+              8,
+              8
+            ]
+          }
+        },
+        "call_index": 11,
+        "comparisons": 512,
+        "flops": 0,
+        "macs": 0,
+        "measurement_index": 1,
+        "operator": "aten.relu.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            8,
+            8,
+            8
+          ]
+        },
+        "policy": "comparison_only_activation",
+        "reason": null,
+        "root_ops": {},
+        "status": "modeled",
+        "transcendental_ops": {}
+      },
+      {
+        "arguments": {
+          "end_dim": -1,
+          "self": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              8,
+              8,
+              8
+            ]
+          },
+          "start_dim": 1
+        },
+        "call_index": 12,
+        "comparisons": 0,
+        "flops": 0,
+        "macs": 0,
+        "measurement_index": 1,
+        "operator": "aten.flatten.using_ints",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            512
+          ]
+        },
+        "policy": "memory_layout_copy_cast_excluded",
+        "reason": null,
+        "root_ops": {},
+        "status": "modeled",
+        "transcendental_ops": {}
+      },
+      {
+        "arguments": {
+          "end_dim": -1,
+          "self": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              512
+            ]
+          },
+          "start_dim": 1
+        },
+        "call_index": 13,
+        "comparisons": 0,
+        "flops": 0,
+        "macs": 0,
+        "measurement_index": 1,
+        "operator": "aten.flatten.using_ints",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            512
+          ]
+        },
+        "policy": "memory_layout_copy_cast_excluded",
+        "reason": null,
+        "root_ops": {},
+        "status": "modeled",
+        "transcendental_ops": {}
+      },
+      {
+        "arguments": {
+          "input": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              512
+            ]
+          },
+          "p": 0.0,
+          "train": false
+        },
+        "call_index": 14,
+        "comparisons": 0,
+        "flops": 0,
+        "macs": 0,
+        "measurement_index": 1,
+        "operator": "aten.dropout.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            512
+          ]
+        },
+        "policy": "inference_dropout_identity",
+        "reason": null,
+        "root_ops": {},
+        "status": "modeled",
+        "transcendental_ops": {}
+      },
+      {
+        "arguments": {
+          "bias": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              10
+            ]
+          },
+          "input": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              1,
+              512
+            ]
+          },
+          "weight": {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "kind": "tensor",
+            "shape": [
+              10,
+              512
+            ]
+          }
+        },
+        "call_index": 15,
+        "comparisons": 0,
+        "flops": 10250,
+        "macs": 5120,
+        "measurement_index": 1,
+        "operator": "aten.linear.default",
+        "output": {
+          "device": "cpu",
+          "dtype": "torch.float32",
+          "kind": "tensor",
+          "shape": [
+            1,
+            10
+          ]
+        },
+        "policy": "linear_dense_plus_bias",
+        "reason": null,
+        "root_ops": {},
+        "status": "modeled",
+        "transcendental_ops": {}
+      }
+    ],
+    "source_result_id": "29660bd3-d5fe-476a-b1ca-9ca97512fcd0",
+    "source_sha256": "48e801d8b832aec86948503d99fd2021a41fe4c617b43223ff8d88caf95e6cba",
+    "trace": {
+      "base_time_nanoseconds": 1790857026000000000,
+      "display_time_unit": "ms",
+      "event_count": 128,
+      "path": "C:\\Users\\hdgn5\\AppData\\Local\\hyso-stage13-5-17-t05-20261117\\child-1\\sequential\\trace.json",
+      "retention": "published",
+      "sha256": "b30f17b1469c6fa0729f2361ac0e7ee8b2579dbbe9934ebf413945b3dc6e7128",
+      "size_bytes": 49237,
+      "timestamp_domain": "single_exported_chrome_trace; native_FunctionEvent_clock_is_separate",
+      "timestamp_unit": "us"
+    }
+  },
+  "requested": {
+    "measured_forwards": 2,
+    "warmup_forwards": 0
+  },
+  "result_id": "d9c722c3-2704-4315-92fd-ed3ed903297a",
+  "schema_version": 1
+}
