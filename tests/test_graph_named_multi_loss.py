@@ -69,9 +69,9 @@ def test_invalid_named_multi_head_batch_fails_before_update(problem):
 
 
 @pytest.mark.parametrize('option',['save_last_to','resume_from'])
-def test_combined_profile_automatic_resume_remains_explicitly_unsupported(tmp_path,option):
+def test_combined_profile_checkpoint_requires_exact_model_config(tmp_path,option):
     graph=model();trainer=Trainer(graph,optimizer=torch.optim.SGD(graph.parameters(),lr=.01),
-        loss_fn=criteria(),loss_weights={'one':1.,'two':1.},model_config=graph.to_config())
-    with pytest.raises(TrainingCheckpointError,match='two-input multi-loss automatic'):
+        loss_fn=criteria(),loss_weights={'one':1.,'two':1.})
+    with pytest.raises(TrainingCheckpointError,match='exact Graph model_config'):
         trainer.fit(DataLoader(dataset(),batch_size=2),epochs=1,**{option:tmp_path/'never.pth'})
     assert trainer.update_count==0 and not (tmp_path/'never.pth').exists()

@@ -31,7 +31,7 @@ class NamedTensorDataset(Dataset):
 class NamedTargetDataset(Dataset):
     """One Tensor or two named CPU inputs; exactly two named classification targets.
 
-    Automatic multi-loss resume is restricted to the single-input profile.
+    Automatic multi-loss resume requires the closed CPU fp32 loader/config profile.
     """
     def __init__(self, inputs, targets):
         if (type(targets) is not dict or len(targets) != 2

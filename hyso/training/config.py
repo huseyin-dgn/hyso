@@ -220,7 +220,7 @@ class TrainingConfig:
         it is incompatible with that callback-free checkpoint profile.
         Explicit loss_fn/loss_weights dictionaries configure the bounded raw
         Graph two-head CPU fp32 path; they are separate from config JSON. Its
-        single-input automatic resume requires NamedTargetDataset, SGD/Adam,
+        one- or two-input automatic resume requires NamedTargetDataset, SGD/Adam,
         no scheduler/EMA/early stopping/accumulation/clipping or callbacks.
         """
         from .session import TrainingSession

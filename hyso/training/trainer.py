@@ -28,7 +28,7 @@ class Trainer:
     For one- or two-input CPU fp32 GraphModel, an explicit two-name loss_fn dictionary
     plus matching positive loss_weights trains two classification heads. History
     loss is the weighted total; both accuracy series are None. This profile uses
-    SGD/Adam without accumulation/scheduler/EMA/early stopping. Single-input
+    SGD/Adam without accumulation/scheduler/EMA/early stopping. Bounded
     automatic v2 resume requires exact model_config and NamedTargetDataset.
     Inputs retain their dtype; binary floating targets are cast to logits dtype.
     History describes predictions before each batch's optimizer update, with

@@ -59,8 +59,6 @@ def _model_plan(trainer):
     if trainer._multi_loss:
         from hyso._evaluation_evidence import _graph_contract
         trainer._validate_multi_loss()
-        if len(model.to_config()['inputs']) != 1:
-            raise checkpoint.TrainingCheckpointError('two-input multi-loss automatic checkpoint/resume is unsupported')
         if _plain(trainer.model_config) != model.to_config():
             raise checkpoint.TrainingCheckpointError('multi-loss checkpoint requires exact Graph model_config')
         contract = _graph_contract(model)
@@ -135,10 +133,17 @@ def _data_plan(trainer, loader):
         return None
     if trainer._multi_loss:
         dataset = loader.dataset if type(loader) is DataLoader else None
-        if (type(dataset) is not NamedTargetDataset or set(vars(dataset)) != {'target_names', 'tensors'}
+        config = trainer.model.to_config()
+        count = len(config['inputs'])
+        expected_fields = {'target_names','tensors','input_names'} if count == 2 else {'target_names','tensors'}
+        if (type(dataset) is not NamedTargetDataset or set(vars(dataset)) != expected_fields
+                or count == 2 and (type(dataset.input_names) is not tuple or dataset.input_names != tuple(sorted(config['inputs'])))
                 or dataset.target_names != tuple(sorted(trainer.loss_fn))
-                or type(dataset.tensors) is not tuple or len(dataset.tensors) != 3):
+                or type(dataset.tensors) is not tuple or len(dataset.tensors) != count+2):
             raise checkpoint.TrainingCheckpointError('multi-loss checkpoint requires matching NamedTargetDataset')
+        if (any(type(t) is not torch.Tensor or t.ndim == 0 for t in dataset.tensors)
+                or not len(dataset) or any(len(t) != len(dataset) for t in dataset.tensors)):
+            raise checkpoint.TrainingCheckpointError('multi-loss checkpoint tensors must share a nonempty batch dimension')
         proxy = copy.copy(loader)
         object.__setattr__(proxy, 'dataset', TensorDataset(*dataset.tensors))
         plan = _resume_loader_plan(proxy)
@@ -147,16 +152,17 @@ def _data_plan(trainer, loader):
                 or loader.batch_sampler.batch_size != loader.batch_size
                 or loader.batch_sampler.drop_last != loader.drop_last):
             raise checkpoint.TrainingCheckpointError('multi-loss checkpoint requires standard loader settings')
-        inputs = dataset.tensors[0]
-        config = trainer.model.to_config()
-        if (list(inputs.shape[1:]) != next(iter(config['inputs'].values()))['shape']
-                or inputs.dtype != torch.float32 or not torch.isfinite(inputs).all()):
-            raise checkpoint.TrainingCheckpointError('multi-loss checkpoint input contract mismatch')
-        for name, targets in zip(dataset.target_names, dataset.tensors[1:]):
+        input_names = dataset.input_names if count == 2 else tuple(config['inputs'])
+        for name,inputs in zip(input_names,dataset.tensors[:count]):
+            if (list(inputs.shape[1:]) != config['inputs'][name]['shape']
+                    or inputs.dtype != torch.float32 or not torch.isfinite(inputs).all()):
+                raise checkpoint.TrainingCheckpointError('multi-loss checkpoint input contract mismatch: '+name)
+        for name, targets in zip(dataset.target_names, dataset.tensors[count:]):
             _data_plan_named_targets(trainer._head_context(name), targets, len(dataset))
+        extra = {'input_names':list(input_names)} if count == 2 else {}
         return _plain(dict(type=_type(loader), dataset_type=_type(dataset), target_names=list(dataset.target_names),
             target_mapping={name:name for name in dataset.target_names}, num_workers=loader.num_workers,
-            pin_memory=loader.pin_memory, pin_memory_device=getattr(loader,'pin_memory_device',''), **plan))
+            pin_memory=loader.pin_memory, pin_memory_device=getattr(loader,'pin_memory_device',''), **extra, **plan))
     if type(loader) is DataLoader and type(loader.dataset) is NamedTensorDataset:
         dataset=loader.dataset
         if (type(trainer.model) is not GraphTensorOutput or len(trainer.model.graph.to_config()['inputs']) != 2
