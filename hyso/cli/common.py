@@ -134,6 +134,9 @@ def read_result(path):
     if fmt == 'hyso.graph_evidence_comparison':
         from hyso.analysis.graph_evidence import GraphComparisonResult
         return GraphComparisonResult(data)
+    if fmt == 'hyso.graph_evaluation_association':
+        from hyso.analysis.graph_evidence import GraphEvaluationResult
+        return GraphEvaluationResult.from_json(path)
     if fmt == 'hyso.analysis_execution':
         return AnalysisExecutionResult.from_dict(data)
     if fmt == 'hyso.analysis_report':
