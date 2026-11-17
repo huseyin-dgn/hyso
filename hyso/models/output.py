@@ -16,7 +16,8 @@ class GraphTensorOutput(nn.Module):
     Moving/training this wrapper also moves/trains its shared graph.
     ``named_inputs=True`` opts into exactly two named inputs for CPU classification
     training. Pass ``({name: tensor}, targets)`` batches to Trainer/TrainingSession;
-    multi-input automatic checkpoint/resume and multi-loss are unsupported.
+    Automatic resume uses the closed NamedTensorDataset profile; multi-loss
+    automatic resume is unsupported.
     """
 
     def __init__(self, graph, output_name, *, task=None, named_inputs=False):

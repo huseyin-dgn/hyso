@@ -21,6 +21,7 @@ from hyso import checkpoint
 from hyso.models.bcam import _resume_loader_plan
 from hyso.models.modular import ModularCNN
 from hyso.models.output import GraphTensorOutput
+from .data import NamedTensorDataset
 from hyso.models.WithSE import EMA
 from hyso.callbacks.callbacks import EarlyStopping
 
@@ -62,14 +63,16 @@ def _model_plan(trainer):
                 or (trainer.scheduler is not None and type(trainer.scheduler) is not torch.optim.lr_scheduler.StepLR)):
             raise checkpoint.TrainingCheckpointError('Graph resume supports CPU fp32/fp64, no EMA/early stopping, and None/StepLR scheduler')
         try:
-            GraphTensorOutput(model.graph, model.output_name, task=trainer.task)
+            GraphTensorOutput(model.graph, model.output_name, task=trainer.task,
+                              named_inputs=len(model.graph.to_config()['inputs']) == 2)
             contract = _graph_contract(model)
         except (TypeError, ValueError, RuntimeError, NotImplementedError) as error:
             raise checkpoint.TrainingCheckpointError('Graph resume contract: ' + str(error)) from error
         config = contract['configuration']
-        if (len(config['inputs']) != 1 or len(next(iter(config['inputs'].values()))['shape']) != 3
+        if (len(config['inputs']) not in (1,2)
+                or len(config['inputs']) == 1 and len(next(iter(config['inputs'].values()))['shape']) != 3
                 or _plain(trainer.model_config) != config):
-            raise checkpoint.TrainingCheckpointError('Graph resume requires one CHW input and exact graph model_config')
+            raise checkpoint.TrainingCheckpointError('Graph resume requires one CHW or two named inputs and exact graph model_config')
         contract.pop('serialized_state_sha256')  # State changes at every update; v2 validates it separately.
         return _plain(dict(type=_type(model), config=config, graph_contract=contract))
     if type(model) is not ModularCNN:
@@ -119,6 +122,38 @@ def _model_plan(trainer):
 def _data_plan(trainer, loader):
     if loader is None:
         return None
+    if type(loader) is DataLoader and type(loader.dataset) is NamedTensorDataset:
+        dataset=loader.dataset
+        if (type(trainer.model) is not GraphTensorOutput or len(trainer.model.graph.to_config()['inputs']) != 2
+                or set(vars(dataset)) != {'input_names','tensors'}):
+            raise checkpoint.TrainingCheckpointError('named checkpoint data requires the closed two-input Graph profile')
+        config=trainer.model.graph.to_config()
+        if (type(dataset.input_names) is not tuple or dataset.input_names != tuple(sorted(config['inputs']))
+                or type(dataset.tensors) is not tuple or len(dataset.tensors) != 3):
+            raise checkpoint.TrainingCheckpointError('named checkpoint input names must match Graph inputs exactly')
+        if (any(type(t) is not torch.Tensor or t.ndim==0 for t in dataset.tensors)
+                or not len(dataset) or any(len(t)!=len(dataset) for t in dataset.tensors)):
+            raise checkpoint.TrainingCheckpointError('named checkpoint tensors must share a nonempty batch dimension')
+        # Reuse the existing closed loader/sampler and byte fingerprint checks.
+        proxy=copy.copy(loader)
+        object.__setattr__(proxy,'dataset',TensorDataset(*dataset.tensors))
+        plan=_resume_loader_plan(proxy)
+        if (loader.worker_init_fn is not None or any(callable(v) for k,v in vars(loader).items() if k!='collate_fn')
+                or loader.batch_sampler.sampler is not loader.sampler
+                or loader.batch_sampler.batch_size != loader.batch_size
+                or loader.batch_sampler.drop_last != loader.drop_last):
+            raise checkpoint.TrainingCheckpointError('named checkpoint loader must use standard batch/sampler settings')
+        for name,tensor in zip(dataset.input_names,dataset.tensors[:-1]):
+            if (type(tensor) is not torch.Tensor or list(tensor.shape[1:]) != config['inputs'][name]['shape']
+                    or tensor.dtype != next(trainer.model.parameters()).dtype or not torch.isfinite(tensor).all()):
+                raise checkpoint.TrainingCheckpointError('named checkpoint input shape/dtype/value mismatch: '+name)
+        # Target checks are identical to the existing classification profile.
+        _data_plan_named_targets(trainer,dataset.tensors[-1],len(dataset))
+        return _plain(dict(type=_type(loader),dataset_type=_type(dataset),input_names=list(dataset.input_names),
+            num_workers=loader.num_workers,pin_memory=loader.pin_memory,
+            pin_memory_device=getattr(loader,'pin_memory_device',''),**plan))
+    if type(trainer.model) is GraphTensorOutput and len(trainer.model.graph.to_config()['inputs']) == 2:
+        raise checkpoint.TrainingCheckpointError('multi-input Graph checkpoint requires NamedTensorDataset')
     if type(loader) is not DataLoader or type(loader.dataset) is not TensorDataset:
         raise checkpoint.TrainingCheckpointError("checkpoint save requires standard DataLoader(TensorDataset)")
     if (set(vars(loader.dataset)) != {"tensors"} or loader.worker_init_fn is not None
@@ -164,6 +199,18 @@ def _data_plan(trainer, loader):
     return _plain(dict(type=_type(loader), dataset_type=_type(loader.dataset),
                        num_workers=loader.num_workers, pin_memory=loader.pin_memory,
                        pin_memory_device=getattr(loader, "pin_memory_device", ""), **plan))
+
+
+def _data_plan_named_targets(trainer, targets, count):
+    config=trainer.model.graph.to_config()
+    head=next(n for n in config['nodes'] if n['id']==config['outputs'][trainer.model.output_name])
+    if trainer.task=='multiclass':
+        if (targets.shape!=(count,) or targets.dtype!=torch.long or (targets==trainer.loss_fn.ignore_index).any()
+                or ((targets<0)|(targets>=head['params']['num_classes'])).any()):
+            raise checkpoint.TrainingCheckpointError('checkpoint multiclass targets must be valid hard class indices')
+    elif (targets.shape not in ((count,),(count,1)) or not targets.is_floating_point()
+            or not torch.isfinite(targets).all() or not ((targets==0)|(targets==1)).all()):
+        raise checkpoint.TrainingCheckpointError('checkpoint binary targets must be finite floating hard labels')
 
 
 def _finite_optimizer(value):

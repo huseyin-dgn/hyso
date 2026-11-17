@@ -93,7 +93,12 @@ def _graph_contract(model):
     with torch.random.fork_rng(devices=[]):
         reference = GraphModelBuilder.from_config(config).build().to(dtype=anchor.dtype, device="cpu")
         if selected is not None:
-            reference = GraphTensorOutput(reference, selected)
+            if len(config['inputs']) == 2:
+                head = next(n for n in config['nodes'] if n['id'] == config['outputs'][selected])
+                reference = GraphTensorOutput(reference, selected, named_inputs=True,
+                    task='binary' if head['params'].get('num_classes') == 1 else 'multiclass')
+            else:
+                reference = GraphTensorOutput(reference, selected)
 
     def plain(value):
         if value is None or type(value) in (str, int, bool, float):

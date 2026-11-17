@@ -167,7 +167,7 @@ def test_checkpoint_boundaries_before_iteration_or_mutation(
     else:
         trainer = Trainer(model, optimizer=torch.optim.SGD(model.parameters(), lr=.1),
                           loss_fn=torch.nn.CrossEntropyLoss(), **options)
-        with pytest.raises(TrainingCheckpointError, match='exactly one'):
+        with pytest.raises(TrainingCheckpointError, match='NamedTensorDataset' if with_model_config else 'model_config'):
             trainer.fit(train, epochs=1, **{checkpoint_option: str(path)})
         assert trainer.update_count == trainer.microbatch_count == 0
         assert not trainer.optimizer.state

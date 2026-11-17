@@ -18,6 +18,7 @@ from .trainer import Trainer
 from ..models.modular import ModularCNN
 from ..models.builder import BuiltClassifier, BuiltSequential
 from ..models.output import GraphTensorOutput
+from .data import NamedTensorDataset
 from ..callbacks.callbacks import EarlyStopping
 
 
@@ -122,7 +123,8 @@ class TrainingSession:
                         raise TrainingConfigError('TensorDataset input shape does not match the known model contract')
         checkpoint_mode=c['save_last_to'] is not None or c['resume_from'] is not None
         if checkpoint_mode and type(model) is GraphTensorOutput and len(model.graph.to_config()['inputs']) != 1:
-            raise TrainingConfigError('multi-input Graph automatic checkpoint/resume is unsupported')
+            if any(loader is not None and type(loader.dataset) is not NamedTensorDataset for loader in (train_loader,val_loader)):
+                raise TrainingConfigError('multi-input Graph automatic checkpoint/resume requires NamedTensorDataset')
         if checkpoint_mode and (type(model) not in (ModularCNN, GraphTensorOutput) or model_config is None):
             raise TrainingConfigError('automatic checkpoint/resume requires standard ModularCNN or GraphTensorOutput plus separate model_config; BuiltClassifier is unsupported')
         if on_epoch is not None:
