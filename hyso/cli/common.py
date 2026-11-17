@@ -128,6 +128,9 @@ def read_result(path):
     data = read_json(path, limit=128 * 1024**2)
     require(type(data) is dict, 'A saved HYSo result must be a JSON object.')
     fmt = data.get('format')
+    if fmt == 'hyso.graph_evidence_comparison':
+        from hyso.analysis.graph_evidence import GraphComparisonResult
+        return GraphComparisonResult(data)
     if fmt == 'hyso.analysis_execution':
         return AnalysisExecutionResult.from_dict(data)
     if fmt == 'hyso.analysis_report':

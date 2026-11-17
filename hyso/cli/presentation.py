@@ -22,7 +22,7 @@ def register(sub):
     presentation_options(q)
     p = command(sub, 'reports', 'Present validated saved results using hyso.reporting; no measurements.', run, export=False)
     s = p.add_subparsers(dest='action', required=True)
-    q = command(s, 'render', 'Render TrainingResult, UnifiedAnalysisReport, execution, EvidenceIndex, comparison or Advisor recommendations.', run)
+    q = command(s, 'render', 'Render TrainingResult, UnifiedAnalysisReport, execution, EvidenceIndex, comparison (including retained Graph comparison) or Advisor recommendations.', run)
     q.add_argument('input', type=Path)
     q.add_argument('--context', type=Path, help='AnalysisContext keyword JSON required for execution/EvidenceIndex inputs.')
     q.add_argument('--advisor-source', type=Path, help='Original UnifiedAnalysisReport required to validate a raw AdvisorReport; not needed for recommendations.')
