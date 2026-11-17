@@ -14,8 +14,9 @@ _KINDS = {"model": "evaluation", "training": "training", "analysis": "benchmark"
 _RESULT_KINDS = {"training": "training_result", "analysis": "analysis_execution", "comparison": "model_comparison"}
 _OPEN_RESULT_KINDS = frozenset(_RESULT_KINDS.values()) | {
     'graph_evaluation_association', 'graph_evidence_comparison', 'analysis_report', 'presentation_report',
+    'graph_multi_head_evaluation',
 }
-_REPORT_RESULT_KINDS = _OPEN_RESULT_KINDS - {'presentation_report'}
+_REPORT_RESULT_KINDS = _OPEN_RESULT_KINDS - {'presentation_report', 'graph_multi_head_evaluation'}
 _REASONS = {
     "verified": "Registered size and SHA256 match the current bytes.",
     "missing": "Registered file is missing or moved. Supply path for a relocated reference.",
@@ -92,6 +93,9 @@ def _restore_result(kind, data):
 
     if kind == "model_comparison":
         return ModelComparisonResult(data)
+    if kind == 'graph_multi_head_evaluation':
+        from ..analysis.graph_heads import MultiHeadGraphEvaluationResult
+        return MultiHeadGraphEvaluationResult(data)
     if kind in ('graph_evaluation_association', 'graph_evidence_comparison'):
         from ..analysis.graph_evidence import GraphEvaluationResult, GraphComparisonResult
         reader = GraphEvaluationResult if kind == 'graph_evaluation_association' else GraphComparisonResult

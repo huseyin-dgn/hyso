@@ -594,7 +594,8 @@ class ExperimentManager:
         Graph association readers retain imported, unverified statements; artifact
         integrity never restores live model, receiver or checkpoint authority.
         Additional JSON kinds: graph_evaluation_association, graph_evidence_comparison,
-        analysis_report and presentation_report. Generic files keep their own kind.
+        graph_multi_head_evaluation, analysis_report and presentation_report.
+        Generic files keep their own kind.
         """
         from .workflow import open_result
         return open_result(self, artifact_id, path)
