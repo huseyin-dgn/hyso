@@ -452,6 +452,7 @@ def report_experiment(manager: ExperimentManager, experiment_id: str, *, languag
     """
     if type(manager) is not ExperimentManager:
         raise ReportError("experiment_manager_required")
+    from ..experiments.workflow import _REPORT_RESULT_KINDS
     _options(language, level)
     history = manager.get_experiment_history(experiment_id)
     runs = list(history["runs"])
@@ -477,7 +478,7 @@ def report_experiment(manager: ExperimentManager, experiment_id: str, *, languag
             if record["id"] in seen:
                 continue
             seen.add(record["id"])
-            if record["kind"] in ("training_result", "analysis_execution", "model_comparison"):
+            if record["kind"] in _REPORT_RESULT_KINDS:
                 opened = manager.open_result(record["id"])
                 item["result_status"] = opened["status"]
                 item["result_reason"] = opened["reason"]

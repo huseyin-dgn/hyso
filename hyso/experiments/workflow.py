@@ -12,6 +12,10 @@ from ..analysis._codec import canonical, decode
 
 _KINDS = {"model": "evaluation", "training": "training", "analysis": "benchmark", "comparison": "benchmark"}
 _RESULT_KINDS = {"training": "training_result", "analysis": "analysis_execution", "comparison": "model_comparison"}
+_OPEN_RESULT_KINDS = frozenset(_RESULT_KINDS.values()) | {
+    'graph_evaluation_association', 'graph_evidence_comparison', 'analysis_report', 'presentation_report',
+}
+_REPORT_RESULT_KINDS = _OPEN_RESULT_KINDS - {'presentation_report'}
 _REASONS = {
     "verified": "Registered size and SHA256 match the current bytes.",
     "missing": "Registered file is missing or moved. Supply path for a relocated reference.",
@@ -25,6 +29,7 @@ _MAX_RESULT_BYTES = 128 * 1024**2
 def workflow_config(stage, model_ids, architectures, training_config, analysis, comparison,
                     dataset, device, precision, protocol):
     from ..models.builder import ModelBuilder
+    from ..models.graph import GraphModelBuilder
     from ..training import TrainingConfig
     from ..analysis import AnalysisDryRun, ModelComparisonResult
 
@@ -41,7 +46,7 @@ def workflow_config(stage, model_ids, architectures, training_config, analysis, 
         if type(architectures) is not dict or set(architectures) - set(models):
             _error("architecture_model_mismatch", "create_workflow_run")
         for name, builder in architectures.items():
-            if type(builder) is not ModelBuilder:
+            if type(builder) not in (ModelBuilder, GraphModelBuilder):
                 _error("model_builder_required", "create_workflow_run")
             architecture_data[name] = builder.to_config()
     if stage == "model" and not architecture_data:
@@ -87,6 +92,16 @@ def _restore_result(kind, data):
 
     if kind == "model_comparison":
         return ModelComparisonResult(data)
+    if kind in ('graph_evaluation_association', 'graph_evidence_comparison'):
+        from ..analysis.graph_evidence import GraphEvaluationResult, GraphComparisonResult
+        reader = GraphEvaluationResult if kind == 'graph_evaluation_association' else GraphComparisonResult
+        return reader(data)
+    if kind == 'analysis_report':
+        from ..analysis import UnifiedAnalysisReport
+        return UnifiedAnalysisReport(data)
+    if kind == 'presentation_report':
+        from ..reporting import PresentationReport
+        return PresentationReport(data)
     if type(data.get("schema_version")) is not int or data["schema_version"] != 1:
         raise ValueError("unsupported_result_version")
     if kind == "training_result":
@@ -278,7 +293,7 @@ def open_result(manager, artifact_id, path):
     outcome.update(status=observation["status"], reason=_REASONS[observation["status"]])
     if observation["status"] != "verified":
         return outcome
-    if record["kind"] not in _RESULT_KINDS.values():
+    if record["kind"] not in _OPEN_RESULT_KINDS:
         outcome.update(status="unsupported", reason="No workflow JSON reader is registered for this artifact kind.")
         return outcome
     if record["expected_size_bytes"] > _MAX_RESULT_BYTES:

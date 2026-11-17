@@ -25,11 +25,12 @@ import uuid
 
 if _typing.TYPE_CHECKING:
     from ..models.builder import ModelBuilder
+    from ..models.graph import GraphModelBuilder
     from ..training import TrainingConfig, TrainingResult
     from ..analysis import AnalysisDryRun, AnalysisExecutionResult, ModelComparisonResult
 else:
     # Keep the storage module usable without importing the scientific runtime.
-    ModelBuilder = TrainingConfig = TrainingResult = _typing.Any
+    ModelBuilder = GraphModelBuilder = TrainingConfig = TrainingResult = _typing.Any
     AnalysisDryRun = AnalysisExecutionResult = ModelComparisonResult = _typing.Any
 
 
@@ -530,7 +531,7 @@ class ExperimentManager:
             return [self._experiment(row) for row in rows]
 
     def create_workflow_run(self, experiment_id: str, stage: str, *, model_ids: _typing.Sequence[str],
-                            architectures: dict[str, ModelBuilder] | None = None,
+                            architectures: dict[str, ModelBuilder | GraphModelBuilder] | None = None,
                             training_config: TrainingConfig | None = None,
                             analysis: AnalysisDryRun | None = None,
                             comparison: ModelComparisonResult | None = None,
@@ -540,7 +541,7 @@ class ExperimentManager:
                             request_id: str | None = None) -> ExperimentRun:
         """Create a model/training/analysis/comparison history entry in this Manager.
 
-        Architecture comes from ModelBuilder.to_config(); analysis/comparison reuse
+        Architecture comes from ModelBuilder/GraphModelBuilder.to_config(); analysis/comparison reuse
         tracking_config(). Context labels are caller declarations. Omitted context
         stays None. Creation only persists immutable snapshots, on schema1 or schema2.
         Start/finish/fail/interrupt remain explicit ExperimentRun operations.
@@ -590,6 +591,10 @@ class ExperimentManager:
         Returns status/reason/result. Missing, moved, corrupt or unsupported artifacts
         return result=None. path explicitly locates a moved reference artifact without
         rewriting its locator. Managed copies always use their registered location.
+        Graph association readers retain imported, unverified statements; artifact
+        integrity never restores live model, receiver or checkpoint authority.
+        Additional JSON kinds: graph_evaluation_association, graph_evidence_comparison,
+        analysis_report and presentation_report. Generic files keep their own kind.
         """
         from .workflow import open_result
         return open_result(self, artifact_id, path)
