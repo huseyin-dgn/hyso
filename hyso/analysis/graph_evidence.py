@@ -54,6 +54,19 @@ def _context(value, source_id, split):
     return result
 
 
+def _contract_statement(c):
+    if (type(c) is not dict or set(c) != {'format', 'schema_version', 'configuration', 'adapter_output',
+            'device', 'dtype', 'torch_version', 'runtime_sha256', 'serialized_state_sha256'}
+            or c['format'] != 'hyso.graph_checkpoint_contract' or type(c['schema_version']) is not int
+            or c['schema_version'] != 2 or c['device'] != 'cpu'
+            or c['dtype'] not in ('torch.float32','torch.float64') or type(c['configuration']) is not dict
+            or (c['adapter_output'] is not None and type(c['adapter_output']) is not str)
+            or type(c['torch_version']) is not str):
+        raise GraphEvidenceError('invalid_graph_contract_statement')
+    fingerprint(c['runtime_sha256'])
+    fingerprint(c['serialized_state_sha256'])
+
+
 def _receipt_statement(data):
     keys = {"format", "schema_version", "status", "checkpoint_sha256", "model_state_sha256",
             "contract", "source", "reason"}
@@ -67,18 +80,9 @@ def _receipt_statement(data):
     elif data["status"] == "native":
         fingerprint(data["checkpoint_sha256"])
         fingerprint(data["model_state_sha256"])
-        c = data["contract"]
-        if (type(c) is not dict or set(c) != {"format", "schema_version", "configuration", "adapter_output",
-                "device", "dtype", "torch_version", "runtime_sha256", "serialized_state_sha256"}
-                or c["format"] != "hyso.graph_checkpoint_contract" or type(c["schema_version"]) is not int
-                or c["schema_version"] != 2 or c["device"] != "cpu"
-                or c["dtype"] not in ("torch.float32", "torch.float64") or type(c["configuration"]) is not dict
-                or (c["adapter_output"] is not None and type(c["adapter_output"]) is not str)
-                or type(c["torch_version"]) is not str
-                or data["source"] != "hyso.load_training_checkpoint.graph_contract.v2" or data["reason"] is not None):
+        _contract_statement(data['contract'])
+        if (data["source"] != "hyso.load_training_checkpoint.graph_contract.v2" or data["reason"] is not None):
             raise GraphEvidenceError("invalid_graph_contract_statement")
-        fingerprint(c["runtime_sha256"])
-        fingerprint(c["serialized_state_sha256"])
     else:
         raise GraphEvidenceError("invalid_receipt_status")
 
