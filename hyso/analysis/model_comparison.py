@@ -207,7 +207,7 @@ def _strict_context_check(a, b, record_a, record_b):
     return status, reasons
 
 
-def _derive(a, b, features, include_structure, context_policy='legacy'):
+def _derive(a, b, features, include_structure, context_policy='legacy', *, p12_comparison=False):
     # Local imports retain the old Advisor <-> Analysis initialization boundary.
     from ..advisor import (NativeMetric, NativeMetricResolver, ComparisonContract,
         P26QualityComparisonContract, P26BoundQualityComparisonContract,
@@ -226,6 +226,10 @@ def _derive(a, b, features, include_structure, context_policy='legacy'):
     rows = []; benchmark = None
     for feature in request.features:
         ia, why_a = _chosen(a,feature); ib, why_b = _chosen(b,feature)
+        if feature=='P12' and p12_comparison:
+            from ._p12_comparison import comparison_rows
+            rows.extend(comparison_rows(a,b,ra.record(ia),rb.record(ib),why_a,why_b))
+            continue
         if feature not in _METRICS:
             rows.append(dict(feature_id=feature,metric=None,status='NOT_SUPPORTED_IN_COMPARISON',difference=None,
                 reasons=['comparison_adapter_not_connected;no_measurement_started'],comparison=None))
@@ -307,6 +311,11 @@ def _derive(a, b, features, include_structure, context_policy='legacy'):
         data.update(schema_version=2, context_policy=plain(_STRICT_CONTEXT_POLICY),
                     policy='strict_declared_context_v1;' + data['policy'])
         data['limitations'].append('strict_context_checks_declared_consistency;origin_and_preprocessing_authority_not_upgraded')
+    if p12_comparison and 'P12' in request.features:
+        from ._p12_comparison import POLICY,LIMITS
+        data.update(schema_version=3,p12_comparison_policy=POLICY,
+                    context_policy=data.get('context_policy'))
+        data['limitations'].extend(LIMITS)
     data['content_sha256'] = digest(data)
     return data,structure_object
 
@@ -322,11 +331,12 @@ class ModelComparisonResult:
             d = plain(data)
             if len(canonical(d).encode('utf-8'))>_MAX_BYTES:
                 raise ModelComparisonError('comparison_size_limit')
-            if d.get('format')!='hyso.two_model_comparison' or type(d.get('schema_version')) is not int or d['schema_version'] not in (1, 2):
+            if d.get('format')!='hyso.two_model_comparison' or type(d.get('schema_version')) is not int or d['schema_version'] not in (1, 2, 3):
                 raise ModelComparisonError('unsupported_comparison_version')
             a,b = (ModelComparisonSource._restore(d['sources'][side]) for side in ('baseline','candidate'))
-            context_policy = 'strict' if d['schema_version'] == 2 else 'legacy'
-            expected,structure = _derive(a,b,d['selection']['features'],d['selection']['include_structure'],context_policy)
+            context_policy = 'strict' if d['schema_version'] == 2 or d['schema_version']==3 and d.get('context_policy') is not None else 'legacy'
+            expected,structure = _derive(a,b,d['selection']['features'],d['selection']['include_structure'],context_policy,
+                                       p12_comparison=d['schema_version']==3)
             if canonical(d)!=canonical(expected):
                 raise ModelComparisonError('comparison_derivation_or_integrity_mismatch')
         except ModelComparisonError:
@@ -382,9 +392,13 @@ def compare_models(baseline: ModelComparisonSource, candidate: ModelComparisonSo
     v1 for P26. Dataset, split and preprocessing declarations must be present and
     agree across selected records and report contexts. Native eligibility still
     applies. Declaration consistency retains caller-declared authority.
+
+    Selecting P12 uses schema3 with a separate native CPU operation-count
+    policy. Historical schema1/2 readers retain their original P12 semantics.
+    P12 counts describe observed logical work, never runtime or energy savings.
     """
     if type(baseline) is not ModelComparisonSource or type(candidate) is not ModelComparisonSource:
         raise ModelComparisonError('exactly_two_retained_model_sources_required')
     selected = (features,) if type(features) is str else features
-    data,_ = _derive(baseline,candidate,selected,include_structure,context_policy)
+    data,_ = _derive(baseline,candidate,selected,include_structure,context_policy,p12_comparison=True)
     return ModelComparisonResult(data)

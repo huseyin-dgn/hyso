@@ -66,6 +66,58 @@ def _hash(data):
     return hashlib.sha256(json.dumps(data,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
 
 
+def _p12_binding_fields(data, source_id, safety):
+    """Closed CPU receipt fields, bound to native state/input/dispatch evidence."""
+    p=data['protocol']; provenance=data['provenance']; raw=data['raw_evidence']
+    model,inputs,env=(provenance[k] for k in ('model','input','environment'))
+    return dict(format='hyso.native_p12_binding',schema_version=1,authority='owned_cpu_profiler',
+        source_profile_id=source_id,model_state_sha256=model['weights_sha256'],
+        post_model_state_sha256=model['weights_sha256'],
+        structure_sha256=_hash(model['structural_descriptor']),
+        post_structure_sha256=_hash(model['structural_descriptor']),
+        input_sha256=inputs['content_sha256'],post_input_sha256=inputs['content_sha256'],
+        input_shape=inputs['shape'],input_dtype=inputs['dtype'],device=env['device'],
+        precision=p['recipe']['precision'],execution_mode=model['execution_mode'],torch=env['torch'],
+        configuration_sha256=_hash(p['configuration']),aten_calls_sha256=_hash(raw['aten_calls']),
+        trace_sha256=raw['trace']['sha256'],safety_sha256=_hash(safety),
+        checkpoint_artifact_sha256=p['recipe']['artifact_sha256'],
+        measured_forwards=data['actual']['measured_forwards'],warmup_forwards=data['actual']['warmup_forwards'],
+        method='owned_cpu_eval_inference_TorchDispatchMode_v1',threads=1)
+
+
+def _validate_p12_binding(data,kind):
+    import uuid
+    raw=data['raw_evidence']; binding=raw.get('p12_binding')
+    if binding is None:return  # Historical profiles remain readable, never upgraded.
+    safety=raw['safety'] if kind=='operator_profile' else raw['profile_safety']
+    source_id=data['result_id'] if kind=='operator_profile' else data['identity']['source_result_id']
+    expected=_p12_binding_fields(data,source_id,safety)
+    p=data['protocol']; provenance=data['provenance']
+    if (binding!=expected or type(binding.get('schema_version')) is not int
+            or type(binding.get('threads')) is not int
+            or binding['device']!='cpu' or binding['precision'] not in ('fp32','fp64')
+            or binding['input_dtype']!=('torch.float64' if binding['precision']=='fp64' else 'torch.float32')
+            or binding['input_shape']!=p['recipe']['input_shape']
+            or binding['execution_mode']!='owned_worker_eval'
+            or p['scope']!=('owned_worker_eval_inference_profile' if kind=='operator_profile' else 'observed_profile_evidence')
+            or p['recipe']['device']!='cpu' or provenance['input'].get('recipe')!='ones'
+            or any(p['configuration'].get(k) for k in ('profile_memory','allocation_lifetimes','cpu_memory_ownership'))
+            or set(safety)!={'hooks_preserved','rng_restored','state_preserved','allocator_reset_not_called'}
+            or any(value is not True for value in safety.values())):
+        raise ValueError('invalid native P12 CPU binding')
+    for key in ('model_state_sha256','structure_sha256','input_sha256','trace_sha256'):
+        value=binding[key]
+        if type(value) is not str or len(value)!=64 or any(c not in '0123456789abcdef' for c in value):
+            raise ValueError('invalid native P12 identity hash')
+    if not provenance['model']['structural_descriptor']:
+        raise ValueError('missing native P12 model evidence')
+    uuid.UUID(binding['source_profile_id'])
+    hashes=[] if kind=='operator_profile' else [raw['source_sha256']]
+    if binding['checkpoint_artifact_sha256'] is not None:hashes.append(binding['checkpoint_artifact_sha256'])
+    if any(type(value) is not str or len(value)!=64 or any(c not in '0123456789abcdef' for c in value) for value in hashes):
+        raise ValueError('invalid native P12 source/checkpoint hash')
+
+
 def profile_operators(recipe,*,protocol=ProfilingProtocol(),trace_path=None):
     """Fresh Windows worker; no live caller model or hooks cross the boundary.
 
@@ -191,6 +243,9 @@ def analyze_flops(source,*,protocol=ProfilingProtocol()):
     data=_derived('operation_count','P12',s,dict(aten_calls=calls,operations=rows),m)
     data['protocol']['operation_model_version']=3
     data['protocol']['convention']=CONVENTION_V3
+    if 'p12_binding' in s['raw_evidence']:
+        data['raw_evidence']['p12_binding']=s['raw_evidence']['p12_binding']
+        data['raw_evidence']['profile_safety']=s['raw_evidence']['safety']
     return OperationCountResult(data)
 
 
@@ -304,6 +359,7 @@ def _validate_profile(data,kind):
     r=ColdStartRecipe(**data['protocol']['recipe']).to_dict();raw=data['raw_evidence']
     expected=dict(measured_forwards=p.measure_iterations,warmup_forwards=p.warmup_iterations)
     if data['actual']!=expected or data['requested']!=expected:raise ValueError('invalid profile forward ledger')
+    if kind in ('operator_profile','operation_count'):_validate_p12_binding(data,kind)
     if kind=='operator_profile':
         if data['protocol']['id']!='isolated_torch_profiler':raise ValueError('invalid profiler protocol')
         if not raw['worker']['process_terminated'] or raw['worker']['exit_code']!=0:raise ValueError('worker did not finish normally')

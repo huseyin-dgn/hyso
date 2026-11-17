@@ -121,13 +121,13 @@ def test_retained_P12_values_are_reported_without_comparison_or_hardware_claim(l
     report = create_report(result, language=language)
     section = report.to_dict()['sources'][0]
     assert section['metrics'][0]['value'] is None
-    assert section['metrics'][0]['status'] == 'NOT_SUPPORTED_IN_COMPARISON'
+    assert section['metrics'][0]['status'] == 'INSUFFICIENT_EVIDENCE'
     observations = section['p12_observations']
     assert [p['observation']['metrics']['macs_per_batch']['value'] for p in observations] == [25856, 17664]
     assert all(not p['observation']['claims']['hardware_performance'] for p in observations)
     assert section['advisor']['comparison_observations'] == []
     for text in (report.to_markdown(), report.to_html()):
-        assert '25856' in text and '17664' in text and 'NOT_SUPPORTED_IN_COMPARISON' in text
+        assert '25856' in text and '17664' in text and 'INSUFFICIENT_EVIDENCE' in text
     assert result.to_json() == before
 
 
@@ -154,3 +154,18 @@ def test_new_comparison_tables_and_advice_escape_model_labels():
     report = create_report(result, language='en')
     for text in (report.to_markdown(), report.to_html()):
         assert '<script>' not in text and '&lt;script&gt;' in text
+
+
+@pytest.mark.parametrize('missing', ['trace','device','scope'])
+def test_partial_legacy_P12_metadata_stays_insufficient(missing):
+    from test_advisor_p12_observation import saved
+    sources=[]
+    for label,kind in (('A','sequential'),('B','graph')):
+        native=saved(kind).to_dict()['native_payload']
+        if missing=='trace':native['raw_evidence']['trace']=None
+        if missing=='device':native['provenance']['environment'].pop('device')
+        if missing=='scope':native['protocol'].pop('scope')
+        sources.append(source(label,'P12',native))
+    result=analysis.compare_models(*sources,features='P12')
+    assert all(r['status']=='INSUFFICIENT_EVIDENCE' and r['difference'] is None
+               for r in result.to_dict()['metrics'])

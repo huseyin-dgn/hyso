@@ -20,7 +20,10 @@ def to_display_dict(result, *, language: str = 'en') -> dict[str,Any]:
     rows = []
     for row in data['metrics']:
         metric = row['metric']; difference = row['difference']
-        label = _METRICS[NativeMetric(metric)][index] if metric is not None else row['feature_id']
+        p12_labels={'macs_per_batch': ('Batch başına analitik MACs', 'Analytic MACs per batch'),
+                    'logical_flops_per_batch': ('Batch başına logical FLOPs', 'Logical FLOPs per batch')}
+        label = (p12_labels[metric][index] if row['feature_id']=='P12' and metric in p12_labels else
+                 _METRICS[NativeMetric(metric)][index] if metric is not None else row['feature_id'])
         view = dict(feature_id=row['feature_id'],metric=metric,label=label,status=row['status'],
             reasons=row['reasons'],baseline=None,candidate=None,difference=None,percent_change=None,
             percentage_point_change=None,preferred_direction=row.get('preferred_direction'),metric_effect=None,
@@ -45,6 +48,9 @@ def to_display_dict(result, *, language: str = 'en') -> dict[str,Any]:
             if row['feature_id']=='P10':
                 text = ('Süreç genelindeki RSS farkıdır; modelin bellek üstünlüğünü göstermez.' if tr else
                         'Process-wide RSS difference; it does not show model-exclusive memory superiority.')
+            if row['feature_id']=='P12':
+                text += (' Analitik işlem sayısıdır; daha düşük gecikme, enerji tüketimi veya donanım işlem yükü kanıtı değildir.' if tr else
+                         ' These are analytic operation counts; fewer operations do not establish lower latency, energy consumption or hardware work.')
             if difference['percent_change'] is None:
                 text += ' Yüzdesel değişim tanımsızdır.' if tr else ' Relative percent is undefined.'
         view['explanation'] = text

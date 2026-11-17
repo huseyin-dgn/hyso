@@ -411,7 +411,19 @@ def main():
             if not all(cleanup.values()):body.update(status='failed',reason='profile safety validation failed')
             else:
                 if request.get('experiment_mode')=='control':body['result']['safety']=dict(cleanup,allocator_reset_not_called=True)
-                else:body['result']['raw_evidence']['safety']=dict(cleanup,allocator_reset_not_called=True)
+                else:
+                    result=body['result'];result['raw_evidence']['safety']=dict(cleanup,allocator_reset_not_called=True)
+                    if (device.type=='cpu' and r['precision'] in ('fp32','fp64')
+                            and not any(p.get(k) for k in ('profile_memory','allocation_lifetimes','cpu_memory_ownership'))):
+                        from hyso.performance.profiling import _p12_binding_fields,_hash
+                        post_descriptor,post_weights=_descriptor(modules,entries)
+                        post_input=hashlib.sha256(_bits(inputs).numpy().tobytes()).hexdigest()
+                        # Keep original profile observations when the narrower
+                        # comparison profile is unavailable; never invent a bind.
+                        if (post_weights==weights and _hash(post_descriptor)==_hash(descriptor) and post_input==digest
+                                and torch.get_num_threads()==1):
+                            result['raw_evidence']['p12_binding']=_p12_binding_fields(
+                                result,result['result_id'],result['raw_evidence']['safety'])
     Path(output_path).write_text(json.dumps(body,allow_nan=False),encoding='utf-8')
     if guard is not None:guard[0].CloseHandle(guard[1])
 

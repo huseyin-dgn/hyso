@@ -100,6 +100,10 @@ def _derive(record, version):
                     optimization_success='not_assessed'),
         limitations=list(_LIMITS),
     )
+    if raw.get('p12_binding') is not None:
+        # Observation v1 still makes no pairwise eligibility claim. The native
+        # receipt is exposed only when supplied and validated by the producer.
+        body['native_cpu_binding']=_field(raw['p12_binding'])
     body['content_sha256'] = digest(body)
     return body
 
@@ -154,7 +158,8 @@ class P12Observation:
 def observe_p12(record: EvidenceRecord, *, version: int) -> P12Observation:
     """Opt in to a P12 observation; ``version=1`` must be supplied explicitly.
 
-    Legacy NativeMetricResolver/advise/compare_models behavior is unchanged.
+    Legacy NativeMetricResolver/advise behavior is unchanged. Pairwise P12
+    eligibility belongs to compare_models, not this standalone observation.
     Partial operator coverage yields null model totals, never zero-filled costs.
     This is not a ResolvedMetric or a general comparison-contract input.
     """

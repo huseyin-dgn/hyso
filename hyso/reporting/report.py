@@ -274,13 +274,14 @@ def _comparison_section(result, language, level, catalog):
                 p12_observations.append(dict(model_id=source['model_id'], side=side,
                     observation=observe_p12(EvidenceRecord(record), version=1).to_dict()))
         if p12_observations:
-            tables.append(dict(title=_text(language, 'P12 kayıtlı gözlemleri; karşılaştırma farkı yok',
-                                                     'Retained P12 observations; no comparison difference'),
+            tables.append(dict(title=_text(language, 'P12 kayıtlı analitik gözlemleri',
+                                                     'Retained P12 analytic observations'),
                 headers=['Model', 'MAC/batch', 'logical_FLOP/batch', _text(language, 'Kanıt', 'Evidence')],
                 rows=[[p['model_id'], p['observation']['metrics']['macs_per_batch']['value'],
                        p['observation']['metrics']['logical_flops_per_batch']['value'],
                        dict(record_id=p['observation']['evidence_reference']['record_id'],
-                            comparison_eligibility=p['observation']['comparison_eligibility'],
+                            comparison_eligibility=[dict(metric=r['metric'],status=r['status'],reasons=r['reasons'])
+                                                    for r in data['metrics'] if r['feature_id']=='P12'],
                             limitations=p['observation']['limitations'])] for p in p12_observations]))
     return dict(kind="comparison", title=_text(language, "İki model karşılaştırması", "Two-model comparison"), raw=data,
                 metrics=metrics, charts=charts, features=[], advisor=view, tables=tables,

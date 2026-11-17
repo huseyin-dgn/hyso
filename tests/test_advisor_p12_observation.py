@@ -232,7 +232,7 @@ def test_legacy_Advisor_resolution_and_JSON_are_identical_before_after_opt_in():
 
 
 @pytest.mark.parametrize('feature', ['P12', 'P16'])
-def test_two_model_comparison_remains_unsupported_and_P16_raw_transport_unchanged(feature):
+def test_legacy_P12_requires_native_receipt_and_P16_raw_transport_unchanged(feature):
     rows = []
     for label in ('A', 'B'):
         r = saved(feature=feature, scope=analysis.EvidenceScope(model_id=label))
@@ -240,8 +240,9 @@ def test_two_model_comparison_remains_unsupported_and_P16_raw_transport_unchange
         if feature == 'P12':observe_p12(r, version=1)
         assert report([r]).to_dict()['index']['records'][0]['native_payload'] == r.to_dict()['native_payload']
     result = analysis.compare_models(*rows, features=feature).to_dict()
-    assert result['metrics'][0]['status'] == 'NOT_SUPPORTED_IN_COMPARISON'
-    assert result['metrics'][0]['difference'] is None
+    # Reusing the same native capture under two labels is a known incompatibility.
+    expected='INCOMPATIBLE' if feature=='P12' else 'NOT_SUPPORTED_IN_COMPARISON'
+    assert all(row['status']==expected and row['difference'] is None for row in result['metrics'])
 
 
 def test_existing_strict_and_legacy_comparison_schemas_and_results_stay_distinct():
