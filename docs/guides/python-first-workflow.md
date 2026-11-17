@@ -79,7 +79,7 @@ Presentations retain `presentation_only=true`, `authoritative_evidence=false`.
 
 For two selected classification losses on a raw Graph, use the
 [bounded Trainer recipe](training-config.md#two-named-classification-losses).
-Single-input multi-loss automatic resume is supported; combined accuracy is undefined.
+One- and two-input multi-loss automatic resume are supported; combined accuracy is undefined.
 
 <a id="multi-head-workflow"></a>
 ## Multi-head workflow
@@ -95,14 +95,19 @@ python -m examples.models.graph_evidence_workflow --multi-head --resume-from C:/
 python -m examples.models.graph_evidence_workflow --multi-head --variant B --output C:/local-hyso/heads-B
 # Saved statements only: no model construction, training, inference or profiler.
 python -m examples.models.graph_evidence_workflow --compare-heads C:/local-hyso/heads-A/heads.json C:/local-hyso/heads-B/heads.json --output C:/local-hyso/head-reports
-# Optional combined named-input/two-output training; no automatic resume or evaluation.
+# Combined named inputs/two heads, automatic checkpoint and per-head evaluation.
 python -m examples.models.graph_evidence_workflow --multi-head --two-inputs --output C:/local-hyso/named-heads
+# Resume a matching combined checkpoint (after interruption, or completed no-op).
+python -m examples.models.graph_evidence_workflow --multi-head --two-inputs --resume-from C:/local-hyso/named-heads/last.pth --output C:/local-hyso/named-heads-resumed
+# Explicit second combined model and retained-only comparison/reporting.
+python -m examples.models.graph_evidence_workflow --multi-head --two-inputs --variant B --output C:/local-hyso/named-heads-B
+python -m examples.models.graph_evidence_workflow --compare-heads C:/local-hyso/named-heads/heads.json C:/local-hyso/named-heads-B/heads.json --output C:/local-hyso/named-head-reports
 ```
 
 `train_heads` constructs the Graph, `NamedTargetDataset` and explicit loss/weight
 dictionaries (`disease=.3`, `severity=1.2`), then calls
 `TrainingConfig.prepare(..., model_config=builder.to_config(), loss_fn=...,
-loss_weights=...).fit()`. Single-input mode saves/restores the existing strict
+loss_weights=...).fit()`. Both input modes save/restore the existing strict
 v2 checkpoint and explicitly calls `analysis.evaluate_graph_heads`.
 The example reuses four synthetic samples for training and evaluation; it is
 an API demonstration, with no held-out quality or device-performance claim.
@@ -115,7 +120,9 @@ The evaluation head specs explicitly supply each output's target field, task,
 ordered class_names, split, dataset_id and preprocessing_id. Missing declared
 identities can be explicit `None`; they do not become verified provenance.
 The existing CPU evaluator runs once per selected head, with isolated copies,
-native per-head streams and preserved source state/RNG. This is not a shared
+native per-head streams and preserved source state/RNG. Two-input mode uses
+explicit `image`/`hint` mappings, and native hashes bind both names and contents;
+no positional inference or concatenation is used. This is not a shared
 single-forward multi-task evaluator. Binary and multiclass heads keep separate
 label spaces. No overall_accuracy is generated.
 

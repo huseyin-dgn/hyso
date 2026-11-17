@@ -79,12 +79,12 @@ Move the model **before** optimizer creation; Trainer does not move it. Model
 outputs are logits; history accuracy is a percentage. Use `evaluation_model`
 when EMA is enabled. Legacy EBO/CEMO/CNNSENormalWithFit training APIs remain valid.
 `save_last_to`/`resume_from` requires the documented ModularCNN or selected Graph
-profile, exact model_config and compatible loaders. Two-input Graph resume uses
+profile, exact model_config and compatible loaders. Two-input/single-output resume uses
 explicit names and `hyso.training.NamedTensorDataset`; see the
 [CPU Graph workflow and resume examples](docs/guides/python-first-workflow.md#graph-training-and-saved-results).
 Raw Graphs also support two explicitly weighted classification losses, including
-single-input automatic v2 resume and separate head evaluation. Two-input/two-head
-training is supported with automatic resume/evaluation disabled. See the
+one- or two-input automatic v2 resume and separate head evaluation on CPU fp32.
+The combined two-input/two-head workflow uses explicit names throughout. See the
 [multi-head examples](docs/guides/python-first-workflow.md#multi-head-workflow).
 
 ## TrainingConfig: separate requested and applied settings

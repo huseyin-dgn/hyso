@@ -65,9 +65,9 @@ def train_named(output, *, resume_from=None):
 
 
 def train_heads(output, *, resume_from=None, two_inputs=False, variant='A'):
-    """Two explicit heads; optional second input has no automatic resume/evaluation."""
-    if variant not in ('A','B') or two_inputs and resume_from is not None:
-        raise ValueError('Use variant A/B; two-input multi-loss resume is unsupported')
+    """One or two explicit inputs; two heads, strict resume and saved evaluation."""
+    if variant not in ('A','B'):
+        raise ValueError('Use variant A/B')
     output=output_directory(output)
     torch.set_num_threads(1)
     torch.random.default_generator.manual_seed(13619)
@@ -86,24 +86,22 @@ def train_heads(output, *, resume_from=None, two_inputs=False, variant='A'):
     data=NamedTargetDataset({'hint':x.flip(-1),'image':x} if two_inputs else x,targets)
     path=output/'last.pth'
     config=TrainingConfig(epochs=2,batch_size=2,optimizer='adam',learning_rate=.01,validation=False,
-        save_last_to=None if two_inputs else str(path),resume_from=None if resume_from is None else str(resume_from))
+        save_last_to=str(path),resume_from=None if resume_from is None else str(resume_from))
     train,_=config.make_loaders(data)
     session=config.prepare(graph,train,model_config=builder.to_config(),
         loss_fn={name:torch.nn.CrossEntropyLoss() for name in targets},loss_weights={'disease':.3,'severity':1.2})
     training=session.fit()
     write(output/'training.json',training.to_dict())
-    checkpoint=None if two_inputs else path if path.exists() else Path(resume_from)
+    checkpoint=path if path.exists() else Path(resume_from)
     heads={name:dict(target=name,task='multiclass',class_names=labels,split='test',
         dataset_id='synthetic-two-heads',preprocessing_id='fixed-fp32')
         for name,labels in [('disease',['absent','present']),('severity',['low','medium','high'])]}
-    evaluation=None
-    if not two_inputs:
-        sha=hashlib.sha256(checkpoint.read_bytes()).hexdigest()
-        load_training_checkpoint(checkpoint,graph,optimizer=session.trainer.optimizer,
-            scaler=session.trainer.scaler,capture_evidence=True,expected_sha256=sha)
-        evaluation=analysis.evaluate_graph_heads(graph,DataLoader(data,batch_size=2),heads=heads,
-            capture_structure=True,expected_checkpoint_sha256=sha)
-        evaluation.to_json(output/'heads.json')
+    sha=hashlib.sha256(checkpoint.read_bytes()).hexdigest()
+    load_training_checkpoint(checkpoint,graph,optimizer=session.trainer.optimizer,
+        scaler=session.trainer.scaler,capture_evidence=True,expected_sha256=sha)
+    evaluation=analysis.evaluate_graph_heads(graph,DataLoader(data,batch_size=2),heads=heads,
+        capture_structure=True,expected_checkpoint_sha256=sha)
+    evaluation.to_json(output/'heads.json')
     store=output/'experiments'
     manager=ExperimentManager(store);manager.close();ExperimentManager.migrate_store(store)
     manager=ExperimentManager(store)
@@ -112,19 +110,19 @@ def train_heads(output, *, resume_from=None, two_inputs=False, variant='A'):
         record=manager.create_workflow_run(experiment['id'],'training',model_ids=[variant],
             architectures={variant:builder},training_config=config,protocol={'heads':heads,'association':'caller_declared'})
         record.start();training.log_to(record);record.record_result(training)
-        cp=None if checkpoint is None else record.add_artifact(checkpoint,kind='checkpoint',ownership='reference',retain_locator=True)
-        artifact=None
-        if evaluation is not None:
-            artifact=record.add_artifact(output/'heads.json',kind='graph_multi_head_evaluation',ownership='copy',
-                metadata={'checkpoint_artifact_id':cp['id']})
+        cp=record.add_artifact(checkpoint,kind='checkpoint',ownership='reference',retain_locator=True)
+        artifact=record.add_artifact(output/'heads.json',kind='graph_multi_head_evaluation',ownership='copy',
+            metadata={'checkpoint_artifact_id':cp['id']})
         record.finish()
-        opened=None if artifact is None else manager.open_result(artifact['id'])['result']
+        opened=manager.open_result(artifact['id'])
+        if opened['status']!='verified':raise ValueError('Saved evaluation failed integrity/result validation')
+        opened=opened['result']
         summary=dict(model_variant=variant,history=training.history,applied_updates=training.to_dict()['applied_updates'],
-            checkpoint=None if checkpoint is None else str(checkpoint),experiment_id=experiment['id'],run_id=record.id,
-            evaluation_artifact_id=None if artifact is None else artifact['id'],
-            per_head_metrics=None if opened is None else {name:opened.head(name).evaluation.to_dict()['metrics'] for name in heads},
-            imported_graph_trust=None if opened is None else opened.to_dict()['verification']['graph_v2'],
-            unsupported='two-input multi-loss automatic resume and head evaluation' if two_inputs else None)
+            checkpoint=str(checkpoint),experiment_id=experiment['id'],run_id=record.id,
+            evaluation_artifact_id=artifact['id'],
+            per_head_metrics={name:opened.head(name).evaluation.to_dict()['metrics'] for name in heads},
+            imported_graph_trust=opened.to_dict()['verification']['graph_v2'],
+            unsupported=None)
         write(output/'summary.json',summary)
         return summary
     finally:manager.close()
@@ -357,7 +355,7 @@ if __name__ == "__main__":
     modes.add_argument('--named-training', action='store_true', help='Two-input CPU training/checkpoint example')
     modes.add_argument('--multi-head', action='store_true', help='Two-head CPU training, checkpoint and saved evaluation')
     modes.add_argument('--compare-heads', type=Path, nargs=2, metavar=('A','B'), help='Compare two saved heads.json files')
-    parser.add_argument('--two-inputs', action='store_true', help='Bounded --multi-head training without resume/evaluation')
+    parser.add_argument('--two-inputs', action='store_true', help='Use two named inputs in the full --multi-head workflow')
     parser.add_argument('--variant', choices=('A','B'), default='A')
     parser.add_argument('--resume-from', type=Path, help='Last compatible training checkpoint; same total budget')
     args = parser.parse_args()

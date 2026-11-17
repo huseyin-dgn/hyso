@@ -51,7 +51,7 @@ def test_two_head_example_resume_store_and_saved_pair(tmp_path,monkeypatch):
             assert all(marker in text for marker in ('disease','severity','INSUFFICIENT_EVIDENCE','COMPARABLE'))
 
 
-def test_two_input_example_states_actual_unsupported_boundaries(tmp_path):
+def test_two_input_example_runs_combined_workflow_and_completed_resume(tmp_path):
     code="""
 import runpy, sys, torch
 def forbidden(*args,**kwargs):raise AssertionError('Unexpected CUDA work')
@@ -66,12 +66,14 @@ assert not torch.cuda.is_initialized()
         capture_output=True,text=True,timeout=60)
     assert completed.returncode==0,completed.stdout+completed.stderr
     result=json.loads(completed.stdout)
-    assert result['applied_updates']==4 and result['checkpoint'] is None
-    assert result['per_head_metrics'] is None and 'evaluation' in result['unsupported']
-    assert not (tmp_path/'named/last.pth').exists()
-    with pytest.raises(ValueError,match='two-input multi-loss resume is unsupported'):
-        train_heads(tmp_path/'unsupported',two_inputs=True,resume_from=tmp_path/'named/last.pth')
-    assert not (tmp_path/'unsupported').exists()
+    assert result['applied_updates']==4 and Path(result['checkpoint']).is_file()
+    assert result['unsupported'] is None and set(result['per_head_metrics'])=={'disease','severity'}
+    assert all(v['sample_count']==4 for v in result['per_head_metrics'].values())
+    saved=Path(result['checkpoint']).read_bytes()
+    continued=train_heads(tmp_path/'continued',two_inputs=True,resume_from=result['checkpoint'])
+    assert continued['history']==result['history'] and continued['applied_updates']==4
+    assert not (tmp_path/'continued/last.pth').exists()
+    assert Path(result['checkpoint']).read_bytes()==saved
 
 
 def test_allowlisted_public_imports_do_not_depend_on_checkout_modules(tmp_path):

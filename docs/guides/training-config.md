@@ -158,7 +158,7 @@ are weighted totals; accuracy series are `None`. Head loss types and weights
 are retained in `settings()['effective']['named_losses']`; the effective task is
 `per_head_classification`. A mixed CE/BCE pair does not become one multiclass task.
 
-Single-input automatic save/resume uses `NamedTargetDataset(input_tensor,
+Automatic save/resume uses `NamedTargetDataset(input_tensor,
 {'a': targets_a, 'b': targets_b})`, exact Graph `model_config` and the original
 total epoch budget. Dataset target names must exactly match loss/output names;
 their insertion order is immaterial. The existing v2 strict serializer retains
@@ -169,18 +169,23 @@ Raw Graph state retains its original keys; GraphTensorOutput checkpoints retain
 their existing `graph.` prefix. No prefix conversion or schema downgrade occurs.
 
 For two inputs, pass `NamedTargetDataset({'image': x, 'hint': hint}, targets)`.
-Inputs are routed by explicit Graph names. Two-input/two-output training has
-**no automatic checkpoint/resume**; passing save_last_to/resume_from fails
-explicitly before an iterator or update. General multi-task, CUDA, regression,
+Inputs are routed by explicit Graph names. Two-input/two-output automatic resume
+uses the same strict v2 profile, with both input names/shapes/dtypes/bytes in the
+data plan. Input dictionary insertion order is immaterial; swapping the tensors
+assigned to names changes dataset identity. General multi-task, CUDA, regression,
 segmentation and distributed training remain outside this bounded profile.
 
 `hyso.analysis.evaluate_graph_heads` separately evaluates two selected heads
 using the original classification evaluator. Its current profile requires a
-single-input CPU fp32 Graph, a sequential standard NamedTargetDataset loader,
+one- or two-input CPU fp32 Graph, a sequential standard NamedTargetDataset loader,
 and explicit per-head target/task/class_names/split/dataset_id/preprocessing_id.
 It returns separate accuracy, macro precision/recall/F1, confusion matrices,
 sample counts and provenance through `result.head(output).evaluation`.
-There is no overall_accuracy. Two-input head evaluation is unsupported. See the
+Two-input native streams retain canonical input_names and use
+`sha256_ordered_named_tensor_samples_le_v1`; the digest commits names, shapes,
+dtypes and ordered tensor samples, independently of batch partitioning. Existing
+single-Tensor streams retain their original bytes and method. Receiver-runtime
+capture for named inputs remains unsupported. There is no overall_accuracy. See the
 [runnable multi-head workflow](python-first-workflow.md#multi-head-workflow).
 
 To persist results, explicitly create/start an ExperimentManager training run
