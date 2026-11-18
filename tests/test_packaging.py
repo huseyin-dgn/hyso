@@ -185,6 +185,8 @@ DEVELOPMENT_MODULES = {
     "hyso/performance/_stream_resources.py",
     "hyso/structure.py",
     "hyso/structure_comparison.py",
+    "hyso/advisor/p12_observation.py",
+    "hyso/analysis/_p12_comparison.py",
 }
 DEVELOPMENT_MODULES |= {
     "hyso/models/components.py",
@@ -287,7 +289,7 @@ def test_canonical_packaging_configuration():
     assert {
         path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")
     } == DEVELOPMENT_MODULES
-    assert len(MODULES) == 164
+    assert len(MODULES) == 168
     assert MODULES.isdisjoint(PROFILE["excluded_python_files"])
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
@@ -841,6 +843,16 @@ import torch, hyso
 torch.set_num_threads(1)
 from hyso import ModularCNN, Trainer, BenchmarkRunner, ExperimentManager, analysis, advisor, performance, ModelRegistry, ModelBuilder
 from hyso import TrainingConfig
+from hyso.advisor.p12_observation import observe_p12
+assert callable(observe_p12)
+empty_report = analysis.EvidenceIndex().analyze(context=analysis.AnalysisContext(
+    workload_id='installed-missing-p12', task='classification', model={}, dataset={}))
+missing_p12 = analysis.compare_models(
+    analysis.ModelComparisonSource('A', empty_report),
+    analysis.ModelComparisonSource('B', empty_report), features='P12').to_dict()['metrics']
+assert len(missing_p12) == 2
+assert all(row['status'] == 'INSUFFICIENT_EVIDENCE' and row['difference'] is None
+           for row in missing_p12)
 from hyso.models.modular import ModularCNN as CanonicalModel
 from hyso.training import Trainer as CanonicalTrainer
 assert pathlib.Path(hyso.__file__).resolve().is_relative_to(target)
