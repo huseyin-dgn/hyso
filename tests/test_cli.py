@@ -1,6 +1,7 @@
 """Stage 11 CLI contracts. Every live workload/device API is fenced off."""
 import ast
 import hashlib
+import io
 import json
 from pathlib import Path
 import sys
@@ -16,6 +17,21 @@ from hyso.cli.main import build_parser
 from fixture_support import load_fixture
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+@pytest.mark.parametrize('failure', [False, True])
+def test_human_output_preserves_unicode_with_legacy_windows_redirection(monkeypatch, failure):
+    name = 'Türkçe-模型−'
+    raw_out, raw_err = io.BytesIO(), io.BytesIO()
+    out = io.TextIOWrapper(raw_out, encoding='cp1254')
+    err = io.TextIOWrapper(raw_err, encoding='cp1254')
+    monkeypatch.setattr(sys, 'stdout', out)
+    monkeypatch.setattr(sys, 'stderr', err)
+    args = (['models', 'show', name] if failure else
+            ['analysis', 'plan', '--features', 'P11', '--model-id', name])
+    assert main(args) == (2 if failure else 0)
+    out.flush(); err.flush()
+    assert name in (raw_err if failure else raw_out).getvalue().decode('utf-8')
 
 
 @pytest.fixture(autouse=True)

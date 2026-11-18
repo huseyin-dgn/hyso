@@ -12,6 +12,17 @@ class Parser(argparse.ArgumentParser):
         raise CLIError(message + f'. Run {self.prog} --help for valid arguments.')
 
 
+def _write_text(stream, text):
+    """Keep Unicode reports readable through legacy Windows redirection."""
+    try:
+        stream.write(text)
+    except UnicodeEncodeError:
+        # TextIOWrapper encodes before writing, so retrying does not duplicate
+        # output. Leave compatible encodings and in-memory streams unchanged.
+        stream.reconfigure(encoding='utf-8')
+        stream.write(text)
+
+
 def build_parser():
     parser = Parser(prog='hyso', description='HYSo models, training and retained/native analysis workflows. Commands default to read-only or dry-run.',
                     epilog='Exit codes: 0 success/dry-run, 2 invalid input, 3 blocked/missing permission or source, 4 unsupported, 5 workload failure, 6 partial result, 1 unexpected error, 130 interrupted.')
@@ -45,9 +56,9 @@ def main(argv=None):
             # redirected stream encodings; exported files remain UTF-8.
             sys.stdout.write(json_text(envelope, ascii_only=True))
         elif outcome.text is not None:
-            sys.stdout.write(outcome.text)
+            _write_text(sys.stdout, outcome.text)
         else:
-            sys.stdout.write(f'{outcome.status}\n' + json_text(outcome.data))
+            _write_text(sys.stdout, f'{outcome.status}\n' + json_text(outcome.data))
         return outcome.code
     except SystemExit as exc:
         if debug:
@@ -81,7 +92,7 @@ def main(argv=None):
         if diagnostics is not None:
             envelope['diagnostics'] = diagnostics
         sys.stdout.write(json_text(envelope, ascii_only=True))
-    sys.stderr.write('hyso: ' + error + '\n')
+    _write_text(sys.stderr, 'hyso: ' + error + '\n')
     if diagnostics is not None:
-        sys.stderr.write('hyso: ' + diagnostics[0]['message_tr'] + ' ' + diagnostics[0]['suggestion'] + '\n')
+        _write_text(sys.stderr, 'hyso: ' + diagnostics[0]['message_tr'] + ' ' + diagnostics[0]['suggestion'] + '\n')
     return code
