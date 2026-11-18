@@ -1,0 +1,467 @@
+{
+  "actual": {
+    "cpu_samples": 12,
+    "elapsed_seconds": 0.6096181,
+    "end_ns": 3038131501900,
+    "gpu_queries": 0,
+    "start_ns": 3037521883800,
+    "stop_reason": "deadline"
+  },
+  "diagnostics": {
+    "limitations": [
+      "Samples are not interpolation or continuous/time-weighted busy integral.",
+      "Device GPU busy is not Tensor Core usage; memory occupancy is not compute utilization.",
+      "Sensor internal windows may exceed short workloads and span outside collection; no exact workload attribution.",
+      "System CPU scope >64 logical cores unsupported; process normalization uses OS logical count.",
+      "OS CPU adapter Windows-only; GPU selector uses NVIDIA physical enumeration, not CUDA_VISIBLE_DEVICES."
+    ],
+    "warnings": []
+  },
+  "feature_ids": [
+    "P16"
+  ],
+  "format": "hyso.performance.utilization",
+  "identity": {
+    "experiment_run_id": null,
+    "source_result_id": null
+  },
+  "measurements": {
+    "cpu": {
+      "includes_sampler_overhead": true,
+      "logical_cores": 16,
+      "machine_capacity_percent": 80.06393666311129,
+      "normalization": "process(kernel+user)/wall; machine=single_core/logical_cores",
+      "single_core_percent": 1281.0229866097807,
+      "status": "measured",
+      "valid_intervals": 11,
+      "valid_wall_ns": 562294750
+    },
+    "gap_count": 0,
+    "gpu": {
+      "attribution": "not_exclusive_to_HYSo_or_workload",
+      "clock_domain": "sensor_internal_window_unknown",
+      "domain": "physical_device_wide",
+      "fields": {
+        "gpu_busy_percent": {
+          "aggregation": "sample_arithmetic_mean_not_time_integral",
+          "reason": "no_supported_sensor_values",
+          "sample_count": 0,
+          "sample_mean": null,
+          "status": "unsupported",
+          "unit": "percent"
+        },
+        "memory_controller_busy_percent": {
+          "aggregation": "sample_arithmetic_mean_not_time_integral",
+          "reason": "no_supported_sensor_values",
+          "sample_count": 0,
+          "sample_mean": null,
+          "status": "unsupported",
+          "unit": "percent"
+        },
+        "memory_free_bytes": {
+          "aggregation": "sample_arithmetic_mean_not_time_integral",
+          "reason": "no_supported_sensor_values",
+          "sample_count": 0,
+          "sample_mean": null,
+          "status": "unsupported",
+          "unit": "byte"
+        },
+        "memory_total_bytes": {
+          "aggregation": "sample_arithmetic_mean_not_time_integral",
+          "reason": "no_supported_sensor_values",
+          "sample_count": 0,
+          "sample_mean": null,
+          "status": "unsupported",
+          "unit": "byte"
+        },
+        "memory_used_bytes": {
+          "aggregation": "sample_arithmetic_mean_not_time_integral",
+          "reason": "no_supported_sensor_values",
+          "sample_count": 0,
+          "sample_mean": null,
+          "status": "unsupported",
+          "unit": "byte"
+        }
+      },
+      "process_gpu_utilization": {
+        "reason": "not_provided_by_this_backend",
+        "status": "unsupported",
+        "value": null
+      },
+      "sensor_window_seconds": null,
+      "sensor_window_status": "not_exposed_by_CLI; product_dependent_1/6_to_1_second",
+      "tensor_core_utilization": {
+        "reason": "not_provided_by_this_backend",
+        "status": "unsupported",
+        "value": null
+      }
+    },
+    "missing_interval_count": 0,
+    "status": "measured"
+  },
+  "protocol": {
+    "configuration": {
+      "duration_seconds": 0.6,
+      "gpu": false,
+      "gpu_selector": "0",
+      "interval_seconds": 0.05,
+      "max_samples": 32,
+      "min_valid_intervals": 4,
+      "sensor_timeout_seconds": 1.0,
+      "workload_label": "T05 sequential same-process CPU fixture; not exclusive"
+    },
+    "id": "native_sampled_counters",
+    "scope": "current_process_CPU_optional_physical_GPU",
+    "version": 1
+  },
+  "provenance": {
+    "environment": {
+      "cpu_backend": "windows.GetProcessTimes/GetSystemTimes",
+      "device": "cpu",
+      "gpu_backend": "not_requested",
+      "package_source": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\hyso\\performance\\utilization.py",
+      "pid": 15548,
+      "platform": "Windows-10-10.0.26300-SP0",
+      "python": "3.10.18"
+    },
+    "input": {
+      "kind": "not_applicable"
+    },
+    "model": {
+      "kind": "not_applicable"
+    }
+  },
+  "raw_evidence": {
+    "clock": "perf_counter_ns_current_process; GPU tool_wall_clock_separate",
+    "cpu_intervals": [
+      {
+        "end_ns": 3037586528100,
+        "gap": false,
+        "kernel_delta_ns": 421875000,
+        "machine_capacity_percent": 74.0854958960143,
+        "reason": null,
+        "single_core_percent": 1185.3679343362287,
+        "start_ns": 3037521938450,
+        "status": "measured",
+        "system_busy_percent": 100.0,
+        "system_status": "measured",
+        "user_delta_ns": 343750000,
+        "wall_ns": 64589650
+      },
+      {
+        "end_ns": 3037633429800,
+        "gap": false,
+        "kernel_delta_ns": 250000000,
+        "machine_capacity_percent": 70.79300963504521,
+        "reason": null,
+        "single_core_percent": 1132.6881541607233,
+        "start_ns": 3037586528100,
+        "status": "measured",
+        "system_busy_percent": 100.0,
+        "system_status": "measured",
+        "user_delta_ns": 281250000,
+        "wall_ns": 46901700
+      },
+      {
+        "end_ns": 3037680069200,
+        "gap": false,
+        "kernel_delta_ns": 500000000,
+        "machine_capacity_percent": 77.47272156159814,
+        "reason": null,
+        "single_core_percent": 1239.5635449855702,
+        "start_ns": 3037633429800,
+        "status": "measured",
+        "system_busy_percent": 100.0,
+        "system_status": "measured",
+        "user_delta_ns": 78125000,
+        "wall_ns": 46639400
+      },
+      {
+        "end_ns": 3037725215300,
+        "gap": false,
+        "kernel_delta_ns": 328125000,
+        "machine_capacity_percent": 82.19840694988049,
+        "reason": null,
+        "single_core_percent": 1315.1745111980879,
+        "start_ns": 3037680069200,
+        "status": "measured",
+        "system_busy_percent": 100.0,
+        "system_status": "measured",
+        "user_delta_ns": 265625000,
+        "wall_ns": 45146100
+      },
+      {
+        "end_ns": 3037772592800,
+        "gap": false,
+        "kernel_delta_ns": 531250000,
+        "machine_capacity_percent": 76.26576433961269,
+        "reason": null,
+        "single_core_percent": 1220.252229433803,
+        "start_ns": 3037725215300,
+        "status": "measured",
+        "system_busy_percent": 100.0,
+        "system_status": "measured",
+        "user_delta_ns": 46875000,
+        "wall_ns": 47377500
+      },
+      {
+        "end_ns": 3037835022150,
+        "gap": false,
+        "kernel_delta_ns": 578125000,
+        "machine_capacity_percent": 90.7275584320516,
+        "reason": null,
+        "single_core_percent": 1451.6409349128255,
+        "start_ns": 3037772592800,
+        "status": "measured",
+        "system_busy_percent": 100.0,
+        "system_status": "measured",
+        "user_delta_ns": 328125000,
+        "wall_ns": 62429350
+      },
+      {
+        "end_ns": 3037881544500,
+        "gap": false,
+        "kernel_delta_ns": 359375000,
+        "machine_capacity_percent": 77.66764254170307,
+        "reason": null,
+        "single_core_percent": 1242.6822806672492,
+        "start_ns": 3037835022150,
+        "status": "measured",
+        "system_busy_percent": 100.0,
+        "system_status": "measured",
+        "user_delta_ns": 218750000,
+        "wall_ns": 46522350
+      },
+      {
+        "end_ns": 3037928615350,
+        "gap": false,
+        "kernel_delta_ns": 343750000,
+        "machine_capacity_percent": 60.16528807106734,
+        "reason": null,
+        "single_core_percent": 962.6446091370774,
+        "start_ns": 3037881544500,
+        "status": "measured",
+        "system_busy_percent": 100.0,
+        "system_status": "measured",
+        "user_delta_ns": 109375000,
+        "wall_ns": 47070850
+      },
+      {
+        "end_ns": 3037974992500,
+        "gap": false,
+        "kernel_delta_ns": 390625000,
+        "machine_capacity_percent": 92.65069112698818,
+        "reason": null,
+        "single_core_percent": 1482.4110580318109,
+        "start_ns": 3037928615350,
+        "status": "measured",
+        "system_busy_percent": 100.0,
+        "system_status": "measured",
+        "user_delta_ns": 296875000,
+        "wall_ns": 46377150
+      },
+      {
+        "end_ns": 3038022393000,
+        "gap": false,
+        "kernel_delta_ns": 406250000,
+        "machine_capacity_percent": 86.52994166728199,
+        "reason": null,
+        "single_core_percent": 1384.4790666765118,
+        "start_ns": 3037974992500,
+        "status": "measured",
+        "system_busy_percent": 100.0,
+        "system_status": "measured",
+        "user_delta_ns": 250000000,
+        "wall_ns": 47400500
+      },
+      {
+        "end_ns": 3038084233200,
+        "gap": false,
+        "kernel_delta_ns": 453125000,
+        "machine_capacity_percent": 88.43357557058354,
+        "reason": null,
+        "single_core_percent": 1414.9372091293367,
+        "start_ns": 3038022393000,
+        "status": "measured",
+        "system_busy_percent": 100.0,
+        "system_status": "measured",
+        "user_delta_ns": 421875000,
+        "wall_ns": 61840200
+      }
+    ],
+    "cpu_samples": [
+      {
+        "kernel_ns": 3140625000,
+        "query_end_ns": 3037521988600,
+        "query_start_ns": 3037521888300,
+        "reason": null,
+        "status": "measured",
+        "system_idle_ns": 43512750000000,
+        "system_kernel_ns": 45739312500000,
+        "system_status": "measured",
+        "system_user_ns": 2854015625000,
+        "timestamp_ns": 3037521938450,
+        "user_ns": 5218750000
+      },
+      {
+        "kernel_ns": 3562500000,
+        "query_end_ns": 3037586717500,
+        "query_start_ns": 3037586338700,
+        "reason": null,
+        "status": "measured",
+        "system_idle_ns": 43512750000000,
+        "system_kernel_ns": 45739875000000,
+        "system_status": "measured",
+        "system_user_ns": 2854453125000,
+        "timestamp_ns": 3037586528100,
+        "user_ns": 5562500000
+      },
+      {
+        "kernel_ns": 3812500000,
+        "query_end_ns": 3037633600400,
+        "query_start_ns": 3037633259200,
+        "reason": null,
+        "status": "measured",
+        "system_idle_ns": 43512750000000,
+        "system_kernel_ns": 45740234375000,
+        "system_status": "measured",
+        "system_user_ns": 2854843750000,
+        "timestamp_ns": 3037633429800,
+        "user_ns": 5843750000
+      },
+      {
+        "kernel_ns": 4312500000,
+        "query_end_ns": 3037680342200,
+        "query_start_ns": 3037679796200,
+        "reason": null,
+        "status": "measured",
+        "system_idle_ns": 43512750000000,
+        "system_kernel_ns": 45740796875000,
+        "system_status": "measured",
+        "system_user_ns": 2855031250000,
+        "timestamp_ns": 3037680069200,
+        "user_ns": 5921875000
+      },
+      {
+        "kernel_ns": 4640625000,
+        "query_end_ns": 3037725438900,
+        "query_start_ns": 3037724991700,
+        "reason": null,
+        "status": "measured",
+        "system_idle_ns": 43512750000000,
+        "system_kernel_ns": 45741187500000,
+        "system_status": "measured",
+        "system_user_ns": 2855390625000,
+        "timestamp_ns": 3037725215300,
+        "user_ns": 6187500000
+      },
+      {
+        "kernel_ns": 5171875000,
+        "query_end_ns": 3037772731600,
+        "query_start_ns": 3037772454000,
+        "reason": null,
+        "status": "measured",
+        "system_idle_ns": 43512750000000,
+        "system_kernel_ns": 45741843750000,
+        "system_status": "measured",
+        "system_user_ns": 2855484375000,
+        "timestamp_ns": 3037772592800,
+        "user_ns": 6234375000
+      },
+      {
+        "kernel_ns": 5750000000,
+        "query_end_ns": 3037835192600,
+        "query_start_ns": 3037834851700,
+        "reason": null,
+        "status": "measured",
+        "system_idle_ns": 43512750000000,
+        "system_kernel_ns": 45742500000000,
+        "system_status": "measured",
+        "system_user_ns": 2855828125000,
+        "timestamp_ns": 3037835022150,
+        "user_ns": 6562500000
+      },
+      {
+        "kernel_ns": 6109375000,
+        "query_end_ns": 3037881776800,
+        "query_start_ns": 3037881312200,
+        "reason": null,
+        "status": "measured",
+        "system_idle_ns": 43512750000000,
+        "system_kernel_ns": 45742953125000,
+        "system_status": "measured",
+        "system_user_ns": 2856125000000,
+        "timestamp_ns": 3037881544500,
+        "user_ns": 6781250000
+      },
+      {
+        "kernel_ns": 6453125000,
+        "query_end_ns": 3037928868200,
+        "query_start_ns": 3037928362500,
+        "reason": null,
+        "status": "measured",
+        "system_idle_ns": 43512750000000,
+        "system_kernel_ns": 45743421875000,
+        "system_status": "measured",
+        "system_user_ns": 2856406250000,
+        "timestamp_ns": 3037928615350,
+        "user_ns": 6890625000
+      },
+      {
+        "kernel_ns": 6843750000,
+        "query_end_ns": 3037975261800,
+        "query_start_ns": 3037974723200,
+        "reason": null,
+        "status": "measured",
+        "system_idle_ns": 43512750000000,
+        "system_kernel_ns": 45743859375000,
+        "system_status": "measured",
+        "system_user_ns": 2856718750000,
+        "timestamp_ns": 3037974992500,
+        "user_ns": 7187500000
+      },
+      {
+        "kernel_ns": 7250000000,
+        "query_end_ns": 3038022567300,
+        "query_start_ns": 3038022218700,
+        "reason": null,
+        "status": "measured",
+        "system_idle_ns": 43512750000000,
+        "system_kernel_ns": 45744343750000,
+        "system_status": "measured",
+        "system_user_ns": 2856984375000,
+        "timestamp_ns": 3038022393000,
+        "user_ns": 7437500000
+      },
+      {
+        "kernel_ns": 7703125000,
+        "query_end_ns": 3038084386800,
+        "query_start_ns": 3038084079600,
+        "reason": null,
+        "status": "measured",
+        "system_idle_ns": 43512750000000,
+        "system_kernel_ns": 45744859375000,
+        "system_status": "measured",
+        "system_user_ns": 2857468750000,
+        "timestamp_ns": 3038084233200,
+        "user_ns": 7859375000
+      }
+    ],
+    "gpu_samples": [],
+    "logical_cores": 16,
+    "overhead_scope": "CPU+sensor_queries_including_subprocess_wait_not_sleep",
+    "query_overhead_ns": 4992800,
+    "workload": {
+      "exclusive": false,
+      "label": "T05 sequential same-process CPU fixture; not exclusive",
+      "overlap": "caller_declared_unverified"
+    }
+  },
+  "requested": {
+    "duration_seconds": 0.6,
+    "interval_seconds": 0.05,
+    "max_samples": 32
+  },
+  "result_id": "91ebff5e-5158-44c7-9e46-676656ddac9c",
+  "schema_version": 1
+}

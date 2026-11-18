@@ -1,0 +1,13 @@
+> Historical document: the web product was retired in stage 13.5.6. Do not use the launch/API instructions below as an active product guide. See [Python-first transition](../reports/stage13-5-6-python-first-transition.md).
+
+# HYSo Studio Reborn design system
+
+`hyso/studio/static/app.css` defines the shared color, spacing and radius tokens. Jade/emerald is the interaction accent, copper is wayfinding, warm off-white and graphite are neutral surfaces. Success, warning and error use distinct semantic tokens. Both themes use the same hierarchy and controls. The existing HY mark is preserved; no external fonts, template framework or decorative metric data is loaded.
+
+Overview separates product introduction, local/evidence guidance, six actionable workflow steps, actual workspace totals and recent work. My models remains a separate task. Architecture comparison places metadata summary cards above the detailed table; category meters use actual node counts. Knowledge combines searchable component cards with a selected explanation, progressive parameter details and four technical cards. Raw JSON is closed separately.
+
+Reborn separates setup and evidence into adjacent desktop work areas, stacked below 1200px. Test selection, explicit launch, observed job history and retained case results have different visual groups. Six test/data cards explain synthetic versus supplied inputs. Structural validation has its own collapsed history. Case results use semantic status borders and text; each metric card has its own explanation. Page introductions, optional explanations and per-panel closed technical details provide three information levels. The 16px base, 26px work-area spacing and 14px surface radius share the existing theme tokens. Recent test/training/comparison sections and the five overview totals use SQLite records.
+
+Typography, control sizes, grouped forms and spacing support large desktop screens. At 390px the navigation scrolls horizontally, task controls wrap, knowledge cards scroll horizontally, forms become one column and the inspector is a bottom drawer. The canvas remains an explicit touch/pointer interaction surface. Keyboard focus, graph arrow movement, labelled controls and reduced-motion rules remain available. This is not a full WCAG or screen-reader certification.
+
+Türkçe: Ana sayfa açıklama, iş akışı ve gerçek sayımları gruplar. Merkezî token'lar light/dark karşılıklarını yönetir. Teknik kanıt isteğe bağlıdır. Mobilde sayfa yatay taşmaz; geniş karşılaştırma tablosu kendi alanında kaydırılır. Grafikler gerçek mimari veya saklanan ölçüm metadata'sından gelir. Boş çalışma alanında örnek başarı, dekoratif eğri veya hayali tamamlanan deney gösterilmez.

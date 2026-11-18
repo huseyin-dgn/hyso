@@ -1,0 +1,2621 @@
+{
+  "fixture_scope": "Retained native schema-3 P26 results from three tiny CPU CNNs, four synthetic samples each; no benchmark/training or hardware performance claim.",
+  "payloads": {
+    "A": {
+      "accounting": {
+        "batch_sizes": [
+          2,
+          2
+        ],
+        "expected_samples": 4
+      },
+      "configuration": {
+        "binary_rule": "logit >= 0",
+        "class_names": [
+          "negative",
+          "positive"
+        ],
+        "multiclass_rule": "argmax_first_index",
+        "split": "test",
+        "task": "multiclass",
+        "zero_division": 0
+      },
+      "evaluation_id": "2233b0c2-eccb-48eb-8447-9983a1bdd536",
+      "feature_ids": [
+        "P26"
+      ],
+      "format": "hyso.evaluation.classification",
+      "metrics": {
+        "accuracy": 0.75,
+        "averages": {
+          "macro": {
+            "f1": 0.7333333333333334,
+            "precision": 0.8333333333333333,
+            "recall": 0.75,
+            "support": 4
+          },
+          "micro": {
+            "f1": 0.75,
+            "precision": 0.75,
+            "recall": 0.75,
+            "support": 4
+          },
+          "weighted": {
+            "f1": 0.7333333333333334,
+            "precision": 0.8333333333333333,
+            "recall": 0.75,
+            "support": 4
+          }
+        },
+        "confusion_matrix": [
+          [
+            2,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ],
+        "per_class": [
+          {
+            "class_index": 0,
+            "class_name": "negative",
+            "f1": 0.8,
+            "precision": 0.6666666666666666,
+            "recall": 1.0,
+            "support": 2
+          },
+          {
+            "class_index": 1,
+            "class_name": "positive",
+            "f1": 0.6666666666666666,
+            "precision": 1.0,
+            "recall": 0.5,
+            "support": 2
+          }
+        ],
+        "sample_count": 4
+      },
+      "producer_evidence": {
+        "checkpoint": {
+          "model_state_sha256": null,
+          "reason": "no_matching_trusted_load_receipt",
+          "sha256": null,
+          "source": null,
+          "status": "missing"
+        },
+        "dataset_origin": {
+          "reason": "dataset_origin_not_verified",
+          "status": "missing"
+        },
+        "evaluated_stream": {
+          "batch_partition_invariant": true,
+          "inputs_sha256": "6b7988a258e8793a4db417c140fbeb8061da12554202d9dde56c599ec92ed58e",
+          "method": "sha256_ordered_tensor_samples_le_v1",
+          "paired_sha256": "0e5cab2d53f5fbdabfe8c09a38b6361faac2ba0490e458d2e4447104fb8a9dff",
+          "sample_count": 4,
+          "scope": "ordered_post_collation_inputs_and_targets",
+          "source": "evaluate_classification.validated_batches_before_forward",
+          "status": "native",
+          "targets_sha256": "31d11e086698875789a5b8f3fa12e7cd0003bebf63784c5a22db9a7a17f29e6a"
+        },
+        "format": "hyso.evaluation.producer_evidence",
+        "model_state": {
+          "method": "sha256_named_parameters_and_buffers_v1",
+          "sha256": "f027996c8b482a2590a747316efdc7faaccd66cf1689af61726ce35f63faef22",
+          "source": "evaluate_classification.original_and_isolated_model",
+          "status": "native"
+        },
+        "preprocessing": {
+          "reason": "transform_chain_not_verified",
+          "status": "missing"
+        },
+        "schema_version": 1,
+        "source_id": {
+          "source": null,
+          "status": "missing",
+          "value": null
+        },
+        "split": {
+          "source": "caller.split",
+          "status": "declared",
+          "value": "test"
+        }
+      },
+      "provenance": {
+        "platform": "Windows-10-10.0.26300-SP0",
+        "python": "3.10.18",
+        "torch": "2.5.1+cu121"
+      },
+      "raw": {
+        "prediction_type": "logits",
+        "predictions": [
+          [
+            0.0,
+            -3.5
+          ],
+          [
+            0.0,
+            -2.5
+          ],
+          [
+            0.0,
+            -0.5
+          ],
+          [
+            0.0,
+            0.5
+          ]
+        ],
+        "targets": [
+          0,
+          0,
+          1,
+          1
+        ]
+      },
+      "schema_version": 3,
+      "source": {
+        "dataset_type": "torch.utils.data.dataset.TensorDataset",
+        "device": "cpu",
+        "execution": "isolated_deepcopy_eval_inference_mode",
+        "kind": "model_inference",
+        "model_state_sha256": "f027996c8b482a2590a747316efdc7faaccd66cf1689af61726ce35f63faef22",
+        "model_type": "torch.nn.modules.container.Sequential",
+        "num_workers": 0,
+        "sampler": "sequential",
+        "source_id": null
+      },
+      "source_sha256": "297b0808c78c7e8241746cc4b9b726e2adb7ae80fb13d0bb8de1667a67df1eb7",
+      "status": "complete",
+      "structure_binding": {
+        "checkpoint": {
+          "sha256": null,
+          "status": "missing"
+        },
+        "evaluated_model_type": "torch.nn.modules.container.Sequential",
+        "evaluated_stream": {
+          "inputs_sha256": "6b7988a258e8793a4db417c140fbeb8061da12554202d9dde56c599ec92ed58e",
+          "method": "sha256_ordered_tensor_samples_le_v1",
+          "paired_sha256": "0e5cab2d53f5fbdabfe8c09a38b6361faac2ba0490e458d2e4447104fb8a9dff",
+          "sample_count": 4,
+          "scope": "ordered_post_collation_inputs_and_targets",
+          "targets_sha256": "31d11e086698875789a5b8f3fa12e7cd0003bebf63784c5a22db9a7a17f29e6a"
+        },
+        "evaluation_id": "2233b0c2-eccb-48eb-8447-9983a1bdd536",
+        "format": "hyso.evaluation.structure_binding",
+        "forward_batches": 2,
+        "method": "p26_isolated_forward_receiver_pre_post_v1",
+        "model_state_method": "sha256_named_parameters_and_buffers_v1",
+        "model_state_sha256": "f027996c8b482a2590a747316efdc7faaccd66cf1689af61726ce35f63faef22",
+        "observed_phases": [
+          "after_candidate_eval_before_loader_iteration",
+          "after_successful_loader_iteration_before_result"
+        ],
+        "original_structure_relation": "not_captured_or_equivalence_not_certified",
+        "post_model_state_sha256": "f027996c8b482a2590a747316efdc7faaccd66cf1689af61726ce35f63faef22",
+        "post_structure_sha256": "9c5b9bd00ced67c341baf107b86c205d2ec1785bd5764bf0a54c40e8141966ae",
+        "pre_model_state_sha256": "f027996c8b482a2590a747316efdc7faaccd66cf1689af61726ce35f63faef22",
+        "pre_structure_sha256": "9c5b9bd00ced67c341baf107b86c205d2ec1785bd5764bf0a54c40e8141966ae",
+        "receiver": "isolated_candidate_called_for_forward",
+        "schema_version": 1,
+        "scope": "registered_structure_of_forward_receiver_at_evaluation_boundaries",
+        "snapshot": {
+          "content_sha256": "9c5b9bd00ced67c341baf107b86c205d2ec1785bd5764bf0a54c40e8141966ae",
+          "format": "hyso.model_structure",
+          "limitations": [
+            "Registered structure only; no forward/backward, runtime shapes, execution order or dynamic control flow.",
+            "Functional operations and unregistered Python state may be absent; registered module counts are not executed layer counts.",
+            "Exact supported standard types have static configuration; custom/subclass semantics are unsupported, not inferred.",
+            "requires_grad is metadata, not proof of actual training behavior.",
+            "Logical bytes count unique tensor objects, not unique storage bytes, GPU allocation, RSS or checkpoint file size.",
+            "Storage groups identify observed shared storage, not byte-range overlap or physical memory use.",
+            "Structure SHA is neither model-state SHA nor checkpoint SHA; equal structure does not prove equal weights or behavior.",
+            "Existing trusted objects only; no source import, checkpoint load or sandbox for hostile/concurrently mutated Python objects.",
+            "Imported metadata validation checks consistency, not producer authenticity or a live model association."
+          ],
+          "modules": [
+            {
+              "buffers": [
+                {
+                  "name": "calibration",
+                  "persistent": true,
+                  "tensor_id": "t0"
+                }
+              ],
+              "category": "container",
+              "children": [
+                {
+                  "module_id": "m1",
+                  "name": "conv"
+                },
+                {
+                  "module_id": "m2",
+                  "name": "pool"
+                },
+                {
+                  "module_id": "m3",
+                  "name": "flatten"
+                },
+                {
+                  "module_id": "m4",
+                  "name": "head"
+                }
+              ],
+              "configuration": [],
+              "configuration_status": "native",
+              "direct_buffer_elements": {
+                "known_subtotal": 1,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 1
+              },
+              "direct_parameter_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "module_id": "m0",
+              "parameters": [],
+              "primary_path": "",
+              "qualified_type": "torch.nn.modules.container.Sequential"
+            },
+            {
+              "buffers": [],
+              "category": "conv2d",
+              "children": [],
+              "configuration": [
+                {
+                  "name": "in_channels",
+                  "reason": null,
+                  "source": "module.__dict__.in_channels",
+                  "status": "native",
+                  "value": 1
+                },
+                {
+                  "name": "out_channels",
+                  "reason": null,
+                  "source": "module.__dict__.out_channels",
+                  "status": "native",
+                  "value": 4
+                },
+                {
+                  "name": "kernel_size",
+                  "reason": null,
+                  "source": "module.__dict__.kernel_size",
+                  "status": "native",
+                  "value": [
+                    1,
+                    1
+                  ]
+                },
+                {
+                  "name": "stride",
+                  "reason": null,
+                  "source": "module.__dict__.stride",
+                  "status": "native",
+                  "value": [
+                    1,
+                    1
+                  ]
+                },
+                {
+                  "name": "padding",
+                  "reason": null,
+                  "source": "module.__dict__.padding",
+                  "status": "native",
+                  "value": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "name": "dilation",
+                  "reason": null,
+                  "source": "module.__dict__.dilation",
+                  "status": "native",
+                  "value": [
+                    1,
+                    1
+                  ]
+                },
+                {
+                  "name": "groups",
+                  "reason": null,
+                  "source": "module.__dict__.groups",
+                  "status": "native",
+                  "value": 1
+                },
+                {
+                  "name": "padding_mode",
+                  "reason": null,
+                  "source": "module.__dict__.padding_mode",
+                  "status": "native",
+                  "value": "zeros"
+                },
+                {
+                  "name": "bias",
+                  "reason": null,
+                  "source": "_parameters.bias presence",
+                  "status": "native",
+                  "value": true
+                }
+              ],
+              "configuration_status": "native",
+              "direct_buffer_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "direct_parameter_elements": {
+                "known_subtotal": 8,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 8
+              },
+              "module_id": "m1",
+              "parameters": [
+                {
+                  "name": "weight",
+                  "persistent": null,
+                  "tensor_id": "t1"
+                },
+                {
+                  "name": "bias",
+                  "persistent": null,
+                  "tensor_id": "t2"
+                }
+              ],
+              "primary_path": "conv",
+              "qualified_type": "torch.nn.modules.conv.Conv2d"
+            },
+            {
+              "buffers": [],
+              "category": "pooling",
+              "children": [],
+              "configuration": [
+                {
+                  "name": "output_size",
+                  "reason": null,
+                  "source": "module.__dict__.output_size",
+                  "status": "native",
+                  "value": 1
+                }
+              ],
+              "configuration_status": "native",
+              "direct_buffer_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "direct_parameter_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "module_id": "m2",
+              "parameters": [],
+              "primary_path": "pool",
+              "qualified_type": "torch.nn.modules.pooling.AdaptiveAvgPool2d"
+            },
+            {
+              "buffers": [],
+              "category": "reshape",
+              "children": [],
+              "configuration": [
+                {
+                  "name": "start_dim",
+                  "reason": null,
+                  "source": "module.__dict__.start_dim",
+                  "status": "native",
+                  "value": 1
+                },
+                {
+                  "name": "end_dim",
+                  "reason": null,
+                  "source": "module.__dict__.end_dim",
+                  "status": "native",
+                  "value": -1
+                }
+              ],
+              "configuration_status": "native",
+              "direct_buffer_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "direct_parameter_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "module_id": "m3",
+              "parameters": [],
+              "primary_path": "flatten",
+              "qualified_type": "torch.nn.modules.flatten.Flatten"
+            },
+            {
+              "buffers": [],
+              "category": "linear",
+              "children": [],
+              "configuration": [
+                {
+                  "name": "in_features",
+                  "reason": null,
+                  "source": "module.__dict__.in_features",
+                  "status": "native",
+                  "value": 4
+                },
+                {
+                  "name": "out_features",
+                  "reason": null,
+                  "source": "module.__dict__.out_features",
+                  "status": "native",
+                  "value": 2
+                },
+                {
+                  "name": "bias",
+                  "reason": null,
+                  "source": "_parameters.bias presence",
+                  "status": "native",
+                  "value": true
+                }
+              ],
+              "configuration_status": "native",
+              "direct_buffer_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "direct_parameter_elements": {
+                "known_subtotal": 10,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 10
+              },
+              "module_id": "m4",
+              "parameters": [
+                {
+                  "name": "weight",
+                  "persistent": null,
+                  "tensor_id": "t3"
+                },
+                {
+                  "name": "bias",
+                  "persistent": null,
+                  "tensor_id": "t4"
+                }
+              ],
+              "primary_path": "head",
+              "qualified_type": "torch.nn.modules.linear.Linear"
+            }
+          ],
+          "paths": [
+            {
+              "cycle": false,
+              "depth": 0,
+              "module_id": "m0",
+              "parent_path": null,
+              "path": "",
+              "shared": false
+            },
+            {
+              "cycle": false,
+              "depth": 1,
+              "module_id": "m1",
+              "parent_path": "",
+              "path": "conv",
+              "shared": false
+            },
+            {
+              "cycle": false,
+              "depth": 1,
+              "module_id": "m2",
+              "parent_path": "",
+              "path": "pool",
+              "shared": false
+            },
+            {
+              "cycle": false,
+              "depth": 1,
+              "module_id": "m3",
+              "parent_path": "",
+              "path": "flatten",
+              "shared": false
+            },
+            {
+              "cycle": false,
+              "depth": 1,
+              "module_id": "m4",
+              "parent_path": "",
+              "path": "head",
+              "shared": false
+            }
+          ],
+          "producer": {
+            "classification_version": 1,
+            "method": "registered_nn_module_metadata",
+            "torch_version": "2.5.1+cu121",
+            "version": 1
+          },
+          "schema_version": 1,
+          "source": {
+            "authority": "native",
+            "fields": {
+              "aliases": "Object identity mapped to deterministic local IDs; dense untyped-storage handle equality",
+              "configuration": "Exact-type allowlist of stored standard module fields; no properties/callables/repr",
+              "modules": "nn.Module registration dictionaries; exact Python type identity",
+              "persistence": "Per-owner _non_persistent_buffers_set membership",
+              "summary": "Derived from unique registered objects and expanded noncyclic module paths",
+              "tensors": "Standard Tensor/Parameter shape, dtype, layout, device and requires_grad metadata; no values"
+            },
+            "kind": "existing_trusted_torch_nn_module"
+          },
+          "summary": {
+            "buffer_dtypes": [
+              {
+                "dtype": "torch.float32",
+                "elements": {
+                  "known_subtotal": 1,
+                  "status": "native",
+                  "unsupported_tensor_ids": [],
+                  "value": 1
+                },
+                "logical_bytes": {
+                  "known_subtotal": 4,
+                  "status": "native",
+                  "unsupported_tensor_ids": [],
+                  "value": 4
+                },
+                "tensor_count": 1
+              }
+            ],
+            "buffer_elements": {
+              "known_subtotal": 1,
+              "status": "native",
+              "unsupported_tensor_ids": [],
+              "value": 1
+            },
+            "buffer_logical_bytes": {
+              "known_subtotal": 4,
+              "status": "native",
+              "unsupported_tensor_ids": [],
+              "value": 4
+            },
+            "categories": [
+              {
+                "name": "container",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "conv2d",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "linear",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "pooling",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "reshape",
+                "registered_paths": 1,
+                "unique_modules": 1
+              }
+            ],
+            "cross_category_tensors": 0,
+            "frozen_elements": {
+              "known_subtotal": 4,
+              "status": "native",
+              "unsupported_tensor_ids": [],
+              "value": 4
+            },
+            "module_types": [
+              {
+                "name": "torch.nn.modules.container.Sequential",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "torch.nn.modules.conv.Conv2d",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "torch.nn.modules.flatten.Flatten",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "torch.nn.modules.linear.Linear",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "torch.nn.modules.pooling.AdaptiveAvgPool2d",
+                "registered_paths": 1,
+                "unique_modules": 1
+              }
+            ],
+            "parameter_dtypes": [
+              {
+                "dtype": "torch.float32",
+                "elements": {
+                  "known_subtotal": 18,
+                  "status": "native",
+                  "unsupported_tensor_ids": [],
+                  "value": 18
+                },
+                "logical_bytes": {
+                  "known_subtotal": 72,
+                  "status": "native",
+                  "unsupported_tensor_ids": [],
+                  "value": 72
+                },
+                "tensor_count": 4
+              }
+            ],
+            "parameter_elements": {
+              "known_subtotal": 18,
+              "status": "native",
+              "unsupported_tensor_ids": [],
+              "value": 18
+            },
+            "parameter_logical_bytes": {
+              "known_subtotal": 72,
+              "status": "native",
+              "unsupported_tensor_ids": [],
+              "value": 72
+            },
+            "registered_module_paths": 5,
+            "storage_alias_coverage": "native",
+            "storage_groups": [
+              {
+                "storage_id": "s0",
+                "tensor_ids": [
+                  "t0"
+                ]
+              },
+              {
+                "storage_id": "s1",
+                "tensor_ids": [
+                  "t1"
+                ]
+              },
+              {
+                "storage_id": "s2",
+                "tensor_ids": [
+                  "t2"
+                ]
+              },
+              {
+                "storage_id": "s3",
+                "tensor_ids": [
+                  "t3"
+                ]
+              },
+              {
+                "storage_id": "s4",
+                "tensor_ids": [
+                  "t4"
+                ]
+              }
+            ],
+            "tensor_union_logical_bytes": {
+              "known_subtotal": 76,
+              "status": "native",
+              "unsupported_tensor_ids": [],
+              "value": 76
+            },
+            "trainable_elements": {
+              "known_subtotal": 14,
+              "status": "native",
+              "unsupported_tensor_ids": [],
+              "value": 14
+            },
+            "unique_buffer_tensors": 1,
+            "unique_modules": 5,
+            "unique_parameter_tensors": 4
+          },
+          "tensors": [
+            {
+              "device": "cpu",
+              "dtype": "torch.float32",
+              "element_size": 4,
+              "elements": 1,
+              "layout": "torch.strided",
+              "logical_bytes": 4,
+              "qualified_type": "torch.Tensor",
+              "reason": null,
+              "requires_grad": false,
+              "shape": [],
+              "status": "native",
+              "storage_id": "s0",
+              "storage_offset": 0,
+              "storage_reason": null,
+              "storage_status": "native",
+              "stride": [],
+              "tensor_id": "t0"
+            },
+            {
+              "device": "cpu",
+              "dtype": "torch.float32",
+              "element_size": 4,
+              "elements": 4,
+              "layout": "torch.strided",
+              "logical_bytes": 16,
+              "qualified_type": "torch.nn.parameter.Parameter",
+              "reason": null,
+              "requires_grad": true,
+              "shape": [
+                4,
+                1,
+                1,
+                1
+              ],
+              "status": "native",
+              "storage_id": "s1",
+              "storage_offset": 0,
+              "storage_reason": null,
+              "storage_status": "native",
+              "stride": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "tensor_id": "t1"
+            },
+            {
+              "device": "cpu",
+              "dtype": "torch.float32",
+              "element_size": 4,
+              "elements": 4,
+              "layout": "torch.strided",
+              "logical_bytes": 16,
+              "qualified_type": "torch.nn.parameter.Parameter",
+              "reason": null,
+              "requires_grad": false,
+              "shape": [
+                4
+              ],
+              "status": "native",
+              "storage_id": "s2",
+              "storage_offset": 0,
+              "storage_reason": null,
+              "storage_status": "native",
+              "stride": [
+                1
+              ],
+              "tensor_id": "t2"
+            },
+            {
+              "device": "cpu",
+              "dtype": "torch.float32",
+              "element_size": 4,
+              "elements": 8,
+              "layout": "torch.strided",
+              "logical_bytes": 32,
+              "qualified_type": "torch.nn.parameter.Parameter",
+              "reason": null,
+              "requires_grad": true,
+              "shape": [
+                2,
+                4
+              ],
+              "status": "native",
+              "storage_id": "s3",
+              "storage_offset": 0,
+              "storage_reason": null,
+              "storage_status": "native",
+              "stride": [
+                4,
+                1
+              ],
+              "tensor_id": "t3"
+            },
+            {
+              "device": "cpu",
+              "dtype": "torch.float32",
+              "element_size": 4,
+              "elements": 2,
+              "layout": "torch.strided",
+              "logical_bytes": 8,
+              "qualified_type": "torch.nn.parameter.Parameter",
+              "reason": null,
+              "requires_grad": true,
+              "shape": [
+                2
+              ],
+              "status": "native",
+              "storage_id": "s4",
+              "storage_offset": 0,
+              "storage_reason": null,
+              "storage_status": "native",
+              "stride": [
+                1
+              ],
+              "tensor_id": "t4"
+            }
+          ]
+        },
+        "status": "native",
+        "structure_sha256": "9c5b9bd00ced67c341baf107b86c205d2ec1785bd5764bf0a54c40e8141966ae"
+      },
+      "training_source": null
+    },
+    "B": {
+      "accounting": {
+        "batch_sizes": [
+          2,
+          2
+        ],
+        "expected_samples": 4
+      },
+      "configuration": {
+        "binary_rule": "logit >= 0",
+        "class_names": [
+          "negative",
+          "positive"
+        ],
+        "multiclass_rule": "argmax_first_index",
+        "split": "test",
+        "task": "multiclass",
+        "zero_division": 0
+      },
+      "evaluation_id": "97e482ea-570e-4d42-8cb8-a00735da6058",
+      "feature_ids": [
+        "P26"
+      ],
+      "format": "hyso.evaluation.classification",
+      "metrics": {
+        "accuracy": 1.0,
+        "averages": {
+          "macro": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 4
+          },
+          "micro": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 4
+          },
+          "weighted": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 4
+          }
+        },
+        "confusion_matrix": [
+          [
+            2,
+            0
+          ],
+          [
+            0,
+            2
+          ]
+        ],
+        "per_class": [
+          {
+            "class_index": 0,
+            "class_name": "negative",
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 2
+          },
+          {
+            "class_index": 1,
+            "class_name": "positive",
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 2
+          }
+        ],
+        "sample_count": 4
+      },
+      "producer_evidence": {
+        "checkpoint": {
+          "model_state_sha256": null,
+          "reason": "no_matching_trusted_load_receipt",
+          "sha256": null,
+          "source": null,
+          "status": "missing"
+        },
+        "dataset_origin": {
+          "reason": "dataset_origin_not_verified",
+          "status": "missing"
+        },
+        "evaluated_stream": {
+          "batch_partition_invariant": true,
+          "inputs_sha256": "6b7988a258e8793a4db417c140fbeb8061da12554202d9dde56c599ec92ed58e",
+          "method": "sha256_ordered_tensor_samples_le_v1",
+          "paired_sha256": "0e5cab2d53f5fbdabfe8c09a38b6361faac2ba0490e458d2e4447104fb8a9dff",
+          "sample_count": 4,
+          "scope": "ordered_post_collation_inputs_and_targets",
+          "source": "evaluate_classification.validated_batches_before_forward",
+          "status": "native",
+          "targets_sha256": "31d11e086698875789a5b8f3fa12e7cd0003bebf63784c5a22db9a7a17f29e6a"
+        },
+        "format": "hyso.evaluation.producer_evidence",
+        "model_state": {
+          "method": "sha256_named_parameters_and_buffers_v1",
+          "sha256": "14ecafd0b52502ae184717076e271445e957611d0bd755b3edb3db2928d6973f",
+          "source": "evaluate_classification.original_and_isolated_model",
+          "status": "native"
+        },
+        "preprocessing": {
+          "reason": "transform_chain_not_verified",
+          "status": "missing"
+        },
+        "schema_version": 1,
+        "source_id": {
+          "source": null,
+          "status": "missing",
+          "value": null
+        },
+        "split": {
+          "source": "caller.split",
+          "status": "declared",
+          "value": "test"
+        }
+      },
+      "provenance": {
+        "platform": "Windows-10-10.0.26300-SP0",
+        "python": "3.10.18",
+        "torch": "2.5.1+cu121"
+      },
+      "raw": {
+        "prediction_type": "logits",
+        "predictions": [
+          [
+            0.0,
+            -2.0
+          ],
+          [
+            0.0,
+            -1.0
+          ],
+          [
+            0.0,
+            1.0
+          ],
+          [
+            0.0,
+            2.0
+          ]
+        ],
+        "targets": [
+          0,
+          0,
+          1,
+          1
+        ]
+      },
+      "schema_version": 3,
+      "source": {
+        "dataset_type": "torch.utils.data.dataset.TensorDataset",
+        "device": "cpu",
+        "execution": "isolated_deepcopy_eval_inference_mode",
+        "kind": "model_inference",
+        "model_state_sha256": "14ecafd0b52502ae184717076e271445e957611d0bd755b3edb3db2928d6973f",
+        "model_type": "torch.nn.modules.container.Sequential",
+        "num_workers": 0,
+        "sampler": "sequential",
+        "source_id": null
+      },
+      "source_sha256": "4c5eaeb2aba02959127bfde33f88e02d431d3df2612e5bb15442268f7beac87a",
+      "status": "complete",
+      "structure_binding": {
+        "checkpoint": {
+          "sha256": null,
+          "status": "missing"
+        },
+        "evaluated_model_type": "torch.nn.modules.container.Sequential",
+        "evaluated_stream": {
+          "inputs_sha256": "6b7988a258e8793a4db417c140fbeb8061da12554202d9dde56c599ec92ed58e",
+          "method": "sha256_ordered_tensor_samples_le_v1",
+          "paired_sha256": "0e5cab2d53f5fbdabfe8c09a38b6361faac2ba0490e458d2e4447104fb8a9dff",
+          "sample_count": 4,
+          "scope": "ordered_post_collation_inputs_and_targets",
+          "targets_sha256": "31d11e086698875789a5b8f3fa12e7cd0003bebf63784c5a22db9a7a17f29e6a"
+        },
+        "evaluation_id": "97e482ea-570e-4d42-8cb8-a00735da6058",
+        "format": "hyso.evaluation.structure_binding",
+        "forward_batches": 2,
+        "method": "p26_isolated_forward_receiver_pre_post_v1",
+        "model_state_method": "sha256_named_parameters_and_buffers_v1",
+        "model_state_sha256": "14ecafd0b52502ae184717076e271445e957611d0bd755b3edb3db2928d6973f",
+        "observed_phases": [
+          "after_candidate_eval_before_loader_iteration",
+          "after_successful_loader_iteration_before_result"
+        ],
+        "original_structure_relation": "not_captured_or_equivalence_not_certified",
+        "post_model_state_sha256": "14ecafd0b52502ae184717076e271445e957611d0bd755b3edb3db2928d6973f",
+        "post_structure_sha256": "bc62bcdd2ebc3f1d970ae6b553d57826619a78d1bd9df4642f7c8f9567ca1c5d",
+        "pre_model_state_sha256": "14ecafd0b52502ae184717076e271445e957611d0bd755b3edb3db2928d6973f",
+        "pre_structure_sha256": "bc62bcdd2ebc3f1d970ae6b553d57826619a78d1bd9df4642f7c8f9567ca1c5d",
+        "receiver": "isolated_candidate_called_for_forward",
+        "schema_version": 1,
+        "scope": "registered_structure_of_forward_receiver_at_evaluation_boundaries",
+        "snapshot": {
+          "content_sha256": "bc62bcdd2ebc3f1d970ae6b553d57826619a78d1bd9df4642f7c8f9567ca1c5d",
+          "format": "hyso.model_structure",
+          "limitations": [
+            "Registered structure only; no forward/backward, runtime shapes, execution order or dynamic control flow.",
+            "Functional operations and unregistered Python state may be absent; registered module counts are not executed layer counts.",
+            "Exact supported standard types have static configuration; custom/subclass semantics are unsupported, not inferred.",
+            "requires_grad is metadata, not proof of actual training behavior.",
+            "Logical bytes count unique tensor objects, not unique storage bytes, GPU allocation, RSS or checkpoint file size.",
+            "Storage groups identify observed shared storage, not byte-range overlap or physical memory use.",
+            "Structure SHA is neither model-state SHA nor checkpoint SHA; equal structure does not prove equal weights or behavior.",
+            "Existing trusted objects only; no source import, checkpoint load or sandbox for hostile/concurrently mutated Python objects.",
+            "Imported metadata validation checks consistency, not producer authenticity or a live model association."
+          ],
+          "modules": [
+            {
+              "buffers": [
+                {
+                  "name": "calibration",
+                  "persistent": true,
+                  "tensor_id": "t0"
+                }
+              ],
+              "category": "container",
+              "children": [
+                {
+                  "module_id": "m1",
+                  "name": "conv"
+                },
+                {
+                  "module_id": "m2",
+                  "name": "pool"
+                },
+                {
+                  "module_id": "m3",
+                  "name": "flatten"
+                },
+                {
+                  "module_id": "m4",
+                  "name": "extra"
+                },
+                {
+                  "module_id": "m5",
+                  "name": "head"
+                }
+              ],
+              "configuration": [],
+              "configuration_status": "native",
+              "direct_buffer_elements": {
+                "known_subtotal": 1,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 1
+              },
+              "direct_parameter_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "module_id": "m0",
+              "parameters": [],
+              "primary_path": "",
+              "qualified_type": "torch.nn.modules.container.Sequential"
+            },
+            {
+              "buffers": [],
+              "category": "conv2d",
+              "children": [],
+              "configuration": [
+                {
+                  "name": "in_channels",
+                  "reason": null,
+                  "source": "module.__dict__.in_channels",
+                  "status": "native",
+                  "value": 1
+                },
+                {
+                  "name": "out_channels",
+                  "reason": null,
+                  "source": "module.__dict__.out_channels",
+                  "status": "native",
+                  "value": 2
+                },
+                {
+                  "name": "kernel_size",
+                  "reason": null,
+                  "source": "module.__dict__.kernel_size",
+                  "status": "native",
+                  "value": [
+                    1,
+                    1
+                  ]
+                },
+                {
+                  "name": "stride",
+                  "reason": null,
+                  "source": "module.__dict__.stride",
+                  "status": "native",
+                  "value": [
+                    1,
+                    1
+                  ]
+                },
+                {
+                  "name": "padding",
+                  "reason": null,
+                  "source": "module.__dict__.padding",
+                  "status": "native",
+                  "value": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "name": "dilation",
+                  "reason": null,
+                  "source": "module.__dict__.dilation",
+                  "status": "native",
+                  "value": [
+                    1,
+                    1
+                  ]
+                },
+                {
+                  "name": "groups",
+                  "reason": null,
+                  "source": "module.__dict__.groups",
+                  "status": "native",
+                  "value": 1
+                },
+                {
+                  "name": "padding_mode",
+                  "reason": null,
+                  "source": "module.__dict__.padding_mode",
+                  "status": "native",
+                  "value": "zeros"
+                },
+                {
+                  "name": "bias",
+                  "reason": null,
+                  "source": "_parameters.bias presence",
+                  "status": "native",
+                  "value": true
+                }
+              ],
+              "configuration_status": "native",
+              "direct_buffer_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "direct_parameter_elements": {
+                "known_subtotal": 4,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 4
+              },
+              "module_id": "m1",
+              "parameters": [
+                {
+                  "name": "weight",
+                  "persistent": null,
+                  "tensor_id": "t1"
+                },
+                {
+                  "name": "bias",
+                  "persistent": null,
+                  "tensor_id": "t2"
+                }
+              ],
+              "primary_path": "conv",
+              "qualified_type": "torch.nn.modules.conv.Conv2d"
+            },
+            {
+              "buffers": [],
+              "category": "pooling",
+              "children": [],
+              "configuration": [
+                {
+                  "name": "output_size",
+                  "reason": null,
+                  "source": "module.__dict__.output_size",
+                  "status": "native",
+                  "value": 1
+                }
+              ],
+              "configuration_status": "native",
+              "direct_buffer_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "direct_parameter_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "module_id": "m2",
+              "parameters": [],
+              "primary_path": "pool",
+              "qualified_type": "torch.nn.modules.pooling.AdaptiveAvgPool2d"
+            },
+            {
+              "buffers": [],
+              "category": "reshape",
+              "children": [],
+              "configuration": [
+                {
+                  "name": "start_dim",
+                  "reason": null,
+                  "source": "module.__dict__.start_dim",
+                  "status": "native",
+                  "value": 1
+                },
+                {
+                  "name": "end_dim",
+                  "reason": null,
+                  "source": "module.__dict__.end_dim",
+                  "status": "native",
+                  "value": -1
+                }
+              ],
+              "configuration_status": "native",
+              "direct_buffer_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "direct_parameter_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "module_id": "m3",
+              "parameters": [],
+              "primary_path": "flatten",
+              "qualified_type": "torch.nn.modules.flatten.Flatten"
+            },
+            {
+              "buffers": [],
+              "category": "identity",
+              "children": [],
+              "configuration": [],
+              "configuration_status": "native",
+              "direct_buffer_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "direct_parameter_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "module_id": "m4",
+              "parameters": [],
+              "primary_path": "extra",
+              "qualified_type": "torch.nn.modules.linear.Identity"
+            },
+            {
+              "buffers": [],
+              "category": "linear",
+              "children": [],
+              "configuration": [
+                {
+                  "name": "in_features",
+                  "reason": null,
+                  "source": "module.__dict__.in_features",
+                  "status": "native",
+                  "value": 2
+                },
+                {
+                  "name": "out_features",
+                  "reason": null,
+                  "source": "module.__dict__.out_features",
+                  "status": "native",
+                  "value": 2
+                },
+                {
+                  "name": "bias",
+                  "reason": null,
+                  "source": "_parameters.bias presence",
+                  "status": "native",
+                  "value": true
+                }
+              ],
+              "configuration_status": "native",
+              "direct_buffer_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "direct_parameter_elements": {
+                "known_subtotal": 6,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 6
+              },
+              "module_id": "m5",
+              "parameters": [
+                {
+                  "name": "weight",
+                  "persistent": null,
+                  "tensor_id": "t3"
+                },
+                {
+                  "name": "bias",
+                  "persistent": null,
+                  "tensor_id": "t4"
+                }
+              ],
+              "primary_path": "head",
+              "qualified_type": "torch.nn.modules.linear.Linear"
+            }
+          ],
+          "paths": [
+            {
+              "cycle": false,
+              "depth": 0,
+              "module_id": "m0",
+              "parent_path": null,
+              "path": "",
+              "shared": false
+            },
+            {
+              "cycle": false,
+              "depth": 1,
+              "module_id": "m1",
+              "parent_path": "",
+              "path": "conv",
+              "shared": false
+            },
+            {
+              "cycle": false,
+              "depth": 1,
+              "module_id": "m2",
+              "parent_path": "",
+              "path": "pool",
+              "shared": false
+            },
+            {
+              "cycle": false,
+              "depth": 1,
+              "module_id": "m3",
+              "parent_path": "",
+              "path": "flatten",
+              "shared": false
+            },
+            {
+              "cycle": false,
+              "depth": 1,
+              "module_id": "m4",
+              "parent_path": "",
+              "path": "extra",
+              "shared": false
+            },
+            {
+              "cycle": false,
+              "depth": 1,
+              "module_id": "m5",
+              "parent_path": "",
+              "path": "head",
+              "shared": false
+            }
+          ],
+          "producer": {
+            "classification_version": 1,
+            "method": "registered_nn_module_metadata",
+            "torch_version": "2.5.1+cu121",
+            "version": 1
+          },
+          "schema_version": 1,
+          "source": {
+            "authority": "native",
+            "fields": {
+              "aliases": "Object identity mapped to deterministic local IDs; dense untyped-storage handle equality",
+              "configuration": "Exact-type allowlist of stored standard module fields; no properties/callables/repr",
+              "modules": "nn.Module registration dictionaries; exact Python type identity",
+              "persistence": "Per-owner _non_persistent_buffers_set membership",
+              "summary": "Derived from unique registered objects and expanded noncyclic module paths",
+              "tensors": "Standard Tensor/Parameter shape, dtype, layout, device and requires_grad metadata; no values"
+            },
+            "kind": "existing_trusted_torch_nn_module"
+          },
+          "summary": {
+            "buffer_dtypes": [
+              {
+                "dtype": "torch.float32",
+                "elements": {
+                  "known_subtotal": 1,
+                  "status": "native",
+                  "unsupported_tensor_ids": [],
+                  "value": 1
+                },
+                "logical_bytes": {
+                  "known_subtotal": 4,
+                  "status": "native",
+                  "unsupported_tensor_ids": [],
+                  "value": 4
+                },
+                "tensor_count": 1
+              }
+            ],
+            "buffer_elements": {
+              "known_subtotal": 1,
+              "status": "native",
+              "unsupported_tensor_ids": [],
+              "value": 1
+            },
+            "buffer_logical_bytes": {
+              "known_subtotal": 4,
+              "status": "native",
+              "unsupported_tensor_ids": [],
+              "value": 4
+            },
+            "categories": [
+              {
+                "name": "container",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "conv2d",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "identity",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "linear",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "pooling",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "reshape",
+                "registered_paths": 1,
+                "unique_modules": 1
+              }
+            ],
+            "cross_category_tensors": 0,
+            "frozen_elements": {
+              "known_subtotal": 2,
+              "status": "native",
+              "unsupported_tensor_ids": [],
+              "value": 2
+            },
+            "module_types": [
+              {
+                "name": "torch.nn.modules.container.Sequential",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "torch.nn.modules.conv.Conv2d",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "torch.nn.modules.flatten.Flatten",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "torch.nn.modules.linear.Identity",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "torch.nn.modules.linear.Linear",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "torch.nn.modules.pooling.AdaptiveAvgPool2d",
+                "registered_paths": 1,
+                "unique_modules": 1
+              }
+            ],
+            "parameter_dtypes": [
+              {
+                "dtype": "torch.float32",
+                "elements": {
+                  "known_subtotal": 10,
+                  "status": "native",
+                  "unsupported_tensor_ids": [],
+                  "value": 10
+                },
+                "logical_bytes": {
+                  "known_subtotal": 40,
+                  "status": "native",
+                  "unsupported_tensor_ids": [],
+                  "value": 40
+                },
+                "tensor_count": 4
+              }
+            ],
+            "parameter_elements": {
+              "known_subtotal": 10,
+              "status": "native",
+              "unsupported_tensor_ids": [],
+              "value": 10
+            },
+            "parameter_logical_bytes": {
+              "known_subtotal": 40,
+              "status": "native",
+              "unsupported_tensor_ids": [],
+              "value": 40
+            },
+            "registered_module_paths": 6,
+            "storage_alias_coverage": "native",
+            "storage_groups": [
+              {
+                "storage_id": "s0",
+                "tensor_ids": [
+                  "t0"
+                ]
+              },
+              {
+                "storage_id": "s1",
+                "tensor_ids": [
+                  "t1"
+                ]
+              },
+              {
+                "storage_id": "s2",
+                "tensor_ids": [
+                  "t2"
+                ]
+              },
+              {
+                "storage_id": "s3",
+                "tensor_ids": [
+                  "t3"
+                ]
+              },
+              {
+                "storage_id": "s4",
+                "tensor_ids": [
+                  "t4"
+                ]
+              }
+            ],
+            "tensor_union_logical_bytes": {
+              "known_subtotal": 44,
+              "status": "native",
+              "unsupported_tensor_ids": [],
+              "value": 44
+            },
+            "trainable_elements": {
+              "known_subtotal": 8,
+              "status": "native",
+              "unsupported_tensor_ids": [],
+              "value": 8
+            },
+            "unique_buffer_tensors": 1,
+            "unique_modules": 6,
+            "unique_parameter_tensors": 4
+          },
+          "tensors": [
+            {
+              "device": "cpu",
+              "dtype": "torch.float32",
+              "element_size": 4,
+              "elements": 1,
+              "layout": "torch.strided",
+              "logical_bytes": 4,
+              "qualified_type": "torch.Tensor",
+              "reason": null,
+              "requires_grad": false,
+              "shape": [],
+              "status": "native",
+              "storage_id": "s0",
+              "storage_offset": 0,
+              "storage_reason": null,
+              "storage_status": "native",
+              "stride": [],
+              "tensor_id": "t0"
+            },
+            {
+              "device": "cpu",
+              "dtype": "torch.float32",
+              "element_size": 4,
+              "elements": 2,
+              "layout": "torch.strided",
+              "logical_bytes": 8,
+              "qualified_type": "torch.nn.parameter.Parameter",
+              "reason": null,
+              "requires_grad": true,
+              "shape": [
+                2,
+                1,
+                1,
+                1
+              ],
+              "status": "native",
+              "storage_id": "s1",
+              "storage_offset": 0,
+              "storage_reason": null,
+              "storage_status": "native",
+              "stride": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "tensor_id": "t1"
+            },
+            {
+              "device": "cpu",
+              "dtype": "torch.float32",
+              "element_size": 4,
+              "elements": 2,
+              "layout": "torch.strided",
+              "logical_bytes": 8,
+              "qualified_type": "torch.nn.parameter.Parameter",
+              "reason": null,
+              "requires_grad": false,
+              "shape": [
+                2
+              ],
+              "status": "native",
+              "storage_id": "s2",
+              "storage_offset": 0,
+              "storage_reason": null,
+              "storage_status": "native",
+              "stride": [
+                1
+              ],
+              "tensor_id": "t2"
+            },
+            {
+              "device": "cpu",
+              "dtype": "torch.float32",
+              "element_size": 4,
+              "elements": 4,
+              "layout": "torch.strided",
+              "logical_bytes": 16,
+              "qualified_type": "torch.nn.parameter.Parameter",
+              "reason": null,
+              "requires_grad": true,
+              "shape": [
+                2,
+                2
+              ],
+              "status": "native",
+              "storage_id": "s3",
+              "storage_offset": 0,
+              "storage_reason": null,
+              "storage_status": "native",
+              "stride": [
+                2,
+                1
+              ],
+              "tensor_id": "t3"
+            },
+            {
+              "device": "cpu",
+              "dtype": "torch.float32",
+              "element_size": 4,
+              "elements": 2,
+              "layout": "torch.strided",
+              "logical_bytes": 8,
+              "qualified_type": "torch.nn.parameter.Parameter",
+              "reason": null,
+              "requires_grad": true,
+              "shape": [
+                2
+              ],
+              "status": "native",
+              "storage_id": "s4",
+              "storage_offset": 0,
+              "storage_reason": null,
+              "storage_status": "native",
+              "stride": [
+                1
+              ],
+              "tensor_id": "t4"
+            }
+          ]
+        },
+        "status": "native",
+        "structure_sha256": "bc62bcdd2ebc3f1d970ae6b553d57826619a78d1bd9df4642f7c8f9567ca1c5d"
+      },
+      "training_source": null
+    },
+    "Zero": {
+      "accounting": {
+        "batch_sizes": [
+          2,
+          2
+        ],
+        "expected_samples": 4
+      },
+      "configuration": {
+        "binary_rule": "logit >= 0",
+        "class_names": [
+          "negative",
+          "positive"
+        ],
+        "multiclass_rule": "argmax_first_index",
+        "split": "test",
+        "task": "multiclass",
+        "zero_division": 0
+      },
+      "evaluation_id": "ff0ac19b-2302-492c-b665-09ce823f9c5d",
+      "feature_ids": [
+        "P26"
+      ],
+      "format": "hyso.evaluation.classification",
+      "metrics": {
+        "accuracy": 0.0,
+        "averages": {
+          "macro": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 4
+          },
+          "micro": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 4
+          },
+          "weighted": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 4
+          }
+        },
+        "confusion_matrix": [
+          [
+            0,
+            2
+          ],
+          [
+            2,
+            0
+          ]
+        ],
+        "per_class": [
+          {
+            "class_index": 0,
+            "class_name": "negative",
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 2
+          },
+          {
+            "class_index": 1,
+            "class_name": "positive",
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 2
+          }
+        ],
+        "sample_count": 4
+      },
+      "producer_evidence": {
+        "checkpoint": {
+          "model_state_sha256": null,
+          "reason": "no_matching_trusted_load_receipt",
+          "sha256": null,
+          "source": null,
+          "status": "missing"
+        },
+        "dataset_origin": {
+          "reason": "dataset_origin_not_verified",
+          "status": "missing"
+        },
+        "evaluated_stream": {
+          "batch_partition_invariant": true,
+          "inputs_sha256": "6b7988a258e8793a4db417c140fbeb8061da12554202d9dde56c599ec92ed58e",
+          "method": "sha256_ordered_tensor_samples_le_v1",
+          "paired_sha256": "0e5cab2d53f5fbdabfe8c09a38b6361faac2ba0490e458d2e4447104fb8a9dff",
+          "sample_count": 4,
+          "scope": "ordered_post_collation_inputs_and_targets",
+          "source": "evaluate_classification.validated_batches_before_forward",
+          "status": "native",
+          "targets_sha256": "31d11e086698875789a5b8f3fa12e7cd0003bebf63784c5a22db9a7a17f29e6a"
+        },
+        "format": "hyso.evaluation.producer_evidence",
+        "model_state": {
+          "method": "sha256_named_parameters_and_buffers_v1",
+          "sha256": "57f29c70a86f248ba32767cbd80372cbc74dc54ae1e20d612d96f7cc5f59edb1",
+          "source": "evaluate_classification.original_and_isolated_model",
+          "status": "native"
+        },
+        "preprocessing": {
+          "reason": "transform_chain_not_verified",
+          "status": "missing"
+        },
+        "schema_version": 1,
+        "source_id": {
+          "source": null,
+          "status": "missing",
+          "value": null
+        },
+        "split": {
+          "source": "caller.split",
+          "status": "declared",
+          "value": "test"
+        }
+      },
+      "provenance": {
+        "platform": "Windows-10-10.0.26300-SP0",
+        "python": "3.10.18",
+        "torch": "2.5.1+cu121"
+      },
+      "raw": {
+        "prediction_type": "logits",
+        "predictions": [
+          [
+            -2.0,
+            0.0
+          ],
+          [
+            -1.0,
+            0.0
+          ],
+          [
+            1.0,
+            0.0
+          ],
+          [
+            2.0,
+            0.0
+          ]
+        ],
+        "targets": [
+          0,
+          0,
+          1,
+          1
+        ]
+      },
+      "schema_version": 3,
+      "source": {
+        "dataset_type": "torch.utils.data.dataset.TensorDataset",
+        "device": "cpu",
+        "execution": "isolated_deepcopy_eval_inference_mode",
+        "kind": "model_inference",
+        "model_state_sha256": "57f29c70a86f248ba32767cbd80372cbc74dc54ae1e20d612d96f7cc5f59edb1",
+        "model_type": "torch.nn.modules.container.Sequential",
+        "num_workers": 0,
+        "sampler": "sequential",
+        "source_id": null
+      },
+      "source_sha256": "c75b2609e9fc356eed8dd8e9f6b9f52907482883483a67ca7dfd3be4499c1352",
+      "status": "complete",
+      "structure_binding": {
+        "checkpoint": {
+          "sha256": null,
+          "status": "missing"
+        },
+        "evaluated_model_type": "torch.nn.modules.container.Sequential",
+        "evaluated_stream": {
+          "inputs_sha256": "6b7988a258e8793a4db417c140fbeb8061da12554202d9dde56c599ec92ed58e",
+          "method": "sha256_ordered_tensor_samples_le_v1",
+          "paired_sha256": "0e5cab2d53f5fbdabfe8c09a38b6361faac2ba0490e458d2e4447104fb8a9dff",
+          "sample_count": 4,
+          "scope": "ordered_post_collation_inputs_and_targets",
+          "targets_sha256": "31d11e086698875789a5b8f3fa12e7cd0003bebf63784c5a22db9a7a17f29e6a"
+        },
+        "evaluation_id": "ff0ac19b-2302-492c-b665-09ce823f9c5d",
+        "format": "hyso.evaluation.structure_binding",
+        "forward_batches": 2,
+        "method": "p26_isolated_forward_receiver_pre_post_v1",
+        "model_state_method": "sha256_named_parameters_and_buffers_v1",
+        "model_state_sha256": "57f29c70a86f248ba32767cbd80372cbc74dc54ae1e20d612d96f7cc5f59edb1",
+        "observed_phases": [
+          "after_candidate_eval_before_loader_iteration",
+          "after_successful_loader_iteration_before_result"
+        ],
+        "original_structure_relation": "not_captured_or_equivalence_not_certified",
+        "post_model_state_sha256": "57f29c70a86f248ba32767cbd80372cbc74dc54ae1e20d612d96f7cc5f59edb1",
+        "post_structure_sha256": "a5a969df884202917ddb12de7fdaa6eaf85d03fe2f5888a801b01fe6bbe2c130",
+        "pre_model_state_sha256": "57f29c70a86f248ba32767cbd80372cbc74dc54ae1e20d612d96f7cc5f59edb1",
+        "pre_structure_sha256": "a5a969df884202917ddb12de7fdaa6eaf85d03fe2f5888a801b01fe6bbe2c130",
+        "receiver": "isolated_candidate_called_for_forward",
+        "schema_version": 1,
+        "scope": "registered_structure_of_forward_receiver_at_evaluation_boundaries",
+        "snapshot": {
+          "content_sha256": "a5a969df884202917ddb12de7fdaa6eaf85d03fe2f5888a801b01fe6bbe2c130",
+          "format": "hyso.model_structure",
+          "limitations": [
+            "Registered structure only; no forward/backward, runtime shapes, execution order or dynamic control flow.",
+            "Functional operations and unregistered Python state may be absent; registered module counts are not executed layer counts.",
+            "Exact supported standard types have static configuration; custom/subclass semantics are unsupported, not inferred.",
+            "requires_grad is metadata, not proof of actual training behavior.",
+            "Logical bytes count unique tensor objects, not unique storage bytes, GPU allocation, RSS or checkpoint file size.",
+            "Storage groups identify observed shared storage, not byte-range overlap or physical memory use.",
+            "Structure SHA is neither model-state SHA nor checkpoint SHA; equal structure does not prove equal weights or behavior.",
+            "Existing trusted objects only; no source import, checkpoint load or sandbox for hostile/concurrently mutated Python objects.",
+            "Imported metadata validation checks consistency, not producer authenticity or a live model association."
+          ],
+          "modules": [
+            {
+              "buffers": [
+                {
+                  "name": "calibration",
+                  "persistent": true,
+                  "tensor_id": "t0"
+                }
+              ],
+              "category": "container",
+              "children": [
+                {
+                  "module_id": "m1",
+                  "name": "conv"
+                },
+                {
+                  "module_id": "m2",
+                  "name": "pool"
+                },
+                {
+                  "module_id": "m3",
+                  "name": "flatten"
+                },
+                {
+                  "module_id": "m4",
+                  "name": "head"
+                }
+              ],
+              "configuration": [],
+              "configuration_status": "native",
+              "direct_buffer_elements": {
+                "known_subtotal": 1,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 1
+              },
+              "direct_parameter_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "module_id": "m0",
+              "parameters": [],
+              "primary_path": "",
+              "qualified_type": "torch.nn.modules.container.Sequential"
+            },
+            {
+              "buffers": [],
+              "category": "conv2d",
+              "children": [],
+              "configuration": [
+                {
+                  "name": "in_channels",
+                  "reason": null,
+                  "source": "module.__dict__.in_channels",
+                  "status": "native",
+                  "value": 1
+                },
+                {
+                  "name": "out_channels",
+                  "reason": null,
+                  "source": "module.__dict__.out_channels",
+                  "status": "native",
+                  "value": 2
+                },
+                {
+                  "name": "kernel_size",
+                  "reason": null,
+                  "source": "module.__dict__.kernel_size",
+                  "status": "native",
+                  "value": [
+                    1,
+                    1
+                  ]
+                },
+                {
+                  "name": "stride",
+                  "reason": null,
+                  "source": "module.__dict__.stride",
+                  "status": "native",
+                  "value": [
+                    1,
+                    1
+                  ]
+                },
+                {
+                  "name": "padding",
+                  "reason": null,
+                  "source": "module.__dict__.padding",
+                  "status": "native",
+                  "value": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "name": "dilation",
+                  "reason": null,
+                  "source": "module.__dict__.dilation",
+                  "status": "native",
+                  "value": [
+                    1,
+                    1
+                  ]
+                },
+                {
+                  "name": "groups",
+                  "reason": null,
+                  "source": "module.__dict__.groups",
+                  "status": "native",
+                  "value": 1
+                },
+                {
+                  "name": "padding_mode",
+                  "reason": null,
+                  "source": "module.__dict__.padding_mode",
+                  "status": "native",
+                  "value": "zeros"
+                },
+                {
+                  "name": "bias",
+                  "reason": null,
+                  "source": "_parameters.bias presence",
+                  "status": "native",
+                  "value": true
+                }
+              ],
+              "configuration_status": "native",
+              "direct_buffer_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "direct_parameter_elements": {
+                "known_subtotal": 4,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 4
+              },
+              "module_id": "m1",
+              "parameters": [
+                {
+                  "name": "weight",
+                  "persistent": null,
+                  "tensor_id": "t1"
+                },
+                {
+                  "name": "bias",
+                  "persistent": null,
+                  "tensor_id": "t2"
+                }
+              ],
+              "primary_path": "conv",
+              "qualified_type": "torch.nn.modules.conv.Conv2d"
+            },
+            {
+              "buffers": [],
+              "category": "pooling",
+              "children": [],
+              "configuration": [
+                {
+                  "name": "output_size",
+                  "reason": null,
+                  "source": "module.__dict__.output_size",
+                  "status": "native",
+                  "value": 1
+                }
+              ],
+              "configuration_status": "native",
+              "direct_buffer_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "direct_parameter_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "module_id": "m2",
+              "parameters": [],
+              "primary_path": "pool",
+              "qualified_type": "torch.nn.modules.pooling.AdaptiveAvgPool2d"
+            },
+            {
+              "buffers": [],
+              "category": "reshape",
+              "children": [],
+              "configuration": [
+                {
+                  "name": "start_dim",
+                  "reason": null,
+                  "source": "module.__dict__.start_dim",
+                  "status": "native",
+                  "value": 1
+                },
+                {
+                  "name": "end_dim",
+                  "reason": null,
+                  "source": "module.__dict__.end_dim",
+                  "status": "native",
+                  "value": -1
+                }
+              ],
+              "configuration_status": "native",
+              "direct_buffer_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "direct_parameter_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "module_id": "m3",
+              "parameters": [],
+              "primary_path": "flatten",
+              "qualified_type": "torch.nn.modules.flatten.Flatten"
+            },
+            {
+              "buffers": [],
+              "category": "linear",
+              "children": [],
+              "configuration": [
+                {
+                  "name": "in_features",
+                  "reason": null,
+                  "source": "module.__dict__.in_features",
+                  "status": "native",
+                  "value": 2
+                },
+                {
+                  "name": "out_features",
+                  "reason": null,
+                  "source": "module.__dict__.out_features",
+                  "status": "native",
+                  "value": 2
+                },
+                {
+                  "name": "bias",
+                  "reason": null,
+                  "source": "_parameters.bias presence",
+                  "status": "native",
+                  "value": true
+                }
+              ],
+              "configuration_status": "native",
+              "direct_buffer_elements": {
+                "known_subtotal": 0,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 0
+              },
+              "direct_parameter_elements": {
+                "known_subtotal": 6,
+                "status": "native",
+                "unsupported_tensor_ids": [],
+                "value": 6
+              },
+              "module_id": "m4",
+              "parameters": [
+                {
+                  "name": "weight",
+                  "persistent": null,
+                  "tensor_id": "t3"
+                },
+                {
+                  "name": "bias",
+                  "persistent": null,
+                  "tensor_id": "t4"
+                }
+              ],
+              "primary_path": "head",
+              "qualified_type": "torch.nn.modules.linear.Linear"
+            }
+          ],
+          "paths": [
+            {
+              "cycle": false,
+              "depth": 0,
+              "module_id": "m0",
+              "parent_path": null,
+              "path": "",
+              "shared": false
+            },
+            {
+              "cycle": false,
+              "depth": 1,
+              "module_id": "m1",
+              "parent_path": "",
+              "path": "conv",
+              "shared": false
+            },
+            {
+              "cycle": false,
+              "depth": 1,
+              "module_id": "m2",
+              "parent_path": "",
+              "path": "pool",
+              "shared": false
+            },
+            {
+              "cycle": false,
+              "depth": 1,
+              "module_id": "m3",
+              "parent_path": "",
+              "path": "flatten",
+              "shared": false
+            },
+            {
+              "cycle": false,
+              "depth": 1,
+              "module_id": "m4",
+              "parent_path": "",
+              "path": "head",
+              "shared": false
+            }
+          ],
+          "producer": {
+            "classification_version": 1,
+            "method": "registered_nn_module_metadata",
+            "torch_version": "2.5.1+cu121",
+            "version": 1
+          },
+          "schema_version": 1,
+          "source": {
+            "authority": "native",
+            "fields": {
+              "aliases": "Object identity mapped to deterministic local IDs; dense untyped-storage handle equality",
+              "configuration": "Exact-type allowlist of stored standard module fields; no properties/callables/repr",
+              "modules": "nn.Module registration dictionaries; exact Python type identity",
+              "persistence": "Per-owner _non_persistent_buffers_set membership",
+              "summary": "Derived from unique registered objects and expanded noncyclic module paths",
+              "tensors": "Standard Tensor/Parameter shape, dtype, layout, device and requires_grad metadata; no values"
+            },
+            "kind": "existing_trusted_torch_nn_module"
+          },
+          "summary": {
+            "buffer_dtypes": [
+              {
+                "dtype": "torch.float32",
+                "elements": {
+                  "known_subtotal": 1,
+                  "status": "native",
+                  "unsupported_tensor_ids": [],
+                  "value": 1
+                },
+                "logical_bytes": {
+                  "known_subtotal": 4,
+                  "status": "native",
+                  "unsupported_tensor_ids": [],
+                  "value": 4
+                },
+                "tensor_count": 1
+              }
+            ],
+            "buffer_elements": {
+              "known_subtotal": 1,
+              "status": "native",
+              "unsupported_tensor_ids": [],
+              "value": 1
+            },
+            "buffer_logical_bytes": {
+              "known_subtotal": 4,
+              "status": "native",
+              "unsupported_tensor_ids": [],
+              "value": 4
+            },
+            "categories": [
+              {
+                "name": "container",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "conv2d",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "linear",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "pooling",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "reshape",
+                "registered_paths": 1,
+                "unique_modules": 1
+              }
+            ],
+            "cross_category_tensors": 0,
+            "frozen_elements": {
+              "known_subtotal": 2,
+              "status": "native",
+              "unsupported_tensor_ids": [],
+              "value": 2
+            },
+            "module_types": [
+              {
+                "name": "torch.nn.modules.container.Sequential",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "torch.nn.modules.conv.Conv2d",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "torch.nn.modules.flatten.Flatten",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "torch.nn.modules.linear.Linear",
+                "registered_paths": 1,
+                "unique_modules": 1
+              },
+              {
+                "name": "torch.nn.modules.pooling.AdaptiveAvgPool2d",
+                "registered_paths": 1,
+                "unique_modules": 1
+              }
+            ],
+            "parameter_dtypes": [
+              {
+                "dtype": "torch.float32",
+                "elements": {
+                  "known_subtotal": 10,
+                  "status": "native",
+                  "unsupported_tensor_ids": [],
+                  "value": 10
+                },
+                "logical_bytes": {
+                  "known_subtotal": 40,
+                  "status": "native",
+                  "unsupported_tensor_ids": [],
+                  "value": 40
+                },
+                "tensor_count": 4
+              }
+            ],
+            "parameter_elements": {
+              "known_subtotal": 10,
+              "status": "native",
+              "unsupported_tensor_ids": [],
+              "value": 10
+            },
+            "parameter_logical_bytes": {
+              "known_subtotal": 40,
+              "status": "native",
+              "unsupported_tensor_ids": [],
+              "value": 40
+            },
+            "registered_module_paths": 5,
+            "storage_alias_coverage": "native",
+            "storage_groups": [
+              {
+                "storage_id": "s0",
+                "tensor_ids": [
+                  "t0"
+                ]
+              },
+              {
+                "storage_id": "s1",
+                "tensor_ids": [
+                  "t1"
+                ]
+              },
+              {
+                "storage_id": "s2",
+                "tensor_ids": [
+                  "t2"
+                ]
+              },
+              {
+                "storage_id": "s3",
+                "tensor_ids": [
+                  "t3"
+                ]
+              },
+              {
+                "storage_id": "s4",
+                "tensor_ids": [
+                  "t4"
+                ]
+              }
+            ],
+            "tensor_union_logical_bytes": {
+              "known_subtotal": 44,
+              "status": "native",
+              "unsupported_tensor_ids": [],
+              "value": 44
+            },
+            "trainable_elements": {
+              "known_subtotal": 8,
+              "status": "native",
+              "unsupported_tensor_ids": [],
+              "value": 8
+            },
+            "unique_buffer_tensors": 1,
+            "unique_modules": 5,
+            "unique_parameter_tensors": 4
+          },
+          "tensors": [
+            {
+              "device": "cpu",
+              "dtype": "torch.float32",
+              "element_size": 4,
+              "elements": 1,
+              "layout": "torch.strided",
+              "logical_bytes": 4,
+              "qualified_type": "torch.Tensor",
+              "reason": null,
+              "requires_grad": false,
+              "shape": [],
+              "status": "native",
+              "storage_id": "s0",
+              "storage_offset": 0,
+              "storage_reason": null,
+              "storage_status": "native",
+              "stride": [],
+              "tensor_id": "t0"
+            },
+            {
+              "device": "cpu",
+              "dtype": "torch.float32",
+              "element_size": 4,
+              "elements": 2,
+              "layout": "torch.strided",
+              "logical_bytes": 8,
+              "qualified_type": "torch.nn.parameter.Parameter",
+              "reason": null,
+              "requires_grad": true,
+              "shape": [
+                2,
+                1,
+                1,
+                1
+              ],
+              "status": "native",
+              "storage_id": "s1",
+              "storage_offset": 0,
+              "storage_reason": null,
+              "storage_status": "native",
+              "stride": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "tensor_id": "t1"
+            },
+            {
+              "device": "cpu",
+              "dtype": "torch.float32",
+              "element_size": 4,
+              "elements": 2,
+              "layout": "torch.strided",
+              "logical_bytes": 8,
+              "qualified_type": "torch.nn.parameter.Parameter",
+              "reason": null,
+              "requires_grad": false,
+              "shape": [
+                2
+              ],
+              "status": "native",
+              "storage_id": "s2",
+              "storage_offset": 0,
+              "storage_reason": null,
+              "storage_status": "native",
+              "stride": [
+                1
+              ],
+              "tensor_id": "t2"
+            },
+            {
+              "device": "cpu",
+              "dtype": "torch.float32",
+              "element_size": 4,
+              "elements": 4,
+              "layout": "torch.strided",
+              "logical_bytes": 16,
+              "qualified_type": "torch.nn.parameter.Parameter",
+              "reason": null,
+              "requires_grad": true,
+              "shape": [
+                2,
+                2
+              ],
+              "status": "native",
+              "storage_id": "s3",
+              "storage_offset": 0,
+              "storage_reason": null,
+              "storage_status": "native",
+              "stride": [
+                2,
+                1
+              ],
+              "tensor_id": "t3"
+            },
+            {
+              "device": "cpu",
+              "dtype": "torch.float32",
+              "element_size": 4,
+              "elements": 2,
+              "layout": "torch.strided",
+              "logical_bytes": 8,
+              "qualified_type": "torch.nn.parameter.Parameter",
+              "reason": null,
+              "requires_grad": true,
+              "shape": [
+                2
+              ],
+              "status": "native",
+              "storage_id": "s4",
+              "storage_offset": 0,
+              "storage_reason": null,
+              "storage_status": "native",
+              "stride": [
+                1
+              ],
+              "tensor_id": "t4"
+            }
+          ]
+        },
+        "status": "native",
+        "structure_sha256": "a5a969df884202917ddb12de7fdaa6eaf85d03fe2f5888a801b01fe6bbe2c130"
+      },
+      "training_source": null
+    }
+  }
+}

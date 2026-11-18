@@ -1,0 +1,152 @@
+"""Manual guidance attached to existing rule decisions and evidence reviews."""
+
+AREAS = {
+    "inference": ("Çıkarım", "Inference"),
+    "training": ("Eğitim", "Training"),
+    "memory": ("Bellek", "Memory"),
+    "model_architecture": ("Model mimarisi", "Model architecture"),
+    "deployment": ("Deployment", "Deployment"),
+    "data_pipeline": ("Veri hattı", "Data pipeline"),
+}
+
+AREA_FEATURES = {
+    "inference": ("P01", "P02", "P03", "P04", "P05", "P06", "P07", "P08", "P17"),
+    "training": ("P19", "P20", "P22", "P23", "P24", "P25"),
+    "memory": ("P09", "P10", "P11", "P23", "P32"),
+    "model_architecture": ("P11", "P12", "P13", "P14", "P18", "P26", "P27", "P28", "P29"),
+    "deployment": ("P15", "P16", "P30", "P31", "P32", "P33", "P34", "P35"),
+    "data_pipeline": ("P03", "P04", "P15", "P21"),
+}
+
+
+def _recipe(area, features, title, detected, change, why, risks, steps, verification):
+    return dict(area=area, features=features, title=title, detected=detected, change=change,
+                why=why, risks=risks, steps=steps, verification=verification)
+
+
+RECIPES = {
+    "latency": _recipe("inference", ("P01", "P03", "P04"),
+        ("Gecikmenin aşama kapsamını inceleyin", "Review latency stage boundaries"),
+        ("Mevcut kural kayıtlı gecikme kanıtını aşama incelemesine yönlendiriyor.", "The existing rule directs retained latency evidence to a stage review."),
+        ("Kayıtlı aşamaları inceleyerek hangi bileşenin ayrıca araştırılacağını seçin.", "Inspect retained stages to select the component requiring further investigation."),
+        ("Aşama sınırları, model ve veri hattı maliyetlerinin doğru kapsamda ele alınmasını sağlar.", "Stage boundaries help keep model and pipeline costs in their proper scopes."),
+        ("Profiling ek yükü ve farklı saatler sonuçları etkileyebilir.", "Profiling overhead and different clocks can affect results."),
+        (("Kaynak model, girdi ve protokol kimliklerini kaydedin.", "P03/P04 aşama sınırlarını ve saatlerini inceleyin.", "Eksik aşama için kapsamı ve bütçesi açık bir ölçüm planı hazırlayın."),
+         ("Record source model, input and protocol identities.", "Inspect P03/P04 stage boundaries and clocks.", "Prepare an explicitly scoped and budgeted measurement plan for missing stages.")),
+        (("Aynı kapsamda P01 ve ilgili P03/P04 kayıtlarını değerlendirin.", "Her capture'ı kendi saatinde değerlendirin ve tail örnek yeterliliğini koruyun."),
+         ("Assess P01 and relevant P03/P04 records within matching scope.", "Keep captures in their own clock domains and retain tail-sample requirements."))),
+    "batch": _recipe("inference", ("P02", "P06", "P01", "P10", "P26"),
+        ("Sınırlı batch deneyi için önkoşulları tamamlayın", "Complete prerequisites for a bounded batch experiment"),
+        ("Mevcut throughput kuralı, bağlı kanıta göre inceleme veya koşullu deney kararı üretti.", "The existing throughput rule produced a review or conditional experiment decision from its bound evidence."),
+        ("Önce P06 kayıtlarını inceleyin. Koşullu aday varsa yalnız batch boyutunu değiştiren bir plan hazırlayın.", "Review retained P06 results first. For a conditional candidate, prepare a plan varying only batch size."),
+        ("Batch değişimi işlem kapasitesini etkileyebilir. Etki mevcut baseline üzerinden ayrıca doğrulanır.", "Batch size may affect processing capacity. Its effect requires separate validation against the retained baseline."),
+        ("Gecikme, RSS, OOM riski ve kalite etkilenebilir.", "Latency, RSS, OOM risk and quality may be affected."),
+        (("Baseline state, veri, cihaz, precision, backend ve zamanlama yöntemini sabitleyin.", "P06 kayıtlarını inceleyip sonlu noktaları ve deney bütçesini kendiniz belirleyin.", "Eksik kalite ve bellek koşullarını tamamlayın. Uygulamayı yalnız önkoşullar tamamlandığında manuel yapın."),
+         ("Fix baseline state, data, device, precision, backend and timing method.", "Review P06 records and explicitly choose finite points and an experiment budget.", "Complete missing quality and memory conditions. Apply manually only after prerequisites are resolved.")),
+        (("P02 tamamlanma defteri, P01 P95, P10 ve bağlı P26 kalitesini yeniden değerlendirin.", "Açık hard hedefleri ve mevcut ComparisonContract kapılarını koruyun.", "Keşif sonrası bağımsız doğrulama capture'larıyla etkiyi değerlendirin."),
+         ("Reassess the P02 completion ledger, P01 P95, P10 and linked P26 quality.", "Retain explicit hard goals and existing ComparisonContract gates.", "Assess the effect with independent confirmation captures after exploration."))),
+    "precision": _recipe("inference", ("P08", "P28", "P26"),
+        ("Precision kabiliyeti ve kalite bağlarını inceleyin", "Review precision capability and quality bindings"),
+        ("Mevcut kural kayıtlı precision noktalarını kalite kanıtıyla ilişkilendirmeyi istiyor.", "The existing rule requests linking retained precision points to quality evidence."),
+        ("Desteklenen her noktanın dtype, batch ve kalite bağlarını kontrol edin.", "Check dtype, batch and quality bindings for each supported point."),
+        ("Bu inceleme performans ve kalite koşullarını birlikte değerlendirmeye yardımcı olur.", "This review helps assess performance alongside quality conditions."),
+        ("Precision değişimi doğruluğu ve operatör desteğini etkileyebilir.", "Precision changes may affect accuracy and operator support."),
+        (("P08 noktalarının ayrı kabiliyet ve hata durumlarını koruyun.", "P28/P26 veri ve evaluator bağlarını kontrol edin.", "Eksik kabiliyetler çözülmeden precision değişikliği seçmeyin."),
+         ("Retain separate capability and failure states of P08 points.", "Check P28/P26 data and evaluator bindings.", "Resolve missing capabilities before selecting a precision change.")),
+        (("Aynı veriyle precision kalite ve zamanlama kayıtlarını karşılaştırın.", "Kullanıcının açık kalite sınırlarını ve native karşılaştırma kapılarını uygulayın."),
+         ("Compare precision quality and timing captures over matching data.", "Apply explicit caller quality bounds and native comparison gates."))),
+    "memory": _recipe("memory", ("P09", "P10", "P11", "P23", "P32"),
+        ("Bellek alanlarını ve yaşam sürelerini inceleyin", "Review memory domains and lifetimes"),
+        ("Bellek incelemesi için kayıt ve kapsam durumu korunuyor.", "The retained record and scope state is preserved for memory review."),
+        ("Süreç RSS, allocator ve mantıksal tensor kayıtlarını ayrı inceleyin.", "Inspect process RSS, allocator and logical tensor records separately."),
+        ("Ayrı alanlar, bellek maliyetini doğru mekanizma üzerinden araştırmayı sağlar.", "Separate domains help investigate memory cost through the appropriate mechanism."),
+        ("Örneklenen tepe geçici artışları kaçırabilir. Bellek azaltma girişimleri runtime ve kaliteyi etkileyebilir.", "Sampled peaks may miss transients. Memory-reduction attempts can affect runtime and quality."),
+        (("P09 allocator, P10 süreç RSS ve P11 mantıksal boyut kapsamlarını ayırın.", "P23 state/aktivasyon ve P32 süreklilik kayıtlarını mevcutsa inceleyin.", "Belirli mekanizma için eksik allocation/yaşam süresi kanıtını belirleyin."),
+         ("Separate P09 allocator, P10 process RSS and P11 logical-size scopes.", "Inspect retained P23 state/activation and P32 continuity evidence when available.", "Identify missing allocation/lifetime evidence for a specific mechanism.")),
+        (("Aynı bellek alanı, pencere ve sahiplik koşullarını yeniden ölçün.", "Mantıksal baytları RSS'ten çıkararak tasarruf hesaplamayın ve büyümeden sızıntı tanısı üretmeyin."),
+         ("Remeasure matching memory domains, windows and ownership conditions.", "Avoid attributing savings by subtracting logical bytes from RSS or diagnosing a leak from growth alone."))),
+    "quality": _recipe("model_architecture", ("P26", "P28", "P29"),
+        ("Değişiklik öncesi kalite koşullarını doğrulayın", "Validate quality conditions before a change"),
+        ("Mevcut kalite kuralı baseline/candidate veri bağlarını incelemeye yönlendiriyor.", "The existing quality rule requests reviewing baseline/candidate data bindings."),
+        ("Mimari veya precision değişikliği öncesinde kalite kabul koşullarını açıklaştırın.", "Clarify quality acceptance conditions before an architecture or precision change."),
+        ("Bağlı kalite kanıtı, aday değişikliğin kullanıcı hedeflerine göre değerlendirilmesini sağlar.", "Bound quality evidence allows a candidate change to be assessed against user goals."),
+        ("Değerlendirme verisi üzerinde tekrarlı seçim kabul yanlılığı oluşturabilir.", "Repeated selection on evaluation data may bias acceptance."),
+        (("Model/checkpoint, cohort, preprocessing, split ve sınıf eşlemelerini inceleyin.", "Kullanıcının kalite sınırlarını kaydedin.", "Mimari değişikliği seçmeden önce gereken profil ve yapı kanıtını tamamlayın."),
+         ("Inspect model/checkpoint, cohort, preprocessing, split and class mappings.", "Record caller quality bounds.", "Complete required profiling and structure evidence before selecting an architecture change.")),
+        (("P26/P28'i eşlenmiş veri ve evaluator koşullarıyla doğrulayın.", "Mevcut comparability kurallarını ve bağımsız doğrulamayı koruyun."),
+         ("Validate P26/P28 under matched data and evaluator conditions.", "Retain existing comparability rules and independent confirmation."))),
+    "bindings": _recipe("deployment", ("P01", "P02", "P26", "P34", "P35"),
+        ("Kaynak ve karşılaştırma ilişkilerini netleştirin", "Clarify source and comparison associations"),
+        ("Mevcut uygunluk veya hedef kontrolünde eksik bağlar bulunuyor.", "Existing eligibility or goal checks retain missing associations."),
+        ("İlgili kaydı seçip native kaynak, protokol ve çalışma koşullarını doğrulayın.", "Select the relevant record and validate native source, protocol and runtime conditions."),
+        ("Açık ilişkiler, yanlış kapsamlı bir değişikliğin seçilmesini engellemeye yardımcı olur.", "Explicit associations help prevent selecting a change from mismatched scope."),
+        ("Uyumsuz kayıtlardan karar vermek yanlış kalite veya kapasite sonucuna yol açabilir.", "Decisions from incompatible records can produce incorrect quality or capacity conclusions."),
+        (("Eksik ve kullanıcı beyanı olan alanları listeleyin.", "Native model, veri, cihaz, precision, backend ve saat bağlarını inceleyin.", "Gerekli kanıt yoksa ayrı kapsamlı bir ölçüm isteği hazırlayın."),
+         ("List missing and caller-declared fields.", "Inspect native model, data, device, precision, backend and clock bindings.", "Prepare a separately scoped measurement request when evidence is absent.")),
+        (("Mevcut eligibility ve ComparisonContract kontrollerini tekrar uygulayın.", "Uyumsuzluk çözülmeden karşılaştırmalı tercih veya kazanan belirlemeyin."),
+         ("Reapply existing eligibility and ComparisonContract checks.", "Resolve incompatibility before assigning a comparative preference or winner."))),
+    "goals": _recipe("deployment", (),
+        ("Çelişkili hedefleri çözün", "Resolve conflicting goals"),
+        ("Mevcut hedef doğrulayıcısı aynı kapsamda çelişkili hard koşullar buldu.", "The existing goal validator found contradictory hard conditions in the same scope."),
+        ("Hedef kümesini kullanıcı niyetine göre yeniden düzenleyin.", "Revise the goal set to match the caller's intent."),
+        ("Tutarlı hedefler aday değişiklikleri değerlendirmek için gereklidir.", "Consistent goals are required to assess candidate changes."),
+        ("Hedef değiştirmek kabul politikasını değiştirir ve kullanıcı kararı gerektirir.", "Changing goals changes acceptance policy and requires a caller decision."),
+        (("Çelişen goal ID ve protokol eşleşmelerini inceleyin.", "Kullanıcıdan amaçlanan koşulları netleştirin.", "Yeni açık hedef kümesini mevcut doğrulayıcıyla değerlendirin."),
+         ("Inspect conflicting goal IDs and protocol matches.", "Clarify the intended conditions with the caller.", "Assess the revised explicit goals with the existing validator.")),
+        (("validate_request sonucunda hard çelişkilerin çözülmesini kontrol edin.", "Ardından kayıt kapsamındaki hedef değerlendirmelerini yeniden inceleyin."),
+         ("Check that validate_request reports the resolved hard conflicts.", "Then review record-local goal evaluations again."))),
+    "training": _recipe("training", AREA_FEATURES["training"],
+        ("Eğitim aşaması kanıtını inceleyin", "Review training-stage evidence"),
+        ("Eğitim alanının kayıtlı kapsamı ve eksikleri listeleniyor.", "Retained training coverage and gaps are listed."),
+        ("Optimizer veya eğitim akışı seçmeden önce native aşama ve güncelleme kayıtlarını inceleyin.", "Inspect native stage and update records before selecting optimizer or training-flow changes."),
+        ("Aşama, throughput, gradient ve bellek kanıtı, hangi maliyetin araştırılacağını belirlemeye yardımcı olur.", "Stage, throughput, gradient and memory evidence helps identify costs requiring investigation."),
+        ("Accumulation, optimizer veya precision değişikliği güncellemeleri, yakınsamayı ve belleği etkileyebilir.", "Accumulation, optimizer or precision changes can affect updates, convergence and memory."),
+        (("P19/P20 zamanlarını UX observer aralıklarından ayrı inceleyin.", "P22 tamamlanan örnekleri, P23 belleği ve P25 güncelleme durumlarını inceleyin.", "Eksik native eğitim kanıtı için kapsamlı bir ölçüm planı hazırlayın."),
+         ("Inspect P19/P20 timing separately from UX observer intervals.", "Review P22 completed samples, P23 memory and P25 update states.", "Prepare a scoped plan for missing native training evidence.")),
+        (("Aynı veri, güncelleme planı, cihaz ve precision ile P19/P20/P22/P23/P25'i değerlendirin.", "Kaliteyi P26 ile ve açık kullanıcı hedefleriyle kontrol edin."),
+         ("Assess P19/P20/P22/P23/P25 with matching data, update plan, device and precision.", "Check quality using P26 and explicit caller goals."))),
+    "architecture": _recipe("model_architecture", AREA_FEATURES["model_architecture"],
+        ("Mimari profilini inceleyin", "Review architecture profiling"),
+        ("Mimari alanının kayıtlı sayım ve profil kapsamı listeleniyor.", "Retained counting and profiling coverage for architecture is listed."),
+        ("Katman değiştirmeden önce yapı, maliyet ve kalite bağlarını inceleyin.", "Inspect structure, cost and quality bindings before changing layers."),
+        ("Birlikte bağlı profiller hangi bileşenin araştırılacağını gösterebilir.", "Bound profiles can guide which component to investigate."),
+        ("Katman değişikliği kaliteyi, checkpoint uyumluluğunu ve desteklenen şekilleri etkileyebilir.", "Layer changes may affect quality, checkpoint compatibility and supported shapes."),
+        (("P11 boyutunu P12 sayımı ve P13/P14 profiler kapsamıyla birlikte inceleyin.", "Fonksiyonel işlemler ve bilinmeyen operatör maliyetlerini kaydedin.", "Aday değişiklik seçimi için eksik kalite ve profil bağlarını belirleyin."),
+         ("Review P11 size alongside P12 counting and P13/P14 profiling scope.", "Record functional operations and unknown operator costs.", "Identify missing quality and profiling bindings before selecting a candidate change.")),
+        (("Gerekli P01/P02/P11/P12/P13/P14 ve P26 kayıtlarını eşlenmiş koşullarda değerlendirin.", "Mantıksal sayımları gerçek runtime etkisiyle ayrıca doğrulayın."),
+         ("Assess relevant P01/P02/P11/P12/P13/P14 and P26 records under matched conditions.", "Validate logical counts separately against actual runtime effects."))),
+    "deployment": _recipe("deployment", AREA_FEATURES["deployment"],
+        ("Deployment kabiliyetini inceleyin", "Review deployment capability"),
+        ("Kayıtlı cihaz, provider ve servis kapsamı listeleniyor.", "Recorded device, provider and service coverage is listed."),
+        ("Backend veya export yolu seçmeden önce gerçek node yerleşimini ve servis koşullarını inceleyin.", "Inspect actual node placement and service conditions before selecting backend or export changes."),
+        ("Native yerleşim ve cihaz kanıtı yanlış backend varsayımlarını ayırt etmeye yardımcı olur.", "Native placement and device evidence helps identify unsupported backend assumptions."),
+        ("Backend değişimi operatör desteğini, sayısal kaliteyi ve başlatma maliyetini etkileyebilir.", "Backend changes may affect operator support, numerical quality and startup cost."),
+        (("P35 node olaylarını ve eşleme belirsizliklerini inceleyin.", "P34 cihaz koşullarını ve ilgili P15/P16/P30 kapsamlarını kontrol edin.", "Servis hedeflerinin gerektirdiği süre ve enerji kanıtı eksiklerini kaydedin."),
+         ("Inspect P35 node events and mapping uncertainty.", "Check P34 device conditions and relevant P15/P16/P30 scopes.", "Record missing duration and energy evidence required by service goals.")),
+        (("İlgili P01/P02/P05/P26/P30/P34/P35 kayıtlarını uyumlu koşullarda doğrulayın.", "Uzun süre ve enerji iddialarında P31/P32/P33'ün kendi sözleşmelerini koruyun."),
+         ("Validate relevant P01/P02/P05/P26/P30/P34/P35 records under compatible conditions.", "Retain the P31/P32/P33 contracts for duration and energy claims."))),
+    "pipeline": _recipe("data_pipeline", AREA_FEATURES["data_pipeline"],
+        ("Veri hattı bekleme kapsamını inceleyin", "Review data-pipeline waiting scope"),
+        ("Kayıtlı aşama ve veri besleme kanıtının kapsamı listeleniyor.", "Coverage of retained stage and input-pipeline evidence is listed."),
+        ("Worker, prefetch veya preprocessing ayarı seçmeden önce bekleme ve aşama kayıtlarını inceleyin.", "Inspect waiting and stage records before selecting worker, prefetch or preprocessing changes."),
+        ("Aşama ve worker sınırları veri besleme maliyetini doğru kapsamda araştırmaya yardımcı olur.", "Stage and worker boundaries help investigate input costs within the correct scope."),
+        ("Worker/prefetch değişikliği RAM, veri sırası, reproducibility ve gecikmeyi etkileyebilir.", "Worker/prefetch changes may affect RAM, data order, reproducibility and latency."),
+        (("P21 ana thread beklemesini worker hizmet ve prefetch kapsamından ayırın.", "P03/P04 aşamaları ve varsa P15 aktarım kayıtlarının saatlerini inceleyin.", "Eksik aşama için tek değişkenli ve bütçesi açık bir ölçüm planı hazırlayın."),
+         ("Separate P21 main-thread waits from worker-service and prefetch scopes.", "Inspect P03/P04 stage clocks and any P15 transfer records.", "Prepare a single-variable and explicitly budgeted measurement plan for missing stages.")),
+        (("Aynı veri ve sampler koşullarında P21 ve ilgili aşama kayıtlarını değerlendirin.", "Kapasite, gecikme ve RAM etkilerini ilgili P01/P02/P10/P22 kapsamlarıyla kontrol edin."),
+         ("Assess P21 and relevant stage records with matching data and sampler conditions.", "Check capacity, latency and RAM effects within the relevant P01/P02/P10/P22 scopes."))),
+}
+
+
+def recipe_text(code, language, level):
+    """Return bilingual manual steps without altering the originating rule decision."""
+    index = 0 if language == "tr" else 1
+    recipe = RECIPES[code]
+    text = {key: recipe[key][index] for key in ("title", "detected", "change", "why", "risks", "steps", "verification")}
+    if level == "technical":
+        text["detected"] += (" Sayısal gözlemler, native birim ve kayıt kimlikleriyle birlikte okunur." if language == "tr" else
+                             " Read numerical observations with native units and record identities.")
+    elif level == "expert":
+        text["detected"] += (" Native bağlar, orijinal kural/sürüm ve karşılaştırma kapıları kaynak ayrıntılarında korunur." if language == "tr" else
+                             " Native bindings, original rule/version and comparison gates are retained in source details.")
+    return text

@@ -1,0 +1,5189 @@
+{
+  "schema_version": 1,
+  "audit_date": "2026-10-18",
+  "head_commit": "b74e3e2cdec527e7bb7b078f69636a27b19923fe",
+  "provenance": "Fresh CPU constructors from working tree matching HEAD; structural reference only; no historical checkpoint or tensor values.",
+  "environment": {
+    "python": "3.10.18 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 13:08:55) [MSC v.1929 64 bit (AMD64)]",
+    "executable": "C:\\Users\\hdgn5\\.conda\\envs\\torch_gpu\\python.exe",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "torch": "2.5.1+cu121",
+    "device": "cpu",
+    "cuda_available": true,
+    "threads": 1,
+    "seed": 0,
+    "packages": {
+      "torchvision": "0.20.1+cu121",
+      "numpy": "2.2.2",
+      "matplotlib": "3.10.8",
+      "seaborn": "0.13.2",
+      "scikit-learn": "1.7.2",
+      "tqdm": "4.67.1",
+      "torchsummary": "1.5.1"
+    }
+  },
+  "source_sha256": {
+    "hyso/__init__.py": "5aa103d3f3a42fb6cfd583f130f3b1f644c6e6b132850f1c265dfc3c5614c5f1",
+    "hyso/augmentation/__init__.py": "6fd1034be45db9b29a0fef93f125bd95ba671d8c11abe39b5fe8984b43c58bf0",
+    "hyso/augmentation/augmentation.py": "8b2c85883f05b8323229b531fcd12d0bd8ea5a7f1b298b18091ef0b75ef34dc8",
+    "hyso/callbacks/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "hyso/callbacks/callbacks.py": "240f9afa8020f3a8e2d29e879269ac23828970d291028a25f982686f160f6604",
+    "hyso/models/__init__.py": "e6f6d67f38b844e0df89a38862fb1c01492f5e780957e7a1a63d2050a0fe9f42",
+    "hyso/models/bcam.py": "6d2e445c8d55440307bcead43845ef848df5b8a54fb4c0f9134dfe355f31834c",
+    "hyso/models/fit.py": "c4d532e8cc4578310e0617afbf87ec4a8316051d35869b63750633ef56a0b1c6",
+    "hyso/models/WithSE.py": "ec7f7b12412e0e152d485368cc7d77e385830c65262d6a9a44797bca2f99b51d"
+  },
+  "models": [
+    {
+      "id": "ELO_auto",
+      "import_path": "hyso.models.bcam.ELO",
+      "constructor": {
+        "input_channels": 3,
+        "num_classes": 2,
+        "conv_channels": [
+          4,
+          8
+        ],
+        "residual_per_block": 1,
+        "p_drop": 0.0,
+        "att_reduction": 2,
+        "norm_type": "auto",
+        "use_depthwise": false
+      },
+      "training": false,
+      "modules": [
+        {
+          "name": "",
+          "type": "hyso.models.bcam.ELO",
+          "training": false
+        },
+        {
+          "name": "stem",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "stem.0",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "stem.1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "stem.2",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "blocks",
+          "type": "torch.nn.modules.container.ModuleList",
+          "training": false
+        },
+        {
+          "name": "blocks.0",
+          "type": "hyso.models.bcam.BottleneckResidualBlock",
+          "training": false
+        },
+        {
+          "name": "blocks.0.conv1",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "blocks.0.bn1",
+          "type": "torch.nn.modules.normalization.GroupNorm",
+          "training": false
+        },
+        {
+          "name": "blocks.0.conv2",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "blocks.0.bn2",
+          "type": "torch.nn.modules.normalization.GroupNorm",
+          "training": false
+        },
+        {
+          "name": "blocks.0.conv3",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "blocks.0.bn3",
+          "type": "torch.nn.modules.normalization.GroupNorm",
+          "training": false
+        },
+        {
+          "name": "blocks.0.shortcut",
+          "type": "torch.nn.modules.linear.Identity",
+          "training": false
+        },
+        {
+          "name": "blocks.0.attention",
+          "type": "hyso.models.bcam.CBAMBlock",
+          "training": false
+        },
+        {
+          "name": "blocks.0.attention.avg_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveAvgPool2d",
+          "training": false
+        },
+        {
+          "name": "blocks.0.attention.max_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveMaxPool2d",
+          "training": false
+        },
+        {
+          "name": "blocks.0.attention.fc1",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "blocks.0.attention.fc2",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "blocks.0.attention.conv_spatial",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "blocks.1",
+          "type": "hyso.models.bcam.BottleneckResidualBlock",
+          "training": false
+        },
+        {
+          "name": "blocks.1.conv1",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "blocks.1.bn1",
+          "type": "torch.nn.modules.normalization.GroupNorm",
+          "training": false
+        },
+        {
+          "name": "blocks.1.conv2",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "blocks.1.bn2",
+          "type": "torch.nn.modules.normalization.GroupNorm",
+          "training": false
+        },
+        {
+          "name": "blocks.1.conv3",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "blocks.1.bn3",
+          "type": "torch.nn.modules.normalization.GroupNorm",
+          "training": false
+        },
+        {
+          "name": "blocks.1.shortcut",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "blocks.1.shortcut.0",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "blocks.1.shortcut.1",
+          "type": "torch.nn.modules.normalization.GroupNorm",
+          "training": false
+        },
+        {
+          "name": "blocks.1.attention",
+          "type": "hyso.models.bcam.CBAMBlock",
+          "training": false
+        },
+        {
+          "name": "blocks.1.attention.avg_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveAvgPool2d",
+          "training": false
+        },
+        {
+          "name": "blocks.1.attention.max_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveMaxPool2d",
+          "training": false
+        },
+        {
+          "name": "blocks.1.attention.fc1",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "blocks.1.attention.fc2",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "blocks.1.attention.conv_spatial",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "global_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveAvgPool2d",
+          "training": false
+        },
+        {
+          "name": "fc_norm",
+          "type": "torch.nn.modules.normalization.LayerNorm",
+          "training": false
+        },
+        {
+          "name": "head",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "head.0",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "head.1",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "head.2",
+          "type": "torch.nn.modules.dropout.Dropout",
+          "training": false
+        },
+        {
+          "name": "head.3",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        }
+      ],
+      "state_dict": [
+        {
+          "key": "stem.0.weight",
+          "shape": [
+            4,
+            3,
+            3,
+            3
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stem.1.weight",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stem.1.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stem.1.running_mean",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stem.1.running_var",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stem.1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.0.conv1.weight",
+          "shape": [
+            1,
+            4,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.bn1.weight",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.bn1.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.conv2.weight",
+          "shape": [
+            1,
+            1,
+            3,
+            3
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.bn2.weight",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.bn2.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.conv3.weight",
+          "shape": [
+            4,
+            1,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.bn3.weight",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.bn3.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.attention.fc1.weight",
+          "shape": [
+            2,
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.attention.fc1.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.attention.fc2.weight",
+          "shape": [
+            4,
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.attention.fc2.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.attention.conv_spatial.weight",
+          "shape": [
+            1,
+            2,
+            7,
+            7
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.attention.conv_spatial.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.conv1.weight",
+          "shape": [
+            2,
+            4,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.bn1.weight",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.bn1.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.conv2.weight",
+          "shape": [
+            2,
+            2,
+            3,
+            3
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.bn2.weight",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.bn2.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.conv3.weight",
+          "shape": [
+            8,
+            2,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.bn3.weight",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.bn3.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.shortcut.0.weight",
+          "shape": [
+            8,
+            4,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.shortcut.1.weight",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.shortcut.1.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.attention.fc1.weight",
+          "shape": [
+            4,
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.attention.fc1.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.attention.fc2.weight",
+          "shape": [
+            8,
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.attention.fc2.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.attention.conv_spatial.weight",
+          "shape": [
+            1,
+            2,
+            7,
+            7
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.attention.conv_spatial.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "fc_norm.weight",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "fc_norm.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "head.0.weight",
+          "shape": [
+            4,
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "head.0.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "head.3.weight",
+          "shape": [
+            2,
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "head.3.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        }
+      ],
+      "summary": {
+        "state_entries": 45,
+        "parameter_tensors": 42,
+        "buffer_tensors": 3,
+        "parameter_elements": 635
+      },
+      "strict_same_configuration_load": {
+        "missing_keys": [],
+        "unexpected_keys": []
+      },
+      "forward_probe": {
+        "status": "ok",
+        "input_shape": [
+          2,
+          3,
+          16,
+          16
+        ],
+        "output_shape": [
+          2,
+          2
+        ],
+        "dtype": "torch.float32"
+      }
+    },
+    {
+      "id": "EBO_auto",
+      "import_path": "hyso.models.bcam.EBO",
+      "constructor": {
+        "input_channels": 3,
+        "num_classes": 2,
+        "conv_channels": [
+          4,
+          8
+        ],
+        "residual_per_block": 1,
+        "p_drop": 0.0,
+        "att_reduction": 2,
+        "norm_type": "auto",
+        "use_depthwise": false,
+        "device": "cpu"
+      },
+      "training": false,
+      "modules": [
+        {
+          "name": "",
+          "type": "hyso.models.bcam.EBO",
+          "training": false
+        },
+        {
+          "name": "model",
+          "type": "hyso.models.bcam.ELO",
+          "training": false
+        },
+        {
+          "name": "model.stem",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "model.stem.0",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.stem.1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "model.stem.2",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "model.blocks",
+          "type": "torch.nn.modules.container.ModuleList",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0",
+          "type": "hyso.models.bcam.BottleneckResidualBlock",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.conv1",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.bn1",
+          "type": "torch.nn.modules.normalization.GroupNorm",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.conv2",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.bn2",
+          "type": "torch.nn.modules.normalization.GroupNorm",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.conv3",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.bn3",
+          "type": "torch.nn.modules.normalization.GroupNorm",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.shortcut",
+          "type": "torch.nn.modules.linear.Identity",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.attention",
+          "type": "hyso.models.bcam.CBAMBlock",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.attention.avg_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveAvgPool2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.attention.max_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveMaxPool2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.attention.fc1",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.attention.fc2",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.attention.conv_spatial",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1",
+          "type": "hyso.models.bcam.BottleneckResidualBlock",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.conv1",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.bn1",
+          "type": "torch.nn.modules.normalization.GroupNorm",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.conv2",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.bn2",
+          "type": "torch.nn.modules.normalization.GroupNorm",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.conv3",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.bn3",
+          "type": "torch.nn.modules.normalization.GroupNorm",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.shortcut",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.shortcut.0",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.shortcut.1",
+          "type": "torch.nn.modules.normalization.GroupNorm",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.attention",
+          "type": "hyso.models.bcam.CBAMBlock",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.attention.avg_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveAvgPool2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.attention.max_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveMaxPool2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.attention.fc1",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.attention.fc2",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.attention.conv_spatial",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.global_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveAvgPool2d",
+          "training": false
+        },
+        {
+          "name": "model.fc_norm",
+          "type": "torch.nn.modules.normalization.LayerNorm",
+          "training": false
+        },
+        {
+          "name": "model.head",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "model.head.0",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "model.head.1",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "model.head.2",
+          "type": "torch.nn.modules.dropout.Dropout",
+          "training": false
+        },
+        {
+          "name": "model.head.3",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        }
+      ],
+      "state_dict": [
+        {
+          "key": "model.stem.0.weight",
+          "shape": [
+            4,
+            3,
+            3,
+            3
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.stem.1.weight",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.stem.1.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.stem.1.running_mean",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.stem.1.running_var",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.stem.1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.0.conv1.weight",
+          "shape": [
+            1,
+            4,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.bn1.weight",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.bn1.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.conv2.weight",
+          "shape": [
+            1,
+            1,
+            3,
+            3
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.bn2.weight",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.bn2.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.conv3.weight",
+          "shape": [
+            4,
+            1,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.bn3.weight",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.bn3.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.attention.fc1.weight",
+          "shape": [
+            2,
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.attention.fc1.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.attention.fc2.weight",
+          "shape": [
+            4,
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.attention.fc2.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.attention.conv_spatial.weight",
+          "shape": [
+            1,
+            2,
+            7,
+            7
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.attention.conv_spatial.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.conv1.weight",
+          "shape": [
+            2,
+            4,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.bn1.weight",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.bn1.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.conv2.weight",
+          "shape": [
+            2,
+            2,
+            3,
+            3
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.bn2.weight",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.bn2.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.conv3.weight",
+          "shape": [
+            8,
+            2,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.bn3.weight",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.bn3.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.shortcut.0.weight",
+          "shape": [
+            8,
+            4,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.shortcut.1.weight",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.shortcut.1.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.attention.fc1.weight",
+          "shape": [
+            4,
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.attention.fc1.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.attention.fc2.weight",
+          "shape": [
+            8,
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.attention.fc2.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.attention.conv_spatial.weight",
+          "shape": [
+            1,
+            2,
+            7,
+            7
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.attention.conv_spatial.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.fc_norm.weight",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.fc_norm.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.head.0.weight",
+          "shape": [
+            4,
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.head.0.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.head.3.weight",
+          "shape": [
+            2,
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.head.3.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        }
+      ],
+      "summary": {
+        "state_entries": 45,
+        "parameter_tensors": 42,
+        "buffer_tensors": 3,
+        "parameter_elements": 635
+      },
+      "strict_same_configuration_load": {
+        "missing_keys": [],
+        "unexpected_keys": []
+      },
+      "forward_probe": {
+        "status": "error",
+        "input_shape": [
+          2,
+          3,
+          16,
+          16
+        ],
+        "exception": "NotImplementedError",
+        "message": "Module [EBO] is missing the required \"forward\" function"
+      },
+      "inner_model_forward_probe": {
+        "status": "ok",
+        "output_shape": [
+          2,
+          2
+        ]
+      },
+      "wrapper_state_to_inner_strict_load": {
+        "status": "expected_error",
+        "exception": "RuntimeError",
+        "message": "Error(s) in loading state_dict for ELO:\n\tMissing key(s) in state_dict: \"stem.0.weight\", \"stem.1.weight\", \"stem.1.bias\", \"stem.1.running_mean\", \"stem.1.running_var\", \"blocks.0.conv1.weight\", \"blocks.0.bn1.weight\", \"blocks.0.bn1.bias\", \"blocks.0.conv2.weight\", \"blocks.0.bn2.weight\", \"blocks.0.bn2.bias\", \"blocks.0.conv3.weight\", \"blocks.0.bn3.weight\", \"blocks.0.bn3.bias\", \"blocks.0.attention.fc1.weight\", \"blocks.0.attention.fc1.bias\", \"blocks.0.attention.fc2.weight\", \"blocks.0.attention.fc2.bias\", \"blocks.0.attention.conv_spatial.weight\", \"blocks.0.attention.conv_spatial.bias\", \"blocks.1.conv1.weight\", \"blocks.1.bn1.weight\", \"blocks.1.bn1.bias\", \"blocks.1.conv2.weight\", \"blocks.1.bn2.weight\", \"blocks.1.bn2.bias\", \"blocks.1.conv3.weight\", \"blocks.1.bn3.weight\", \"blocks.1.bn3.bias\", \"blocks.1.shortcut.0.weight\", \"blocks.1.shortcut.1.weight\", \"blocks.1.shortcut.1.bias\", \"blocks.1.attention.fc1.weight\", \"blocks.1.attention.fc1.bias\", \"blocks.1.attention.fc2.weight\", \"blocks.1.attention.fc2.bias\", \"blocks.1.attention.conv_spatial.weight\", \"blocks.1.attention.conv_spatial.bias\", \"fc_norm.weight\", \"fc_norm.bias\", \"head.0.weight\", \"head.0.bias\", \"head.3.weight\", \"head.3.bias\". \n\tUnexpected key(s) in state_dict: \"model.stem.0.weight\", \"model.stem.1.weight\", \"model.stem.1.bias\", \"model.stem.1.running_mean\", \"model.stem.1.running_var\", \"model.stem.1.num_batches_tracked\", \"model.blocks.0.conv1.weight\", \"model.blocks.0.bn1.weight\", \"model.blocks.0.bn1.bias\", \"model.blocks.0.conv2.weight\", \"model.blocks.0.bn2.weight\", \"model.blocks.0.bn2.bias\", \"model.blocks.0.conv3.weight\", \"model.blocks.0.bn3.weight\", \"model.blocks.0.bn3.bias\", \"model.blocks.0.attention.fc1.weight\", \"model.blocks.0.attention.fc1.bias\", \"model.blocks.0.attention.fc2.weight\", \"model.blocks.0.attention.fc2.bias\", \"model.blocks.0.attention.conv_spatial.weight\", \"model.blocks.0.attention.conv_spatial.bias\", \"model.blocks.1.conv1.weight\", \"model.blocks.1.bn1.weight\", \"model.blocks.1.bn1.bias\", \"model.blocks.1.conv2.weight\", \"model.blocks.1.bn2.weight\", \"model.blocks.1.bn2.bias\", \"model.blocks.1.conv3.weight\", \"model.blocks.1.bn3.weight\", \"model.blocks.1.bn3.bias\", \"model.blocks.1.shortcut.0.weight\", \"model.blocks.1.shortcut.1.weight\", \"model.blocks.1.shortcut.1.bias\", \"model.blocks.1.attention.fc1.weight\", \"model.blocks.1.attention.fc1.bias\", \"model.blocks.1.attention.fc2.weight\", \"model.blocks.1.attention.fc2.bias\", \"model.blocks.1.attention.conv_spatial.weight\", \"model.blocks.1.attention.conv_spatial.bias\", \"model.fc_norm.weight\", \"model.fc_norm.bias\", \"model.head.0.weight\", \"model.head.0.bias\", \"model.head.3.weight\", \"model.head.3.bias\". "
+      }
+    },
+    {
+      "id": "ELO_batch_depthwise",
+      "import_path": "hyso.models.bcam.ELO",
+      "constructor": {
+        "input_channels": 3,
+        "num_classes": 2,
+        "conv_channels": [
+          4,
+          8
+        ],
+        "residual_per_block": 1,
+        "p_drop": 0.0,
+        "att_reduction": 2,
+        "norm_type": "batch",
+        "use_depthwise": true
+      },
+      "training": false,
+      "modules": [
+        {
+          "name": "",
+          "type": "hyso.models.bcam.ELO",
+          "training": false
+        },
+        {
+          "name": "stem",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "stem.0",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "stem.1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "stem.2",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "blocks",
+          "type": "torch.nn.modules.container.ModuleList",
+          "training": false
+        },
+        {
+          "name": "blocks.0",
+          "type": "hyso.models.bcam.BottleneckResidualBlock",
+          "training": false
+        },
+        {
+          "name": "blocks.0.conv1",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "blocks.0.bn1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "blocks.0.dw_seq",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "blocks.0.dw_seq.0",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "blocks.0.dw_seq.1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "blocks.0.dw_seq.2",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "blocks.0.dw_seq.3",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "blocks.0.dw_seq.4",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "blocks.0.conv2",
+          "type": "torch.nn.modules.linear.Identity",
+          "training": false
+        },
+        {
+          "name": "blocks.0.bn2",
+          "type": "torch.nn.modules.linear.Identity",
+          "training": false
+        },
+        {
+          "name": "blocks.0.conv3",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "blocks.0.bn3",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "blocks.0.shortcut",
+          "type": "torch.nn.modules.linear.Identity",
+          "training": false
+        },
+        {
+          "name": "blocks.0.attention",
+          "type": "hyso.models.bcam.CBAMBlock",
+          "training": false
+        },
+        {
+          "name": "blocks.0.attention.avg_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveAvgPool2d",
+          "training": false
+        },
+        {
+          "name": "blocks.0.attention.max_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveMaxPool2d",
+          "training": false
+        },
+        {
+          "name": "blocks.0.attention.fc1",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "blocks.0.attention.fc2",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "blocks.0.attention.conv_spatial",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "blocks.1",
+          "type": "hyso.models.bcam.BottleneckResidualBlock",
+          "training": false
+        },
+        {
+          "name": "blocks.1.conv1",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "blocks.1.bn1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "blocks.1.dw_seq",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "blocks.1.dw_seq.0",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "blocks.1.dw_seq.1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "blocks.1.dw_seq.2",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "blocks.1.dw_seq.3",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "blocks.1.dw_seq.4",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "blocks.1.conv2",
+          "type": "torch.nn.modules.linear.Identity",
+          "training": false
+        },
+        {
+          "name": "blocks.1.bn2",
+          "type": "torch.nn.modules.linear.Identity",
+          "training": false
+        },
+        {
+          "name": "blocks.1.conv3",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "blocks.1.bn3",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "blocks.1.shortcut",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "blocks.1.shortcut.0",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "blocks.1.shortcut.1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "blocks.1.attention",
+          "type": "hyso.models.bcam.CBAMBlock",
+          "training": false
+        },
+        {
+          "name": "blocks.1.attention.avg_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveAvgPool2d",
+          "training": false
+        },
+        {
+          "name": "blocks.1.attention.max_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveMaxPool2d",
+          "training": false
+        },
+        {
+          "name": "blocks.1.attention.fc1",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "blocks.1.attention.fc2",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "blocks.1.attention.conv_spatial",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "global_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveAvgPool2d",
+          "training": false
+        },
+        {
+          "name": "fc_norm",
+          "type": "torch.nn.modules.normalization.LayerNorm",
+          "training": false
+        },
+        {
+          "name": "head",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "head.0",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "head.1",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "head.2",
+          "type": "torch.nn.modules.dropout.Dropout",
+          "training": false
+        },
+        {
+          "name": "head.3",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        }
+      ],
+      "state_dict": [
+        {
+          "key": "stem.0.weight",
+          "shape": [
+            4,
+            3,
+            3,
+            3
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stem.1.weight",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stem.1.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stem.1.running_mean",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stem.1.running_var",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stem.1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.0.conv1.weight",
+          "shape": [
+            1,
+            4,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.bn1.weight",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.bn1.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.bn1.running_mean",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.0.bn1.running_var",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.0.bn1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.0.dw_seq.0.weight",
+          "shape": [
+            1,
+            1,
+            3,
+            3
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.dw_seq.1.weight",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.dw_seq.1.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.dw_seq.1.running_mean",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.0.dw_seq.1.running_var",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.0.dw_seq.1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.0.dw_seq.3.weight",
+          "shape": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.dw_seq.4.weight",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.dw_seq.4.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.dw_seq.4.running_mean",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.0.dw_seq.4.running_var",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.0.dw_seq.4.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.0.conv3.weight",
+          "shape": [
+            4,
+            1,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.bn3.weight",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.bn3.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.bn3.running_mean",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.0.bn3.running_var",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.0.bn3.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.0.attention.fc1.weight",
+          "shape": [
+            2,
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.attention.fc1.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.attention.fc2.weight",
+          "shape": [
+            4,
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.attention.fc2.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.attention.conv_spatial.weight",
+          "shape": [
+            1,
+            2,
+            7,
+            7
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.0.attention.conv_spatial.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.conv1.weight",
+          "shape": [
+            2,
+            4,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.bn1.weight",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.bn1.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.bn1.running_mean",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.1.bn1.running_var",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.1.bn1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.1.dw_seq.0.weight",
+          "shape": [
+            2,
+            1,
+            3,
+            3
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.dw_seq.1.weight",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.dw_seq.1.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.dw_seq.1.running_mean",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.1.dw_seq.1.running_var",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.1.dw_seq.1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.1.dw_seq.3.weight",
+          "shape": [
+            2,
+            2,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.dw_seq.4.weight",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.dw_seq.4.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.dw_seq.4.running_mean",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.1.dw_seq.4.running_var",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.1.dw_seq.4.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.1.conv3.weight",
+          "shape": [
+            8,
+            2,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.bn3.weight",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.bn3.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.bn3.running_mean",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.1.bn3.running_var",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.1.bn3.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.1.shortcut.0.weight",
+          "shape": [
+            8,
+            4,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.shortcut.1.weight",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.shortcut.1.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.shortcut.1.running_mean",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.1.shortcut.1.running_var",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.1.shortcut.1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "blocks.1.attention.fc1.weight",
+          "shape": [
+            4,
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.attention.fc1.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.attention.fc2.weight",
+          "shape": [
+            8,
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.attention.fc2.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.attention.conv_spatial.weight",
+          "shape": [
+            1,
+            2,
+            7,
+            7
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "blocks.1.attention.conv_spatial.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "fc_norm.weight",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "fc_norm.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "head.0.weight",
+          "shape": [
+            4,
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "head.0.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "head.3.weight",
+          "shape": [
+            2,
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "head.3.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        }
+      ],
+      "summary": {
+        "state_entries": 78,
+        "parameter_tensors": 48,
+        "buffer_tensors": 30,
+        "parameter_elements": 628
+      },
+      "strict_same_configuration_load": {
+        "missing_keys": [],
+        "unexpected_keys": []
+      },
+      "forward_probe": {
+        "status": "ok",
+        "input_shape": [
+          2,
+          3,
+          16,
+          16
+        ],
+        "output_shape": [
+          2,
+          2
+        ],
+        "dtype": "torch.float32"
+      }
+    },
+    {
+      "id": "EBO_batch_depthwise",
+      "import_path": "hyso.models.bcam.EBO",
+      "constructor": {
+        "input_channels": 3,
+        "num_classes": 2,
+        "conv_channels": [
+          4,
+          8
+        ],
+        "residual_per_block": 1,
+        "p_drop": 0.0,
+        "att_reduction": 2,
+        "norm_type": "batch",
+        "use_depthwise": true,
+        "device": "cpu"
+      },
+      "training": false,
+      "modules": [
+        {
+          "name": "",
+          "type": "hyso.models.bcam.EBO",
+          "training": false
+        },
+        {
+          "name": "model",
+          "type": "hyso.models.bcam.ELO",
+          "training": false
+        },
+        {
+          "name": "model.stem",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "model.stem.0",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.stem.1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "model.stem.2",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "model.blocks",
+          "type": "torch.nn.modules.container.ModuleList",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0",
+          "type": "hyso.models.bcam.BottleneckResidualBlock",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.conv1",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.bn1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.dw_seq",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.dw_seq.0",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.dw_seq.1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.dw_seq.2",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.dw_seq.3",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.dw_seq.4",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.conv2",
+          "type": "torch.nn.modules.linear.Identity",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.bn2",
+          "type": "torch.nn.modules.linear.Identity",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.conv3",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.bn3",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.shortcut",
+          "type": "torch.nn.modules.linear.Identity",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.attention",
+          "type": "hyso.models.bcam.CBAMBlock",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.attention.avg_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveAvgPool2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.attention.max_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveMaxPool2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.attention.fc1",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.attention.fc2",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "model.blocks.0.attention.conv_spatial",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1",
+          "type": "hyso.models.bcam.BottleneckResidualBlock",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.conv1",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.bn1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.dw_seq",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.dw_seq.0",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.dw_seq.1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.dw_seq.2",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.dw_seq.3",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.dw_seq.4",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.conv2",
+          "type": "torch.nn.modules.linear.Identity",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.bn2",
+          "type": "torch.nn.modules.linear.Identity",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.conv3",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.bn3",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.shortcut",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.shortcut.0",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.shortcut.1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.attention",
+          "type": "hyso.models.bcam.CBAMBlock",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.attention.avg_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveAvgPool2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.attention.max_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveMaxPool2d",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.attention.fc1",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.attention.fc2",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "model.blocks.1.attention.conv_spatial",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "model.global_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveAvgPool2d",
+          "training": false
+        },
+        {
+          "name": "model.fc_norm",
+          "type": "torch.nn.modules.normalization.LayerNorm",
+          "training": false
+        },
+        {
+          "name": "model.head",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "model.head.0",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "model.head.1",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "model.head.2",
+          "type": "torch.nn.modules.dropout.Dropout",
+          "training": false
+        },
+        {
+          "name": "model.head.3",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        }
+      ],
+      "state_dict": [
+        {
+          "key": "model.stem.0.weight",
+          "shape": [
+            4,
+            3,
+            3,
+            3
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.stem.1.weight",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.stem.1.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.stem.1.running_mean",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.stem.1.running_var",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.stem.1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.0.conv1.weight",
+          "shape": [
+            1,
+            4,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.bn1.weight",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.bn1.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.bn1.running_mean",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.0.bn1.running_var",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.0.bn1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.0.dw_seq.0.weight",
+          "shape": [
+            1,
+            1,
+            3,
+            3
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.dw_seq.1.weight",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.dw_seq.1.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.dw_seq.1.running_mean",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.0.dw_seq.1.running_var",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.0.dw_seq.1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.0.dw_seq.3.weight",
+          "shape": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.dw_seq.4.weight",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.dw_seq.4.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.dw_seq.4.running_mean",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.0.dw_seq.4.running_var",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.0.dw_seq.4.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.0.conv3.weight",
+          "shape": [
+            4,
+            1,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.bn3.weight",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.bn3.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.bn3.running_mean",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.0.bn3.running_var",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.0.bn3.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.0.attention.fc1.weight",
+          "shape": [
+            2,
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.attention.fc1.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.attention.fc2.weight",
+          "shape": [
+            4,
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.attention.fc2.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.attention.conv_spatial.weight",
+          "shape": [
+            1,
+            2,
+            7,
+            7
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.0.attention.conv_spatial.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.conv1.weight",
+          "shape": [
+            2,
+            4,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.bn1.weight",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.bn1.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.bn1.running_mean",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.1.bn1.running_var",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.1.bn1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.1.dw_seq.0.weight",
+          "shape": [
+            2,
+            1,
+            3,
+            3
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.dw_seq.1.weight",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.dw_seq.1.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.dw_seq.1.running_mean",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.1.dw_seq.1.running_var",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.1.dw_seq.1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.1.dw_seq.3.weight",
+          "shape": [
+            2,
+            2,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.dw_seq.4.weight",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.dw_seq.4.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.dw_seq.4.running_mean",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.1.dw_seq.4.running_var",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.1.dw_seq.4.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.1.conv3.weight",
+          "shape": [
+            8,
+            2,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.bn3.weight",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.bn3.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.bn3.running_mean",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.1.bn3.running_var",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.1.bn3.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.1.shortcut.0.weight",
+          "shape": [
+            8,
+            4,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.shortcut.1.weight",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.shortcut.1.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.shortcut.1.running_mean",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.1.shortcut.1.running_var",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.1.shortcut.1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "model.blocks.1.attention.fc1.weight",
+          "shape": [
+            4,
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.attention.fc1.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.attention.fc2.weight",
+          "shape": [
+            8,
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.attention.fc2.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.attention.conv_spatial.weight",
+          "shape": [
+            1,
+            2,
+            7,
+            7
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.blocks.1.attention.conv_spatial.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.fc_norm.weight",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.fc_norm.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.head.0.weight",
+          "shape": [
+            4,
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.head.0.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.head.3.weight",
+          "shape": [
+            2,
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "model.head.3.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        }
+      ],
+      "summary": {
+        "state_entries": 78,
+        "parameter_tensors": 48,
+        "buffer_tensors": 30,
+        "parameter_elements": 628
+      },
+      "strict_same_configuration_load": {
+        "missing_keys": [],
+        "unexpected_keys": []
+      },
+      "forward_probe": {
+        "status": "error",
+        "input_shape": [
+          2,
+          3,
+          16,
+          16
+        ],
+        "exception": "NotImplementedError",
+        "message": "Module [EBO] is missing the required \"forward\" function"
+      },
+      "inner_model_forward_probe": {
+        "status": "ok",
+        "output_shape": [
+          2,
+          2
+        ]
+      },
+      "wrapper_state_to_inner_strict_load": {
+        "status": "expected_error",
+        "exception": "RuntimeError",
+        "message": "Error(s) in loading state_dict for ELO:\n\tMissing key(s) in state_dict: \"stem.0.weight\", \"stem.1.weight\", \"stem.1.bias\", \"stem.1.running_mean\", \"stem.1.running_var\", \"blocks.0.conv1.weight\", \"blocks.0.bn1.weight\", \"blocks.0.bn1.bias\", \"blocks.0.bn1.running_mean\", \"blocks.0.bn1.running_var\", \"blocks.0.dw_seq.0.weight\", \"blocks.0.dw_seq.1.weight\", \"blocks.0.dw_seq.1.bias\", \"blocks.0.dw_seq.1.running_mean\", \"blocks.0.dw_seq.1.running_var\", \"blocks.0.dw_seq.3.weight\", \"blocks.0.dw_seq.4.weight\", \"blocks.0.dw_seq.4.bias\", \"blocks.0.dw_seq.4.running_mean\", \"blocks.0.dw_seq.4.running_var\", \"blocks.0.conv3.weight\", \"blocks.0.bn3.weight\", \"blocks.0.bn3.bias\", \"blocks.0.bn3.running_mean\", \"blocks.0.bn3.running_var\", \"blocks.0.attention.fc1.weight\", \"blocks.0.attention.fc1.bias\", \"blocks.0.attention.fc2.weight\", \"blocks.0.attention.fc2.bias\", \"blocks.0.attention.conv_spatial.weight\", \"blocks.0.attention.conv_spatial.bias\", \"blocks.1.conv1.weight\", \"blocks.1.bn1.weight\", \"blocks.1.bn1.bias\", \"blocks.1.bn1.running_mean\", \"blocks.1.bn1.running_var\", \"blocks.1.dw_seq.0.weight\", \"blocks.1.dw_seq.1.weight\", \"blocks.1.dw_seq.1.bias\", \"blocks.1.dw_seq.1.running_mean\", \"blocks.1.dw_seq.1.running_var\", \"blocks.1.dw_seq.3.weight\", \"blocks.1.dw_seq.4.weight\", \"blocks.1.dw_seq.4.bias\", \"blocks.1.dw_seq.4.running_mean\", \"blocks.1.dw_seq.4.running_var\", \"blocks.1.conv3.weight\", \"blocks.1.bn3.weight\", \"blocks.1.bn3.bias\", \"blocks.1.bn3.running_mean\", \"blocks.1.bn3.running_var\", \"blocks.1.shortcut.0.weight\", \"blocks.1.shortcut.1.weight\", \"blocks.1.shortcut.1.bias\", \"blocks.1.shortcut.1.running_mean\", \"blocks.1.shortcut.1.running_var\", \"blocks.1.attention.fc1.weight\", \"blocks.1.attention.fc1.bias\", \"blocks.1.attention.fc2.weight\", \"blocks.1.attention.fc2.bias\", \"blocks.1.attention.conv_spatial.weight\", \"blocks.1.attention.conv_spatial.bias\", \"fc_norm.weight\", \"fc_norm.bias\", \"head.0.weight\", \"head.0.bias\", \"head.3.weight\", \"head.3.bias\". \n\tUnexpected key(s) in state_dict: \"model.stem.0.weight\", \"model.stem.1.weight\", \"model.stem.1.bias\", \"model.stem.1.running_mean\", \"model.stem.1.running_var\", \"model.stem.1.num_batches_tracked\", \"model.blocks.0.conv1.weight\", \"model.blocks.0.bn1.weight\", \"model.blocks.0.bn1.bias\", \"model.blocks.0.bn1.running_mean\", \"model.blocks.0.bn1.running_var\", \"model.blocks.0.bn1.num_batches_tracked\", \"model.blocks.0.dw_seq.0.weight\", \"model.blocks.0.dw_seq.1.weight\", \"model.blocks.0.dw_seq.1.bias\", \"model.blocks.0.dw_seq.1.running_mean\", \"model.blocks.0.dw_seq.1.running_var\", \"model.blocks.0.dw_seq.1.num_batches_tracked\", \"model.blocks.0.dw_seq.3.weight\", \"model.blocks.0.dw_seq.4.weight\", \"model.blocks.0.dw_seq.4.bias\", \"model.blocks.0.dw_seq.4.running_mean\", \"model.blocks.0.dw_seq.4.running_var\", \"model.blocks.0.dw_seq.4.num_batches_tracked\", \"model.blocks.0.conv3.weight\", \"model.blocks.0.bn3.weight\", \"model.blocks.0.bn3.bias\", \"model.blocks.0.bn3.running_mean\", \"model.blocks.0.bn3.running_var\", \"model.blocks.0.bn3.num_batches_tracked\", \"model.blocks.0.attention.fc1.weight\", \"model.blocks.0.attention.fc1.bias\", \"model.blocks.0.attention.fc2.weight\", \"model.blocks.0.attention.fc2.bias\", \"model.blocks.0.attention.conv_spatial.weight\", \"model.blocks.0.attention.conv_spatial.bias\", \"model.blocks.1.conv1.weight\", \"model.blocks.1.bn1.weight\", \"model.blocks.1.bn1.bias\", \"model.blocks.1.bn1.running_mean\", \"model.blocks.1.bn1.running_var\", \"model.blocks.1.bn1.num_batches_tracked\", \"model.blocks.1.dw_seq.0.weight\", \"model.blocks.1.dw_seq.1.weight\", \"model.blocks.1.dw_seq.1.bias\", \"model.blocks.1.dw_seq.1.running_mean\", \"model.blocks.1.dw_seq.1.running_var\", \"model.blocks.1.dw_seq.1.num_batches_tracked\", \"model.blocks.1.dw_seq.3.weight\", \"model.blocks.1.dw_seq.4.weight\", \"model.blocks.1.dw_seq.4.bias\", \"model.blocks.1.dw_seq.4.running_mean\", \"model.blocks.1.dw_seq.4.running_var\", \"model.blocks.1.dw_seq.4.num_batches_tracked\", \"model.blocks.1.conv3.weight\", \"model.blocks.1.bn3.weight\", \"model.blocks.1.bn3.bias\", \"model.blocks.1.bn3.running_mean\", \"model.blocks.1.bn3.running_var\", \"model.blocks.1.bn3.num_batches_tracked\", \"model.blocks.1.shortcut.0.weight\", \"model.blocks.1.shortcut.1.weight\", \"model.blocks.1.shortcut.1.bias\", \"model.blocks.1.shortcut.1.running_mean\", \"model.blocks.1.shortcut.1.running_var\", \"model.blocks.1.shortcut.1.num_batches_tracked\", \"model.blocks.1.attention.fc1.weight\", \"model.blocks.1.attention.fc1.bias\", \"model.blocks.1.attention.fc2.weight\", \"model.blocks.1.attention.fc2.bias\", \"model.blocks.1.attention.conv_spatial.weight\", \"model.blocks.1.attention.conv_spatial.bias\", \"model.fc_norm.weight\", \"model.fc_norm.bias\", \"model.head.0.weight\", \"model.head.0.bias\", \"model.head.3.weight\", \"model.head.3.bias\". "
+      }
+    },
+    {
+      "id": "CEMO",
+      "import_path": "hyso.models.WithSE.CEMO",
+      "constructor": {
+        "input_channels": 3,
+        "num_classes": 2,
+        "conv_channels": [
+          4,
+          8
+        ],
+        "residuals_per_stage": 1,
+        "se_reduction": 2,
+        "p_drop": 0.0,
+        "dropout_fc": 0.0,
+        "use_ema": false,
+        "ema_decay": 0.999,
+        "device": "cpu"
+      },
+      "training": false,
+      "modules": [
+        {
+          "name": "",
+          "type": "hyso.models.WithSE.CEMO",
+          "training": false
+        },
+        {
+          "name": "stem",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "stem.0",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "stem.1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "stem.2",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "stages",
+          "type": "torch.nn.modules.container.ModuleList",
+          "training": false
+        },
+        {
+          "name": "stages.0",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "stages.0.0",
+          "type": "hyso.models.WithSE.BottleneckSEBlock",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.conv1",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.bn1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.act1",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.dwconv",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.bn2",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.act2",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.conv_pw",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.bn3",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.se",
+          "type": "hyso.models.WithSE.SEBlock",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.se.fc1",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.se.fc2",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.se.act",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.shortcut",
+          "type": "torch.nn.modules.linear.Identity",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.final_act",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "stages.1",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "stages.1.0",
+          "type": "hyso.models.WithSE.BottleneckSEBlock",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.conv1",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.bn1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.act1",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.dwconv",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.bn2",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.act2",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.conv_pw",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.bn3",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.se",
+          "type": "hyso.models.WithSE.SEBlock",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.se.fc1",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.se.fc2",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.se.act",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.shortcut",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.shortcut.0",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.shortcut.1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.final_act",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "global_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveAvgPool2d",
+          "training": false
+        },
+        {
+          "name": "dropout_fc",
+          "type": "torch.nn.modules.dropout.Dropout",
+          "training": false
+        },
+        {
+          "name": "fc",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "criterion",
+          "type": "torch.nn.modules.loss.CrossEntropyLoss",
+          "training": false
+        }
+      ],
+      "state_dict": [
+        {
+          "key": "stem.0.weight",
+          "shape": [
+            4,
+            3,
+            3,
+            3
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stem.1.weight",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stem.1.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stem.1.running_mean",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stem.1.running_var",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stem.1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.0.0.conv1.weight",
+          "shape": [
+            1,
+            4,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.bn1.weight",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.bn1.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.bn1.running_mean",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.0.0.bn1.running_var",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.0.0.bn1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.0.0.dwconv.weight",
+          "shape": [
+            1,
+            1,
+            3,
+            3
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.bn2.weight",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.bn2.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.bn2.running_mean",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.0.0.bn2.running_var",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.0.0.bn2.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.0.0.conv_pw.weight",
+          "shape": [
+            4,
+            1,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.bn3.weight",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.bn3.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.bn3.running_mean",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.0.0.bn3.running_var",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.0.0.bn3.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.0.0.se.fc1.weight",
+          "shape": [
+            2,
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.se.fc1.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.se.fc2.weight",
+          "shape": [
+            4,
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.se.fc2.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.conv1.weight",
+          "shape": [
+            2,
+            4,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.bn1.weight",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.bn1.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.bn1.running_mean",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.bn1.running_var",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.bn1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.dwconv.weight",
+          "shape": [
+            2,
+            1,
+            3,
+            3
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.bn2.weight",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.bn2.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.bn2.running_mean",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.bn2.running_var",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.bn2.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.conv_pw.weight",
+          "shape": [
+            8,
+            2,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.bn3.weight",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.bn3.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.bn3.running_mean",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.bn3.running_var",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.bn3.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.se.fc1.weight",
+          "shape": [
+            4,
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.se.fc1.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.se.fc2.weight",
+          "shape": [
+            8,
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.se.fc2.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.shortcut.0.weight",
+          "shape": [
+            8,
+            4,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.shortcut.1.weight",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.shortcut.1.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.shortcut.1.running_mean",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.shortcut.1.running_var",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.shortcut.1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "fc.weight",
+          "shape": [
+            2,
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "fc.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        }
+      ],
+      "summary": {
+        "state_entries": 58,
+        "parameter_tensors": 34,
+        "buffer_tensors": 24,
+        "parameter_elements": 375
+      },
+      "strict_same_configuration_load": {
+        "missing_keys": [],
+        "unexpected_keys": []
+      },
+      "forward_probe": {
+        "status": "ok",
+        "input_shape": [
+          2,
+          3,
+          16,
+          16
+        ],
+        "output_shape": [
+          2,
+          2
+        ],
+        "dtype": "torch.float32"
+      }
+    },
+    {
+      "id": "CEMO_ema",
+      "import_path": "hyso.models.WithSE.CEMO",
+      "constructor": {
+        "input_channels": 3,
+        "num_classes": 2,
+        "conv_channels": [
+          4,
+          8
+        ],
+        "residuals_per_stage": 1,
+        "se_reduction": 2,
+        "p_drop": 0.0,
+        "dropout_fc": 0.0,
+        "use_ema": true,
+        "ema_decay": 0.999,
+        "device": "cpu"
+      },
+      "training": false,
+      "modules": [
+        {
+          "name": "",
+          "type": "hyso.models.WithSE.CEMO",
+          "training": false
+        },
+        {
+          "name": "stem",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "stem.0",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "stem.1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "stem.2",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "stages",
+          "type": "torch.nn.modules.container.ModuleList",
+          "training": false
+        },
+        {
+          "name": "stages.0",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "stages.0.0",
+          "type": "hyso.models.WithSE.BottleneckSEBlock",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.conv1",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.bn1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.act1",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.dwconv",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.bn2",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.act2",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.conv_pw",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.bn3",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.se",
+          "type": "hyso.models.WithSE.SEBlock",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.se.fc1",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.se.fc2",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.se.act",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.shortcut",
+          "type": "torch.nn.modules.linear.Identity",
+          "training": false
+        },
+        {
+          "name": "stages.0.0.final_act",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "stages.1",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "stages.1.0",
+          "type": "hyso.models.WithSE.BottleneckSEBlock",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.conv1",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.bn1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.act1",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.dwconv",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.bn2",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.act2",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.conv_pw",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.bn3",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.se",
+          "type": "hyso.models.WithSE.SEBlock",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.se.fc1",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.se.fc2",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.se.act",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.shortcut",
+          "type": "torch.nn.modules.container.Sequential",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.shortcut.0",
+          "type": "torch.nn.modules.conv.Conv2d",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.shortcut.1",
+          "type": "torch.nn.modules.batchnorm.BatchNorm2d",
+          "training": false
+        },
+        {
+          "name": "stages.1.0.final_act",
+          "type": "torch.nn.modules.activation.SiLU",
+          "training": false
+        },
+        {
+          "name": "global_pool",
+          "type": "torch.nn.modules.pooling.AdaptiveAvgPool2d",
+          "training": false
+        },
+        {
+          "name": "dropout_fc",
+          "type": "torch.nn.modules.dropout.Dropout",
+          "training": false
+        },
+        {
+          "name": "fc",
+          "type": "torch.nn.modules.linear.Linear",
+          "training": false
+        },
+        {
+          "name": "criterion",
+          "type": "torch.nn.modules.loss.CrossEntropyLoss",
+          "training": false
+        }
+      ],
+      "state_dict": [
+        {
+          "key": "stem.0.weight",
+          "shape": [
+            4,
+            3,
+            3,
+            3
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stem.1.weight",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stem.1.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stem.1.running_mean",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stem.1.running_var",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stem.1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.0.0.conv1.weight",
+          "shape": [
+            1,
+            4,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.bn1.weight",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.bn1.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.bn1.running_mean",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.0.0.bn1.running_var",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.0.0.bn1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.0.0.dwconv.weight",
+          "shape": [
+            1,
+            1,
+            3,
+            3
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.bn2.weight",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.bn2.bias",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.bn2.running_mean",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.0.0.bn2.running_var",
+          "shape": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.0.0.bn2.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.0.0.conv_pw.weight",
+          "shape": [
+            4,
+            1,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.bn3.weight",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.bn3.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.bn3.running_mean",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.0.0.bn3.running_var",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.0.0.bn3.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.0.0.se.fc1.weight",
+          "shape": [
+            2,
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.se.fc1.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.se.fc2.weight",
+          "shape": [
+            4,
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.0.0.se.fc2.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.conv1.weight",
+          "shape": [
+            2,
+            4,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.bn1.weight",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.bn1.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.bn1.running_mean",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.bn1.running_var",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.bn1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.dwconv.weight",
+          "shape": [
+            2,
+            1,
+            3,
+            3
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.bn2.weight",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.bn2.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.bn2.running_mean",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.bn2.running_var",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.bn2.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.conv_pw.weight",
+          "shape": [
+            8,
+            2,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.bn3.weight",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.bn3.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.bn3.running_mean",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.bn3.running_var",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.bn3.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.se.fc1.weight",
+          "shape": [
+            4,
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.se.fc1.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.se.fc2.weight",
+          "shape": [
+            8,
+            4
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.se.fc2.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.shortcut.0.weight",
+          "shape": [
+            8,
+            4,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.shortcut.1.weight",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.shortcut.1.bias",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "stages.1.0.shortcut.1.running_mean",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.shortcut.1.running_var",
+          "shape": [
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "stages.1.0.shortcut.1.num_batches_tracked",
+          "shape": [],
+          "dtype": "torch.int64",
+          "kind": "buffer",
+          "requires_grad": false
+        },
+        {
+          "key": "fc.weight",
+          "shape": [
+            2,
+            8
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        },
+        {
+          "key": "fc.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "kind": "parameter",
+          "requires_grad": true
+        }
+      ],
+      "summary": {
+        "state_entries": 58,
+        "parameter_tensors": 34,
+        "buffer_tensors": 24,
+        "parameter_elements": 375
+      },
+      "strict_same_configuration_load": {
+        "missing_keys": [],
+        "unexpected_keys": []
+      },
+      "forward_probe": {
+        "status": "ok",
+        "input_shape": [
+          2,
+          3,
+          16,
+          16
+        ],
+        "output_shape": [
+          2,
+          2
+        ],
+        "dtype": "torch.float32"
+      },
+      "ema": {
+        "registered_module": false,
+        "keys_in_parent_state": [],
+        "shadow_state_entries": 58,
+        "shadow_device": "cpu"
+      }
+    }
+  ],
+  "observations": {
+    "early_stopping": {
+      "best_state_shares_storage": true,
+      "stored_value_changed": true
+    },
+    "ema": {
+      "live_buffer_changed": true,
+      "shadow_buffer_unchanged": true,
+      "shadow_parameter_changed": true
+    },
+    "validation_basic_transform": [
+      "Resize",
+      "RandomHorizontalFlip",
+      "RandomRotation",
+      "ColorJitter",
+      "ToTensor",
+      "Normalize"
+    ]
+  }
+}
