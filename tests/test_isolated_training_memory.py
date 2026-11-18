@@ -1,6 +1,7 @@
 """Phase A production admission/limits, real native CPU fit and immutable evidence."""
 from fixture_support import load_fixture
 import copy
+import io
 import json
 from pathlib import Path
 import random
@@ -176,6 +177,75 @@ def test_corrupt_receipt_and_abnormal_exit_classification():
     assert module._classify(receipt,None,'token')[0]=='native_crash'
     receipt['monitor_outcome']='timeout'
     assert module._classify(receipt,None,'token')[0]=='timeout'
+
+
+@pytest.mark.parametrize('exit_code', [0xC0000409, 0xC0000005, -1073740791])
+def test_native_exit_cannot_be_overridden_by_success_publication(exit_code):
+    receipt = dict(monitor_outcome=None, exit_code=exit_code, launcher_pid=9)
+    worker = dict(token='token', pid=9, status='success', reason=None, measurement={})
+    assert module._classify(receipt, worker, 'token')[0] == 'native_crash'
+
+
+@pytest.mark.parametrize('channel,operation', [
+    ('stdout', 'read'), ('stderr', 'read'), ('stdout', 'close'), ('stderr', 'close')])
+@pytest.mark.parametrize('exit_code', [0, 0xC0000409])
+@pytest.mark.parametrize('running', [False, True])
+def test_owned_pipe_failure_propagates_after_cleanup(channel, operation, exit_code, running, tmp_path, monkeypatch):
+    from hyso.performance import _training_process as launcher
+    events = []
+
+    class BrokenPipe(io.BytesIO):
+        def read(self, *args):
+            if operation == 'read':
+                raise OSError('controlled pipe read failure')
+            return super().read(*args)
+
+        def close(self):
+            super().close()
+            if operation == 'close':
+                raise OSError('controlled pipe close failure')
+
+    class Process:
+        pid, returncode = 12345, exit_code
+        stdout = BrokenPipe() if channel == 'stdout' else io.BytesIO()
+        stderr = BrokenPipe() if channel == 'stderr' else io.BytesIO()
+
+        def poll(self):
+            return None if self.running else self.returncode
+
+    process = Process()
+    process.running = running
+
+    class Job:
+        def __init__(self, *args):
+            events.append('job')
+
+        def assign(self, child):
+            assert child is process
+            events.append('assign')
+
+        def terminate(self):
+            events.append('terminate')
+            process.running = False
+
+        def observation(self):
+            return dict(active_processes=0)
+
+        def close(self):
+            events.append('close')
+
+    def launch(*args, **kwargs):
+        events.append('launch')
+        return process
+
+    monkeypatch.setattr(launcher, '_Job', Job)
+    monkeypatch.setattr(launcher.subprocess, 'Popen', launch)
+    with pytest.raises(RuntimeError, match='owned pipe reader failed') as error:
+        launcher._launch(tmp_path, dict(token='pipe-failure'), bounded_protocol(timeout_seconds=1))
+    assert channel in str(error.value) and operation in str(error.value)
+    assert 'exit_code='+str(exit_code) in str(error.value)
+    assert events == ['job', 'launch', 'assign', 'terminate', 'close']
+    assert process.stdout.closed and process.stderr.closed
 
 
 def test_immutable_export_and_tamper(tmp_path):

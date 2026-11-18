@@ -104,7 +104,11 @@ def _launch(root, request, protocol):
           str(Path(__file__).with_name("_training_memory_worker.py")),str(root)]
     job=_Job(protocol.process_memory_bytes,protocol.job_memory_bytes,protocol.max_processes)
     process=None;threads=[];exceeded=threading.Event();logs={k:bytearray() for k in ("stdout","stderr")}
-    counts={k:0 for k in logs};monitor_reason=None;cleanup=None;start=time.monotonic()
+    counts={k:0 for k in logs};reader_errors=[];monitor_reason=None;cleanup=None;start=time.monotonic()
+    def reader_failed(key,operation,error):
+        # Retain bounded text, not a traceback or objects owned by the worker.
+        reader_errors.append(key+" "+operation+": "+type(error).__name__+": "+str(error)[:500])
+        exceeded.set()  # Stop a still-running owned child; never return success.
     def drain(pipe,key):
         try:
             while True:
@@ -113,7 +117,11 @@ def _launch(root, request, protocol):
                 counts[key]+=len(chunk)
                 room=protocol.max_log_bytes-len(logs[key]);logs[key].extend(chunk[:max(0,room)])
                 if counts[key]>protocol.max_log_bytes:exceeded.set()
-        finally:pipe.close()
+        except Exception as error:
+            reader_failed(key,"read",error)
+        finally:
+            try:pipe.close()
+            except Exception as error:reader_failed(key,"close",error)
     try:
         env=dict(os.environ,PYTHONDONTWRITEBYTECODE="1",PYTHONIOENCODING="utf-8")
         if protocol.deterministic:env["CUBLAS_WORKSPACE_CONFIG"]=":4096:8"
@@ -153,6 +161,8 @@ def _launch(root, request, protocol):
                 process.stdout.close();process.stderr.close()
     if any(thread.is_alive() for thread in threads):raise RuntimeError("owned pipe reader did not terminate")
     if cleanup is None or cleanup["active_processes"]!=0:raise RuntimeError("owned process tree did not terminate")
+    if reader_errors:
+        raise RuntimeError("owned pipe reader failed (exit_code="+str(process.returncode)+"): "+"; ".join(reader_errors))
     if monitor_reason is None and exceeded.is_set():monitor_reason="resource_limit"
     receipt=dict(launcher_pid=process.pid,exit_code=process.returncode,elapsed_seconds=time.monotonic()-start,
         monitor_outcome=monitor_reason,job=cleanup,kill_on_close=True,admitted=True,
