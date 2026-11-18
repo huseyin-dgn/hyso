@@ -1,0 +1,1527 @@
+{
+  "format": "hyso.user_guide.topics",
+  "schema_version": 1,
+  "hyso_version": "0.2.0",
+  "languages": [
+    "tr",
+    "en",
+    "de",
+    "es"
+  ],
+  "topics": [
+    {
+      "id": "about.overview",
+      "titles": {
+        "tr": "HYSo nedir?",
+        "en": "What is HYSo?",
+        "de": "Was ist HYSo?",
+        "es": "¿Qué es HYSo?"
+      },
+      "related": [
+        "getting-started.installation",
+        "api.python-cli",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/__init__.py",
+        "docs/guides/python-first-workflow.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "getting-started.installation",
+      "titles": {
+        "tr": "Kurulum",
+        "en": "Installation",
+        "de": "Installation",
+        "es": "Instalación"
+      },
+      "related": [
+        "getting-started.first-run",
+        "compatibility.versions",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "setup.cfg",
+        "docs/reports/stage13-5-22-cpu-beta-readiness.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "getting-started.first-run",
+      "titles": {
+        "tr": "İlk kullanım",
+        "en": "First steps",
+        "de": "Erste Schritte",
+        "es": "Primeros pasos"
+      },
+      "related": [
+        "models.model-builder",
+        "training.configuration",
+        "api.python-cli"
+      ],
+      "sources": [
+        "hyso/cli/main.py",
+        "hyso/training/config.py"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "models.support",
+      "titles": {
+        "tr": "Desteklenen model yolları",
+        "en": "Supported model paths",
+        "de": "Unterstützte Modellwege",
+        "es": "Modelos disponibles"
+      },
+      "related": [
+        "models.legacy",
+        "models.development-families",
+        "models.model-builder",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/models/__init__.py",
+        "hyso/models/_profile.py",
+        "commercial-profile.json"
+      ],
+      "inventory": [
+        "ModularCNN",
+        "modular_cnn"
+      ]
+    },
+    {
+      "id": "models.legacy",
+      "titles": {
+        "tr": "Eski model ve yardımcı API’ler",
+        "en": "Legacy models and helpers",
+        "de": "Ältere Modelle und Hilfs-APIs",
+        "es": "Modelos y utilidades heredados"
+      },
+      "related": [
+        "models.support",
+        "training.trainer"
+      ],
+      "sources": [
+        "hyso/models/__init__.py",
+        "hyso/models/bcam.py",
+        "hyso/models/WithSE.py",
+        "hyso/models/fit.py"
+      ],
+      "inventory": [
+        "ELO",
+        "CEMO",
+        "CNNSENormalWithFit",
+        "EBO",
+        "EMA"
+      ]
+    },
+    {
+      "id": "models.development-families",
+      "titles": {
+        "tr": "Geliştirme mimarileri",
+        "en": "Development architectures",
+        "de": "Architekturen im Entwicklungsquellcode",
+        "es": "Arquitecturas de desarrollo"
+      },
+      "related": [
+        "models.support",
+        "components.residual",
+        "components.mobile",
+        "compatibility.versions"
+      ],
+      "sources": [
+        "hyso/models/_profile.py",
+        "hyso/models/architectures.py",
+        "hyso/models/mobile_architectures.py",
+        "hyso/models/reparam_architectures.py",
+        "docs/guides/model-architectures.md",
+        "docs/guides/mobile-edge-architectures.md"
+      ],
+      "inventory": [
+        "ResNet",
+        "PreActResNet",
+        "WideResNet",
+        "ResNeXt",
+        "DenseNet",
+        "MobileNetV2",
+        "MobileNetV3",
+        "EfficientNetV2",
+        "GhostNet",
+        "ShuffleNetV2",
+        "RepVGG",
+        "MobileOne",
+        "resnet",
+        "preact_resnet",
+        "wide_resnet",
+        "resnext",
+        "densenet",
+        "mobilenet_v2",
+        "mobilenet_v3",
+        "efficientnet_v2",
+        "ghostnet",
+        "shufflenet_v2",
+        "repvgg",
+        "mobileone"
+      ]
+    },
+    {
+      "id": "models.model-builder",
+      "titles": {
+        "tr": "ModelBuilder",
+        "en": "ModelBuilder",
+        "de": "ModelBuilder",
+        "es": "ModelBuilder"
+      },
+      "related": [
+        "models.graph-builder",
+        "components.convolution",
+        "training.configuration"
+      ],
+      "sources": [
+        "hyso/models/builder.py",
+        "docs/guides/model-registry-builder.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "models.graph-builder",
+      "titles": {
+        "tr": "GraphModelBuilder",
+        "en": "GraphModelBuilder",
+        "de": "GraphModelBuilder",
+        "es": "GraphModelBuilder"
+      },
+      "related": [
+        "models.model-builder",
+        "components.fusion",
+        "training.checkpoints",
+        "models.checks"
+      ],
+      "sources": [
+        "hyso/models/graph.py",
+        "hyso/models/output.py",
+        "docs/guides/custom-cnn-graph-builder.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "models.checks",
+      "titles": {
+        "tr": "Model tanımı ve CPU kontrolleri",
+        "en": "Architecture and CPU checks",
+        "de": "Architektur- und CPU-Prüfungen",
+        "es": "Comprobaciones de arquitectura y CPU"
+      },
+      "related": [
+        "models.model-builder",
+        "models.graph-builder",
+        "troubleshooting.common"
+      ],
+      "sources": [
+        "hyso/model_checks.py",
+        "docs/guides/python-first-workflow.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "components.convolution",
+      "titles": {
+        "tr": "Convolution: görüntüde desen arama",
+        "en": "Convolution: finding image patterns",
+        "de": "Faltung: Bildmuster erkennen",
+        "es": "Convolución: detectar patrones en imágenes"
+      },
+      "related": [
+        "components.normalization",
+        "components.activation",
+        "models.model-builder"
+      ],
+      "sources": [
+        "hyso/models/components.py",
+        "hyso/models/blocks.py",
+        "docs/guides/custom-cnn-builder-components.md"
+      ],
+      "inventory": [
+        "conv_norm_act",
+        "conv2d",
+        "pointwise_conv2d",
+        "depthwise_conv2d",
+        "depthwise_separable_conv2d",
+        "spatial_separable_conv2d",
+        "factorized_conv2d",
+        "conv_transpose2d"
+      ]
+    },
+    {
+      "id": "components.normalization",
+      "titles": {
+        "tr": "Normalization: değerleri dengeli tutma",
+        "en": "Normalization: controlling value scales",
+        "de": "Normalisierung: Wertebereiche regulieren",
+        "es": "Normalización: regular la escala de los valores"
+      },
+      "related": [
+        "components.convolution",
+        "training.trainer",
+        "troubleshooting.common"
+      ],
+      "sources": [
+        "hyso/models/components.py",
+        "hyso/models/registry.py"
+      ],
+      "inventory": [
+        "batch_norm",
+        "group_norm",
+        "channel_layer_norm",
+        "instance_norm"
+      ]
+    },
+    {
+      "id": "components.activation",
+      "titles": {
+        "tr": "Activation: doğrusal olmayan dönüşüm",
+        "en": "Activation: a nonlinear transformation",
+        "de": "Aktivierung: nichtlineare Umformung",
+        "es": "Activación: una transformación no lineal"
+      },
+      "related": [
+        "components.convolution",
+        "components.heads"
+      ],
+      "sources": [
+        "hyso/models/components.py",
+        "hyso/models/registry.py"
+      ],
+      "inventory": [
+        "relu",
+        "leaky_relu",
+        "prelu",
+        "silu",
+        "gelu",
+        "mish",
+        "hardswish",
+        "hardsigmoid",
+        "identity"
+      ]
+    },
+    {
+      "id": "components.pooling",
+      "titles": {
+        "tr": "Pooling: özellik haritasını küçültme",
+        "en": "Pooling: reducing feature-map size",
+        "de": "Pooling: Merkmalskarten verkleinern",
+        "es": "Pooling: reducir los mapas de características"
+      },
+      "related": [
+        "components.convolution",
+        "components.heads"
+      ],
+      "sources": [
+        "hyso/models/components.py"
+      ],
+      "inventory": [
+        "max_pool2d",
+        "avg_pool2d",
+        "adaptive_avg_pool2d",
+        "adaptive_max_pool2d",
+        "global_avg_pool2d"
+      ]
+    },
+    {
+      "id": "components.residual",
+      "titles": {
+        "tr": "Residual bloklar: kısa bağlantılar",
+        "en": "Residual blocks: shortcut connections",
+        "de": "Residualblöcke: kurze Verbindungen",
+        "es": "Bloques residuales: conexiones de atajo"
+      },
+      "related": [
+        "components.fusion",
+        "models.development-families"
+      ],
+      "sources": [
+        "hyso/models/blocks.py",
+        "hyso/models/advanced.py",
+        "hyso/models/m3_residual.py"
+      ],
+      "inventory": [
+        "residual",
+        "bottleneck_residual",
+        "preactivation_residual",
+        "wide_residual_block",
+        "grouped_bottleneck",
+        "inverted_bottleneck",
+        "gated_residual",
+        "basic_residual",
+        "bottleneck",
+        "preactivation",
+        "wide_residual",
+        "resnext_bottleneck"
+      ]
+    },
+    {
+      "id": "components.attention",
+      "titles": {
+        "tr": "Attention: özellikleri ağırlıklandırma",
+        "en": "Attention: weighting features",
+        "de": "Attention: Merkmale gewichten",
+        "es": "Attention: ponderar características"
+      },
+      "related": [
+        "components.residual",
+        "analysis.p12",
+        "analysis.p26"
+      ],
+      "sources": [
+        "hyso/models/attention.py",
+        "hyso/models/advanced.py",
+        "hyso/models/m3_attention.py"
+      ],
+      "inventory": [
+        "se",
+        "cbam",
+        "eca",
+        "coordinate",
+        "spatial_attention",
+        "channel_attention",
+        "spatial_self_attention",
+        "multihead_spatial_attention",
+        "simam",
+        "triplet",
+        "selective_kernel"
+      ]
+    },
+    {
+      "id": "components.regularization",
+      "titles": {
+        "tr": "Regularization: ezberlemeyi sınırlama",
+        "en": "Regularization: limiting memorization",
+        "de": "Regularisierung: Auswendiglernen begrenzen",
+        "es": "Regularización: limitar la memorización"
+      },
+      "related": [
+        "training.trainer",
+        "analysis.p27"
+      ],
+      "sources": [
+        "hyso/models/advanced.py",
+        "hyso/models/regularization.py"
+      ],
+      "inventory": [
+        "dropout",
+        "dropout2d",
+        "drop_path",
+        "gaussian_noise",
+        "dropblock2d"
+      ]
+    },
+    {
+      "id": "components.sampling",
+      "titles": {
+        "tr": "Örnekleme ve tensor düzeni",
+        "en": "Sampling and tensor layout",
+        "de": "Abtastung und Tensoranordnung",
+        "es": "Muestreo y organización de tensores"
+      },
+      "related": [
+        "components.heads",
+        "components.fusion"
+      ],
+      "sources": [
+        "hyso/models/sampling.py",
+        "docs/guides/custom-cnn-builder-sampling-heads.md"
+      ],
+      "inventory": [
+        "resize",
+        "pixel_shuffle",
+        "pixel_unshuffle",
+        "flatten",
+        "permute",
+        "reshape",
+        "channel_shuffle"
+      ]
+    },
+    {
+      "id": "components.heads",
+      "titles": {
+        "tr": "Prediction head: çıktıyı göreve bağlama",
+        "en": "Prediction head: connecting outputs to a task",
+        "de": "Vorhersagekopf: die Ausgabe an die Aufgabe anbinden",
+        "es": "Cabeza de predicción: conectar la salida con la tarea"
+      },
+      "related": [
+        "training.configuration",
+        "analysis.p26",
+        "models.graph-builder"
+      ],
+      "sources": [
+        "hyso/models/sampling.py",
+        "docs/guides/custom-cnn-builder-sampling-heads.md"
+      ],
+      "inventory": [
+        "classification_head",
+        "regression_head",
+        "embedding_head"
+      ]
+    },
+    {
+      "id": "components.fusion",
+      "titles": {
+        "tr": "Graph birleşimleri",
+        "en": "Graph fusion operations",
+        "de": "Pfade im Graph zusammenführen",
+        "es": "Fusionar rutas en Graph"
+      },
+      "related": [
+        "models.graph-builder",
+        "components.residual"
+      ],
+      "sources": [
+        "hyso/models/graph_ops.py"
+      ],
+      "inventory": [
+        "add",
+        "concat",
+        "multiply",
+        "weighted_sum"
+      ]
+    },
+    {
+      "id": "components.mobile",
+      "titles": {
+        "tr": "Mobile ve yeniden parametrelenen bloklar",
+        "en": "Mobile and reparameterized blocks",
+        "de": "Mobile und umparametrisierte Blöcke",
+        "es": "Bloques móviles y reparametrizados"
+      },
+      "related": [
+        "models.development-families",
+        "components.convolution"
+      ],
+      "sources": [
+        "hyso/models/m4_blocks.py",
+        "hyso/models/m4_reparam.py",
+        "docs/guides/mobile-edge-architectures.md"
+      ],
+      "inventory": [
+        "inverted_residual",
+        "mbconv",
+        "fused_mbconv",
+        "ghost_conv",
+        "ghost_bottleneck",
+        "shuffle_unit",
+        "repvgg_block",
+        "mobileone_block"
+      ]
+    },
+    {
+      "id": "training.configuration",
+      "titles": {
+        "tr": "TrainingConfig ve TrainingSession",
+        "en": "TrainingConfig and TrainingSession",
+        "de": "TrainingConfig und TrainingSession",
+        "es": "TrainingConfig y TrainingSession"
+      },
+      "related": [
+        "training.trainer",
+        "training.checkpoints",
+        "api.python-cli"
+      ],
+      "sources": [
+        "hyso/training/config.py",
+        "hyso/training/session.py",
+        "docs/guides/training-config.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "training.trainer",
+      "titles": {
+        "tr": "Trainer: öğrenme döngüsü",
+        "en": "Trainer: the learning loop",
+        "de": "Trainer: die Lernschleife",
+        "es": "Trainer: el ciclo de aprendizaje"
+      },
+      "related": [
+        "training.configuration",
+        "analysis.p19",
+        "analysis.p25"
+      ],
+      "sources": [
+        "hyso/training/trainer.py",
+        "docs/guides/training-config.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "training.checkpoints",
+      "titles": {
+        "tr": "Checkpoint ve Resume",
+        "en": "Checkpoints and resume",
+        "de": "Checkpoints und Wiederaufnahme",
+        "es": "Checkpoints y reanudación"
+      },
+      "related": [
+        "training.configuration",
+        "models.graph-builder",
+        "compatibility.versions"
+      ],
+      "sources": [
+        "hyso/checkpoint.py",
+        "hyso/training/resume.py",
+        "docs/guides/graph-checkpoint-evidence.md",
+        "docs/guides/training-config.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.overview",
+      "titles": {
+        "tr": "P01–P35 nasıl kullanılır?",
+        "en": "Using P01–P35",
+        "de": "P01–P35 verwenden",
+        "es": "Cómo utilizar P01–P35"
+      },
+      "related": [
+        "analysis.p01",
+        "analysis.p23",
+        "analysis.p35",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/catalog.py",
+        "hyso/analysis/execution.py",
+        "hyso/analysis/native_execution.py"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "metrics.interpretation",
+      "titles": {
+        "tr": "Metrikler nasıl okunur?",
+        "en": "Reading metrics",
+        "de": "Messwerte richtig lesen",
+        "es": "Cómo leer las métricas"
+      },
+      "related": [
+        "analysis.p01",
+        "analysis.p09",
+        "analysis.p26",
+        "comparison.models"
+      ],
+      "sources": [
+        "hyso/reporting/catalog.py",
+        "hyso/performance/result.py",
+        "hyso/evaluation.py"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analyzer.workflow",
+      "titles": {
+        "tr": "Model Analyzer iş akışı",
+        "en": "The Model Analyzer workflow",
+        "de": "Der Model-Analyzer-Ablauf",
+        "es": "El flujo de Model Analyzer"
+      },
+      "related": [
+        "analysis.overview",
+        "models.checks",
+        "comparison.architecture"
+      ],
+      "sources": [
+        "hyso/analysis/__init__.py",
+        "hyso/analysis/evidence.py",
+        "hyso/analysis/report.py"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "comparison.models",
+      "titles": {
+        "tr": "Model Comparison",
+        "en": "Model Comparison",
+        "de": "Modellvergleich",
+        "es": "Comparación de modelos"
+      },
+      "related": [
+        "metrics.interpretation",
+        "comparison.architecture",
+        "analysis.p29"
+      ],
+      "sources": [
+        "hyso/analysis/model_comparison.py",
+        "docs/guides/two-model-comparison.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "comparison.architecture",
+      "titles": {
+        "tr": "Mimari ve yapısal karşılaştırma",
+        "en": "Architecture and structure comparison",
+        "de": "Architektur- und Strukturvergleich",
+        "es": "Comparación de arquitectura y estructura"
+      },
+      "related": [
+        "models.checks",
+        "comparison.models",
+        "analysis.p12"
+      ],
+      "sources": [
+        "hyso/architecture_comparison.py",
+        "hyso/structure.py",
+        "hyso/structure_comparison.py",
+        "hyso/architecture_audit.py"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "advisor.recommendations",
+      "titles": {
+        "tr": "Advisor: kanıta dayalı öneriler",
+        "en": "Advisor: evidence-based suggestions",
+        "de": "Advisor: Vorschläge auf Grundlage von Nachweisen",
+        "es": "Advisor: recomendaciones basadas en evidencias"
+      },
+      "related": [
+        "comparison.models",
+        "reporting.outputs",
+        "analysis.overview"
+      ],
+      "sources": [
+        "hyso/advisor/engine.py",
+        "hyso/advisor/recommendations.py",
+        "docs/guides/performance-advisor.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "reporting.outputs",
+      "titles": {
+        "tr": "Türkçe/İngilizce teknik raporlar",
+        "en": "Turkish/English technical reports",
+        "de": "Technische Berichte auf Türkisch/Englisch",
+        "es": "Informes técnicos en turco e inglés"
+      },
+      "related": [
+        "advisor.recommendations",
+        "experiments.manager",
+        "metrics.interpretation"
+      ],
+      "sources": [
+        "hyso/reporting/report.py",
+        "hyso/reporting/render.py",
+        "docs/guides/result-reporting.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "experiments.manager",
+      "titles": {
+        "tr": "ExperimentManager",
+        "en": "ExperimentManager",
+        "de": "ExperimentManager",
+        "es": "ExperimentManager"
+      },
+      "related": [
+        "reporting.outputs",
+        "training.checkpoints",
+        "comparison.models"
+      ],
+      "sources": [
+        "hyso/experiments/manager.py",
+        "hyso/experiments/workflow.py",
+        "docs/guides/experiment-workflow.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "api.python-cli",
+      "titles": {
+        "tr": "Python API ve CLI",
+        "en": "Python API and CLI",
+        "de": "Python-API und CLI",
+        "es": "API Python y CLI"
+      },
+      "related": [
+        "getting-started.first-run",
+        "training.configuration",
+        "analysis.overview",
+        "reporting.outputs"
+      ],
+      "sources": [
+        "hyso/__init__.py",
+        "hyso/cli/main.py",
+        "hyso/cli/train.py",
+        "hyso/cli/analysis.py",
+        "docs/guides/ux-01-quickstart.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "troubleshooting.common",
+      "titles": {
+        "tr": "Sık karşılaşılan sorunlar",
+        "en": "Common problems",
+        "de": "Häufige Probleme",
+        "es": "Problemas frecuentes"
+      },
+      "related": [
+        "models.checks",
+        "training.configuration",
+        "compatibility.versions"
+      ],
+      "sources": [
+        "hyso/cli/main.py",
+        "hyso/models/registry.py",
+        "hyso/training/session.py"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "support.cpu-gpu",
+      "titles": {
+        "tr": "CPU/GPU destek durumu",
+        "en": "CPU/GPU support status",
+        "de": "CPU-/GPU-Unterstützung",
+        "es": "Estado del soporte CPU/GPU"
+      },
+      "related": [
+        "compatibility.versions",
+        "analysis.p09",
+        "analysis.p23",
+        "analysis.p31"
+      ],
+      "sources": [
+        "docs/reports/stage13-5-22-cpu-beta-readiness.md",
+        "docs/reports/b4-iso-01-cpu-isolation.md",
+        "hyso/performance/isolated_training_memory.py"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "compatibility.versions",
+      "titles": {
+        "tr": "Sürüm ve uyumluluk",
+        "en": "Versions and compatibility",
+        "de": "Versionen und Kompatibilität",
+        "es": "Versiones y compatibilidad"
+      },
+      "related": [
+        "getting-started.installation",
+        "models.support",
+        "training.checkpoints",
+        "reporting.outputs"
+      ],
+      "sources": [
+        "setup.cfg",
+        "commercial-profile.json",
+        "docs/reports/stage13-5-22-cpu-beta-readiness.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p01",
+      "titles": {
+        "tr": "P01 — Model gecikmesi",
+        "en": "P01 — Inference latency",
+        "de": "P01 — Inferenzlatenz",
+        "es": "P01 — Latencia de inferencia"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-inference.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p02",
+      "titles": {
+        "tr": "P02 — Tamamlanan çıkarım hızı",
+        "en": "P02 — Completed inference throughput",
+        "de": "P02 — Abgeschlossener Inferenzdurchsatz",
+        "es": "P02 — Rendimiento de inferencias completadas"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-inference.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p03",
+      "titles": {
+        "tr": "P03 — Uçtan uca gecikme",
+        "en": "P03 — End-to-end latency",
+        "de": "P03 — Ende-zu-Ende-Latenz",
+        "es": "P03 — Latencia de extremo a extremo"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-pipeline.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p04",
+      "titles": {
+        "tr": "P04 — Ön ve son işleme",
+        "en": "P04 — Preprocessing and postprocessing",
+        "de": "P04 — Vor- und Nachverarbeitung",
+        "es": "P04 — Preprocesamiento y posprocesamiento"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-pipeline.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p05",
+      "titles": {
+        "tr": "P05 — Soğuk başlatma ve yükleme",
+        "en": "P05 — Cold start and loading",
+        "de": "P05 — Kaltstart und Laden",
+        "es": "P05 — Arranque en frío y carga"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-pipeline.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p06",
+      "titles": {
+        "tr": "P06 — Batch boyutu taraması",
+        "en": "P06 — Batch-size sweep",
+        "de": "P06 — Batch-Größen untersuchen",
+        "es": "P06 — Barrido de tamaños de lote"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-sweeps.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p07",
+      "titles": {
+        "tr": "P07 — Çözünürlük taraması",
+        "en": "P07 — Resolution sweep",
+        "de": "P07 — Auflösungen untersuchen",
+        "es": "P07 — Barrido de resoluciones"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-sweeps.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p08",
+      "titles": {
+        "tr": "P08 — Sayısal precision performansı",
+        "en": "P08 — Numerical-precision performance",
+        "de": "P08 — Laufzeit nach Zahlenformat",
+        "es": "P08 — Rendimiento según la precisión numérica"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-sweeps.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p09",
+      "titles": {
+        "tr": "P09 — CUDA allocator belleği",
+        "en": "P09 — CUDA allocator memory",
+        "de": "P09 — CUDA-Allocator-Speicher",
+        "es": "P09 — Memoria del allocator CUDA"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-memory.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p10",
+      "titles": {
+        "tr": "P10 — Süreç RAM’i",
+        "en": "P10 — Process RAM",
+        "de": "P10 — Prozess-RAM",
+        "es": "P10 — RAM del proceso"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-memory.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p11",
+      "titles": {
+        "tr": "P11 — Tensor ve artifact boyutu",
+        "en": "P11 — Tensor and artifact footprint",
+        "de": "P11 — Tensor- und Artefaktgröße",
+        "es": "P11 — Tamaño de tensores y artefactos"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-memory.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p12",
+      "titles": {
+        "tr": "P12 — FLOP ve MAC",
+        "en": "P12 — FLOPs and MACs",
+        "de": "P12 — FLOPs und MACs",
+        "es": "P12 — FLOPs y MACs"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/p12-observations.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p13",
+      "titles": {
+        "tr": "P13 — Modül/katman profili",
+        "en": "P13 — Module/layer profiling",
+        "de": "P13 — Modul-/Schichtprofil",
+        "es": "P13 — Perfil por módulo o capa"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-profiling.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p14",
+      "titles": {
+        "tr": "P14 — Operatör/kernel profili",
+        "en": "P14 — Operator/kernel profiling",
+        "de": "P14 — Operator-/Kernelprofil",
+        "es": "P14 — Perfil de operadores y kernels"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-profiling.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p15",
+      "titles": {
+        "tr": "P15 — CPU–GPU veri aktarımı",
+        "en": "P15 — CPU–GPU transfers",
+        "de": "P15 — CPU–GPU-Übertragung",
+        "es": "P15 — Transferencias CPU–GPU"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-transfer-utilization.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p16",
+      "titles": {
+        "tr": "P16 — Donanım kullanımı",
+        "en": "P16 — Hardware utilization",
+        "de": "P16 — Hardwareauslastung",
+        "es": "P16 — Utilización del hardware"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-transfer-utilization.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p17",
+      "titles": {
+        "tr": "P17 — Uygun batch sınırı",
+        "en": "P17 — Feasible batch search",
+        "de": "P17 — Machbare Batch-Größe suchen",
+        "es": "P17 — Búsqueda de lotes viables"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-max-batch.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p18",
+      "titles": {
+        "tr": "P18 — Roofline ve aritmetik yoğunluk",
+        "en": "P18 — Roofline and arithmetic intensity",
+        "de": "P18 — Roofline und arithmetische Intensität",
+        "es": "P18 — Roofline e intensidad aritmética"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-profiling.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p19",
+      "titles": {
+        "tr": "P19 — Eğitim adımı ve epoch süresi",
+        "en": "P19 — Training-step and epoch timing",
+        "de": "P19 — Trainingsschritt- und Epochenzeiten",
+        "es": "P19 — Tiempos de pasos y épocas"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-training-timing.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p20",
+      "titles": {
+        "tr": "P20 — Eğitim aşamaları",
+        "en": "P20 — Training stages",
+        "de": "P20 — Trainingsphasen",
+        "es": "P20 — Etapas del entrenamiento"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-training-breakdown-throughput.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p21",
+      "titles": {
+        "tr": "P21 — DataLoader beklemesi",
+        "en": "P21 — DataLoader waiting",
+        "de": "P21 — DataLoader-Wartezeit",
+        "es": "P21 — Espera del DataLoader"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-dataloader.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p22",
+      "titles": {
+        "tr": "P22 — Eğitim throughput’u",
+        "en": "P22 — Training throughput",
+        "de": "P22 — Trainingsdurchsatz",
+        "es": "P22 — Rendimiento del entrenamiento"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-training-breakdown-throughput.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p23",
+      "titles": {
+        "tr": "P23 — Eğitim belleği",
+        "en": "P23 — Training memory",
+        "de": "P23 — Trainingsspeicher",
+        "es": "P23 — Memoria de entrenamiento"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-training-memory-isolated.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p24",
+      "titles": {
+        "tr": "P24 — Hedef kaliteye ulaşma süresi",
+        "en": "P24 — Time to target quality",
+        "de": "P24 — Zeit bis zur Zielqualität",
+        "es": "P24 — Tiempo hasta la calidad objetivo"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/precision-quality.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p25",
+      "titles": {
+        "tr": "P25 — Gradient ve AMP tanıları",
+        "en": "P25 — Gradient and AMP diagnostics",
+        "de": "P25 — Gradienten- und AMP-Diagnostik",
+        "es": "P25 — Diagnóstico de gradientes y AMP"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-gradient-amp.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p26",
+      "titles": {
+        "tr": "P26 — Sınıflandırma kalitesi",
+        "en": "P26 — Classification quality",
+        "de": "P26 — Klassifikationsqualität",
+        "es": "P26 — Calidad de clasificación"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/p26-quality-comparison.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p27",
+      "titles": {
+        "tr": "P27 — Dayanıklılık ölçümleri",
+        "en": "P27 — Robustness measurements",
+        "de": "P27 — Robustheitsmessungen",
+        "es": "P27 — Mediciones de robustez"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/precision-quality.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p28",
+      "titles": {
+        "tr": "P28 — Precision değişiminin kalite etkisi",
+        "en": "P28 — Quality change across precisions",
+        "de": "P28 — Qualität bei verschiedenen Zahlenformaten",
+        "es": "P28 — Cambio de calidad entre precisiones numéricas"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/precision-quality.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p29",
+      "titles": {
+        "tr": "P29 — Kalite/hız/bellek dengesi",
+        "en": "P29 — Quality/speed/memory tradeoffs",
+        "de": "P29 — Qualität, Geschwindigkeit und Speicher abwägen",
+        "es": "P29 — Equilibrio entre calidad, velocidad y memoria"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/two-model-comparison.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p30",
+      "titles": {
+        "tr": "P30 — Video/kamera FPS ve düşen kareler",
+        "en": "P30 — Video/camera FPS and drops",
+        "de": "P30 — Video-/Kamera-FPS und verworfene Bilder",
+        "es": "P30 — FPS de vídeo/cámara y fotogramas perdidos"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-streaming.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p31",
+      "titles": {
+        "tr": "P31 — Kesintisiz uzun çalışma",
+        "en": "P31 — Uninterrupted long-run stability",
+        "de": "P31 — Ununterbrochener Langzeitbetrieb",
+        "es": "P31 — Estabilidad en ejecución continua prolongada"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/p31-trained-stability.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p32",
+      "titles": {
+        "tr": "P32 — Bellek büyüme eğilimi",
+        "en": "P32 — Memory-growth analysis",
+        "de": "P32 — Speicherwachstum analysieren",
+        "es": "P32 — Análisis del crecimiento de memoria"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-memory-trend.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p33",
+      "titles": {
+        "tr": "P33 — Çıkarım başına enerji",
+        "en": "P33 — Energy per inference",
+        "de": "P33 — Energie je Inferenz",
+        "es": "P33 — Energía por inferencia"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-energy.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p34",
+      "titles": {
+        "tr": "P34 — Gerçek cihaz karşılaştırması",
+        "en": "P34 — Actual-device comparison",
+        "de": "P34 — Tatsächliche Geräte vergleichen",
+        "es": "P34 — Comparación de dispositivos reales"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-devices.md"
+      ],
+      "inventory": []
+    },
+    {
+      "id": "analysis.p35",
+      "titles": {
+        "tr": "P35 — ONNX node/provider yerleşimi",
+        "en": "P35 — ONNX node/provider placement",
+        "de": "P35 — ONNX-Knoten und Ausführungsanbieter",
+        "es": "P35 — Ubicación de nodos y proveedores ONNX"
+      },
+      "related": [
+        "analysis.overview",
+        "metrics.interpretation",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/analysis/feature_plan.py",
+        "hyso/reporting/catalog.py",
+        "docs/guides/performance-providers.md"
+      ],
+      "inventory": []
+    }
+  ]
+}

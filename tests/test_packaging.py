@@ -214,6 +214,7 @@ DEPENDENCIES = {
     "torchsummary",
 }
 CONFIG_FILES = (
+    "hyso_guide.py",
     "pyproject.toml",
     "setup.cfg",
     "MANIFEST.in",
@@ -250,7 +251,7 @@ def distributions(tmp_path_factory):
     work = tmp_path_factory.mktemp("packaging")
     stage = work / "source"
     stage.mkdir()
-    for name in (*CONFIG_FILES, *DEVELOPMENT_MODULES, "hyso/py.typed"):
+    for name in dict.fromkeys((*CONFIG_FILES, *DEVELOPMENT_MODULES, *PROFILE['support_files'])):
         target = stage / name
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / name, target)
@@ -289,7 +290,7 @@ def test_canonical_packaging_configuration():
     assert {
         path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")
     } == DEVELOPMENT_MODULES
-    assert len(MODULES) == 168
+    assert len(MODULES) == 169
     assert MODULES.isdisjoint(PROFILE["excluded_python_files"])
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
@@ -319,7 +320,7 @@ def test_wheel_and_sdist_content_and_metadata(distributions):
         )
         assert {name for name in wheel_names if name.endswith(".py")} == MODULES
         assert archive.read("hyso-0.2.0.dist-info/top_level.txt").decode().split() == [
-            "hyso"
+            "hyso", "hyso_guide"
         ]
         license_names = [name for name in wheel_names if name.endswith("/LICENSE")]
         assert len(license_names) == 1
@@ -365,9 +366,8 @@ def test_wheel_and_sdist_content_and_metadata(distributions):
                 == (ROOT / name).read_bytes()
             )
     for name in wheel_names | names:
-        assert "studio" not in Path(name).parts and not name.endswith(
-            (".html", ".css", ".js")
-        )
+        assert "studio" not in Path(name).parts
+        assert not name.endswith((".html", ".css", ".js")) or name == 'hyso/data/user-guide.html'
         assert "sentinel" not in name and not name.endswith(
             (".pth", ".pt", ".ckpt", ".pyc", ".sqlite3", ".db")
         )

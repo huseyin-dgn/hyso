@@ -29,6 +29,7 @@ def build_parser():
                     epilog='Start here: hyso models list | hyso train options | hyso analysis list\n'
                            'Read saved results: hyso compare --help | hyso advisor --help | hyso reports --help\n'
                            'Browse saved experiments: hyso experiments --help\n'
+                           'Offline four-language guide: hyso-guide --open (tr/en/de/es).\n'
                            'Exit codes: 0 success/dry-run, 2 invalid input, 3 blocked/missing permission or source, 4 unsupported, 5 workload failure, 6 partial result, 1 unexpected error, 130 interrupted.')
     common_options(parser, export=False)
     parser.add_argument('--version', action='version', version='hyso 0.2.0')

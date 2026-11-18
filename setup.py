@@ -21,6 +21,9 @@ class CommercialBuild(build_py):
         return [row for row in modules
                 if (row[0].replace('.', '/') + '/' + row[1] + '.py') in MODULES]
 
+    def find_modules(self):
+        return [row for row in super().find_modules() if row[1]+'.py' in MODULES]
+
 
 class CommercialSource(sdist):
     """Apply the same allowlist to sdist payloads and their source inventory."""

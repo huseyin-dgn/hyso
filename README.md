@@ -2,6 +2,12 @@
 
 HYSo is a Python-first PyTorch CNN engineering, training, evaluation, benchmarking and performance analysis framework.
 
+The [central offline user guide](hyso/data/user-guide.html) contains Türkçe,
+English, Deutsch and Español in one HTML file, with local search and stable topic
+links. It is included in the wheel: run `hyso-guide --open`, or
+`hyso-guide --language de --topic analysis.p23` to print a direct topic link.
+The guide reader needs neither Torch imports nor a server or internet connection.
+
 Use the Python API or the installed `hyso` terminal interface. The web product
 has been retired; no browser, HTTP server or frontend dependency is required.
 Start with the [Python engineering workflow](docs/guides/python-first-workflow.md)
@@ -18,8 +24,8 @@ bounds do not guarantee all combinations. For this checkout: `python -m pip inst
 For a locally built distribution, use a separate virtual environment and
 `python -m pip install C:/local-hyso/dist/hyso-0.2.0-py3-none-any.whl`, then
 `python -m hyso --help` from outside the checkout. Wheel/sdist use the commercial
-allowlist; repository examples and guides are source-checkout files, not installed
-modules. CPU beta acceptance and its exact limits are recorded in the
+allowlist; repository examples and other guides are source-checkout files, while
+the central offline guide is installed as package data. CPU beta acceptance and its exact limits are recorded in the
 [acceptance guide](docs/guides/python-first-acceptance-and-limits.md#cpu-beta-installation).
 Optional `hyso[deployment]` supplies pinned ONNX/ONNX Runtime packages, not a
 general deployment converter or automatic CUDA runtime installation.

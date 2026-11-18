@@ -1,6 +1,9 @@
 include LICENSE
 include THIRD_PARTY_NOTICES.md
 include hyso/py.typed
+include hyso/data/user-guide.html
+include hyso/data/user-guide-topics.json
+include hyso_guide.py
 recursive-include hyso *.py
 prune docs
 prune tests

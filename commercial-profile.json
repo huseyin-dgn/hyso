@@ -169,7 +169,8 @@
     "hyso/training/data.py",
     "hyso/training/resume.py",
     "hyso/training/session.py",
-    "hyso/training/trainer.py"
+    "hyso/training/trainer.py",
+    "hyso_guide.py"
   ],
   "support_files": [
     "setup.py",
@@ -179,7 +180,9 @@
     "commercial-profile.json",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
-    "hyso/py.typed"
+    "hyso/py.typed",
+    "hyso/data/user-guide.html",
+    "hyso/data/user-guide-topics.json"
   ],
   "excluded_python_files": [
     "hyso/models/_development.py",
