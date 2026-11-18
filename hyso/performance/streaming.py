@@ -1,4 +1,5 @@
 """P30 real OpenCV capture/replay with explicit application-queue lifecycle evidence."""
+import typing as _typing
 from collections import deque
 from dataclasses import dataclass, asdict
 import hashlib
@@ -14,6 +15,29 @@ from .stability import WorkloadRecipe, _run_owned, _read_journal, _factory, _Jou
 
 @dataclass(frozen=True)
 class StreamSource:
+    """Describe the explicit bounded streaming input and its identity.
+
+    Args:
+        kind (str): Existing run or artifact kind accepted by this operation. Required.
+        location (str | int): Explicit source locator. Required.
+        provenance (str): Plain origin/environment metadata; declarations are not producer attestation. Required.
+        camera_binding (dict | None): Explicit permitted camera/source binding; no device discovery is inferred. Default: None.
+
+    Returns:
+        An instance of StreamSource with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        StreamSource(kind=kind, location=location, provenance=provenance)
+
+    HYSo Guide: analysis.p30
+    Offline: hyso docs show analysis.p30 --lang en
+    Open: hyso docs open analysis.p30 --lang en
+    """
     kind: str
     location: str | int
     provenance: str
@@ -36,7 +60,33 @@ class StreamSource:
 
 @dataclass(frozen=True)
 class StreamProtocol:
-    """Finite experiment plan. Defaults describe a smoke run, not hardware limits."""
+    """Finite experiment plan. Defaults describe a smoke run, not hardware limits.
+
+    Args:
+        max_frames (int): Upper bound on frames retained/accepted by this operation. Default: 16.
+        queue_capacity (int): Maximum queued streaming frames. Default: 2.
+        queue_policy (str): Explicit supported queue overflow policy. Default: 'block'.
+        late_after_seconds (float): Late after in seconds under the native protocol. Default: 0.1.
+        pace_video (bool): Pace video delivery according to source timestamps. Default: False.
+        startup_timeout_seconds (float): Startup timeout in seconds under the native protocol. Default: 45.0.
+        heartbeat_timeout_seconds (float): Heartbeat timeout in seconds under the native protocol. Default: 5.0.
+        max_runtime_seconds (float): Max runtime in seconds under the native protocol. Default: 30.0.
+        max_journal_bytes (int): Max journal in bytes; this does not imply a GPU hardware quota. Default: 128 * 1024 ** 2.
+
+    Returns:
+        An instance of StreamProtocol with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        StreamProtocol()
+
+    HYSo Guide: analysis.p30
+    Offline: hyso docs show analysis.p30 --lang en
+    Open: hyso docs open analysis.p30 --lang en
+    """
     max_frames: int = 16
     queue_capacity: int = 2
     queue_policy: str = 'block'
@@ -53,7 +103,30 @@ class StreamProtocol:
         if self.queue_policy not in ('block','drop_newest') or type(self.pace_video) is not bool:raise ValueError('unknown stream queue/pacing policy')
 
 
-def measure_streaming(source, processor_recipe, directory, *, protocol=StreamProtocol()):
+def measure_streaming(source: '_typing.Any', processor_recipe: '_typing.Any', directory: '_typing.Any', *, protocol: '_typing.Any'=StreamProtocol()) -> '_typing.Any':
+    """Run an explicitly requested bounded streaming workload in its owned worker.
+
+    Args:
+        source (_typing.Any): Typed native/retained source required by this API, not a declaration of producer authority. Required.
+        processor_recipe (_typing.Any): Trusted processor construction recipe for the owned streaming worker. Required.
+        directory (_typing.Any): Dedicated output/owned-run directory; existing overwrite and ownership rules apply. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: StreamProtocol().
+
+    Returns:
+        A validated RuntimeResult retaining actual evidence, coverage and unavailable-status fields.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        measure_streaming(source, processor_recipe, directory)
+
+    HYSo Guide: analysis.p30
+    Offline: hyso docs show analysis.p30 --lang en
+    Open: hyso docs open analysis.p30 --lang en
+    """
     if type(source) is not StreamSource or type(processor_recipe) is not WorkloadRecipe or type(protocol) is not StreamProtocol:
         raise TypeError('typed stream source/recipe/protocol required')
     if processor_recipe.gpu_uuid is not None:raise NotImplementedError('P30 processing adapter CPU-only')
@@ -212,8 +285,49 @@ def _analyze_stream(e):
 
 
 class FrameInferenceProcessor:
-    """CPU BGR uint8 -> explicit RGB resize/normalize -> actual owned model inference."""
-    def __init__(self,model,*,size=(32,32)):
+    """CPU BGR uint8 -> explicit RGB resize/normalize -> actual owned model inference.
+
+    Args:
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+        size (_typing.Sequence[int]): Explicit byte count or shape extent required by this API. Default: (32, 32).
+
+    Returns:
+        An instance of FrameInferenceProcessor with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        FrameInferenceProcessor(model)
+
+    HYSo Guide: analysis.p30
+    Offline: hyso docs show analysis.p30 --lang en
+    Open: hyso docs open analysis.p30 --lang en
+    """
+    def __init__(self,model: '_typing.Any',*,size: '_typing.Sequence[int]'=(32,32)) -> 'None':
+        """Initialize FrameInferenceProcessor with the supplied settings.
+
+        Args:
+            model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+            size (_typing.Sequence[int]): Explicit byte count or shape extent required by this API. Default: (32, 32).
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            FrameInferenceProcessor(model)
+
+        HYSo Guide: analysis.p30
+        Offline: hyso docs show analysis.p30 --lang en
+        Open: hyso docs open analysis.p30 --lang en
+        """
         import copy
         import torch
         from hyso.benchmark.runner import _profile,_descriptor,_Snapshot,_output
@@ -225,7 +339,27 @@ class FrameInferenceProcessor:
         self.identity=dict(kind='frame_model_inference',device_id='cpu',model_sha256=digest,structural_descriptor=descriptor,
             preprocessing=dict(color='BGR_to_RGB',scale='divide_255',size=list(size),resize='bilinear_align_corners_false'))
 
-    def process(self,frame):
+    def process(self,frame: '_typing.Any') -> '_typing.Any':
+        """Process one caller-supplied frame in this processor implementation.
+
+        Args:
+            frame (_typing.Any): Caller-supplied frame payload for one processing step. Required.
+
+        Returns:
+            The implementation's per-step output under this explicit worker protocol.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.process(frame)
+
+        HYSo Guide: analysis.p30
+        Offline: hyso docs show analysis.p30 --lang en
+        Open: hyso docs open analysis.p30 --lang en
+        """
         torch=self.torch;a=time.perf_counter_ns()
         x=torch.from_numpy(frame[:,:,::-1].copy()).permute(2,0,1).unsqueeze(0).float()/255
         x=torch.nn.functional.interpolate(x,size=self.size,mode='bilinear',align_corners=False)
@@ -234,7 +368,25 @@ class FrameInferenceProcessor:
         c=time.perf_counter_ns();self.output_check(out,1,device=torch.device('cpu'));self.guard.check(full=True)
         return [dict(name='preprocess',start_ns=a,end_ns=b),dict(name='inference',start_ns=b,end_ns=c)]
 
-    def close(self):self.guard.check(full=True)
+    def close(self) -> 'None':
+        """Close this object's owned resources according to its lifecycle.
+
+        Returns:
+            None. The owned store/sampler resources are closed according to the existing lifecycle.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.close()
+
+        HYSo Guide: analysis.p30
+        Offline: hyso docs show analysis.p30 --lang en
+        Open: hyso docs open analysis.p30 --lang en
+        """
+        self.guard.check(full=True)
 
 
 def _file_hash(path):

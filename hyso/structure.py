@@ -1,4 +1,5 @@
 """Versioned static model metadata. No forward graph or state/checkpoint identity."""
+import typing as _typing
 from collections import Counter, deque
 from dataclasses import dataclass, fields
 import json
@@ -381,10 +382,49 @@ def _validate(data):
 
 @dataclass(frozen=True, init=False)
 class ModelStructureSnapshot:
+    """Inspect a retained module/tensor structure snapshot without reconstructing or running a model.
+
+    Args:
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of ModelStructureSnapshot with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ModelStructureSnapshot(data)
+
+    HYSo Guide: comparison.architecture
+    Offline: hyso docs show comparison.architecture --lang en
+    Open: hyso docs open comparison.architecture --lang en
+    """
     __slots__ = ('_payload',)
     _payload: str
 
-    def __init__(self, data):
+    def __init__(self, data: 'dict[str, _typing.Any]') -> 'None':
+        """Initialize ModelStructureSnapshot with the supplied settings.
+
+        Args:
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ModelStructureSnapshot(data)
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
         try:
             data = plain(data)
             _validate(data)
@@ -397,43 +437,226 @@ class ModelStructureSnapshot:
             raise ModelStructureError('invalid_model_structure_snapshot') from exc
         object.__setattr__(self, '_payload', raw)
 
-    def to_dict(self): return json.loads(self._payload)
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return json.loads(self._payload)
 
     @property
-    def content_sha256(self): return self.to_dict()['content_sha256']
+    def content_sha256(self) -> '_typing.Any':
+        """Return the canonical content digest of this retained record.
+
+        Returns:
+            The canonical SHA-256 digest string of this retained content.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.content_sha256
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return self.to_dict()['content_sha256']
 
     @property
-    def modules(self): return tuple(_module_view(m) for m in self.to_dict()['modules'])
+    def modules(self) -> '_typing.Any':
+        """Read the retained modules from this ModelStructureSnapshot record.
+
+        Returns:
+            The retained modules value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.modules
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return tuple(_module_view(m) for m in self.to_dict()['modules'])
 
     @property
-    def tensors(self): return tuple(_tensor_view(t) for t in self.to_dict()['tensors'])
+    def tensors(self) -> '_typing.Any':
+        """Return this object's recorded tensor data according to its native copy policy.
+
+        Returns:
+            The retained tensors value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.tensors
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return tuple(_tensor_view(t) for t in self.to_dict()['tensors'])
 
     @property
-    def paths(self): return tuple(ModulePath(**p) for p in self.to_dict()['paths'])
+    def paths(self) -> '_typing.Any':
+        """Read the retained paths from this ModelStructureSnapshot record.
+
+        Returns:
+            The retained paths value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.paths
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return tuple(ModulePath(**p) for p in self.to_dict()['paths'])
 
     @property
-    def summary(self): return _summary_view(self.to_dict()['summary'])
+    def summary(self) -> '_typing.Any':
+        """Read the retained summary from this ModelStructureSnapshot record.
+
+        Returns:
+            The retained summary value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.summary
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return _summary_view(self.to_dict()['summary'])
 
     @property
-    def limitations(self): return tuple(self.to_dict()['limitations'])
+    def limitations(self) -> '_typing.Any':
+        """Read the retained limitations from this ModelStructureSnapshot record.
 
-    def to_json(self, path=None):
+        Returns:
+            The retained limitations value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.limitations
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return tuple(self.to_dict()['limitations'])
+
+    def to_json(self, path: '_typing.Any'=None) -> '_typing.Any':
+        """Serialize this object using its native JSON format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+
+        Returns:
+            A JSON string when path is None, otherwise None after writing the file.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json()
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
         if path is not None: export(path, self._payload + '\n')
         return self._payload + '\n'
 
     @classmethod
-    def from_json(cls, path):
+    def from_json(cls, path: '_typing.Any') -> 'ModelStructureSnapshot':
+        """Read and validate this type from a local JSON file.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+
+        Returns:
+            A validated ModelStructureSnapshot instance reconstructed from the supplied data.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ModelStructureSnapshot.from_json(path)
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
         data, _, _ = read_json(path, max_bytes=16 * 1024**2 + 1)
         return cls(data)
 
 
-def capture_model_structure(model, *, max_modules=10000, max_paths=50000,
-                            max_tensors=100000, max_depth=128, max_registrations=500000,
-                            max_bytes=16 * 1024**2):
+def capture_model_structure(model: '_typing.Any', *, max_modules: 'int'=10000, max_paths: 'int'=50000,
+                            max_tensors: 'int'=100000, max_depth: 'int'=128, max_registrations: 'int'=500000,
+                            max_bytes: '_typing.Any'=16 * 1024**2) -> '_typing.Any':
     """Read registered metadata of an existing trusted, quiescent nn.Module.
 
     Never executes forward, mode/state hooks, value copies or device transfers.
     Limits fail explicitly; shared/cyclic module paths are never silently pruned.
+
+    Args:
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+        max_modules (int): Upper bound on modules retained/accepted by this operation. Default: 10000.
+        max_paths (int): Upper bound on paths retained/accepted by this operation. Default: 50000.
+        max_tensors (int): Upper bound on tensors retained/accepted by this operation. Default: 100000.
+        max_depth (int): Upper bound on depth retained/accepted by this operation. Default: 128.
+        max_registrations (int): Upper bound on registrations retained/accepted by this operation. Default: 500000.
+        max_bytes (_typing.Any): Maximum accepted or retained byte count. Default: 16 * 1024 ** 2.
+
+    Returns:
+        The retained capture model structure value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        capture_model_structure(model)
+
+    HYSo Guide: comparison.architecture
+    Offline: hyso docs show comparison.architecture --lang en
+    Open: hyso docs open comparison.architecture --lang en
     """
     from ._structure_native import capture
     return capture(model, max_modules=max_modules, max_paths=max_paths, max_tensors=max_tensors,

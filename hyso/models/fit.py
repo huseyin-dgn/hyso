@@ -1,3 +1,4 @@
+import typing as _typing
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -30,7 +31,49 @@ def model_summary(model, input_size):
 # CNNSENormalWithFit + Fit ve Callbacks
 # -----------------------
 class CNNSENormalWithFit(CEMO):
-    def __init__(self, *args, **kwargs):
+    """Construct the legacy CNN with squeeze-and-excitation attention and its fit interface.
+
+    Args:
+        args (_typing.Any): Positional arguments forwarded to this native operation. Required.
+        kwargs (_typing.Any): Keyword options forwarded only to the native target documented by this API. Required.
+
+    Returns:
+        An instance of CNNSENormalWithFit with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        CNNSENormalWithFit()
+
+    HYSo Guide: models.legacy
+    Offline: hyso docs show models.legacy --lang en
+    Open: hyso docs open models.legacy --lang en
+    """
+    def __init__(self, *args: '_typing.Any', **kwargs: '_typing.Any') -> 'None':
+        """Initialize CNNSENormalWithFit with the supplied settings.
+
+        Args:
+            args (_typing.Any): Positional arguments forwarded to this native operation. Required.
+            kwargs (_typing.Any): Keyword options forwarded only to the native target documented by this API. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            CNNSENormalWithFit()
+
+        HYSo Guide: models.legacy
+        Offline: hyso docs show models.legacy --lang en
+        Open: hyso docs open models.legacy --lang en
+        """
         super().__init__(*args, **kwargs)
         self.optimizer = None
         self.early_stopping = None
@@ -43,12 +86,39 @@ class CNNSENormalWithFit(CEMO):
     # -------------------------
     # Callbacks & Optimizer
     # -------------------------
-    def callbacks(self, optimizer="Adam", optimizer_params=None,
-                  scheduler=None, scheduler_params=None,
-                  model_checkpoint=False, earlystop=None,
-                  lr=1e-3, weight_decay=1e-4):
+    def callbacks(self, optimizer: 'str'="Adam", optimizer_params: 'dict[str, _typing.Any] | None'=None,
+                  scheduler: '_typing.Any'=None, scheduler_params: 'dict[str, _typing.Any] | None'=None,
+                  model_checkpoint: 'bool'=False, earlystop: '_typing.Any'=None,
+                  lr: 'float'=1e-3, weight_decay: 'float'=1e-4) -> 'None':
 
         # --- Optimizer ---
+        """Install the supported callback configuration for subsequent fit calls.
+
+        Args:
+            optimizer (str): Existing supported optimizer or a closed optimizer name, according to this API. Default: 'Adam'.
+            optimizer_params (dict[str, _typing.Any] | None): Closed native optimizer keyword options; unknown options are rejected. Default: None.
+            scheduler (_typing.Any): Supported native scheduler or closed scheduler name; stepping remains owned by Trainer. Default: None.
+            scheduler_params (dict[str, _typing.Any] | None): Closed scheduler settings; required scheduler-specific options remain mandatory. Default: None.
+            model_checkpoint (bool): Legacy checkpoint callback configuration. Default: False.
+            earlystop (_typing.Any): Legacy early-stopping callback configuration. Default: None.
+            lr (float): Optimizer learning rate. Default: 0.001.
+            weight_decay (float): Optimizer weight-decay coefficient. Default: 0.0001.
+
+        Returns:
+            None after the operation succeeds.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.callbacks()
+
+        HYSo Guide: models.legacy
+        Offline: hyso docs show models.legacy --lang en
+        Open: hyso docs open models.legacy --lang en
+        """
         opt_params = optimizer_params or {"lr": lr, "weight_decay": weight_decay}
         if optimizer=="Adam":
             self.optimizer = optim.Adam(self.parameters(), **opt_params)
@@ -90,7 +160,31 @@ class CNNSENormalWithFit(CEMO):
     # -------------------------
     # Fit Fonksiyonu
     # -------------------------
-    def fit(self, train_loader, val_loader=None, epochs=10, lr=1e-3, use_ema=False):
+    def fit(self, train_loader: '_typing.Any', val_loader: '_typing.Any'=None, epochs: 'int'=10, lr: 'float'=1e-3, use_ema: 'bool'=False) -> '_typing.Any':
+        """Train this legacy model using its native loader and optimizer contract.
+
+        Args:
+            train_loader (_typing.Any): Finite training loader; batches must follow the task/model input contract. Required.
+            val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
+            epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after resume. Default: 10.
+            lr (float): Optimizer learning rate. Default: 0.001.
+            use_ema (bool): Enable the supported EMA evaluation shadow. Default: False.
+
+        Returns:
+            The existing native history/result for this explicit training call; no automatic retry.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.fit(train_loader)
+
+        HYSo Guide: models.legacy
+        Offline: hyso docs show models.legacy --lang en
+        Open: hyso docs open models.legacy --lang en
+        """
         self.to(self.device)
         if self.optimizer is None:
             self.optimizer = optim.Adam(self.parameters(), lr=lr, weight_decay=1e-4)

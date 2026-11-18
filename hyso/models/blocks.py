@@ -1,4 +1,5 @@
 """Standalone CNN building blocks; legacy model architectures remain unchanged."""
+import typing as _typing
 
 import torch
 from torch import nn
@@ -33,10 +34,62 @@ class ConvNormAct(nn.Module):
     'group' or None. GroupNorm uses the largest divisor of out_channels <= 8.
     Conv bias is enabled only when norm=None. Activation is 'silu', 'relu' or
     None; no in-place activation is used. Device/dtype follow normal Module.to().
+
+    Args:
+        in_channels (_typing.Any): Expected input feature-channel count. Required.
+        out_channels (_typing.Any): Number of output feature channels. Required.
+        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+        padding (int): Spatial padding under the closed registered component contract. Default: 1.
+        groups (int): Convolution/group count; divisibility requirements remain unchanged. Default: 1.
+        norm (str): Supported normalization choice; native training-statistics requirements still apply. Default: 'batch'.
+        activation (str): Supported activation family. Default: 'silu'.
+
+    Returns:
+        An instance of ConvNormAct with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ConvNormAct(in_channels, out_channels)
+
+    HYSo Guide: components.convolution
+    Offline: hyso docs show components.convolution --lang en
+    Open: hyso docs open components.convolution --lang en
     """
 
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1,
-                 padding=1, groups=1, norm="batch", activation="silu"):
+    def __init__(self, in_channels: 'int', out_channels: 'int', kernel_size: 'int | tuple[int, int] | list[int]'=3, stride: 'int | tuple[int, int] | list[int]'=1,
+                 padding: 'int | tuple[int, int] | list[int]'=1, groups: 'int'=1, norm: 'str'="batch", activation: 'str'="silu") -> 'None':
+        """Initialize ConvNormAct with the supplied settings.
+
+        Args:
+            in_channels (int): Expected input feature-channel count. Required.
+            out_channels (int): Number of output feature channels. Required.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step; must produce a valid output shape. Default: 1.
+            padding (int | tuple[int, int] | list[int]): Spatial padding under the closed registered component contract. Default: 1.
+            groups (int): Convolution/group count; divisibility requirements remain unchanged. Default: 1.
+            norm (str): Supported normalization choice; native training-statistics requirements still apply. Default: 'batch'.
+            activation (str): activation Default: 'silu'.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ConvNormAct(in_channels, out_channels)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
         super().__init__()
         _positive_int(in_channels, "in_channels")
         _positive_int(out_channels, "out_channels")
@@ -65,7 +118,27 @@ class ConvNormAct(nn.Module):
         self.activation = (nn.SiLU() if activation == "silu" else
                            nn.ReLU() if activation == "relu" else nn.Identity())
 
-    def forward(self, x):
+    def forward(self, x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
         return self.activation(self.norm(self.conv(x)))
 
 
@@ -81,10 +154,56 @@ class ResidualBlock(nn.Module):
     copied or recreated in forward. Sharing that instance between blocks shares
     weights and is the caller's responsibility; use separate instances for
     independent attention. No stochastic depth or training API is included.
+
+    Args:
+        in_channels (_typing.Any): Expected input feature-channel count. Required.
+        out_channels (_typing.Any): Number of output feature channels. Required.
+        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+        norm (str): Supported normalization choice; native training-statistics requirements still apply. Default: 'batch'.
+        attention (_typing.Any): Supported attention object/configuration for this constructor; no external plugin is inferred. Default: None.
+
+    Returns:
+        An instance of ResidualBlock with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ResidualBlock(in_channels, out_channels)
+
+    HYSo Guide: components.residual
+    Offline: hyso docs show components.residual --lang en
+    Open: hyso docs open components.residual --lang en
     """
 
-    def __init__(self, in_channels, out_channels, stride=1, norm="batch",
-                 attention=None):
+    def __init__(self, in_channels: 'int', out_channels: 'int', stride: 'int | tuple[int, int] | list[int]'=1, norm: 'str'="batch",
+                 attention: '_typing.Any'=None) -> 'None':
+        """Initialize ResidualBlock with the supplied settings.
+
+        Args:
+            in_channels (int): Expected input feature-channel count. Required.
+            out_channels (int): Number of output feature channels. Required.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step; must produce a valid output shape. Default: 1.
+            norm (str): Supported normalization choice; native training-statistics requirements still apply. Default: 'batch'.
+            attention (_typing.Any): Supported attention object/configuration for this constructor; no external plugin is inferred. Default: None.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ResidualBlock(in_channels, out_channels)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
         super().__init__()
         _positive_int(in_channels, "in_channels")
         _positive_int(out_channels, "out_channels")
@@ -115,7 +234,27 @@ class ResidualBlock(nn.Module):
                                           stride=stride, padding=0, norm=norm, activation=None))
         self.activation = nn.SiLU()
 
-    def forward(self, x):
+    def forward(self, x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
         main = self.conv2(self.conv1(x))
         attended = self.attention(main)
         if not isinstance(attended, torch.Tensor) or attended.shape != main.shape:

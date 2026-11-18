@@ -1,4 +1,5 @@
 """General v1 and explicit P26 observed-quality eligibility; no effects."""
+import typing as _typing
 from dataclasses import dataclass
 from enum import Enum
 from fractions import Fraction
@@ -11,6 +12,25 @@ from hyso.analysis._codec import digest
 
 
 class ComparisonStatus(str, Enum):
+    """Distinguish a supported comparison from unknown, incompatible or unavailable evidence.
+
+    Returns:
+        An instance of ComparisonStatus with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ComparisonStatus.COMPARABLE
+
+    HYSo Guide: comparison.models
+    Offline: hyso docs show comparison.models --lang en
+    Open: hyso docs open comparison.models --lang en
+
+    Members:
+        COMPARABLE, INSUFFICIENT_EVIDENCE, INCOMPATIBLE.
+    """
     COMPARABLE = 'COMPARABLE'
     INSUFFICIENT_EVIDENCE = 'INSUFFICIENT_EVIDENCE'
     INCOMPATIBLE = 'INCOMPATIBLE'
@@ -26,6 +46,28 @@ _SCALARS = {NativeMetric.COMPLETED_IMAGES_PER_SECOND, NativeMetric.RSS_BASELINE,
 @register
 @dataclass(frozen=True)
 class ComparisonContract(Contract):
+    """Declare the exact metric, scope, protocol and comparison requirements.
+
+    Args:
+        metric (NativeMetric): Exact supported metric selector; units and missing-value status are preserved. Default: NativeMetric.FORWARD_P95.
+        allowed_changes (tuple): Explicit model/configuration changes that an advisory proposal may suggest; none are applied automatically. Default: ().
+        min_samples (int): Minimum observations required for the statistic. Default: 1000.
+        min_tail_samples (int): Minimum tail observations required for a reported quantile. Default: 10.
+
+    Returns:
+        An instance of ComparisonContract with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ComparisonContract()
+
+    HYSo Guide: comparison.models
+    Offline: hyso docs show comparison.models --lang en
+    Open: hyso docs open comparison.models --lang en
+    """
     metric: NativeMetric = NativeMetric.FORWARD_P95
     allowed_changes: tuple = ()
     min_samples: int = 1000
@@ -47,7 +89,28 @@ class ComparisonContract(Contract):
 @register
 @dataclass(frozen=True)
 class P26QualityComparisonContract(Contract):
-    """Explicit observed-stream quality policy; never general performance v1."""
+    """Explicit observed-stream quality policy; never general performance v1.
+
+    Args:
+        metric (NativeMetric): Exact supported metric selector; units and missing-value status are preserved. Default: NativeMetric.TEST_ACCURACY.
+        allowed_changes (tuple): Explicit model/configuration changes that an advisory proposal may suggest; none are applied automatically. Default: ().
+        min_samples (int): Minimum observations required for the statistic. Default: 1.
+        policy (str): Existing protocol/resource policy; defaults do not grant additional consent. Default: 'p26_exact_observed_stream_v1'.
+
+    Returns:
+        An instance of P26QualityComparisonContract with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        P26QualityComparisonContract()
+
+    HYSo Guide: comparison.models
+    Offline: hyso docs show comparison.models --lang en
+    Open: hyso docs open comparison.models --lang en
+    """
     metric: NativeMetric = NativeMetric.TEST_ACCURACY
     allowed_changes: tuple = ()
     min_samples: int = 1
@@ -73,6 +136,26 @@ class P26BoundQualityComparisonContract(Contract):
 
     A separate format/policy leaves schema-2 contract bytes and meaning intact.
     Equal state/structure metadata does not certify equal forward behavior.
+
+    Args:
+        metric (NativeMetric): Exact supported metric selector; units and missing-value status are preserved. Default: NativeMetric.TEST_ACCURACY.
+        allowed_changes (tuple): Explicit model/configuration changes that an advisory proposal may suggest; none are applied automatically. Default: ().
+        min_samples (int): Minimum observations required for the statistic. Default: 1.
+        policy (str): Existing protocol/resource policy; defaults do not grant additional consent. Default: 'p26_bound_exact_observed_stream_v1'.
+
+    Returns:
+        An instance of P26BoundQualityComparisonContract with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        P26BoundQualityComparisonContract()
+
+    HYSo Guide: comparison.models
+    Offline: hyso docs show comparison.models --lang en
+    Open: hyso docs open comparison.models --lang en
     """
     metric: NativeMetric = NativeMetric.TEST_ACCURACY
     allowed_changes: tuple = ()
@@ -91,6 +174,27 @@ class P26BoundQualityComparisonContract(Contract):
 @register
 @dataclass(frozen=True)
 class ComparisonReason(Contract):
+    """Record a structured reason why evidence can or cannot be compared.
+
+    Args:
+        code (str): Explicit failure/status code. Required.
+        field (str): Exact retained field/path selected by the resolver. Required.
+        side (str): Explicit left/right or baseline/candidate side selector. Default: 'pair'.
+
+    Returns:
+        An instance of ComparisonReason with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ComparisonReason(code=code, field=field)
+
+    HYSo Guide: comparison.models
+    Offline: hyso docs show comparison.models --lang en
+    Open: hyso docs open comparison.models --lang en
+    """
     code: str
     field: str
     side: str = 'pair'
@@ -104,6 +208,31 @@ class ComparisonReason(Contract):
 @register
 @dataclass(frozen=True)
 class ComparisonResult(Contract):
+    """Read and export validated Model Comparison results; unavailable measurements retain their native status.
+
+    Args:
+        status (ComparisonStatus): Exact lifecycle/status filter accepted by this API. Required.
+        contract_sha256 (str): Exact SHA-256 digest of the contract. Required.
+        reasons (tuple): Structured eligibility/compatibility reasons. Required.
+        left (EvidenceRef | None): Left retained input/source in this comparison. Default: None.
+        right (EvidenceRef | None): Right retained input/source in this comparison. Default: None.
+        performance_effect (str): Retained or proposed performance effect with its evidence status. Default: 'not_computed'.
+        statistical_independence (str): Explicit evidence status for sample independence; sample count alone does not prove it. Default: 'not_certified'.
+
+    Returns:
+        An instance of ComparisonResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ComparisonResult(status=status, contract_sha256=contract_sha256, reasons=reasons)
+
+    HYSo Guide: comparison.models
+    Offline: hyso docs show comparison.models --lang en
+    Open: hyso docs open comparison.models --lang en
+    """
     status: ComparisonStatus
     contract_sha256: str
     reasons: tuple
@@ -232,7 +361,7 @@ def _capture(resolver, record_id, contract, side):
     return m, conditions, reasons, bad
 
 
-def compare_records(left_resolver, left_record_id, right_resolver, right_record_id, *, contract=None):
+def compare_records(left_resolver: '_typing.Any', left_record_id: '_typing.Any', right_resolver: '_typing.Any', right_record_id: '_typing.Any', *, contract: '_typing.Any'=None) -> '_typing.Any':
     """Assess fair recorded conditions, never delta, significance or speedup.
 
     Resolvers validate native records using unchanged 3A constructors. Optional
@@ -242,6 +371,28 @@ def compare_records(left_resolver, left_record_id, right_resolver, right_record_
     observed-stream policy; it never changes the default general v1 contract.
     P26BoundQualityComparisonContract selects schema 3 with a valid native
     structure binding and otherwise reuses the same observed-stream gate.
+
+    Args:
+        left_resolver (_typing.Any): Resolver for the left retained source. Required.
+        left_record_id (_typing.Any): Exact left evidence identity. Required.
+        right_resolver (_typing.Any): Resolver for the right retained source. Required.
+        right_record_id (_typing.Any): Exact right evidence identity. Required.
+        contract (_typing.Any): Typed comparison/evaluation contract required by the operation. Default: None.
+
+    Returns:
+        The retained compare records value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        compare_records(left_resolver, left_record_id, right_resolver, right_record_id)
+
+    HYSo Guide: comparison.models
+    Offline: hyso docs show comparison.models --lang en
+    Open: hyso docs open comparison.models --lang en
     """
     contract = ComparisonContract() if contract is None else contract
     if type(contract) in (P26QualityComparisonContract, P26BoundQualityComparisonContract):

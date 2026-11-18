@@ -1,4 +1,5 @@
 """P20 stage observation and P22 pure analysis, additive to P19 schema1."""
+import typing as _typing
 from dataclasses import asdict, dataclass
 import hashlib
 import json
@@ -18,7 +19,25 @@ STAGES = MICRO_STAGES + ATTEMPT_STAGES + ("epoch_scheduler",)
 
 @dataclass(frozen=True)
 class TrainingStageProtocol:
-    """Hard combined P19+P20 raw-record budget; CUDA queue uses P19 event_buffer."""
+    """Hard combined P19+P20 raw-record budget; CUDA queue uses P19 event_buffer.
+
+    Args:
+        max_records (int): Upper bound on records retained/accepted by this operation. Default: 100000.
+
+    Returns:
+        An instance of TrainingStageProtocol with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        TrainingStageProtocol()
+
+    HYSo Guide: analysis.p20
+    Offline: hyso docs show analysis.p20 --lang en
+    Open: hyso docs open analysis.p20 --lang en
+    """
     max_records: int = 100000
 
     def __post_init__(self):
@@ -340,17 +359,72 @@ class _Result:
 
 
 class TrainingStageResult(_Result):
-    """Immutable P20 observations with embedded canonical source P19 evidence."""
+    """Immutable P20 observations with embedded canonical source P19 evidence.
+
+    Args:
+        data: Plain validated native schema payload. Required.
+
+    Returns:
+        An instance of TrainingStageResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        TrainingStageResult(data)
+
+    HYSo Guide: analysis.p20
+    Offline: hyso docs show analysis.p20 --lang en
+    Open: hyso docs open analysis.p20 --lang en
+    """
     __slots__ = ()
 
 
 class TrainingThroughputResult(_Result):
-    """Immutable P22 epoch/segment rates; no training runs or new timer calls."""
+    """Immutable P22 epoch/segment rates; no training runs or new timer calls.
+
+    Args:
+        data: Plain validated native schema payload. Required.
+
+    Returns:
+        An instance of TrainingThroughputResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        TrainingThroughputResult(data)
+
+    HYSo Guide: analysis.p22
+    Offline: hyso docs show analysis.p22 --lang en
+    Open: hyso docs open analysis.p22 --lang en
+    """
     __slots__ = ()
 
 
-def analyze_training_throughput(result):
-    """Derive P22 from validated complete P19 evidence, without executing training."""
+def analyze_training_throughput(result: '_typing.Any') -> 'TrainingThroughputResult':
+    """Derive P22 from validated complete P19 evidence, without executing training.
+
+    Args:
+        result (_typing.Any): Retained typed result required by this operation. Required.
+
+    Returns:
+        The retained analyze training throughput value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        analyze_training_throughput(result)
+
+    HYSo Guide: analysis.p22
+    Offline: hyso docs show analysis.p22 --lang en
+    Open: hyso docs open analysis.p22 --lang en
+    """
     data = _base(result, "training_throughput", "P22", dict(version=1,
         denominator="sum_completed_epoch_training_wall_seconds", validation="excluded",
         warmup="included_and_labeled", aggregation="ratio_of_sums"))
@@ -360,15 +434,61 @@ def analyze_training_throughput(result):
 
 @dataclass(frozen=True)
 class DetailedTrainingResult:
-    """Three immutable results produced by one actual fit; no hidden second run."""
+    """Three immutable results produced by one actual fit; no hidden second run.
+
+    Args:
+        timing (TrainingPerformanceResult): Native timing protocol/settings. Required.
+        stages (TrainingStageResult): Explicit ordered pipeline stages and their timing boundaries. Required.
+        throughput (TrainingThroughputResult): Native continuous-window throughput protocol/settings. Required.
+
+    Returns:
+        An instance of DetailedTrainingResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        DetailedTrainingResult(timing=timing, stages=stages, throughput=throughput)
+
+    HYSo Guide: analysis.p20
+    Offline: hyso docs show analysis.p20 --lang en
+    Open: hyso docs open analysis.p20 --lang en
+    """
     timing: TrainingPerformanceResult
     stages: TrainingStageResult
     throughput: TrainingThroughputResult
 
 
-def measure_training_detailed(trainer, train_loader, val_loader=None, *, epochs=5,
-                              protocol=None, stage_protocol=None, save_last_to=None, resume_from=None):
-    """Opt-in P19+P20+P22 in a single native fit; ordinary P19 remains unchanged."""
+def measure_training_detailed(trainer: '_typing.Any', train_loader: '_typing.Any', val_loader: '_typing.Any'=None, *, epochs: 'int'=5,
+                              protocol: '_typing.Any'=None, stage_protocol: '_typing.Any'=None, save_last_to: '_typing.Any'=None, resume_from: '_typing.Any'=None) -> 'DetailedTrainingResult':
+    """Opt-in P19+P20+P22 in a single native fit; ordinary P19 remains unchanged.
+
+    Args:
+        trainer (_typing.Any): Caller-owned standard Trainer; a measurement may execute its fit lifecycle only when called explicitly. Required.
+        train_loader (_typing.Any): Finite training loader; batches must follow the task/model input contract. Required.
+        val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
+        epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after resume. Default: 5.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: None.
+        stage_protocol (_typing.Any): Typed stage measurement settings; boundaries and device guards remain explicit. Default: None.
+        save_last_to (_typing.Any): Explicit checkpoint destination; writing occurs only during the requested fit. Default: None.
+        resume_from (_typing.Any): Existing compatible checkpoint; model/data/settings and total budget must match. Default: None.
+
+    Returns:
+        The retained measure training detailed value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        measure_training_detailed(trainer, train_loader)
+
+    HYSo Guide: analysis.p20
+    Offline: hyso docs show analysis.p20 --lang en
+    Open: hyso docs open analysis.p20 --lang en
+    """
     stage_protocol = TrainingStageProtocol() if stage_protocol is None else stage_protocol
     if type(stage_protocol) is not TrainingStageProtocol:
         raise TypeError("stage_protocol must be TrainingStageProtocol")

@@ -1,4 +1,5 @@
 """Fresh-interpreter cold trials, plain recipes and explicitly owned worker cleanup."""
+import typing as _typing
 from dataclasses import asdict, dataclass
 import json
 import os
@@ -24,11 +25,66 @@ _owned_worker_launcher = ContextVar('hyso_owned_worker_launcher', default=None)
 
 @dataclass(frozen=True,init=False)
 class ColdStartRecipe:
+    """Describe the trusted factory and inputs for P05 — Cold start and loading; the recipe alone does not start its worker.
+
+    Args:
+        factory (_typing.Any): Trusted importable factory identity required by the worker recipe. Required.
+        model_kwargs (_typing.Any): Closed constructor options for the trusted model factory. Default: None.
+        input_shape (_typing.Sequence[int]): Per-sample (C, H, W) dimensions; batch is excluded. Default: (1, 1, 5, 7).
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
+        precision (str): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: 'fp32'.
+        artifact_path (_typing.Any): Explicit local artifact path; native ownership and overwrite rules apply. Default: None.
+        artifact_sha256 (_typing.Any): Exact serialized artifact digest. Default: None.
+        factory_search_path (_typing.Any): Explicit trusted factory import search directory. Default: None.
+        seed (int): Random seed recorded/applied by this operation; reproducibility still depends on the device/backend. Default: 0.
+
+    Returns:
+        An instance of ColdStartRecipe with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ColdStartRecipe(factory)
+
+    HYSo Guide: analysis.p05
+    Offline: hyso docs show analysis.p05 --lang en
+    Open: hyso docs open analysis.p05 --lang en
+    """
     __slots__=('_payload',)
     _payload: str
 
-    def __init__(self,factory,*,model_kwargs=None,input_shape=(1,1,5,7),device='cpu',precision='fp32',
-                 artifact_path=None,artifact_sha256=None,factory_search_path=None,seed=0):
+    def __init__(self,factory: '_typing.Any',*,model_kwargs: '_typing.Any'=None,input_shape: '_typing.Sequence[int]'=(1,1,5,7),device: 'str'='cpu',precision: 'str'='fp32',
+                 artifact_path: '_typing.Any'=None,artifact_sha256: '_typing.Any'=None,factory_search_path: '_typing.Any'=None,seed: 'int'=0) -> 'None':
+        """Initialize ColdStartRecipe with the supplied settings.
+
+        Args:
+            factory (_typing.Any): Trusted importable factory identity required by the worker recipe. Required.
+            model_kwargs (_typing.Any): Closed constructor options for the trusted model factory. Default: None.
+            input_shape (_typing.Sequence[int]): Per-sample (C, H, W) dimensions; batch is excluded. Default: (1, 1, 5, 7).
+            device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
+            precision (str): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: 'fp32'.
+            artifact_path (_typing.Any): Explicit local artifact path; native ownership and overwrite rules apply. Default: None.
+            artifact_sha256 (_typing.Any): Exact serialized artifact digest. Default: None.
+            factory_search_path (_typing.Any): Explicit trusted factory import search directory. Default: None.
+            seed (int): Random seed recorded/applied by this operation; reproducibility still depends on the device/backend. Default: 0.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ColdStartRecipe(factory)
+
+        HYSo Guide: analysis.p05
+        Offline: hyso docs show analysis.p05 --lang en
+        Open: hyso docs open analysis.p05 --lang en
+        """
         import re
         if type(factory) is not str or re.fullmatch(r'[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*:[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*',factory) is None:
             raise ValueError('factory must be importable module:qualified_name')
@@ -46,11 +102,50 @@ class ColdStartRecipe:
             factory_search_path=str(Path(factory_search_path).resolve()) if factory_search_path is not None else None,seed=seed)
         object.__setattr__(self,'_payload',json.dumps(data,allow_nan=False))
 
-    def to_dict(self): return json.loads(self._payload)
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analysis.p05
+        Offline: hyso docs show analysis.p05 --lang en
+        Open: hyso docs open analysis.p05 --lang en
+        """
+        return json.loads(self._payload)
 
 
 @dataclass(frozen=True)
 class ColdStartProtocol:
+    """Configure P05 — Cold start and loading measurement boundaries and resource limits; construction does not run the analysis.
+
+    Args:
+        trials (int): Explicit bounded trial configurations. Default: 3.
+        timeout_seconds (float): Timeout in seconds under the native protocol. Default: 60.0.
+        warmup_iterations (int): Unreported warmup iteration count before measured samples. Default: 2.
+        warm_samples (int): Warm-state sample count, separate from cold start. Default: 3.
+
+    Returns:
+        An instance of ColdStartProtocol with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ColdStartProtocol()
+
+    HYSo Guide: analysis.p05
+    Offline: hyso docs show analysis.p05 --lang en
+    Open: hyso docs open analysis.p05 --lang en
+    """
     trials: int = 3
     timeout_seconds: float = 60.
     warmup_iterations: int = 2
@@ -169,12 +264,31 @@ def _trial(recipe,plan,index,root):
             return body
 
 
-def measure_cold_start(recipe,*,protocol=ColdStartProtocol()):
+def measure_cold_start(recipe: '_typing.Any',*,protocol: '_typing.Any'=ColdStartProtocol()) -> 'ColdStartResult':
     """New interpreter per trial. No live model/Tensor/handle crosses the boundary.
 
     Trusted factory code is importable by name; artifact loading always verifies
     SHA then uses weights_only=True. OS page-cache coldness is unknown, never reset.
     Failures/timeouts/crashes are terminal trial evidence, not successful latency.
+
+    Args:
+        recipe (_typing.Any): Trusted construction recipe; factory import/execution is governed by the existing operation contract. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: ColdStartProtocol().
+
+    Returns:
+        The retained measure cold start value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        measure_cold_start(recipe)
+
+    HYSo Guide: analysis.p05
+    Offline: hyso docs show analysis.p05 --lang en
+    Open: hyso docs open analysis.p05 --lang en
     """
     if type(recipe) is not ColdStartRecipe or type(protocol) is not ColdStartProtocol:
         raise TypeError('expected ColdStartRecipe and ColdStartProtocol')

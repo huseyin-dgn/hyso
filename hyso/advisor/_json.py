@@ -11,7 +11,22 @@ _TYPES = {}
 
 
 class AdvisorError(ValueError):
-    """A stable contract validation error."""
+    """A stable contract validation error.
+
+    Returns:
+        An instance of AdvisorError with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        AdvisorError()
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+    """
 
 
 def register(cls):

@@ -3,6 +3,7 @@
 The envelope binds retained selections, not a new native performance receipt.
 Each head retains its own P26 labels, stream, metrics and declared context.
 """
+import typing as _typing
 from dataclasses import dataclass
 import json
 import weakref
@@ -37,10 +38,48 @@ def _spec(value):
 
 @dataclass(frozen=True, init=False)
 class MultiHeadGraphEvaluationResult(_Export):
-    """Separate existing GraphEvaluationResults; no aggregate accuracy or receipt."""
+    """Separate existing GraphEvaluationResults; no aggregate accuracy or receipt.
+
+    Args:
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of MultiHeadGraphEvaluationResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        MultiHeadGraphEvaluationResult(data)
+
+    HYSo Guide: analysis.p26
+    Offline: hyso docs show analysis.p26 --lang en
+    Open: hyso docs open analysis.p26 --lang en
+    """
     _payload: str
 
-    def __init__(self, data):
+    def __init__(self, data: 'dict[str, _typing.Any]') -> 'None':
+        """Initialize MultiHeadGraphEvaluationResult with the supplied settings.
+
+        Args:
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            MultiHeadGraphEvaluationResult(data)
+
+        HYSo Guide: analysis.p26
+        Offline: hyso docs show analysis.p26 --lang en
+        Open: hyso docs open analysis.p26 --lang en
+        """
         d = _body(data, 'hyso.graph_multi_head_evaluation',
             {'graph_contract', 'model_state_sha256', 'source_receipt', 'heads'})
         fingerprint(d['model_state_sha256'])
@@ -86,30 +125,108 @@ class MultiHeadGraphEvaluationResult(_Export):
             raise GraphEvidenceError('heads_must_preserve_shared_input_state_and_distinct_targets')
         object.__setattr__(self, '_payload', canonical(d))
 
-    def to_dict(self):
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analysis.p26
+        Offline: hyso docs show analysis.p26 --lang en
+        Open: hyso docs open analysis.p26 --lang en
+        """
         d = json.loads(self._payload)
         d['verification'] = GraphEvaluationResult._verification(self, d)
         return d
 
-    def head(self, output):
-        """Return this exact retained head; importing never restores live trust."""
+    def head(self, output: '_typing.Any') -> '_typing.Any':
+        """Return this exact retained head; importing never restores live trust.
+
+        Args:
+            output (_typing.Any): Explicit output payload or destination required by this API. Required.
+
+        Returns:
+            The retained head value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.head(output)
+
+        HYSo Guide: analysis.p26
+        Offline: hyso docs show analysis.p26 --lang en
+        Open: hyso docs open analysis.p26 --lang en
+        """
         d = json.loads(self._payload)
         if output not in d['heads']:
             raise GraphEvidenceError('selected_head_missing')
         return GraphEvaluationResult(d['heads'][output]['result'])
 
-    def analysis_source(self, model_id, *, head):
+    def analysis_source(self, model_id: '_typing.Any', *, head: '_typing.Any') -> '_typing.Any':
+        """Create a typed retained source from this validated named-head evaluation result.
+
+        Args:
+            model_id (_typing.Any): Stable model label bound to this result/context. Required.
+            head (_typing.Any): Explicit prediction-head kind, such as classification, regression or embedding. Required.
+
+        Returns:
+            The retained analysis source value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.analysis_source(model_id, head=head)
+
+        HYSo Guide: analysis.p26
+        Offline: hyso docs show analysis.p26 --lang en
+        Open: hyso docs open analysis.p26 --lang en
+        """
         return self.head(head).analysis_source(model_id)
 
 
-def evaluate_graph_heads(model, loader, *, heads, capture_structure=False,
-                         expected_checkpoint_sha256=None):
+def evaluate_graph_heads(model: '_typing.Any', loader: '_typing.Any', *, heads: '_typing.Any', capture_structure: 'bool'=False,
+                         expected_checkpoint_sha256: '_typing.Any'=None) -> '_typing.Any':
     """Explicit two-head CPU fp32 evaluation, using the original evaluator twice.
 
     Requires the closed one- or two-input NamedTargetDataset profile. Each head spec
     names its target, task, ordered class_names, split, dataset_id and
     preprocessing_id (unknown identities may explicitly be None). No report,
     advice or comparison calls this execution function implicitly.
+
+    Args:
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+        loader (_typing.Any): Caller-owned finite DataLoader with the required input/target batch format. Required.
+        heads (_typing.Any): Explicit named Graph outputs and their classification evaluation contracts. Required.
+        capture_structure (bool): Request supported structure evidence in the explicit operation. Default: False.
+        expected_checkpoint_sha256 (_typing.Any): Exact SHA-256 digest of the expected checkpoint. Default: None.
+
+    Returns:
+        The retained evaluate graph heads value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        evaluate_graph_heads(model, loader, heads=heads)
+
+    HYSo Guide: analysis.p26
+    Offline: hyso docs show analysis.p26 --lang en
+    Open: hyso docs open analysis.p26 --lang en
     """
     if type(model) is not GraphModel or type(heads) is not dict or len(heads) != 2:
         raise GraphEvidenceError('raw_GraphModel_and_two_explicit_heads_required')
@@ -168,14 +285,37 @@ def evaluate_graph_heads(model, loader, *, heads, capture_structure=False,
     return result
 
 
-def compare_graph_heads(baseline, candidate, *, head_pairs, model_ids=('A','B'),
-                        features=('P26','P12'), include_structure=True):
+def compare_graph_heads(baseline: '_typing.Any', candidate: '_typing.Any', *, head_pairs: '_typing.Any', model_ids: '_typing.Any'=('A','B'),
+                        features: '_typing.Any'=('P26','P12'), include_structure: 'bool'=True) -> '_typing.Any':
     """Compare only explicitly paired equal output names through compare_models.
 
     This bounded adapter does not infer semantic equivalence or rename heads.
     Matching names remain caller declarations; native label/stream/protocol and
     strict declared-context gates independently decide numeric eligibility.
     Returns separate existing ModelComparisonResults, never a model-wide winner.
+
+    Args:
+        baseline (_typing.Any): Validated retained baseline source or predictions required by this comparison. Required.
+        candidate (_typing.Any): Validated retained candidate source or predictions required by this comparison. Required.
+        head_pairs (_typing.Any): Explicit baseline/candidate named-output pairings. Required.
+        model_ids (_typing.Any): Explicit ordered model identities for the recorded workflow. Default: ('A', 'B').
+        features (_typing.Any): Explicit feature IDs to compare/plan; prerequisites are never silently executed. Default: ('P26', 'P12').
+        include_structure (bool): Whether to include supported retained structure comparisons. Default: True.
+
+    Returns:
+        The retained compare graph heads value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        compare_graph_heads(baseline, candidate, head_pairs=head_pairs)
+
+    HYSo Guide: analysis.p26
+    Offline: hyso docs show analysis.p26 --lang en
+    Open: hyso docs open analysis.p26 --lang en
     """
     from .model_comparison import compare_models
     if type(baseline) is not MultiHeadGraphEvaluationResult or type(candidate) is not MultiHeadGraphEvaluationResult:

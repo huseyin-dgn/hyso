@@ -20,8 +20,49 @@ def probability(value: float, name: str = 'probability', *, inclusive: bool = Fa
         raise ValueError(f'{name} must be less than 1')
 
 class ChannelShuffle(nn.Module):
-    """Reshape/transpose channel groups while preserving NCHW dimensions."""
+    """Reshape/transpose channel groups while preserving NCHW dimensions.
+
+    Args:
+        channels (int): Feature-channel count required by this block. Required.
+        groups (int): Convolution/group count; divisibility requirements remain unchanged. Default: 2.
+
+    Returns:
+        An instance of ChannelShuffle with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ChannelShuffle(channels)
+
+    HYSo Guide: components.sampling
+    Offline: hyso docs show components.sampling --lang en
+    Open: hyso docs open components.sampling --lang en
+    """
     def __init__(self, channels: int, groups: int = 2) -> None:
+        """Initialize ChannelShuffle with the supplied settings.
+
+        Args:
+            channels (int): Feature-channel count required by this block. Required.
+            groups (int): Convolution/group count; divisibility requirements remain unchanged. Default: 2.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ChannelShuffle(channels)
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
         super().__init__()
         _positive_int(channels, 'channels')
         _positive_int(groups, 'groups')
@@ -31,6 +72,26 @@ class ChannelShuffle(nn.Module):
         self.groups = groups
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
         _check_input(x, self.channels)
         n, c, h, w = x.shape
         return x.reshape(n, self.groups, c//self.groups, h, w).transpose(1, 2).reshape(n, c, h, w)
@@ -42,8 +103,48 @@ class DropBlock2D(nn.Module):
     seed positions spread into exact square blocks. gamma is clipped to one.
     p=1 yields zeros, p=0 and eval return the input. An all-dropped mask yields
     finite zeros. Half-precision mask statistics accumulate in float32.
+
+    Args:
+        p (float): Probability of dropping an element/path during training. Default: 0.1.
+        block_size (int): Spatial side length of the dropped block. Default: 3.
+
+    Returns:
+        An instance of DropBlock2D with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        DropBlock2D()
+
+    HYSo Guide: components.regularization
+    Offline: hyso docs show components.regularization --lang en
+    Open: hyso docs open components.regularization --lang en
     """
     def __init__(self, p: float = .1, block_size: int = 3) -> None:
+        """Initialize DropBlock2D with the supplied settings.
+
+        Args:
+            p (float): p Default: 0.1.
+            block_size (int): block size Default: 3.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            DropBlock2D()
+
+        HYSo Guide: components.regularization
+        Offline: hyso docs show components.regularization --lang en
+        Open: hyso docs open components.regularization --lang en
+        """
         super().__init__()
         probability(p, 'p', inclusive=True)
         _positive_int(block_size, 'block_size')
@@ -51,6 +152,26 @@ class DropBlock2D(nn.Module):
         self.block_size = block_size
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.regularization
+        Offline: hyso docs show components.regularization --lang en
+        Open: hyso docs open components.regularization --lang en
+        """
         if not isinstance(x, torch.Tensor) or x.ndim != 4 or not x.is_floating_point() or min(x.shape) < 1:
             raise ValueError('DropBlock2D requires a nonempty floating NCHW tensor')
         if not self.training or self.p == 0:

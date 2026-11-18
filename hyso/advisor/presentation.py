@@ -1,4 +1,5 @@
 """Deterministic bilingual views; never authoritative evidence or engine input."""
+import typing as _typing
 from collections import Counter
 import hashlib
 import html
@@ -53,11 +54,29 @@ def _options(language, audience):
         raise AdvisorError('unsupported_audience')
 
 
-def build_display_model(report):
+def build_display_model(report: '_typing.Any') -> '_typing.Any':
     """One detached, language-neutral structured snapshot for every view.
 
     Contract validation is not native evidence revalidation. No source files,
     engine, rule, device or factory are accessed by this presentation operation.
+
+    Args:
+        report (_typing.Any): Validated retained analysis/advisory report. Required.
+
+    Returns:
+        The retained build display model value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        build_display_model(report)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
     """
     if type(report) is not AdvisorReport:
         raise AdvisorError('typed_advisor_report_required')
@@ -190,7 +209,29 @@ def _localized(data, language, audience):
                 kind_labels={k:v[index] for k,v in _KIND.items()})
 
 
-def to_display_dict(report, *, language='en', audience='summary'):
+def to_display_dict(report: '_typing.Any', *, language: 'str'='en', audience: 'str'='summary') -> 'dict[str, _typing.Any]':
+    """Return localized display text while preserving canonical comparison data.
+
+    Args:
+        report (_typing.Any): Validated retained analysis/advisory report. Required.
+        language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'en'.
+        audience (str): Supported presentation audience/detail level. Default: 'summary'.
+
+    Returns:
+        A localized plain display dictionary derived from the retained report.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        to_display_dict(report)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+    """
     _options(language,audience)
     data=build_display_model(report)
     body=dict(format='hyso.advisor.display',schema_version=1,presentation_only=True,
@@ -212,7 +253,30 @@ def _export(path,raw):
     return raw
 
 
-def to_display_json(report,path=None,*,language='en',audience='summary'):
+def to_display_json(report: '_typing.Any',path: '_typing.Any'=None,*,language: 'str'='en',audience: 'str'='summary') -> 'str':
+    """Serialize localized display text while preserving the retained canonical data.
+
+    Args:
+        report (_typing.Any): Validated retained analysis/advisory report. Required.
+        path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+        language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'en'.
+        audience (str): Supported presentation audience/detail level. Default: 'summary'.
+
+    Returns:
+        The localized JSON string, also written to path when supplied.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        to_display_json(report)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+    """
     return _export(path,canonical(to_display_dict(report,language=language,audience=audience))+'\n')
 
 
@@ -221,7 +285,30 @@ def _esc(value):
     return re.sub(r'([\\`*_\[\]()!#|])',r'\\\1',text)
 
 
-def to_markdown(report,path=None,*,language='en',audience='summary'):
+def to_markdown(report: '_typing.Any',path: '_typing.Any'=None,*,language: 'str'='en',audience: 'str'='summary') -> 'str':
+    """Format retained comparison findings as Markdown without rerunning models.
+
+    Args:
+        report (_typing.Any): Validated retained analysis/advisory report. Required.
+        path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+        language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'en'.
+        audience (str): Supported presentation audience/detail level. Default: 'summary'.
+
+    Returns:
+        The localized Markdown report string.
+
+    Raises:
+        OSError: Filesystem access fails.
+        ValueError: The native format, version or overwrite contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        to_markdown(report)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+    """
     view=to_display_dict(report,language=language,audience=audience)
     data,words=view['data'],view['text']; t=words['labels']
     lines=['# '+words['title'],'',t['authority'],'',t['source']+': `'+data['source_advisor_report_id']+'`','']

@@ -13,8 +13,48 @@ class SimAM(nn.Module):
     """Parameter-free spatial energy gates; H*W=1 uses variance zero.
 
     Half/bfloat16 statistics accumulate in float32. epsilon must be finite >0.
+
+    Args:
+        channels (int): Feature-channel count required by this block. Required.
+        epsilon (float): Numerical tolerance/stabilizer used by this operation. Default: 0.0001.
+
+    Returns:
+        An instance of SimAM with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        SimAM(channels)
+
+    HYSo Guide: components.attention
+    Offline: hyso docs show components.attention --lang en
+    Open: hyso docs open components.attention --lang en
     """
     def __init__(self, channels: int, epsilon: float = 1e-4) -> None:
+        """Initialize SimAM with the supplied settings.
+
+        Args:
+            channels (int): Feature-channel count required by this block. Required.
+            epsilon (float): epsilon Default: 0.0001.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            SimAM(channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
         super().__init__()
         self.channels = _positive_int(channels, 'channels')
         if type(epsilon) not in (int, float) or abs(epsilon)>1e308 or not math.isfinite(epsilon) or epsilon <= 0:
@@ -22,6 +62,26 @@ class SimAM(nn.Module):
         self.epsilon = epsilon
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
         _check_input(x, self.channels)
         if not x.is_floating_point(): raise ValueError('floating attention input required')
         value = x.float() if x.dtype in (torch.float16, torch.bfloat16) else x
@@ -51,8 +111,50 @@ class TripletAttention(nn.Module):
 
     Default kernel 7 and BN match the convolutional WACV architecture, not
     transformer Triplet Attention. BN requires sufficient statistics in train.
+
+    Args:
+        channels (int): Feature-channel count required by this block. Required.
+        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 7.
+        spatial (bool): Include spatial attention where supported. Default: True.
+
+    Returns:
+        An instance of TripletAttention with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        TripletAttention(channels)
+
+    HYSo Guide: components.attention
+    Offline: hyso docs show components.attention --lang en
+    Open: hyso docs open components.attention --lang en
     """
     def __init__(self, channels: int, kernel_size: int = 7, spatial: bool = True) -> None:
+        """Initialize TripletAttention with the supplied settings.
+
+        Args:
+            channels (int): Feature-channel count required by this block. Required.
+            kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 7.
+            spatial (bool): spatial Default: True.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            TripletAttention(channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
         super().__init__()
         self.channels = _positive_int(channels, 'channels')
         _positive_int(kernel_size, 'kernel_size')
@@ -62,6 +164,26 @@ class TripletAttention(nn.Module):
         self.hw = _TripletGate(kernel_size) if spatial else None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
         _check_input(x, self.channels)
         if not x.is_floating_point(): raise ValueError('floating attention input required')
         a = self.cw(x.transpose(1, 2)).transpose(1, 2)
@@ -76,9 +198,55 @@ class SelectiveKernelAttention(nn.Module):
     Default branches=2, groups=1 is an explicit dense-convolution SK variant;
     use groups=32 where channels permit the grouped SKNet setting. Squeeze uses
     a biased linear/ReLU descriptor (no descriptor BN, supports batch size one).
+
+    Args:
+        channels (int): Feature-channel count required by this block. Required.
+        branches (int): Explicit branch modules/configurations. Default: 2.
+        groups (int): Convolution/group count; divisibility requirements remain unchanged. Default: 1.
+        reduction (int): Channel reduction ratio used by the attention bottleneck. Default: 16.
+        minimum (int): Lower bound applied by this operation. Default: 32.
+
+    Returns:
+        An instance of SelectiveKernelAttention with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        SelectiveKernelAttention(channels)
+
+    HYSo Guide: components.attention
+    Offline: hyso docs show components.attention --lang en
+    Open: hyso docs open components.attention --lang en
     """
     def __init__(self, channels: int, branches: int = 2, groups: int = 1,
                  reduction: int = 16, minimum: int = 32) -> None:
+        """Initialize SelectiveKernelAttention with the supplied settings.
+
+        Args:
+            channels (int): Feature-channel count required by this block. Required.
+            branches (int): branches Default: 2.
+            groups (int): Convolution/group count; divisibility requirements remain unchanged. Default: 1.
+            reduction (int): Channel reduction ratio used by the attention bottleneck. Default: 16.
+            minimum (int): minimum Default: 32.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            SelectiveKernelAttention(channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
         super().__init__()
         for key, value in locals().copy().items():
             if key in ('channels','branches','groups','reduction','minimum'): _positive_int(value,key)
@@ -93,6 +261,26 @@ class SelectiveKernelAttention(nn.Module):
         self.select = nn.ModuleList(nn.Linear(hidden, channels) for _ in range(branches))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
         _check_input(x, self.channels)
         if not x.is_floating_point(): raise ValueError('floating attention input required')
         branches = torch.stack([branch(x) for branch in self.branches], 1)

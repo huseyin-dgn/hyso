@@ -7,6 +7,7 @@ opens files, queries devices, grants authorization or modifies a model.
 G1 integration boundary: describe what to assess before an explicitly approved
 native run; carry unknown and missing prerequisites instead of faking results.
 """
+import typing as _typing
 
 from dataclasses import asdict, dataclass
 
@@ -36,7 +37,39 @@ _MODES = frozenset(('single', 'selected', 'automatic', 'full'))
 
 @dataclass(frozen=True)
 class ModelContext:
-    """Caller DECLARATIONS only. These are NOT verified model facts."""
+    """Caller DECLARATIONS only. These are NOT verified model facts.
+
+    Args:
+        model_id (str): Stable model label bound to this result/context. Required.
+        task (str): Explicit supported task; classification metrics do not imply detection or segmentation support. Default: 'classification'.
+        backend (str): Explicit runtime/backend identity. Default: 'pytorch'.
+        input_contract (bool): Declare availability of required input metadata; not a runtime attestation. Default: False.
+        adapter_contract (bool): Declare availability of the required task adapter; this is not proof of runtime support. Default: False.
+        labeled_evaluation (bool): Declare availability of labeled evaluation evidence. Default: False.
+        training_workload (bool): Declare availability of a training workload; no fit() is started by this flag. Default: False.
+        stage_adapters (bool): Declare availability of explicit pipeline-stage adapters. Default: False.
+        trusted_factory (bool): Declare or bind the explicitly trusted factory contract. Default: False.
+        checkpoint (bool): Declare availability of the required checkpoint contract; this does not load it. Default: False.
+        trained_frame_adapter (bool): Declare availability of the required trained frame adapter. Default: False.
+        recorded_video (bool): Declare a recorded-video requirement; it does not open or process it. Default: False.
+        live_camera (bool): Declare a live-camera requirement; it does not open the camera. Default: False.
+        onnx_export_contract (bool): Declare availability of the required ONNX export contract. Default: False.
+        retained_long_run (bool): Declare availability of retained long-run evidence; no long run is started. Default: False.
+
+    Returns:
+        An instance of ModelContext with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ModelContext(model_id=model_id)
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
+    """
 
     model_id: str
     task: str = 'classification'
@@ -149,6 +182,29 @@ GOAL_FEATURES = {
 
 @dataclass(frozen=True)
 class FeaturePlanRequest:
+    """Select explicit features/goals under declared capabilities; a request grants no execution permission.
+
+    Args:
+        mode (str): Supported interpolation or operation mode of this API. Required.
+        models (tuple): Explicit model contexts or architecture definitions required by this planner/comparison. Required.
+        features (tuple): Explicit feature IDs to compare/plan; prerequisites are never silently executed. Default: ().
+        goals (tuple): Explicit user goals; unmet prerequisites are retained. Default: ().
+        capabilities (tuple): Explicit supported runtime/provider capabilities used by preflight. Default: ().
+
+    Returns:
+        An instance of FeaturePlanRequest with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        FeaturePlanRequest(mode=mode, models=models)
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
+    """
     mode: str
     models: tuple
     features: tuple = ()
@@ -201,6 +257,31 @@ class PlannedFeature:
 
 @dataclass(frozen=True)
 class FeaturePlan:
+    """Retain selected features, prerequisites, missing evidence and planning limitations.
+
+    Args:
+        mode (str): Supported interpolation or operation mode of this API. Required.
+        models (tuple): Explicit model contexts or architecture definitions required by this planner/comparison. Required.
+        features (tuple): Explicit feature IDs to compare/plan; prerequisites are never silently executed. Required.
+        goals (tuple): Explicit user goals; unmet prerequisites are retained. Required.
+        capability_basis (str): Evidence or declaration underlying the claimed capability. Default: 'CALLER_DECLARED_NOT_VERIFIED'.
+        execution_authorized (bool): Explicit permission for this execution scope; declarations of capability alone are insufficient. Default: False.
+        comparison_authority (str): Declared authority of the comparison evidence. Default: 'NO_NATIVE_COMPARISON_OR_CERTIFIED_WINNER'.
+
+    Returns:
+        An instance of FeaturePlan with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        FeaturePlan(mode=mode, models=models, features=features, goals=goals)
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
+    """
     mode: str
     models: tuple
     features: tuple
@@ -209,7 +290,23 @@ class FeaturePlan:
     execution_authorized: bool = False
     comparison_authority: str = 'NO_NATIVE_COMPARISON_OR_CERTIFIED_WINNER'
 
-    def to_dict(self):
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         return asdict(self)
 
 
@@ -276,7 +373,26 @@ def _missing(model, spec, capabilities):
 
 
 def plan_features(request: FeaturePlanRequest) -> FeaturePlan:
-    """Return a *planning-only* decision; never execute or authorize a workload."""
+    """Return a *planning-only* decision; never execute or authorize a workload.
+
+    Args:
+        request (FeaturePlanRequest): Validated advisory/selection request; does not authorize execution. Required.
+
+    Returns:
+        The retained plan features value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        plan_features(request)
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
+    """
     if type(request) is not FeaturePlanRequest:
         raise FeaturePlanError('typed_feature_plan_request_required')
     reasons = {}

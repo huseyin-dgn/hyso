@@ -1,4 +1,5 @@
 """Versioned immutable evidence references, with declared/native trust separation."""
+import typing as _typing
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 import json
@@ -13,6 +14,42 @@ _PRECISIONS = {'float32':'fp32','torch.float32':'fp32','float64':'fp64','torch.f
 
 @dataclass(frozen=True)
 class EvidenceScope:
+    """Bind retained evidence to its model, phase, device, precision, batch and source context.
+
+    Args:
+        model_id (str | None): Stable model label bound to this result/context. Default: None.
+        model_state_sha256 (str | None): Exact SHA-256 digest of the model state. Default: None.
+        checkpoint_sha256 (str | None): Exact SHA-256 digest of the checkpoint. Default: None.
+        dataset_id (str | None): Exact dataset identity used for evidence alignment. Default: None.
+        split (str | None): Explicit dataset split label used in evaluation identity. Default: None.
+        preprocessing_id (str | None): Identity of the preprocessing used to produce this fixed cohort. Default: None.
+        device (str | None): Optional device selector following this API's native placement/default rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
+        backend (str | None): Explicit runtime/backend identity. Default: None.
+        precision (str | None): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: None.
+        batch (int | None): Batch dimension of the measured input. Default: None.
+        input_shape (tuple | None): Per-sample (C, H, W) dimensions; batch is excluded. Default: None.
+        workload_id (str | None): Exact workload identity for scope alignment. Default: None.
+        protocol_id (str | None): Exact measurement/evaluation protocol identity. Default: None.
+        protocol_sha256 (str | None): Exact SHA-256 digest of the protocol. Default: None.
+        phase (str | None): Explicit trace phase label. Default: None.
+        input_kind (str | None): Explicit supported input-source kind. Default: None.
+        clock_id (str | None): Clock-domain identity used for timing alignment. Default: None.
+        source_revision (str | None): Exact source code/configuration revision. Default: None.
+
+    Returns:
+        An instance of EvidenceScope with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        EvidenceScope()
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
+    """
     model_id: str | None = None
     model_state_sha256: str | None = None
     checkpoint_sha256: str | None = None
@@ -48,7 +85,24 @@ class EvidenceScope:
         if self.precision is not None:
             object.__setattr__(self, 'precision', _PRECISIONS.get(self.precision, self.precision))
 
-    def to_dict(self): return plain(asdict(self))
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
+        return plain(asdict(self))
 
 
 def _scope(data, feature, declared):
@@ -120,9 +174,48 @@ def _record(feature, payload, artifact, declarations, origin, imported_at):
 
 @dataclass(frozen=True, init=False)
 class EvidenceRecord:
+    """Validate and retain one measurement record with identity, scope, protocol and limitations.
+
+    Args:
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of EvidenceRecord with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        EvidenceRecord(data)
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
+    """
     _payload: str
 
-    def __init__(self, data):
+    def __init__(self, data: 'dict[str, _typing.Any]') -> 'None':
+        """Initialize EvidenceRecord with the supplied settings.
+
+        Args:
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            EvidenceRecord(data)
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         d = plain(data)
         if type(d) is not dict: raise EvidenceError('invalid_record')
         if d.get('record_version') != 1 or type(d.get('record_version')) is not int:
@@ -150,6 +243,27 @@ class EvidenceRecord:
         Artifact identity describes canonical JSON bytes retained in this record;
         it does not claim a file was written. Export explicitly when persistence
         is needed. Import time is not capture time; associations remain declared.
+
+        Args:
+            payload (dict): Plain retained evidence payload. Required.
+            feature_id (str): Exact P01-P35 feature identifier. Required.
+            scope (EvidenceScope | None): Exact measurement boundary/meaning; different scopes are not interchangeable. Default: None.
+            origin (str): Explicit evidence origin/provenance. Default: 'new'.
+
+        Returns:
+            A validated EvidenceRecord instance reconstructed from the supplied data.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            EvidenceRecord.from_native(payload, feature_id=feature_id)
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
         """
         if scope is not None and type(scope) is not EvidenceScope:
             raise EvidenceError('typed_scope_required')
@@ -166,7 +280,32 @@ class EvidenceRecord:
                            datetime.now(timezone.utc).isoformat()))
 
     @classmethod
-    def from_json(cls, path, *, feature_id, expected_sha256, scope=None, origin='new', max_bytes=64*1024**2):
+    def from_json(cls, path: '_typing.Any', *, feature_id: '_typing.Any', expected_sha256: '_typing.Any', scope: '_typing.Any'=None, origin: 'str'='new', max_bytes: '_typing.Any'=64*1024**2) -> 'EvidenceRecord':
+        """Read and validate this type from a local JSON file.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            feature_id (_typing.Any): Exact P01-P35 feature identifier. Required.
+            expected_sha256 (_typing.Any): Exact expected artifact/content digest. Required.
+            scope (_typing.Any): Exact measurement boundary/meaning; different scopes are not interchangeable. Default: None.
+            origin (str): Explicit evidence origin/provenance. Default: 'new'.
+            max_bytes (_typing.Any): Maximum accepted or retained byte count. Default: 64 * 1024 ** 2.
+
+        Returns:
+            A validated EvidenceRecord instance reconstructed from the supplied data.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            EvidenceRecord.from_json(path, feature_id=feature_id, expected_sha256=expected_sha256)
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         if scope is not None and type(scope) is not EvidenceScope:raise EvidenceError('typed_scope_required')
         fingerprint(expected_sha256)
         payload, actual, size = read_json(path, expected_sha256, max_bytes)
@@ -176,7 +315,30 @@ class EvidenceRecord:
                            datetime.now(timezone.utc).isoformat()))
 
     @classmethod
-    def unavailable(cls, feature_id, *, reason, status='not_run', scope=None):
+    def unavailable(cls, feature_id: '_typing.Any', *, reason: '_typing.Any', status: 'str'='not_run', scope: '_typing.Any'=None) -> 'EvidenceRecord':
+        """Create an explicit unavailable evidence record with its reason and scope.
+
+        Args:
+            feature_id (_typing.Any): Exact P01-P35 feature identifier. Required.
+            reason (_typing.Any): Explicit human-readable lifecycle reason; not an automatic workload diagnosis. Required.
+            status (str): Exact lifecycle/status filter accepted by this API. Default: 'not_run'.
+            scope (_typing.Any): Exact measurement boundary/meaning; different scopes are not interchangeable. Default: None.
+
+        Returns:
+            An EvidenceRecord with the explicit unavailable status, reason and scope.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            EvidenceRecord.unavailable(feature_id, reason=reason)
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         if feature_id not in FEATURES: raise EvidenceError('invalid_feature_id')
         if status not in ('not_run','unsupported','invalid','unknown') or type(reason) is not str or not reason.strip():
             raise EvidenceError('unavailable_requires_reason')
@@ -190,14 +352,69 @@ class EvidenceRecord:
         # Build directly; __init__ verifies unavailable round-trips with this method.
         result = object.__new__(cls);object.__setattr__(result,'_payload',canonical(d));return result
 
-    def to_dict(self): return json.loads(self._payload)
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
+        return json.loads(self._payload)
 
     @property
-    def record_id(self): return self.to_dict()['record_id']
+    def record_id(self) -> '_typing.Any':
+        """Read the retained record id from this EvidenceRecord record.
+
+        Returns:
+            The retained record id value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.record_id
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
+        return self.to_dict()['record_id']
 
 
-def compare_evidence(left, right, *, domain):
-    """Fail closed. Agreement between caller declarations is not native proof."""
+def compare_evidence(left: '_typing.Any', right: '_typing.Any', *, domain: '_typing.Any') -> '_typing.Any':
+    """Fail closed. Agreement between caller declarations is not native proof.
+
+    Args:
+        left (_typing.Any): Left retained input/source in this comparison. Required.
+        right (_typing.Any): Right retained input/source in this comparison. Required.
+        domain (_typing.Any): Feature/metric domain, separate from runtime support. Required.
+
+    Returns:
+        A plain comparison of the retained records, including compatibility and missing-evidence reasons.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        compare_evidence(left, right, domain=domain)
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
+    """
     if type(left) is not EvidenceRecord or type(right) is not EvidenceRecord:
         raise EvidenceError('typed_records_required')
     a,b=left.to_dict(),right.to_dict();mismatch=[];missing=[];declared=[]
@@ -220,9 +437,48 @@ def compare_evidence(left, right, *, domain):
 
 @dataclass(frozen=True, init=False)
 class EvidenceIndex:
+    """Collect retained records and expose evidence availability without executing missing analyses.
+
+    Args:
+        records (_typing.Sequence[int]): Bounded sequence of plain observation records. Default: ().
+
+    Returns:
+        An instance of EvidenceIndex with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        EvidenceIndex()
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
+    """
     _payload: str
 
-    def __init__(self, records=()):
+    def __init__(self, records: '_typing.Sequence[EvidenceRecord]'=()) -> 'None':
+        """Initialize EvidenceIndex with the supplied settings.
+
+        Args:
+            records (_typing.Sequence[EvidenceRecord]): Bounded sequence of plain observation records. Default: ().
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            EvidenceIndex()
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         values=[];seen=set()
         for r in records:
             if type(r) is not EvidenceRecord: raise EvidenceError('typed_records_required')
@@ -233,22 +489,141 @@ class EvidenceIndex:
         if len(payload.encode('utf-8'))>128*1024**2:raise EvidenceError('index_size_limit')
         object.__setattr__(self,'_payload',payload)
 
-    def to_dict(self): return json.loads(self._payload)
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
+        return json.loads(self._payload)
 
     @property
-    def records(self): return tuple(EvidenceRecord(d) for d in self.to_dict()['records'])
+    def records(self) -> '_typing.Any':
+        """Read the retained records from this EvidenceIndex record.
 
-    def add(self, record): return EvidenceIndex((*self.records,record))
+        Returns:
+            The retained records value, without recomputing measurements.
 
-    def to_json(self, path, *, overwrite=False): export(path,self._payload+'\n',overwrite)
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.records
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
+        return tuple(EvidenceRecord(d) for d in self.to_dict()['records'])
+
+    def add(self, record: '_typing.Any') -> 'EvidenceIndex':
+        """Add one validated retained evidence record to this index without measuring a workload.
+
+        Args:
+            record (_typing.Any): Typed retained measurement/evidence record. Required.
+
+        Returns:
+            A new EvidenceIndex containing the previous records and this record; this index is unchanged.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.add(record)
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
+        return EvidenceIndex((*self.records,record))
+
+    def to_json(self, path: '_typing.Any', *, overwrite: 'bool'=False) -> 'None':
+        """Serialize this object using its native JSON format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json(path)
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
+        export(path,self._payload+'\n',overwrite)
 
     @classmethod
-    def from_json(cls,path):
+    def from_json(cls,path: '_typing.Any') -> 'EvidenceIndex':
+        """Read and validate this type from a local JSON file.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+
+        Returns:
+            A validated EvidenceIndex instance reconstructed from the supplied data.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            EvidenceIndex.from_json(path)
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         d,_,_=read_json(path,max_bytes=128*1024**2)
         if set(d)!={'format','schema_version','records'} or d['format']!='hyso.evidence_index' or type(d['schema_version']) is not int or d['schema_version']!=1:
             raise EvidenceError('unsupported_index_version')
         return cls(EvidenceRecord(r) for r in d['records'])
 
-    def analyze(self, *, context, title='HYSo unified analysis', risks=()):
+    def analyze(self, *, context: '_typing.Any', title: 'str'='HYSo unified analysis', risks: '_typing.Sequence[str]'=()) -> '_typing.Any':
+        """Summarize retained evidence availability and limitations without executing missing analyses.
+
+        Args:
+            context (_typing.Any): Explicit analysis/evaluation context; caller declarations are not producer attestation. Required.
+            title (str): Human-readable report title. Default: 'HYSo unified analysis'.
+            risks (_typing.Sequence[str]): Known limitations/risks attached to the proposal. Default: ().
+
+        Returns:
+            A UnifiedAnalysisReport describing supplied evidence, coverage, missing features and limitations.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.analyze(context=context)
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         from .report import UnifiedAnalysisReport
         return UnifiedAnalysisReport.build(self,context=context,title=title,risks=risks)

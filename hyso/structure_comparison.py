@@ -3,6 +3,7 @@
 Only recorded metadata is read. No model objects, introspection, workloads,
 checkpoint/state identities, execution graph or performance verdicts.
 """
+import typing as _typing
 from dataclasses import dataclass
 from decimal import Decimal, localcontext
 import json
@@ -465,10 +466,49 @@ def _aview(data):
 
 @dataclass(frozen=True, init=False)
 class ModelStructureComparison:
+    """Inspect observed structural differences between two retained model snapshots.
+
+    Args:
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of ModelStructureComparison with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ModelStructureComparison(data)
+
+    HYSo Guide: comparison.architecture
+    Offline: hyso docs show comparison.architecture --lang en
+    Open: hyso docs open comparison.architecture --lang en
+    """
     __slots__ = ('_payload',)
     _payload: str
 
-    def __init__(self, data):
+    def __init__(self, data: 'dict[str, _typing.Any]') -> 'None':
+        """Initialize ModelStructureComparison with the supplied settings.
+
+        Args:
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ModelStructureComparison(data)
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
         try:
             data = plain(data); raw = canonical(data)
             if len(raw.encode('utf-8')) > _MAX_BYTES: raise ModelStructureComparisonError('comparison_byte_limit')
@@ -482,74 +522,486 @@ class ModelStructureComparison:
             raise ModelStructureComparisonError('invalid_structure_comparison') from exc
         object.__setattr__(self, '_payload', raw)
 
-    def to_dict(self): return json.loads(self._payload)
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return json.loads(self._payload)
     @property
-    def content_sha256(self): return self.to_dict()['content_sha256']
+    def content_sha256(self) -> '_typing.Any':
+        """Return the canonical content digest of this retained record.
+
+        Returns:
+            The canonical SHA-256 digest string of this retained content.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.content_sha256
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return self.to_dict()['content_sha256']
     @property
-    def baseline(self): return StructureSnapshotRef(**self.to_dict()['baseline'])
+    def baseline(self) -> '_typing.Any':
+        """Read the retained baseline from this ModelStructureComparison record.
+
+        Returns:
+            The retained baseline value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.baseline
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return StructureSnapshotRef(**self.to_dict()['baseline'])
     @property
-    def candidate(self): return StructureSnapshotRef(**self.to_dict()['candidate'])
+    def candidate(self) -> '_typing.Any':
+        """Read the retained candidate from this ModelStructureComparison record.
+
+        Returns:
+            The retained candidate value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.candidate
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return StructureSnapshotRef(**self.to_dict()['candidate'])
     @property
-    def summary_differences(self): return tuple(_nview(d) for d in self.to_dict()['summary_differences'])
+    def summary_differences(self) -> '_typing.Any':
+        """Read the retained summary differences from this ModelStructureComparison record.
+
+        Returns:
+            The retained summary differences value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.summary_differences
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return tuple(_nview(d) for d in self.to_dict()['summary_differences'])
     @property
-    def module_type_differences(self):
+    def module_type_differences(self) -> '_typing.Any':
+        """Read the retained module type differences from this ModelStructureComparison record.
+
+        Returns:
+            The retained module type differences value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.module_type_differences
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
         return tuple(StructureDistributionDifference(v['name'], _nview(v['unique_modules']), _nview(v['registered_paths']))
                      for v in self.to_dict()['module_type_differences'])
     @property
-    def category_differences(self):
+    def category_differences(self) -> '_typing.Any':
+        """Read the retained category differences from this ModelStructureComparison record.
+
+        Returns:
+            The retained category differences value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.category_differences
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
         return tuple(StructureDistributionDifference(v['name'], _nview(v['unique_modules']), _nview(v['registered_paths']))
                      for v in self.to_dict()['category_differences'])
     @property
-    def dtype_differences(self):
+    def dtype_differences(self) -> '_typing.Any':
+        """Read the retained dtype differences from this ModelStructureComparison record.
+
+        Returns:
+            The retained dtype differences value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.dtype_differences
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
         return tuple(StructureDtypeDifference(v['kind'], v['dtype'], _nview(v['tensor_count']), _nview(v['elements']), _nview(v['logical_bytes']))
                      for v in self.to_dict()['dtype_differences'])
     @property
-    def added_paths(self): return tuple(self.to_dict()['added_paths'])
+    def added_paths(self) -> '_typing.Any':
+        """Read the retained added paths from this ModelStructureComparison record.
+
+        Returns:
+            The retained added paths value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.added_paths
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return tuple(self.to_dict()['added_paths'])
     @property
-    def removed_paths(self): return tuple(self.to_dict()['removed_paths'])
+    def removed_paths(self) -> '_typing.Any':
+        """Read the retained removed paths from this ModelStructureComparison record.
+
+        Returns:
+            The retained removed paths value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.removed_paths
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return tuple(self.to_dict()['removed_paths'])
     @property
-    def changed_paths(self):
+    def changed_paths(self) -> '_typing.Any':
+        """Read the retained changed paths from this ModelStructureComparison record.
+
+        Returns:
+            The retained changed paths value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.changed_paths
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
         return tuple(StructurePathDifference(v['path'], v['baseline_type'], v['candidate_type'],
             tuple(_fview(f) for f in v['metadata_changes']), tuple(_fview(f) for f in v['configuration_changes'])) for v in self.to_dict()['changed_paths'])
     @property
-    def tensor_differences(self):
+    def tensor_differences(self) -> '_typing.Any':
+        """Read the retained tensor differences from this ModelStructureComparison record.
+
+        Returns:
+            The retained tensor differences value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.tensor_differences
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
         return tuple(StructureTensorDifference(v['owner_path'], v['kind'], v['name'], tuple(_fview(f) for f in v['changes']))
                      for v in self.to_dict()['tensor_differences'])
     @property
-    def alias_differences(self): return tuple(_aview(v) for v in self.to_dict()['alias_differences'])
+    def alias_differences(self) -> '_typing.Any':
+        """Read the retained alias differences from this ModelStructureComparison record.
+
+        Returns:
+            The retained alias differences value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.alias_differences
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return tuple(_aview(v) for v in self.to_dict()['alias_differences'])
     @property
-    def evidence_gaps(self):
+    def evidence_gaps(self) -> '_typing.Any':
+        """Read the retained evidence gaps from this ModelStructureComparison record.
+
+        Returns:
+            The retained evidence gaps value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.evidence_gaps
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
         return tuple(StructureEvidenceGap(**{k: _freeze(x) for k, x in v.items()}) for v in self.to_dict()['evidence_gaps'])
     @property
-    def provenance_differences(self): return tuple(_fview(v) for v in self.to_dict()['provenance_differences'])
-    @property
-    def coverage(self): return self.to_dict()['coverage']
-    @property
-    def has_observed_changes(self): return self.to_dict()['has_observed_changes']
-    @property
-    def limitations(self): return tuple(self.to_dict()['limitations'])
-    @property
-    def policy(self): return StructureComparisonPolicy(**self.to_dict()['policy'])
-    @property
-    def baseline_snapshot(self): return ModelStructureSnapshot(self.to_dict()['source_snapshots']['baseline'])
-    @property
-    def candidate_snapshot(self): return ModelStructureSnapshot(self.to_dict()['source_snapshots']['candidate'])
+    def provenance_differences(self) -> '_typing.Any':
+        """Read the retained provenance differences from this ModelStructureComparison record.
 
-    def to_json(self, path=None):
+        Returns:
+            The retained provenance differences value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.provenance_differences
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return tuple(_fview(v) for v in self.to_dict()['provenance_differences'])
+    @property
+    def coverage(self) -> '_typing.Any':
+        """Read the retained coverage from this ModelStructureComparison record.
+
+        Returns:
+            The retained coverage value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.coverage
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return self.to_dict()['coverage']
+    @property
+    def has_observed_changes(self) -> '_typing.Any':
+        """Report whether the retained structural comparison contains observed differences.
+
+        Returns:
+            True when observed structural differences exist, otherwise False; missing evidence is separate.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.has_observed_changes
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return self.to_dict()['has_observed_changes']
+    @property
+    def limitations(self) -> '_typing.Any':
+        """Read the retained limitations from this ModelStructureComparison record.
+
+        Returns:
+            The retained limitations value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.limitations
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return tuple(self.to_dict()['limitations'])
+    @property
+    def policy(self) -> '_typing.Any':
+        """Read the retained policy from this ModelStructureComparison record.
+
+        Returns:
+            The retained policy value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.policy
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return StructureComparisonPolicy(**self.to_dict()['policy'])
+    @property
+    def baseline_snapshot(self) -> '_typing.Any':
+        """Read the retained baseline snapshot from this ModelStructureComparison record.
+
+        Returns:
+            The retained baseline snapshot value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.baseline_snapshot
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return ModelStructureSnapshot(self.to_dict()['source_snapshots']['baseline'])
+    @property
+    def candidate_snapshot(self) -> '_typing.Any':
+        """Read the retained candidate snapshot from this ModelStructureComparison record.
+
+        Returns:
+            The retained candidate snapshot value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.candidate_snapshot
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return ModelStructureSnapshot(self.to_dict()['source_snapshots']['candidate'])
+
+    def to_json(self, path: '_typing.Any'=None) -> '_typing.Any':
+        """Serialize this object using its native JSON format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+
+        Returns:
+            A JSON string when path is None, otherwise None after writing the file.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json()
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
         if path is not None: export(path, self._payload + '\n')
         return self._payload + '\n'
 
     @classmethod
-    def from_json(cls, path):
+    def from_json(cls, path: '_typing.Any') -> 'ModelStructureComparison':
+        """Read and validate this type from a local JSON file.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+
+        Returns:
+            A validated ModelStructureComparison instance reconstructed from the supplied data.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ModelStructureComparison.from_json(path)
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
         data, _, _ = read_json(path, max_bytes=_MAX_BYTES + 1)
         return cls(data)
 
 
-def compare_model_structures(baseline, candidate, *, max_entries=_MAX_ENTRIES, max_bytes=_MAX_BYTES):
+def compare_model_structures(baseline: '_typing.Any', candidate: '_typing.Any', *, max_entries: '_typing.Any'=_MAX_ENTRIES, max_bytes: '_typing.Any'=_MAX_BYTES) -> '_typing.Any':
     """Compare validated snapshots only; no live model or introspection path.
 
     Matching is literal registered path/name. Limits may lower the hard bounds;
     exceeding them raises instead of returning an incomplete/truncated result.
+
+    Args:
+        baseline (_typing.Any): Validated retained baseline source or predictions required by this comparison. Required.
+        candidate (_typing.Any): Validated retained candidate source or predictions required by this comparison. Required.
+        max_entries (_typing.Any): Upper bound on entries retained/accepted by this operation. Default: _MAX_ENTRIES.
+        max_bytes (_typing.Any): Maximum accepted or retained byte count. Default: _MAX_BYTES.
+
+    Returns:
+        The retained compare model structures value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        compare_model_structures(baseline, candidate)
+
+    HYSo Guide: comparison.architecture
+    Offline: hyso docs show comparison.architecture --lang en
+    Open: hyso docs open comparison.architecture --lang en
     """
     if type(baseline) is not ModelStructureSnapshot or type(candidate) is not ModelStructureSnapshot:
         raise ModelStructureComparisonError('validated_structure_snapshots_required')

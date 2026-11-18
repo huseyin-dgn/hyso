@@ -3,6 +3,7 @@
 Public torch operators, root MIT license. Geometry never allocates tensors.
 """
 from __future__ import annotations
+import typing as _typing
 import math
 import torch
 from torch import nn
@@ -75,13 +76,78 @@ def shape(name,p,source,error):
 
 
 class Resize(nn.Module):
-    """NCHW interpolation with exactly one target and explicit floor scale geometry."""
-    def __init__(self,output_size=None,scale_factor=None,mode='nearest',align_corners=None):
+    """NCHW interpolation with exactly one target and explicit floor scale geometry.
+
+    Args:
+        output_size (_typing.Any): Explicit target spatial size; resizing cannot restore lost detail. Default: None.
+        scale_factor (_typing.Any): Explicit positive resize scale, mutually exclusive with output_size where required. Default: None.
+        mode (str): Supported interpolation or operation mode of this API. Default: 'nearest'.
+        align_corners (_typing.Any): Supported interpolation alignment choice; only valid for compatible modes. Default: None.
+
+    Returns:
+        An instance of Resize with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        Resize()
+
+    HYSo Guide: components.sampling
+    Offline: hyso docs show components.sampling --lang en
+    Open: hyso docs open components.sampling --lang en
+    """
+    def __init__(self,output_size: 'int | tuple[int, int] | list[int] | None'=None,scale_factor: '_typing.Any'=None,mode: 'str'='nearest',align_corners: '_typing.Any'=None) -> 'None':
+        """Initialize Resize with the supplied settings.
+
+        Args:
+            output_size (int | tuple[int, int] | list[int] | None): Explicit target spatial size; resizing cannot restore lost detail. Default: None.
+            scale_factor (_typing.Any): Explicit positive resize scale, mutually exclusive with output_size where required. Default: None.
+            mode (str): Supported interpolation or operation mode of this API. Default: 'nearest'.
+            align_corners (_typing.Any): Supported interpolation alignment choice; only valid for compatible modes. Default: None.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            Resize()
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
         p=_parameters('resize',output_size=output_size,scale_factor=scale_factor,mode=mode,align_corners=align_corners)
         super().__init__()
         self.config=p
 
-    def forward(self,x):
+    def forward(self,x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
         from .registry import ModelConfigError
         _input(x,x.shape[1] if isinstance(x,torch.Tensor) and x.ndim==4 else None)
         shape('resize',self.config,tuple(x.shape[1:]),ModelConfigError)
@@ -91,25 +157,143 @@ class Resize(nn.Module):
 
 
 class Permute(nn.Module):
-    """Keep N/C axes fixed and optionally exchange spatial H/W axes."""
-    def __init__(self,dims=(0,1,3,2)):
+    """Keep N/C axes fixed and optionally exchange spatial H/W axes.
+
+    Args:
+        dims (_typing.Sequence[int]): Explicit axis permutation/order. Default: (0, 1, 3, 2).
+
+    Returns:
+        An instance of Permute with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        Permute()
+
+    HYSo Guide: components.sampling
+    Offline: hyso docs show components.sampling --lang en
+    Open: hyso docs open components.sampling --lang en
+    """
+    def __init__(self,dims: '_typing.Sequence[int]'=(0,1,3,2)) -> 'None':
+        """Initialize Permute with the supplied settings.
+
+        Args:
+            dims (_typing.Sequence[int]): dims Default: (0, 1, 3, 2).
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            Permute()
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
         p=_parameters('permute',dims=dims)
         super().__init__()
         self.dims=tuple(p['dims'])
 
-    def forward(self,x):
+    def forward(self,x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
         _input(x,x.shape[1] if isinstance(x,torch.Tensor) and x.ndim==4 else None)
         return x.permute(self.dims)
 
 
 class Reshape(nn.Module):
-    """Reinterpret each sample as explicit positive CHW, preserving batch and elements."""
-    def __init__(self,shape):
+    """Reinterpret each sample as explicit positive CHW, preserving batch and elements.
+
+    Args:
+        shape (_typing.Any): Explicit target tensor shape; element-count and batch-preservation rules apply. Required.
+
+    Returns:
+        An instance of Reshape with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        Reshape(shape)
+
+    HYSo Guide: components.sampling
+    Offline: hyso docs show components.sampling --lang en
+    Open: hyso docs open components.sampling --lang en
+    """
+    def __init__(self,shape: '_typing.Any') -> 'None':
+        """Initialize Reshape with the supplied settings.
+
+        Args:
+            shape (_typing.Any): Explicit target tensor shape; element-count and batch-preservation rules apply. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            Reshape(shape)
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
         p=_parameters('reshape',shape=shape)
         super().__init__()
         self.shape=tuple(p['shape'])
 
-    def forward(self,x):
+    def forward(self,x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
         from .registry import ModelConfigError
         _input(x,x.shape[1] if isinstance(x,torch.Tensor) and x.ndim==4 else None)
         shape('reshape',dict(shape=self.shape),tuple(x.shape[1:]),ModelConfigError)
@@ -117,11 +301,64 @@ class Reshape(nn.Module):
 
 
 class Flatten(nn.Flatten):
-    """Flatten CHW to one feature axis, preserving symbolic N."""
-    def __init__(self):
+    """Flatten CHW to one feature axis, preserving symbolic N.
+
+    Returns:
+        An instance of Flatten with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        Flatten()
+
+    HYSo Guide: components.sampling
+    Offline: hyso docs show components.sampling --lang en
+    Open: hyso docs open components.sampling --lang en
+    """
+    def __init__(self) -> 'None':
+        """Initialize Flatten with the supplied settings.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            Flatten()
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
         super().__init__(start_dim=1)
 
-    def forward(self,x):
+    def forward(self,x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
         _input(x,x.shape[1] if isinstance(x,torch.Tensor) and x.ndim==4 else None)
         return super().forward(x)
 
@@ -141,8 +378,48 @@ def head_geometry(name,p,source,error):
 
 
 class PredictionHead(nn.Module):
+    """Project pooled features to the declared output width; training task support is separate.
+
+    Args:
+        **params (_typing.Any): Component keyword parameters; registered defaults apply to omitted optional keys.
+
+    Returns:
+        An instance of PredictionHead with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        PredictionHead()
+
+    HYSo Guide: components.heads
+    Offline: hyso docs show components.heads --lang en
+    Open: hyso docs open components.heads --lang en
+    """
     registry_name='classification_head'
-    def __init__(self,**params):
+    def __init__(self,**params: '_typing.Any') -> 'None':
+        """Initialize PredictionHead with the supplied settings.
+
+        Args:
+            **params (_typing.Any): Component keyword parameters; registered defaults apply to omitted optional keys.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            PredictionHead()
+
+        HYSo Guide: components.heads
+        Offline: hyso docs show components.heads --lang en
+        Open: hyso docs open components.heads --lang en
+        """
         p=_parameters(self.registry_name,**params)
         super().__init__()
         self.config=p
@@ -151,7 +428,27 @@ class PredictionHead(nn.Module):
         self.dropout=nn.Dropout(p.get('dropout',0.))
         self.linear=nn.Linear(p['in_features'],outputs)
 
-    def forward(self,x):
+    def forward(self,x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.heads
+        Offline: hyso docs show components.heads --lang en
+        Open: hyso docs open components.heads --lang en
+        """
         from .registry import ModelConfigError
         if not isinstance(x,torch.Tensor) or x.ndim not in (2,4) or min(x.shape)<1 or not x.is_floating_point():
             raise ModelConfigError('prediction head requires nonempty floating NCHW or NF',code='INVALID_OUTPUT_HEAD',
@@ -165,10 +462,44 @@ class PredictionHead(nn.Module):
 
 
 class RegressionHead(PredictionHead):
+    """Produce numeric predictions; the public Trainer remains classification-only.
+
+    Returns:
+        An instance of RegressionHead with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        RegressionHead()
+
+    HYSo Guide: components.heads
+    Offline: hyso docs show components.heads --lang en
+    Open: hyso docs open components.heads --lang en
+    """
     registry_name='regression_head'
 
 
 class EmbeddingHead(PredictionHead):
+    """Produce feature embeddings; the public Trainer does not infer an embedding objective.
+
+    Returns:
+        An instance of EmbeddingHead with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        EmbeddingHead()
+
+    HYSo Guide: components.heads
+    Offline: hyso docs show components.heads --lang en
+    Open: hyso docs open components.heads --lang en
+    """
     registry_name='embedding_head'
 
 

@@ -4,6 +4,7 @@ No ready-model implementation or development-only model module is imported.
 Plans are shared by construction, geometry and exact parameter accounting.
 """
 from __future__ import annotations
+import typing as _typing
 
 import math
 import torch
@@ -21,13 +22,72 @@ NEW_NAMES = RESIDUALS | ATTENTION | REGULARIZATION
 
 
 class DropPath(nn.Module):
-    """Sample-wise tensor masking, x*Bernoulli(1-p)/(1-p) in train, identity in eval."""
-    def __init__(self, p=0.):
+    """Sample-wise tensor masking, x*Bernoulli(1-p)/(1-p) in train, identity in eval.
+
+    Args:
+        p (float): Probability of dropping an element/path during training. Default: 0.0.
+
+    Returns:
+        An instance of DropPath with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        DropPath()
+
+    HYSo Guide: components.regularization
+    Offline: hyso docs show components.regularization --lang en
+    Open: hyso docs open components.regularization --lang en
+    """
+    def __init__(self, p: 'float'=0.) -> 'None':
+        """Initialize DropPath with the supplied settings.
+
+        Args:
+            p (float): p Default: 0.0.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            DropPath()
+
+        HYSo Guide: components.regularization
+        Offline: hyso docs show components.regularization --lang en
+        Open: hyso docs open components.regularization --lang en
+        """
         p = _parameters('drop_path', p=p)['p']
         super().__init__()
         self.p = p
 
-    def forward(self, x):
+    def forward(self, x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.regularization
+        Offline: hyso docs show components.regularization --lang en
+        Open: hyso docs open components.regularization --lang en
+        """
         _input(x, x.shape[1] if isinstance(x, torch.Tensor) and x.ndim == 4 else None)
         if not self.training or self.p == 0:
             return x
@@ -36,13 +96,73 @@ class DropPath(nn.Module):
 
 
 class GaussianNoise(nn.Module):
-    """Add independent zero-mean Gaussian noise in train, identity in eval."""
-    def __init__(self, std=.1):
+    """Add independent zero-mean Gaussian noise in train, identity in eval.
+
+    Args:
+        std (float): Standard deviation of sampled noise. Default: 0.1.
+
+    Returns:
+        An instance of GaussianNoise with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        GaussianNoise()
+
+    HYSo Guide: components.regularization
+    Offline: hyso docs show components.regularization --lang en
+    Open: hyso docs open components.regularization --lang en
+    """
+    def __init__(self, std: 'float'=.1) -> 'None':
+        """Initialize GaussianNoise with the supplied settings.
+
+        Args:
+            std (float): std Default: 0.1.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            GaussianNoise()
+
+        HYSo Guide: components.regularization
+        Offline: hyso docs show components.regularization --lang en
+        Open: hyso docs open components.regularization --lang en
+        """
         std = _parameters('gaussian_noise', std=std)['std']
         super().__init__()
         self.std = std
 
-    def forward(self, x, *, generator=None):
+    def forward(self, x: '_typing.Any', *, generator: '_typing.Any'=None) -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            generator (_typing.Any): Optional caller-owned torch.Generator. Default: None.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.regularization
+        Offline: hyso docs show components.regularization --lang en
+        Open: hyso docs open components.regularization --lang en
+        """
         _input(x, x.shape[1] if isinstance(x, torch.Tensor) and x.ndim == 4 else None)
         if not self.training or self.std == 0:
             return x
@@ -50,29 +170,151 @@ class GaussianNoise(nn.Module):
 
 
 class SpatialAttention(nn.Module):
-    """Channel mean/max descriptors -> odd spatial convolution -> sigmoid gate."""
-    def __init__(self, channels, kernel_size=7):
+    """Channel mean/max descriptors -> odd spatial convolution -> sigmoid gate.
+
+    Args:
+        channels (_typing.Any): Feature-channel count required by this block. Required.
+        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 7.
+
+    Returns:
+        An instance of SpatialAttention with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        SpatialAttention(channels)
+
+    HYSo Guide: components.attention
+    Offline: hyso docs show components.attention --lang en
+    Open: hyso docs open components.attention --lang en
+    """
+    def __init__(self, channels: 'int', kernel_size: 'int'=7) -> 'None':
+        """Initialize SpatialAttention with the supplied settings.
+
+        Args:
+            channels (int): Feature-channel count required by this block. Required.
+            kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 7.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            SpatialAttention(channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
         p = _parameters('spatial_attention', channels=channels, kernel_size=kernel_size)
         super().__init__()
         self.channels = channels
         self.conv = nn.Conv2d(2,1,p['kernel_size'],padding=p['kernel_size']//2,bias=False)
 
-    def forward(self, x):
+    def forward(self, x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
         _input(x, self.channels)
         descriptor = torch.cat((x.mean(1,keepdim=True),x.amax(1,keepdim=True)),dim=1)
         return x*torch.sigmoid(self.conv(descriptor))
 
 
 class ChannelAttention(nn.Module):
-    """Shared 1x1 MLP of spatial mean/max descriptors, summed sigmoid channel gate."""
-    def __init__(self, channels, reduction=8):
+    """Shared 1x1 MLP of spatial mean/max descriptors, summed sigmoid channel gate.
+
+    Args:
+        channels (_typing.Any): Feature-channel count required by this block. Required.
+        reduction (int): Channel reduction ratio used by the attention bottleneck. Default: 8.
+
+    Returns:
+        An instance of ChannelAttention with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ChannelAttention(channels)
+
+    HYSo Guide: components.attention
+    Offline: hyso docs show components.attention --lang en
+    Open: hyso docs open components.attention --lang en
+    """
+    def __init__(self, channels: 'int', reduction: 'int'=8) -> 'None':
+        """Initialize ChannelAttention with the supplied settings.
+
+        Args:
+            channels (int): Feature-channel count required by this block. Required.
+            reduction (int): Channel reduction ratio used by the attention bottleneck. Default: 8.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ChannelAttention(channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
         p = _parameters('channel_attention', channels=channels, reduction=reduction)
         super().__init__()
         self.channels = channels
         hidden = max(1, channels//p['reduction'])
         self.mlp = nn.Sequential(nn.Conv2d(channels,hidden,1),nn.ReLU(),nn.Conv2d(hidden,channels,1))
 
-    def forward(self, x):
+    def forward(self, x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
         _input(x, self.channels)
         gate = self.mlp(x.mean((2,3),keepdim=True))+self.mlp(x.amax((2,3),keepdim=True))
         return x*torch.sigmoid(gate)
@@ -92,10 +334,49 @@ def attention_budget(name, p, shape, batch_size, error):
 
 
 class SpatialSelfAttention(nn.Module):
-    """NCHW -> H*W tokens -> scaled dot-product attention -> projected NCHW."""
+    """NCHW -> H*W tokens -> scaled dot-product attention -> projected NCHW.
+
+    Args:
+        **params (_typing.Any): Component keyword parameters; registered defaults apply to omitted optional keys.
+
+    Returns:
+        An instance of SpatialSelfAttention with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        SpatialSelfAttention()
+
+    HYSo Guide: components.attention
+    Offline: hyso docs show components.attention --lang en
+    Open: hyso docs open components.attention --lang en
+    """
     registry_name = 'spatial_self_attention'
 
-    def __init__(self, **params):
+    def __init__(self, **params: '_typing.Any') -> 'None':
+        """Initialize SpatialSelfAttention with the supplied settings.
+
+        Args:
+            **params (_typing.Any): Component keyword parameters; registered defaults apply to omitted optional keys.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            SpatialSelfAttention()
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
         p = _parameters(self.registry_name, **params)
         super().__init__()
         self.channels = p['channels']
@@ -106,7 +387,27 @@ class SpatialSelfAttention(nn.Module):
         self.projection = nn.Conv2d(self.embedding_dim,self.channels,1)
         self.dropout = nn.Dropout(p['dropout'])
 
-    def forward(self, x):
+    def forward(self, x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
         from .registry import ModelConfigError
         _input(x, self.channels)
         n,c,h,w = x.shape
@@ -120,7 +421,23 @@ class SpatialSelfAttention(nn.Module):
 
 
 class MultiHeadSpatialAttention(SpatialSelfAttention):
-    """Independent spatial attention heads with an explicit embedding projection."""
+    """Independent spatial attention heads with an explicit embedding projection.
+
+    Returns:
+        An instance of MultiHeadSpatialAttention with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        MultiHeadSpatialAttention()
+
+    HYSo Guide: components.attention
+    Offline: hyso docs show components.attention --lang en
+    Open: hyso docs open components.attention --lang en
+    """
     registry_name = 'multihead_spatial_attention'
 
 
@@ -158,10 +475,49 @@ def _normalization(name, channels):
 
 
 class AdvancedResidual(nn.Module):
-    """Explicit main branch plus raw-input identity or 1x1 projection shortcut."""
+    """Explicit main branch plus raw-input identity or 1x1 projection shortcut.
+
+    Args:
+        **params (_typing.Any): Component keyword parameters; registered defaults apply to omitted optional keys.
+
+    Returns:
+        An instance of AdvancedResidual with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        AdvancedResidual()
+
+    HYSo Guide: components.residual
+    Offline: hyso docs show components.residual --lang en
+    Open: hyso docs open components.residual --lang en
+    """
     registry_name = 'bottleneck_residual'
 
-    def __init__(self, **params):
+    def __init__(self, **params: '_typing.Any') -> 'None':
+        """Initialize AdvancedResidual with the supplied settings.
+
+        Args:
+            **params (_typing.Any): Component keyword parameters; registered defaults apply to omitted optional keys.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            AdvancedResidual()
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
         p = _parameters(self.registry_name, **params)
         super().__init__()
         self.in_channels = p['in_channels']
@@ -182,7 +538,27 @@ class AdvancedResidual(nn.Module):
         if p.get('learnable_gate',False): self.gate = nn.Parameter(torch.tensor(float(gate)))
         else: self.gate = float(gate)
 
-    def forward(self, x):
+    def forward(self, x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
         from .registry import ModelConfigError
         _input(x,self.in_channels)
         try:
@@ -199,22 +575,107 @@ class AdvancedResidual(nn.Module):
 
 
 class PreActivationResidual(AdvancedResidual):
+    """Apply normalization and activation before the residual convolutions.
+
+    Returns:
+        An instance of PreActivationResidual with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        PreActivationResidual()
+
+    HYSo Guide: components.residual
+    Offline: hyso docs show components.residual --lang en
+    Open: hyso docs open components.residual --lang en
+    """
     registry_name = 'preactivation_residual'
 
 
 class WideResidual(AdvancedResidual):
+    """Use a wider residual feature path with the declared channel and stride settings.
+
+    Returns:
+        An instance of WideResidual with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        WideResidual()
+
+    HYSo Guide: components.residual
+    Offline: hyso docs show components.residual --lang en
+    Open: hyso docs open components.residual --lang en
+    """
     registry_name = 'wide_residual_block'
 
 
 class GroupedBottleneck(AdvancedResidual):
+    """Apply a bottleneck residual block with grouped convolutions.
+
+    Returns:
+        An instance of GroupedBottleneck with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        GroupedBottleneck()
+
+    HYSo Guide: components.residual
+    Offline: hyso docs show components.residual --lang en
+    Open: hyso docs open components.residual --lang en
+    """
     registry_name = 'grouped_bottleneck'
 
 
 class InvertedBottleneck(AdvancedResidual):
+    """Expand channels, apply depthwise spatial filtering and project to the output width.
+
+    Returns:
+        An instance of InvertedBottleneck with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        InvertedBottleneck()
+
+    HYSo Guide: components.residual
+    Offline: hyso docs show components.residual --lang en
+    Open: hyso docs open components.residual --lang en
+    """
     registry_name = 'inverted_bottleneck'
 
 
 class GatedResidual(AdvancedResidual):
+    """Scale the residual branch through its trainable gate before combining features.
+
+    Returns:
+        An instance of GatedResidual with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        GatedResidual()
+
+    HYSo Guide: components.residual
+    Offline: hyso docs show components.residual --lang en
+    Open: hyso docs open components.residual --lang en
+    """
     registry_name = 'gated_residual'
 
 

@@ -4,6 +4,7 @@ Host scopes include instrumentation. CUDA intervals belong only to the stream
 selected on entry; hidden streams, kernel attribution and stage breakdown are
 unsupported. No file/database access occurs in the recorder.
 """
+import typing as _typing
 from dataclasses import asdict, dataclass
 import json
 import math
@@ -22,6 +23,25 @@ class TrainingTimingProtocol:
 
     warmup_epochs labels real initial epochs without discarding their ledger.
     max_records is a hard segment limit, not a lossy sampling policy.
+
+    Args:
+        max_records (int): Upper bound on records retained/accepted by this operation. Default: 100000.
+        event_buffer (int): Bounded observer buffer. Default: 128.
+        warmup_epochs (int): Epochs excluded from the measured training window. Default: 0.
+
+    Returns:
+        An instance of TrainingTimingProtocol with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        TrainingTimingProtocol()
+
+    HYSo Guide: analysis.p19
+    Offline: hyso docs show analysis.p19 --lang en
+    Open: hyso docs open analysis.p19 --lang en
     """
     max_records: int = 100000
     event_buffer: int = 128
@@ -37,7 +57,23 @@ class TrainingTimingProtocol:
 
 
 class TrainingTimingError(RuntimeError):
-    """Observation failed. Training may have advanced; never retry implicitly."""
+    """Observation failed. Training may have advanced; never retry implicitly.
+
+    Returns:
+        An instance of TrainingTimingError with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        TrainingTimingError()
+
+    HYSo Guide: analysis.p19
+    Offline: hyso docs show analysis.p19 --lang en
+    Open: hyso docs open analysis.p19 --lang en
+    """
 
 
 def _type(value):
@@ -301,16 +337,70 @@ def _validate(data):
 
 @dataclass(frozen=True, init=False)
 class TrainingPerformanceResult:
-    """Immutable JSON-backed P19 evidence; exports revalidate against tampering."""
+    """Immutable JSON-backed P19 evidence; exports revalidate against tampering.
+
+    Args:
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of TrainingPerformanceResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        TrainingPerformanceResult(data)
+
+    HYSo Guide: analysis.p19
+    Offline: hyso docs show analysis.p19 --lang en
+    Open: hyso docs open analysis.p19 --lang en
+    """
     __slots__ = ("_payload",)
     _payload: str
 
-    def __init__(self, data):
+    def __init__(self, data: 'dict[str, _typing.Any]') -> 'None':
+        """Initialize TrainingPerformanceResult with the supplied settings.
+
+        Args:
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            TrainingPerformanceResult(data)
+
+        HYSo Guide: analysis.p19
+        Offline: hyso docs show analysis.p19 --lang en
+        Open: hyso docs open analysis.p19 --lang en
+        """
         copied = _plain(data)
         _validate(copied)
         object.__setattr__(self, "_payload", json.dumps(copied, allow_nan=False, separators=(",", ":")))
 
-    def to_dict(self):
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analysis.p19
+        Offline: hyso docs show analysis.p19 --lang en
+        Open: hyso docs open analysis.p19 --lang en
+        """
         return json.loads(self._payload)
 
     def _export_data(self):
@@ -318,12 +408,53 @@ class TrainingPerformanceResult:
         _validate(data)
         return data
 
-    def to_json(self, path, *, overwrite=False):
+    def to_json(self, path: '_typing.Any', *, overwrite: 'bool'=False) -> 'None':
+        """Serialize this object using its native JSON format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json(path)
+
+        HYSo Guide: analysis.p19
+        Offline: hyso docs show analysis.p19 --lang en
+        Open: hyso docs open analysis.p19 --lang en
+        """
         _write_export(path, json.dumps(self._export_data(), ensure_ascii=False,
                                       sort_keys=True, indent=2, allow_nan=False) + "\n", overwrite)
 
-    def to_csv(self, path, *, overwrite=False):
-        """Raw observations; canonical JSON additionally contains epoch/provenance."""
+    def to_csv(self, path: '_typing.Any', *, overwrite: 'bool'=False) -> 'None':
+        """Raw observations; canonical JSON additionally contains epoch/provenance.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_csv(path)
+
+        HYSo Guide: analysis.p19
+        Offline: hyso docs show analysis.p19 --lang en
+        Open: hyso docs open analysis.p19 --lang en
+        """
         data = self._export_data()
         columns = ["segment_id", "epoch_id", "kind", "microbatch_id", "window_id", "attempt_id",
                    "samples", "start_ns", "end_ns", "host_ms", "cuda_event_ms", "applied", "skipped", "applied_update_id"]
@@ -336,13 +467,37 @@ def _counters(trainer):
                 applied=trainer.update_count, ema_updates=trainer.ema_update_count)
 
 
-def measure_training(trainer, train_loader, val_loader=None, *, epochs=5, protocol=None,
-                     save_last_to=None, resume_from=None):
+def measure_training(trainer: '_typing.Any', train_loader: '_typing.Any', val_loader: '_typing.Any'=None, *, epochs: 'int'=5, protocol: '_typing.Any'=None,
+                     save_last_to: '_typing.Any'=None, resume_from: '_typing.Any'=None) -> 'TrainingPerformanceResult':
     """Run the caller's actual fit once and return P19 timing (history on Trainer).
 
     Training changes model/state/RNG normally. Tracking/export is explicit and
     subsequent; tracking errors never trigger a rerun. Checkpoint I/O, restore,
     train_begin/train_end callbacks and best-weight finalization are excluded.
+
+    Args:
+        trainer (_typing.Any): Caller-owned standard Trainer; a measurement may execute its fit lifecycle only when called explicitly. Required.
+        train_loader (_typing.Any): Finite training loader; batches must follow the task/model input contract. Required.
+        val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
+        epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after resume. Default: 5.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: None.
+        save_last_to (_typing.Any): Explicit checkpoint destination; writing occurs only during the requested fit. Default: None.
+        resume_from (_typing.Any): Existing compatible checkpoint; model/data/settings and total budget must match. Default: None.
+
+    Returns:
+        The retained measure training value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        measure_training(trainer, train_loader)
+
+    HYSo Guide: analysis.p19
+    Offline: hyso docs show analysis.p19 --lang en
+    Open: hyso docs open analysis.p19 --lang en
     """
     return _measure_training(trainer, train_loader, val_loader, epochs=epochs, protocol=protocol,
                              save_last_to=save_last_to, resume_from=resume_from)

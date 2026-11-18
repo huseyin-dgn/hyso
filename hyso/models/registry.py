@@ -122,7 +122,31 @@ def _plain(value: Any, depth: int = 0) -> Any:
 
 @dataclass(frozen=True)
 class ParameterSpec:
-    """Serializable parameter contract; defaults never contain Python objects."""
+    """Serializable parameter contract; defaults never contain Python objects.
+
+    Args:
+        name (str): Registered component name, exact metric label, or stored entity name in this API. Required.
+        kind (str): Existing run or artifact kind accepted by this operation. Required.
+        description (str): Human-readable specification description. Required.
+        required (bool): Whether callers must provide this parameter. Default: True.
+        default (Any): Native default value for the parameter specification. Default: None.
+        choices (tuple): Closed accepted choices, when applicable. Default: ().
+
+    Returns:
+        An instance of ParameterSpec with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ParameterSpec(name=name, kind=kind, description=description)
+
+    HYSo Guide: models.support
+    Offline: hyso docs show models.support --lang en
+    Open: hyso docs open models.support --lang en
+    """
     name: str
     kind: str
     description: str
@@ -137,6 +161,31 @@ class ComponentSpec:
 
     ``to_dict()`` describes it without serializing executable callables. Category
     filters and parameter contracts support menus/help without building a model.
+
+    Args:
+        name (str): Registered component name, exact metric label, or stored entity name in this API. Required.
+        category (str): Registered component-category filter. Required.
+        description (str): Human-readable specification description. Required.
+        constructor (Callable[..., nn.Module]): Registered constructor identity; the registry remains closed to arbitrary names. Required.
+        parameters (tuple[ParameterSpec, ...]): Immutable supported parameter specifications. Required.
+        input_condition (str): Human-readable accepted input contract. Required.
+        output_condition (str): Human-readable output contract. Required.
+        compatibility (tuple[str, ...]): Declared compatibility limits of this specification. Required.
+
+    Returns:
+        An instance of ComponentSpec with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ComponentSpec(name=name, category=category, description=description, constructor=constructor, parameters=parameters, input_condition=input_condition, output_condition=output_condition, compatibility=compatibility)
+
+    HYSo Guide: models.support
+    Offline: hyso docs show models.support --lang en
+    Open: hyso docs open models.support --lang en
     """
     name: str
     category: str
@@ -148,6 +197,22 @@ class ComponentSpec:
     compatibility: tuple[str, ...]
 
     def to_dict(self) -> dict[str, Any]:
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: models.support
+        Offline: hyso docs show models.support --lang en
+        Open: hyso docs open models.support --lang en
+        """
         params = []
         for p in self.parameters:
             row = dict(name=p.name, kind=p.kind, description=p.description,
@@ -332,9 +397,41 @@ class ModelRegistry:
     have an estimated 10-million-parameter limit for sequential chains; named
     M3 families use a separate 200-million bound. Native normalization retains
     PyTorch's training batch/statistics requirements.
+
+    Returns:
+        An instance of ModelRegistry with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ModelRegistry()
+
+    HYSo Guide: models.support
+    Offline: hyso docs show models.support --lang en
+    Open: hyso docs open models.support --lang en
     """
 
     def __init__(self) -> None:
+        """Initialize ModelRegistry with the supplied settings.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ModelRegistry()
+
+        HYSo Guide: models.support
+        Offline: hyso docs show models.support --lang en
+        Open: hyso docs open models.support --lang en
+        """
         self._entries = MappingProxyType({name: ComponentSpec(
             name, category, description, ctor, params,
             _IO[category][0], _IO[category][1],
@@ -346,20 +443,78 @@ class ModelRegistry:
             for name, category, description, ctor, params in _SPECS})
 
     def list(self, category: str | None = None) -> tuple[ComponentSpec, ...]:
-        """Return immutable metadata in stable catalog order, optionally filtered."""
+        """Return immutable metadata in stable catalog order, optionally filtered.
+
+        Args:
+            category (str | None): Registered component-category filter. Default: None.
+
+        Returns:
+            Existing immutable catalog rows, optionally filtered; no model construction.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.list()
+
+        HYSo Guide: models.support
+        Offline: hyso docs show models.support --lang en
+        Open: hyso docs open models.support --lang en
+        """
         if category is not None and (type(category) is not str or category not in {s.category for s in self._entries.values()}):
             raise ModelConfigError(f'unknown category: {category!r}')
         return tuple(s for s in self._entries.values() if category is None or s.category == category)
 
     def get(self, name: str) -> ComponentSpec:
-        """Return schema, constructor, shape conditions and compatibility notes."""
+        """Return schema, constructor, shape conditions and compatibility notes.
+
+        Args:
+            name (str): Registered component name, exact metric label, or stored entity name in this API. Required.
+
+        Returns:
+            Existing immutable metadata/entity for the exact requested name/identity.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.get(name)
+
+        HYSo Guide: models.support
+        Offline: hyso docs show models.support --lang en
+        Open: hyso docs open models.support --lang en
+        """
         if type(name) is not str or name not in self._entries:
             raise ModelConfigError(f'unknown component: {name!r}', code='UNSUPPORTED_COMPONENT',
                                    expected='registered component name', actual=name)
         return self._entries[name]
 
     def validate(self, name: str, params: dict[str, Any]) -> dict[str, Any]:
-        """Validate plain parameters without constructing a module; return a copy."""
+        """Validate plain parameters without constructing a module; return a copy.
+
+        Args:
+            name (str): Registered component name, exact metric label, or stored entity name in this API. Required.
+            params (dict[str, Any]): Closed registered keyword parameters; inspect ModelRegistry.get(name) for supported kinds/defaults. Required.
+
+        Returns:
+            A detached normalized parameter dictionary, with registered defaults included.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.validate(name, params)
+
+        HYSo Guide: models.support
+        Offline: hyso docs show models.support --lang en
+        Open: hyso docs open models.support --lang en
+        """
         spec = self.get(name)
         p = _plain(params)
         if type(p) is not dict:
@@ -465,6 +620,25 @@ class ModelRegistry:
 
         For a chain with channel/spatial validation and an aggregate size budget,
         use ModelBuilder. Direct construction has original PyTorch allocation cost.
+
+        Args:
+            name (str): Registered component name, exact metric label, or stored entity name in this API. Required.
+            params (Any): Closed registered keyword parameters; inspect ModelRegistry.get(name) for supported kinds/defaults. Required.
+
+        Returns:
+            A fresh CPU nn.Module constructed from the validated registered parameters; no forward is run.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.create(name)
+
+        HYSo Guide: models.support
+        Offline: hyso docs show models.support --lang en
+        Open: hyso docs open models.support --lang en
         """
         p = self.validate(name, params)
         if name == 'residual' and p['attention'] is not None:

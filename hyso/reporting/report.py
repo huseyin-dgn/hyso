@@ -19,7 +19,22 @@ from .catalog import feature_explanations
 
 
 class ReportError(ValueError):
-    """Unsupported source, presentation option, size or serialized report."""
+    """Unsupported source, presentation option, size or serialized report.
+
+    Returns:
+        An instance of ReportError with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ReportError()
+
+    HYSo Guide: reporting.outputs
+    Offline: hyso docs show reporting.outputs --lang en
+    Open: hyso docs open reporting.outputs --lang en
+    """
 
 
 def _text(language, tr, en):
@@ -349,10 +364,47 @@ class PresentationReport:
 
     JSON includes exact source snapshots, native statuses and chart data. Its digest
     checks presentation integrity. Native evidence retains its original authority.
+
+    Args:
+        data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of PresentationReport with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        PresentationReport(data)
+
+    HYSo Guide: reporting.outputs
+    Offline: hyso docs show reporting.outputs --lang en
+    Open: hyso docs open reporting.outputs --lang en
     """
     _payload: str
 
     def __init__(self, data: dict[str, Any]) -> None:
+        """Initialize PresentationReport with the supplied settings.
+
+        Args:
+            data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            PresentationReport(data)
+
+        HYSo Guide: reporting.outputs
+        Offline: hyso docs show reporting.outputs --lang en
+        Open: hyso docs open reporting.outputs --lang en
+        """
         body = plain(data)
         fields = {"format", "schema_version", "presentation_only", "authoritative_evidence", "language", "level",
                   "title", "catalog", "sources", "experiment", "content_sha256"}
@@ -371,10 +423,46 @@ class PresentationReport:
         object.__setattr__(self, "_payload", raw)
 
     def to_dict(self) -> dict[str, Any]:
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: reporting.outputs
+        Offline: hyso docs show reporting.outputs --lang en
+        Open: hyso docs open reporting.outputs --lang en
+        """
         return json.loads(self._payload)
 
     def to_json(self, path: str | Path | None = None, *, overwrite: bool = False) -> str:
-        """Export deterministic presentation JSON with all source and chart data."""
+        """Export deterministic presentation JSON with all source and chart data.
+
+        Args:
+            path (str | Path | None): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            A JSON string when path is None, otherwise None after writing the file.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json()
+
+        HYSo Guide: reporting.outputs
+        Offline: hyso docs show reporting.outputs --lang en
+        Open: hyso docs open reporting.outputs --lang en
+        """
         raw = self._payload + "\n"
         if path is not None:
             export(path, raw, overwrite)
@@ -382,12 +470,51 @@ class PresentationReport:
 
     @classmethod
     def from_json(cls, path: str | Path) -> PresentationReport:
-        """Read bounded presentation JSON and verify its presentation digest."""
+        """Read bounded presentation JSON and verify its presentation digest.
+
+        Args:
+            path (str | Path): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+
+        Returns:
+            A validated PresentationReport instance reconstructed from the supplied data.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            PresentationReport.from_json(path)
+
+        HYSo Guide: reporting.outputs
+        Offline: hyso docs show reporting.outputs --lang en
+        Open: hyso docs open reporting.outputs --lang en
+        """
         data, _, _ = read_json(path, max_bytes=128 * 1024**2)
         return cls(data)
 
     def to_markdown(self, path: str | Path | None = None, *, overwrite: bool = False) -> str:
-        """Render explanatory metric tables and native statuses."""
+        """Render explanatory metric tables and native statuses.
+
+        Args:
+            path (str | Path | None): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            The localized Markdown report string.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_markdown()
+
+        HYSo Guide: reporting.outputs
+        Offline: hyso docs show reporting.outputs --lang en
+        Open: hyso docs open reporting.outputs --lang en
+        """
         from .render import markdown
         raw = markdown(self.to_dict())
         if path is not None:
@@ -395,7 +522,27 @@ class PresentationReport:
         return raw
 
     def to_html(self, path: str | Path | None = None, *, overwrite: bool = False) -> str:
-        """Render a self-contained HTML document with embedded Matplotlib SVG charts."""
+        """Render a self-contained HTML document with embedded Matplotlib SVG charts.
+
+        Args:
+            path (str | Path | None): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            The retained to html value, without recomputing measurements.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_html()
+
+        HYSo Guide: reporting.outputs
+        Offline: hyso docs show reporting.outputs --lang en
+        Open: hyso docs open reporting.outputs --lang en
+        """
         from .render import html_report
         raw = html_report(self.to_dict())
         if path is not None:
@@ -410,6 +557,28 @@ def create_report(*results: Any, language: str = "tr", level: str = "technical",
     EvidenceIndex and AnalysisExecutionResult require an explicit AnalysisContext.
     RecommendationReport adds manual recommendations and native evidence links.
     Levels are beginner, technical, expert. Missing values keep their source statuses.
+
+    Args:
+        language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'tr'.
+        level (str): Existing beginner, technical or expert presentation detail level. Default: 'technical'.
+        title (str): Human-readable report title. Default: 'HYSo'.
+        context (AnalysisContext | None): Explicit analysis/evaluation context; caller declarations are not producer attestation. Default: None.
+        results (Any): Existing typed retained results to present; no workload is rerun. Required.
+
+    Returns:
+        The retained create report value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        create_report()
+
+    HYSo Guide: reporting.outputs
+    Offline: hyso docs show reporting.outputs --lang en
+    Open: hyso docs open reporting.outputs --lang en
     """
     _options(language, level)
     if type(title) is not str or not title.strip() or len(title) > 512:
@@ -452,6 +621,28 @@ def report_experiment(manager: ExperimentManager, experiment_id: str, *, languag
 
     Unavailable/invalid artifacts stay explicit. No database state is changed.
     Retained execution artifacts use the experiment's recorded caller context.
+
+    Args:
+        manager (ExperimentManager): Open ExperimentManager instance used for existing history and artifacts. Required.
+        experiment_id (str): Exact existing experiment identifier. Required.
+        language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'tr'.
+        level (str): Existing beginner, technical or expert presentation detail level. Default: 'technical'.
+        title (str): Human-readable report title. Default: 'HYSo'.
+
+    Returns:
+        The retained report experiment value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        report_experiment(manager, experiment_id)
+
+    HYSo Guide: reporting.outputs
+    Offline: hyso docs show reporting.outputs --lang en
+    Open: hyso docs open reporting.outputs --lang en
     """
     if type(manager) is not ExperimentManager:
         raise ReportError("experiment_manager_required")

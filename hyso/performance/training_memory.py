@@ -3,6 +3,7 @@
 Logical tensors, native process RSS and CUDA allocator counters are independent
 domains. Activation lifetimes and isolated window peaks remain unsupported.
 """
+import typing as _typing
 from dataclasses import asdict, dataclass
 import hashlib
 import json
@@ -22,11 +23,52 @@ from .training_details import _source
 
 
 class TrainingMemoryError(RuntimeError):
-    """Incomplete observation; training may have advanced. Never retry implicitly."""
+    """Incomplete observation; training may have advanced. Never retry implicitly.
+
+    Returns:
+        An instance of TrainingMemoryError with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        TrainingMemoryError()
+
+    HYSo Guide: analysis.p23
+    Offline: hyso docs show analysis.p23 --lang en
+    Open: hyso docs open analysis.p23 --lang en
+    """
 
 
 @dataclass(frozen=True)
 class TrainingMemoryProtocol:
+    """Configure P23 — Training memory measurement boundaries and resource limits; construction does not run the analysis.
+
+    Args:
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
+        scope (str): Exact measurement boundary/meaning; different scopes are not interchangeable. Default: 'in_process_fit'.
+        peak_reset_policy (str): Explicit native policy for peak memory-counter reset. Default: 'never'.
+        interval_seconds (float): Interval in seconds under the native protocol. Default: 0.01.
+        max_samples (int): Upper bound on collected samples. Default: 10000.
+        max_boundaries (int): Upper bound on boundaries retained/accepted by this operation. Default: 10000.
+        max_tensor_records (int): Upper bound on tensor records retained/accepted by this operation. Default: 100000.
+
+    Returns:
+        An instance of TrainingMemoryProtocol with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        TrainingMemoryProtocol()
+
+    HYSo Guide: analysis.p23
+    Offline: hyso docs show analysis.p23 --lang en
+    Open: hyso docs open analysis.p23 --lang en
+    """
     device: str = "cpu"
     scope: str = "in_process_fit"
     peak_reset_policy: str = "never"
@@ -669,16 +711,70 @@ def _memory_diagnostics(rows, rss, device, *, isolated=False, windows=(), activa
 
 @dataclass(frozen=True, init=False)
 class TrainingMemoryResult:
-    """Immutable canonical evidence; constructors and exports validate integrity."""
+    """Immutable canonical evidence; constructors and exports validate integrity.
+
+    Args:
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of TrainingMemoryResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        TrainingMemoryResult(data)
+
+    HYSo Guide: analysis.p23
+    Offline: hyso docs show analysis.p23 --lang en
+    Open: hyso docs open analysis.p23 --lang en
+    """
     __slots__ = ("_payload",)
     _payload: str
 
-    def __init__(self, data):
+    def __init__(self, data: 'dict[str, _typing.Any]') -> 'None':
+        """Initialize TrainingMemoryResult with the supplied settings.
+
+        Args:
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            TrainingMemoryResult(data)
+
+        HYSo Guide: analysis.p23
+        Offline: hyso docs show analysis.p23 --lang en
+        Open: hyso docs open analysis.p23 --lang en
+        """
         copied = _plain(data)
         _validate(copied)
         object.__setattr__(self, "_payload", json.dumps(copied, allow_nan=False, separators=(",", ":")))
 
-    def to_dict(self):
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analysis.p23
+        Offline: hyso docs show analysis.p23 --lang en
+        Open: hyso docs open analysis.p23 --lang en
+        """
         return json.loads(self._payload)
 
     def _export_data(self):
@@ -686,26 +782,99 @@ class TrainingMemoryResult:
         _validate(data)
         return data
 
-    def diagnostics(self):
-        """Changes and boundary samples by memory domain; v1 exports unchanged."""
+    def diagnostics(self) -> '_typing.Any':
+        """Changes and boundary samples by memory domain; v1 exports unchanged.
+
+        Returns:
+            The retained diagnostics value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.diagnostics()
+
+        HYSo Guide: analysis.p23
+        Offline: hyso docs show analysis.p23 --lang en
+        Open: hyso docs open analysis.p23 --lang en
+        """
         data = self._export_data()
         return _memory_diagnostics(data["observations"], data["rss"], data["protocol"]["device"],
                                    activation=data["activation"])
 
-    def basic_metrics(self):
+    def basic_metrics(self) -> '_typing.Any':
         """Basic P23 bytes/status/scope; no execution or saved-activation hooks.
 
         CPU CUDA metrics use not_applicable. Legacy schema1 exports retain their
         original full-scope coverage labels and are not rewritten by this view.
+
+        Returns:
+            The retained basic metrics value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.basic_metrics()
+
+        HYSo Guide: analysis.p23
+        Offline: hyso docs show analysis.p23 --lang en
+        Open: hyso docs open analysis.p23 --lang en
         """
         data = self._export_data()
         return _basic_memory_report(data["observations"], data["rss"], data["protocol"]["device"])
 
-    def to_json(self, path, *, overwrite=False):
+    def to_json(self, path: '_typing.Any', *, overwrite: 'bool'=False) -> 'None':
+        """Serialize this object using its native JSON format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json(path)
+
+        HYSo Guide: analysis.p23
+        Offline: hyso docs show analysis.p23 --lang en
+        Open: hyso docs open analysis.p23 --lang en
+        """
         _write_export(path, json.dumps(self._export_data(), ensure_ascii=False, sort_keys=True,
                                       indent=2, allow_nan=False) + "\n", overwrite)
 
-    def to_csv(self, path, *, overwrite=False):
+    def to_csv(self, path: '_typing.Any', *, overwrite: 'bool'=False) -> 'None':
+        """Export this object using its native CSV format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_csv(path)
+
+        HYSo Guide: analysis.p23
+        Offline: hyso docs show analysis.p23 --lang en
+        Open: hyso docs open analysis.p23 --lang en
+        """
         data = self._export_data()
         columns = ["source_segment_id", "boundary", "epoch_id", "microbatch_id", "window_id", "attempt_id",
                    "query_start_ns", "query_end_ns", "parameter_bytes", "buffer_bytes", "gradient_bytes", "optimizer_bytes",
@@ -721,14 +890,39 @@ class TrainingMemoryResult:
         _write_export(path, _csv_text(columns, rows), overwrite)
 
 
-def measure_training_memory(trainer, train_loader, val_loader=None, *, epochs=5,
-                            protocol=None, timing_protocol=None, save_last_to=None, resume_from=None):
+def measure_training_memory(trainer: '_typing.Any', train_loader: '_typing.Any', val_loader: '_typing.Any'=None, *, epochs: 'int'=5,
+                            protocol: '_typing.Any'=None, timing_protocol: '_typing.Any'=None, save_last_to: '_typing.Any'=None, resume_from: '_typing.Any'=None) -> 'TrainingMemoryResult':
     """Mutate one fresh Trainer via one actual fit. No replay, resets or GC calls.
 
     Bounded instrumentation memory is not a workload RAM/VRAM safety budget. This
     in-process API has no hard timeout/isolation; use only trusted finite workloads.
     Full-fit RSS includes optional checkpoint I/O and finalization. The embedded
     P19 timing retains its narrower epoch scope and unchanged schema.
+
+    Args:
+        trainer (_typing.Any): Caller-owned standard Trainer; a measurement may execute its fit lifecycle only when called explicitly. Required.
+        train_loader (_typing.Any): Finite training loader; batches must follow the task/model input contract. Required.
+        val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
+        epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after resume. Default: 5.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: None.
+        timing_protocol (_typing.Any): Typed timing measurement settings; boundaries and device guards remain explicit. Default: None.
+        save_last_to (_typing.Any): Explicit checkpoint destination; writing occurs only during the requested fit. Default: None.
+        resume_from (_typing.Any): Existing compatible checkpoint; model/data/settings and total budget must match. Default: None.
+
+    Returns:
+        The retained measure training memory value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        measure_training_memory(trainer, train_loader)
+
+    HYSo Guide: analysis.p23
+    Offline: hyso docs show analysis.p23 --lang en
+    Open: hyso docs open analysis.p23 --lang en
     """
     protocol = TrainingMemoryProtocol() if protocol is None else protocol
     if type(protocol) is not TrainingMemoryProtocol:

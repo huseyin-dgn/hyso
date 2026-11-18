@@ -1,4 +1,5 @@
 """Stage 3B.1: immutable data contracts, not an Advisor implementation."""
+import typing as _typing
 from dataclasses import dataclass, field
 from enum import Enum
 import math
@@ -8,6 +9,25 @@ from ._json import AdvisorError, Contract, register
 
 
 class Priority(str, Enum):
+    """Select the user priority for speed, memory, accuracy preservation or a balanced goal.
+
+    Returns:
+        An instance of Priority with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        Priority.SPEED
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+
+    Members:
+        SPEED, MEMORY, PRESERVE_ACCURACY, BALANCED.
+    """
     SPEED = 'speed'
     MEMORY = 'memory'
     PRESERVE_ACCURACY = 'preserve_accuracy'
@@ -15,6 +35,31 @@ class Priority(str, Enum):
 
 
 class Metric(str, Enum):
+    """Select a supported metric identity; latency, throughput, quality, memory and energy retain distinct units and scopes.
+
+    Returns:
+        An instance of Metric with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        Metric.RESIDENT_FORWARD_P95
+
+    HYSo Guide: metrics.interpretation
+    Offline: hyso docs show metrics.interpretation --lang en
+    Open: hyso docs open metrics.interpretation --lang en
+
+    Members:
+        RESIDENT_FORWARD_P95, E2E_P95, IMAGE_THROUGHPUT, CAMERA_FPS, TRAINING_THROUGHPUT, TRAINING_STEP_TIME, ACCURACY, ACCURACY_DROP, PROCESS_RSS_PEAK, CUDA_ALLOCATED_PEAK, CUDA_RESERVED_PEAK, LOGICAL_TENSOR_BYTES, ENERGY_PER_INFERENCE, POWER.
+
+    Metric boundaries:
+        P95 is a latency quantile, not a deadline guarantee. images/s is not camera FPS.
+        Accuracy percentages and percentage-point changes are distinct. Process RSS,
+        CUDA allocated/reserved peaks and logical tensor bytes are different measures.
+        Power (W), energy (J) and energy per inference (J/inference) require valid sensor coverage.
+    """
     RESIDENT_FORWARD_P95 = 'resident_forward_p95'
     E2E_P95 = 'e2e_p95'
     IMAGE_THROUGHPUT = 'image_throughput'
@@ -32,6 +77,25 @@ class Metric(str, Enum):
 
 
 class FindingKind(str, Enum):
+    """Distinguish observations, hypotheses, proposed measurements and verified improvements.
+
+    Returns:
+        An instance of FindingKind with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        FindingKind.OBSERVATION
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+
+    Members:
+        OBSERVATION, HYPOTHESIS, DIAGNOSIS, MEASURE_NEXT, EXPERIMENT_CANDIDATE, VERIFIED_IMPROVEMENT.
+    """
     OBSERVATION = 'OBSERVATION'
     HYPOTHESIS = 'HYPOTHESIS'
     DIAGNOSIS = 'DIAGNOSIS'
@@ -41,30 +105,125 @@ class FindingKind(str, Enum):
 
 
 class InputValidity(str, Enum):
+    """Describe whether an input is valid, invalid or missing required scope.
+
+    Returns:
+        An instance of InputValidity with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        InputValidity.VALID
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+
+    Members:
+        VALID, INVALID, NEEDS_SCOPE.
+    """
     VALID = 'valid'
     INVALID = 'invalid'
     NEEDS_SCOPE = 'needs_scope'
 
 
 class EvidenceSupport(str, Enum):
+    """Describe evidence support separately from a user goal or workload success.
+
+    Returns:
+        An instance of EvidenceSupport with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        EvidenceSupport.SUPPORTED
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+
+    Members:
+        SUPPORTED, INSUFFICIENT_EVIDENCE, UNSUPPORTED_CAPABILITY.
+    """
     SUPPORTED = 'supported'
     INSUFFICIENT_EVIDENCE = 'insufficient_evidence'
     UNSUPPORTED_CAPABILITY = 'unsupported_capability'
 
 
 class ObservedGoal(str, Enum):
+    """Record whether the measured goal was met, missed or remains unknown.
+
+    Returns:
+        An instance of ObservedGoal with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ObservedGoal.MET
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+
+    Members:
+        MET, MISSED, UNKNOWN.
+    """
     MET = 'observed_met'
     MISSED = 'observed_missed'
     UNKNOWN = 'unknown'
 
 
 class Feasibility(str, Enum):
+    """Distinguish feasibility demonstrated in scope from unproven or unknown feasibility.
+
+    Returns:
+        An instance of Feasibility with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        Feasibility.DEMONSTRATED
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+
+    Members:
+        DEMONSTRATED, NOT_DEMONSTRATED, UNKNOWN.
+    """
     DEMONSTRATED = 'demonstrated_in_scope'
     NOT_DEMONSTRATED = 'not_demonstrated'
     UNKNOWN = 'unknown'
 
 
 class Consistency(str, Enum):
+    """Describe whether declared goals conflict under the available evidence.
+
+    Returns:
+        An instance of Consistency with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        Consistency.NO_CONFLICT
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+
+    Members:
+        NO_CONFLICT, POTENTIAL, INCONSISTENT.
+    """
     NO_CONFLICT = 'no_conflict_identified'
     POTENTIAL = 'potentially_conflicting'
     INCONSISTENT = 'logically_inconsistent'
@@ -131,6 +290,36 @@ def _strings(obj, name):
 @register
 @dataclass(frozen=True)
 class MetricScope(Contract):
+    """Bind a metric to its phase, device, precision, batch and workload/dataset context.
+
+    Args:
+        phase (str): Explicit trace phase label. Required.
+        device (str | None): Optional device selector following this API's native placement/default rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
+        backend (str | None): Explicit runtime/backend identity. Default: None.
+        precision (str | None): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: None.
+        batch (int | None): Batch dimension of the measured input. Default: None.
+        input_shape (tuple): Per-sample (C, H, W) dimensions; batch is excluded. Default: ().
+        workload_id (str | None): Exact workload identity for scope alignment. Default: None.
+        dataset_id (str | None): Exact dataset identity used for evidence alignment. Default: None.
+        split (str | None): Explicit dataset split label used in evaluation identity. Default: None.
+        preprocessing_id (str | None): Identity of the preprocessing used to produce this fixed cohort. Default: None.
+        clock_id (str | None): Clock-domain identity used for timing alignment. Default: None.
+        model_id (str | None): Stable model label bound to this result/context. Default: None.
+
+    Returns:
+        An instance of MetricScope with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        MetricScope(phase=phase)
+
+    HYSo Guide: metrics.interpretation
+    Offline: hyso docs show metrics.interpretation --lang en
+    Open: hyso docs open metrics.interpretation --lang en
+    """
     phase: str
     device: str | None = None
     backend: str | None = None
@@ -161,6 +350,31 @@ class MetricScope(Contract):
 @register
 @dataclass(frozen=True)
 class EvaluationProtocol(Contract):
+    """Identify the evaluation method, version, sample policy and averaging convention.
+
+    Args:
+        protocol_id (str): Exact measurement/evaluation protocol identity. Required.
+        version (int): Positive native schema/protocol/rule version. Required.
+        description (str): Human-readable specification description. Required.
+        sample_policy (str | None): Sampling convention used by the measurement/evaluation. Default: None.
+        window (str | None): Exact measurement window definition. Default: None.
+        evaluator (str | None): Explicit evaluation implementation/protocol identity. Default: None.
+        averaging (str | None): Metric averaging convention, such as macro or per-class. Default: None.
+
+    Returns:
+        An instance of EvaluationProtocol with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        EvaluationProtocol(protocol_id=protocol_id, version=version, description=description)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+    """
     protocol_id: str
     version: int
     description: str
@@ -202,6 +416,34 @@ _METRICS = {
 @register
 @dataclass(frozen=True)
 class UserGoal(Contract):
+    """Declare a measurable target with its metric, unit, operator and applicable scope.
+
+    Args:
+        goal_id (str): Exact user-goal identity. Required.
+        metric (Metric): Exact supported metric selector; units and missing-value status are preserved. Required.
+        operator (str): Supported comparison operator for the goal. Required.
+        target (float): Explicit target value/model/context required by this operation. Required.
+        unit (str): Recorded metric unit; fractions, percentages and percentage points are distinct. Required.
+        constraint (str): Explicit restriction applied to the advisory request. Default: 'hard'.
+        scope (MetricScope | None): Exact measurement boundary/meaning; different scopes are not interchangeable. Default: None.
+        protocol (EvaluationProtocol | None): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: None.
+        value_basis (str): Evidence basis and interpretation of the reported value. Default: 'measured'.
+        baseline_id (str | None): Exact retained baseline identity. Default: None.
+
+    Returns:
+        An instance of UserGoal with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        UserGoal(goal_id=goal_id, metric=metric, operator=operator, target=target, unit=unit)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+    """
     goal_id: str
     metric: Metric
     operator: str
@@ -238,12 +480,43 @@ class UserGoal(Contract):
             raise AdvisorError('baseline_required')
 
     @property
-    def input_validity(self):
+    def input_validity(self) -> '_typing.Any':
+        """Read the retained input validity from this UserGoal record.
+
+        Returns:
+            The retained input validity value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.input_validity
+
+        HYSo Guide: advisor.recommendations
+        Offline: hyso docs show advisor.recommendations --lang en
+        Open: hyso docs open advisor.recommendations --lang en
+        """
         return InputValidity.NEEDS_SCOPE if self.missing_scope_fields else InputValidity.VALID
 
     @property
-    def missing_scope_fields(self):
-        """Request completeness only; never native evidence eligibility."""
+    def missing_scope_fields(self) -> '_typing.Any':
+        """Request completeness only; never native evidence eligibility.
+
+        Returns:
+            The retained missing scope fields value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.missing_scope_fields
+
+        HYSo Guide: advisor.recommendations
+        Offline: hyso docs show advisor.recommendations --lang en
+        Open: hyso docs open advisor.recommendations --lang en
+        """
         if self.scope is None or self.protocol is None:
             return tuple(name for name in ('scope', 'protocol') if getattr(self, name) is None)
         required = ['workload_id']
@@ -266,6 +539,35 @@ class UserGoal(Contract):
 @register
 @dataclass(frozen=True)
 class ResourceBudget(Contract):
+    """Declare a resource budget and its enforcement/verification status; a declaration alone enforces nothing.
+
+    Args:
+        budget_id (str): Stable resource-budget identity. Required.
+        purpose (str): Explicit reason for the operation or evidence selection. Required.
+        domain (str): Feature/metric domain, separate from runtime support. Required.
+        limit (float): Bounded page/record count; native Manager limits still apply. Required.
+        unit (str): Recorded metric unit; fractions, percentages and percentage points are distinct. Required.
+        allowed_devices (tuple): Explicit device choices permitted by this policy. Default: ().
+        allowed_backends (tuple): Closed backend choices permitted by this request. Default: ().
+        allowed_precisions (tuple): Explicit precision choices permitted by this request. Default: ().
+        window_seconds (float | None): Window in seconds under the native protocol. Default: None.
+        enforcement (str): Declared enforcement mechanism; unsupported enforcement is not inferred. Default: 'not_evaluated'.
+        applicability (str): Conditions under which the finding/evidence applies. Default: 'not_evaluated'.
+
+    Returns:
+        An instance of ResourceBudget with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ResourceBudget(budget_id=budget_id, purpose=purpose, domain=domain, limit=limit, unit=unit)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+    """
     budget_id: str
     purpose: str
     domain: str
@@ -304,6 +606,27 @@ class ResourceBudget(Contract):
 @register
 @dataclass(frozen=True)
 class AdvisorRequest(Contract):
+    """Describe the requested advisory mode, goals, allowed changes and constraints without authorizing execution.
+
+    Args:
+        goals (tuple): Explicit user goals; unmet prerequisites are retained. Default: ().
+        budgets (tuple): Explicit resource budgets with their enforcement status. Default: ().
+        priority (Priority | None): Explicit user priority for advisory ranking. Default: None.
+
+    Returns:
+        An instance of AdvisorRequest with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        AdvisorRequest()
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+    """
     goals: tuple = ()
     budgets: tuple = ()
     priority: Priority | None = None
@@ -314,17 +637,69 @@ class AdvisorRequest(Contract):
         _enum(self, 'priority', Priority, optional=True)
 
     @property
-    def request_id(self):
+    def request_id(self) -> '_typing.Any':
+        """Read the retained request id from this AdvisorRequest record.
+
+        Returns:
+            The retained request id value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.request_id
+
+        HYSo Guide: advisor.recommendations
+        Offline: hyso docs show advisor.recommendations --lang en
+        Open: hyso docs open advisor.recommendations --lang en
+        """
         return 'sha256:' + self.content_sha256
 
     @property
-    def mode(self):
+    def mode(self) -> '_typing.Any':
+        """Read the retained mode from this AdvisorRequest record.
+
+        Returns:
+            The retained mode value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.mode
+
+        HYSo Guide: advisor.recommendations
+        Offline: hyso docs show advisor.recommendations --lang en
+        Open: hyso docs open advisor.recommendations --lang en
+        """
         return 'advanced' if self.goals or self.budgets else 'priority' if self.priority else 'automatic'
 
 
 @register
 @dataclass(frozen=True)
 class EvidenceBinding(Contract):
+    """Bind an advisory statement to exact retained evidence and its metric scope.
+
+    Args:
+        field (str): Exact retained field/path selected by the resolver. Required.
+        authority (str): Declared authority/provenance level of the evidence. Required.
+
+    Returns:
+        An instance of EvidenceBinding with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        EvidenceBinding(field=field, authority=authority)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+    """
     field: str
     authority: str
 
@@ -336,6 +711,36 @@ class EvidenceBinding(Contract):
 @register
 @dataclass(frozen=True)
 class EvidenceRef(Contract):
+    """Reference retained evidence by identity and its supported applicability.
+
+    Args:
+        report_id (str): Exact retained report identity. Required.
+        record_id (str): Exact retained evidence identity. Required.
+        metric_path (str): Exact native metric path in the retained result. Required.
+        artifact_sha256 (str): Exact serialized artifact digest. Required.
+        payload_sha256 (str): Exact SHA-256 digest of the payload. Required.
+        domain (str): Feature/metric domain, separate from runtime support. Required.
+        unit (str): Recorded metric unit; fractions, percentages and percentage points are distinct. Required.
+        status (str): Exact lifecycle/status filter accepted by this API. Required.
+        bindings (tuple): Typed live/isolated/native bindings; identities and operation permissions must match the plan. Required.
+        sample_ref (str | None): Exact retained sample reference. Default: None.
+        point_ref (str | None): Reference to the exact retained sweep/calibration point. Default: None.
+        protocol_ref (str | None): Reference to the exact retained protocol. Default: None.
+
+    Returns:
+        An instance of EvidenceRef with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        EvidenceRef(report_id=report_id, record_id=record_id, metric_path=metric_path, artifact_sha256=artifact_sha256, payload_sha256=payload_sha256, domain=domain, unit=unit, status=status, bindings=bindings)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+    """
     report_id: str
     record_id: str
     metric_path: str
@@ -367,6 +772,33 @@ class EvidenceRef(Contract):
 @register
 @dataclass(frozen=True)
 class Finding(Contract):
+    """Record one advisory finding with its rationale, evidence, limitations and proposed next measurement.
+
+    Args:
+        finding_id (str): Stable advisory-finding identity. Required.
+        kind (FindingKind): Existing run or artifact kind accepted by this operation. Required.
+        statement (str): Human-readable finding/observation statement. Required.
+        evidence (tuple): Typed retained evidence; missing measurements remain unavailable. Default: ().
+        limitations (tuple): Explicit limitations of the evidence, comparison or proposed operation. Default: ().
+        rule_id (str | None): Exact advisory rule identity. Default: None.
+        rule_version (str | None): Exact advisory rule version. Default: None.
+        evidence_support (EvidenceSupport | None): Assessment of whether the supplied evidence supports the claim. Default: None.
+        verification (str): Retained verification state; declarations are not successful execution evidence. Default: 'not_evaluated'.
+
+    Returns:
+        An instance of Finding with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        Finding(finding_id=finding_id, kind=kind, statement=statement)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+    """
     finding_id: str
     kind: FindingKind
     statement: str
@@ -398,6 +830,31 @@ class Finding(Contract):
 @register
 @dataclass(frozen=True)
 class GoalEvaluation(Contract):
+    """Record validity, support, observed goal outcome and feasibility as separate assessments.
+
+    Args:
+        goal_id (str): Exact user-goal identity. Required.
+        input_validity (InputValidity): Retained input validity assessment. Required.
+        evidence_support (EvidenceSupport | None): Assessment of whether the supplied evidence supports the claim. Default: None.
+        observed (ObservedGoal): Observed outcome under the supplied evidence scope. Default: ObservedGoal.UNKNOWN.
+        feasibility (Feasibility): Feasibility assessment within the exact evidence scope. Default: Feasibility.UNKNOWN.
+        evidence (tuple): Typed retained evidence; missing measurements remain unavailable. Default: ().
+        reasons (tuple): Structured eligibility/compatibility reasons. Default: ().
+
+    Returns:
+        An instance of GoalEvaluation with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        GoalEvaluation(goal_id=goal_id, input_validity=input_validity)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+    """
     goal_id: str
     input_validity: InputValidity
     evidence_support: EvidenceSupport | None = None
@@ -425,6 +882,28 @@ class GoalEvaluation(Contract):
 @register
 @dataclass(frozen=True)
 class RequestValidation(Contract):
+    """Retain request validation and goal consistency findings without starting a workload.
+
+    Args:
+        goals (tuple): Explicit user goals; unmet prerequisites are retained. Required.
+        consistency (Consistency): Goal-consistency assessment separate from feasibility. Required.
+        conflicting_goal_ids (tuple): Exact identities of conflicting goals. Default: ().
+        reasons (tuple): Structured eligibility/compatibility reasons. Default: ().
+
+    Returns:
+        An instance of RequestValidation with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        RequestValidation(goals=goals, consistency=consistency)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+    """
     goals: tuple
     consistency: Consistency
     conflicting_goal_ids: tuple = ()
@@ -446,6 +925,26 @@ class RequestValidation(Contract):
 @register
 @dataclass(frozen=True)
 class RuleVersion(Contract):
+    """Identify the advisory rule and version used to produce a finding.
+
+    Args:
+        rule_id (str): Exact advisory rule identity. Required.
+        version (str): Positive native schema/protocol/rule version. Required.
+
+    Returns:
+        An instance of RuleVersion with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        RuleVersion(rule_id=rule_id, version=version)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+    """
     rule_id: str
     version: str
 
@@ -457,6 +956,38 @@ class RuleVersion(Contract):
 @register
 @dataclass(frozen=True)
 class AdvisorReport(Contract):
+    """Retain an advisory decision, findings, goal evaluations and the exact request/evidence identities.
+
+    Args:
+        source_report_id (str): Exact source-report identity. Required.
+        source_report_sha256 (str): Exact SHA-256 digest of the source report. Required.
+        request (AdvisorRequest): Validated advisory/selection request; does not authorize execution. Required.
+        findings (tuple): Typed retained advisory findings. Default: ().
+        goal_evaluations (tuple): Separate validity, support, outcome and feasibility assessments. Default: ().
+        evidence_limitations (tuple): Limitations attached to the retained evidence. Default: ().
+        risks (tuple): Known limitations/risks attached to the proposal. Default: ().
+        rule_versions (tuple): Exact rule identities/versions used by the report. Default: ().
+        evidence_status (EvidenceSupport | None): Retained availability/coverage status. Default: None.
+        evaluation_status (str): Retained evaluation status, including unavailable or partial results. Default: 'not_evaluated'.
+        request_validation (RequestValidation | None): Retained validation and consistency results for the request. Default: None.
+        request_id (str): Optional idempotency key for the stored operation; not a model or artifact identity. Default: field(init=False).
+        request_sha256 (str): Exact SHA-256 digest of the request. Default: field(init=False).
+        assessment_authority (str): Authority level of the assessment; caller claims are not producer attestation. Default: field(init=False, default='caller_supplied_not_verified').
+
+    Returns:
+        An instance of AdvisorReport with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        AdvisorReport(source_report_id=source_report_id, source_report_sha256=source_report_sha256, request=request)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+    """
     source_report_id: str
     source_report_sha256: str
     request: AdvisorRequest
@@ -542,11 +1073,48 @@ class AdvisorReport(Contract):
             raise AdvisorError('assessment_status_mismatch')
 
     @property
-    def report_id(self):
+    def report_id(self) -> '_typing.Any':
+        """Read the retained report id from this AdvisorReport record.
+
+        Returns:
+            The retained report id value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.report_id
+
+        HYSo Guide: advisor.recommendations
+        Offline: hyso docs show advisor.recommendations --lang en
+        Open: hyso docs open advisor.recommendations --lang en
+        """
         return self.content_sha256
 
-    def to_markdown(self, path=None, *, language=None, audience=None):
-        """Explicit readable export of this same report; never run analysis."""
+    def to_markdown(self, path: '_typing.Any'=None, *, language: 'str | None'=None, audience: '_typing.Any'=None) -> '_typing.Any':
+        """Explicit readable export of this same report; never run analysis.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+            language (str | None): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: None.
+            audience (_typing.Any): Supported presentation audience/detail level. Default: None.
+
+        Returns:
+            The localized Markdown report string.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_markdown()
+
+        HYSo Guide: advisor.recommendations
+        Offline: hyso docs show advisor.recommendations --lang en
+        Open: hyso docs open advisor.recommendations --lang en
+        """
         if language is not None or audience is not None:
             from .presentation import to_markdown
             return to_markdown(self, path, language='en' if language is None else language,
@@ -554,11 +1122,53 @@ class AdvisorReport(Contract):
         from .render import render_markdown
         return render_markdown(self, path)
 
-    def to_display_dict(self, *, language='en', audience='summary'):
-        """Presentation-only localized JSON data; never canonical evidence."""
+    def to_display_dict(self, *, language: 'str'='en', audience: 'str'='summary') -> 'dict[str, _typing.Any]':
+        """Presentation-only localized JSON data; never canonical evidence.
+
+        Args:
+            language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'en'.
+            audience (str): Supported presentation audience/detail level. Default: 'summary'.
+
+        Returns:
+            Localized presentation data; canonical comparison values and units are retained.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_display_dict()
+
+        HYSo Guide: advisor.recommendations
+        Offline: hyso docs show advisor.recommendations --lang en
+        Open: hyso docs open advisor.recommendations --lang en
+        """
         from .presentation import to_display_dict
         return to_display_dict(self, language=language, audience=audience)
 
-    def to_display_json(self, path=None, *, language='en', audience='summary'):
+    def to_display_json(self, path: '_typing.Any'=None, *, language: 'str'='en', audience: 'str'='summary') -> 'str':
+        """Serialize localized display text while preserving the retained canonical data.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+            language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'en'.
+            audience (str): Supported presentation audience/detail level. Default: 'summary'.
+
+        Returns:
+            The localized JSON string, also written to path when supplied.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_display_json()
+
+        HYSo Guide: advisor.recommendations
+        Offline: hyso docs show advisor.recommendations --lang en
+        Open: hyso docs open advisor.recommendations --lang en
+        """
         from .presentation import to_display_json
         return to_display_json(self, path, language=language, audience=audience)

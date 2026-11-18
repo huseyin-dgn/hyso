@@ -1,4 +1,5 @@
 """P33 sampled physical-board energy; no TDP, utilization or CPU/GPU attribution guesses."""
+import typing as _typing
 import csv
 import math
 import os
@@ -30,8 +31,29 @@ def _parse_power(text, *, device_id, clock_id, start_ns, end_ns):
         time_association='host_query_midpoint_bracket_sensor_refresh_latency_unknown')
 
 
-def observe_nvidia_power(device_id, *, clock_id, timeout_seconds=1.):
-    """Bounded read-only CLI query. No CUDA initialization or hidden averaged-power fallback."""
+def observe_nvidia_power(device_id: '_typing.Any', *, clock_id: '_typing.Any', timeout_seconds: 'float'=1.) -> '_typing.Any':
+    """Bounded read-only CLI query. No CUDA initialization or hidden averaged-power fallback.
+
+    Args:
+        device_id (_typing.Any): Exact device identity recorded in the evidence. Required.
+        clock_id (_typing.Any): Clock-domain identity used for timing alignment. Required.
+        timeout_seconds (float): Timeout in seconds under the native protocol. Default: 1.0.
+
+    Returns:
+        The retained observe nvidia power value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        observe_nvidia_power(device_id, clock_id=clock_id)
+
+    HYSo Guide: analysis.p33
+    Offline: hyso docs show analysis.p33 --lang en
+    Open: hyso docs open analysis.p33 --lang en
+    """
     _name(clock_id)
     if type(device_id) is not str or not device_id.startswith('GPU-'):raise ValueError('physical NVIDIA UUID required')
     _number(timeout_seconds,.001)
@@ -85,7 +107,29 @@ def _integral(samples,start_ns,end_ns,max_gap_ns):
     return math.fsum(pieces),None
 
 
-def analyze_energy(stability_result, *, max_gap_seconds=2., idle_max_age_seconds=60.):
+def analyze_energy(stability_result: '_typing.Any', *, max_gap_seconds: 'float'=2., idle_max_age_seconds: 'float'=60.) -> 'RuntimeResult':
+    """Analyze retained stability sensor evidence and energy coverage without rerunning the workload.
+
+    Args:
+        stability_result (_typing.Any): Existing retained long-run result; continuity and source identity must remain valid. Required.
+        max_gap_seconds (float): Max gap in seconds under the native protocol. Default: 2.0.
+        idle_max_age_seconds (float): Idle max age in seconds under the native protocol. Default: 60.0.
+
+    Returns:
+        A validated RuntimeResult retaining actual evidence, coverage and unavailable-status fields.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        analyze_energy(stability_result)
+
+    HYSo Guide: analysis.p33
+    Offline: hyso docs show analysis.p33 --lang en
+    Open: hyso docs open analysis.p33 --lang en
+    """
     if type(stability_result) is not RuntimeResult or stability_result.to_dict()['feature_id']!='P31':raise TypeError('P31 RuntimeResult required')
     _number(max_gap_seconds,.001);_number(idle_max_age_seconds,.001)
     return _result('P33',dict(energy_version=2,stability=stability_result.to_dict(),max_gap_seconds=max_gap_seconds,idle_max_age_seconds=idle_max_age_seconds))

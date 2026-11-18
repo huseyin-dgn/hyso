@@ -3,6 +3,7 @@
 Both arms run owned eager eval/inference recipes. Parent model/RNG/allocator
 handles never cross the boundary. Normal layer capture runs no control forwards.
 """
+import typing as _typing
 from dataclasses import dataclass,asdict,replace
 import math
 import statistics
@@ -15,6 +16,28 @@ from .result import LayerOverheadResult,OperatorProfileResult,_integer,_positive
 
 @dataclass(frozen=True)
 class LayerOverheadProtocol:
+    """Configure P13 — Module/layer profiling measurement boundaries and resource limits; construction does not run the analysis.
+
+    Args:
+        trials (int): Explicit bounded trial configurations. Default: 3.
+        max_coefficient_of_variation (float): Maximum variability threshold used by the native acceptance rule. Default: 0.25.
+        priming_iterations (int): Priming iterations before the protocol's measured boundary. Default: 2.
+        max_relative_half_width (float): Maximum relative confidence-interval half width accepted by the protocol. Default: 0.5.
+
+    Returns:
+        An instance of LayerOverheadProtocol with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        LayerOverheadProtocol()
+
+    HYSo Guide: analysis.p13
+    Offline: hyso docs show analysis.p13 --lang en
+    Open: hyso docs open analysis.p13 --lang en
+    """
     trials:int=3
     max_coefficient_of_variation:float=.25
     priming_iterations:int=2
@@ -147,7 +170,7 @@ def _check_control(control,recipe,capture):
         if type(control[key]) is not str or len(control[key])!=64:raise ValueError('missing control tensor hash')
 
 
-def measure_layer_overhead(recipe,*,protocol=LayerOverheadProtocol(),capture_protocol=None):
+def measure_layer_overhead(recipe: '_typing.Any',*,protocol: '_typing.Any'=LayerOverheadProtocol(),capture_protocol: '_typing.Any'=None) -> 'LayerOverheadResult':
     """Explicit additional experiment; failures retain normal ProfilingError cleanup.
 
     At least two warmups and three forward windows per worker are required.
@@ -158,6 +181,26 @@ def measure_layer_overhead(recipe,*,protocol=LayerOverheadProtocol(),capture_pro
     Operator/layer/memory ledgers cover that entire capture, including priming;
     only paired-overhead statistics select the declared post-priming suffix.
     Small-sample paired-worker uncertainty and variance can reject the estimate.
+
+    Args:
+        recipe (_typing.Any): Trusted construction recipe; factory import/execution is governed by the existing operation contract. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: LayerOverheadProtocol().
+        capture_protocol (_typing.Any): Typed capture measurement settings; boundaries and device guards remain explicit. Default: None.
+
+    Returns:
+        The retained measure layer overhead value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        measure_layer_overhead(recipe)
+
+    HYSo Guide: analysis.p13
+    Offline: hyso docs show analysis.p13 --lang en
+    Open: hyso docs open analysis.p13 --lang en
     """
     if type(recipe) is not ColdStartRecipe or type(protocol) is not LayerOverheadProtocol:raise TypeError('recipe and LayerOverheadProtocol required')
     capture=ProfilingProtocol(warmup_iterations=2,measure_iterations=5) if capture_protocol is None else capture_protocol

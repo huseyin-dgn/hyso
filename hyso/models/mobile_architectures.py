@@ -53,9 +53,53 @@ class MobileNetV2(MobileArchitectureConfig, TVMobileNetV2):
 
     width_mult=1 is the standard layout. Input/head/width changes construct
     explicit untrained variants. dropout affects the classification head.
+
+    Args:
+        input_channels (int): Number of input image/feature channels. Default: 3.
+        num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 1000.
+        width_mult (float): Multiplier for architecture channel widths. Default: 1.0.
+        dropout (float): Drop probability; this regularization is active only in training mode. Default: 0.2.
+
+    Returns:
+        An instance of MobileNetV2 with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        MobileNetV2()
+
+    HYSo Guide: models.development-families
+    Offline: hyso docs show models.development-families --lang en
+    Open: hyso docs open models.development-families --lang en
     """
     def __init__(self, input_channels: int = 3, num_classes: int = 1000,
                  width_mult: float = 1., dropout: float = .2) -> None:
+        """Initialize MobileNetV2 with the supplied settings.
+
+        Args:
+            input_channels (int): input channels Default: 3.
+            num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 1000.
+            width_mult (float): Explicit width multiplier in [0.125,2]. Default: 1.0.
+            dropout (float): dropout Default: 0.2.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            MobileNetV2()
+
+        HYSo Guide: models.development-families
+        Offline: hyso docs show models.development-families --lang en
+        Open: hyso docs open models.development-families --lang en
+        """
         params = dict(input_channels=input_channels,num_classes=num_classes,width_mult=width_mult,dropout=dropout)
         validate_mobile('mobilenet_v2',params)
         super().__init__(num_classes=num_classes,width_mult=width_mult,dropout=dropout)
@@ -67,9 +111,55 @@ class MobileNetV3(MobileArchitectureConfig, TVMobileNetV3):
     """Torchvision Small/Large MobileNetV3 with native SE, ReLU and HardSwish.
 
     variant='large', width_mult=1 selects the standard Large configuration.
+
+    Args:
+        variant (str): Supported closed architecture variant. Default: 'large'.
+        input_channels (int): Number of input image/feature channels. Default: 3.
+        num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 1000.
+        width_mult (float): Multiplier for architecture channel widths. Default: 1.0.
+        dropout (float): Drop probability; this regularization is active only in training mode. Default: 0.2.
+
+    Returns:
+        An instance of MobileNetV3 with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        MobileNetV3()
+
+    HYSo Guide: models.development-families
+    Offline: hyso docs show models.development-families --lang en
+    Open: hyso docs open models.development-families --lang en
     """
     def __init__(self, variant: str = 'large', input_channels: int = 3,
                  num_classes: int = 1000, width_mult: float = 1., dropout: float = .2) -> None:
+        """Initialize MobileNetV3 with the supplied settings.
+
+        Args:
+            variant (str): variant Default: 'large'.
+            input_channels (int): input channels Default: 3.
+            num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 1000.
+            width_mult (float): Explicit width multiplier in [0.125,2]. Default: 1.0.
+            dropout (float): dropout Default: 0.2.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            MobileNetV3()
+
+        HYSo Guide: models.development-families
+        Offline: hyso docs show models.development-families --lang en
+        Open: hyso docs open models.development-families --lang en
+        """
         params = dict(variant=variant,input_channels=input_channels,num_classes=num_classes,
                       width_mult=width_mult,dropout=dropout)
         validate_mobile('mobilenet_v3',params)
@@ -85,10 +175,60 @@ class EfficientNetV2(MobileArchitectureConfig, TVEfficientNet):
     width_mult=depth_mult=1 preserves the selected canonical stage configuration.
     Smaller multipliers explicitly select derived width/repeat configurations.
     dropout=None uses torchvision's S=.2, M=.3, L=.4 head defaults.
+
+    Args:
+        variant (str): Supported closed architecture variant. Default: 's'.
+        input_channels (int): Number of input image/feature channels. Default: 3.
+        num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 1000.
+        width_mult (float): Multiplier for architecture channel widths. Default: 1.0.
+        depth_mult (float): Multiplier for architecture stage depth. Default: 1.0.
+        dropout (float | None): Drop probability; this regularization is active only in training mode. Default: None.
+        stochastic_depth (float): Probability/schedule for dropping residual paths during training. Default: 0.2.
+
+    Returns:
+        An instance of EfficientNetV2 with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        EfficientNetV2()
+
+    HYSo Guide: models.development-families
+    Offline: hyso docs show models.development-families --lang en
+    Open: hyso docs open models.development-families --lang en
     """
     def __init__(self, variant: str = 's', input_channels: int = 3, num_classes: int = 1000,
                  width_mult: float = 1., depth_mult: float = 1.,
                  dropout: float | None = None, stochastic_depth: float = .2) -> None:
+        """Initialize EfficientNetV2 with the supplied settings.
+
+        Args:
+            variant (str): variant Default: 's'.
+            input_channels (int): input channels Default: 3.
+            num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 1000.
+            width_mult (float): Explicit width multiplier in [0.125,2]. Default: 1.0.
+            depth_mult (float): Explicit repeat multiplier in [0.1,1]. Default: 1.0.
+            dropout (float | None): dropout Default: None.
+            stochastic_depth (float): stochastic depth Default: 0.2.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            EfficientNetV2()
+
+        HYSo Guide: models.development-families
+        Offline: hyso docs show models.development-families --lang en
+        Open: hyso docs open models.development-families --lang en
+        """
         params = dict(variant=variant,input_channels=input_channels,num_classes=num_classes,
                       width_mult=width_mult,depth_mult=depth_mult,dropout=dropout,
                       stochastic_depth=stochastic_depth)
@@ -102,8 +242,51 @@ class EfficientNetV2(MobileArchitectureConfig, TVEfficientNet):
 
 
 class ShuffleNetV2(MobileArchitectureConfig, TVShuffleNetV2):
-    """Torchvision x0_5/x1_0/x1_5/x2_0 stage widths and repeats [4,8,4]."""
+    """Torchvision x0_5/x1_0/x1_5/x2_0 stage widths and repeats [4,8,4].
+
+    Args:
+        variant (str): Supported closed architecture variant. Default: 'x1_0'.
+        input_channels (int): Number of input image/feature channels. Default: 3.
+        num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 1000.
+
+    Returns:
+        An instance of ShuffleNetV2 with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ShuffleNetV2()
+
+    HYSo Guide: models.development-families
+    Offline: hyso docs show models.development-families --lang en
+    Open: hyso docs open models.development-families --lang en
+    """
     def __init__(self, variant: str = 'x1_0', input_channels: int = 3, num_classes: int = 1000) -> None:
+        """Initialize ShuffleNetV2 with the supplied settings.
+
+        Args:
+            variant (str): variant Default: 'x1_0'.
+            input_channels (int): input channels Default: 3.
+            num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 1000.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ShuffleNetV2()
+
+        HYSo Guide: models.development-families
+        Offline: hyso docs show models.development-families --lang en
+        Open: hyso docs open models.development-families --lang en
+        """
         params = dict(variant=variant,input_channels=input_channels,num_classes=num_classes)
         validate_mobile('shufflenet_v2',params)
         super().__init__([4,8,4],SHUFFLE_WIDTHS[variant],num_classes=num_classes)
@@ -116,9 +299,53 @@ class GhostNet(MobileArchitectureConfig, nn.Module):
 
     width_mult rounds to divisor four. The post-pool head has 1280 channels.
     HYSo module keys are used for strict HYSo state_dict serialization.
+
+    Args:
+        input_channels (int): Number of input image/feature channels. Default: 3.
+        num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 1000.
+        width_mult (float): Multiplier for architecture channel widths. Default: 1.0.
+        dropout (float): Drop probability; this regularization is active only in training mode. Default: 0.2.
+
+    Returns:
+        An instance of GhostNet with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        GhostNet()
+
+    HYSo Guide: models.development-families
+    Offline: hyso docs show models.development-families --lang en
+    Open: hyso docs open models.development-families --lang en
     """
     def __init__(self, input_channels: int = 3, num_classes: int = 1000,
                  width_mult: float = 1., dropout: float = .2) -> None:
+        """Initialize GhostNet with the supplied settings.
+
+        Args:
+            input_channels (int): input channels Default: 3.
+            num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 1000.
+            width_mult (float): Explicit width multiplier in [0.125,2]. Default: 1.0.
+            dropout (float): dropout Default: 0.2.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            GhostNet()
+
+        HYSo Guide: models.development-families
+        Offline: hyso docs show models.development-families --lang en
+        Open: hyso docs open models.development-families --lang en
+        """
         super().__init__()
         params = dict(input_channels=input_channels,num_classes=num_classes,width_mult=width_mult,dropout=dropout)
         validate_mobile('ghostnet',params)
@@ -138,6 +365,26 @@ class GhostNet(MobileArchitectureConfig, nn.Module):
         self._record_architecture('ghostnet',params)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: models.development-families
+        Offline: hyso docs show models.development-families --lang en
+        Open: hyso docs open models.development-families --lang en
+        """
         return self.head(self.features(self.blocks(self.stem(x))))
 
 

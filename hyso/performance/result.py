@@ -1,4 +1,5 @@
 """Versioned, validated plain-data results and explicit atomic exports."""
+import typing as _typing
 from dataclasses import dataclass
 from decimal import Decimal
 import json
@@ -207,10 +208,49 @@ def _validate(data, kind):
 
 @dataclass(frozen=True, init=False)
 class _Result:
+    """Validate, retain and export canonical measurement evidence; constructing a result does not measure a model.
+
+    Args:
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of _Result with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        _Result(data)
+
+    HYSo Guide: metrics.interpretation
+    Offline: hyso docs show metrics.interpretation --lang en
+    Open: hyso docs open metrics.interpretation --lang en
+    """
     __slots__ = ("_payload",)
     _payload: str
 
-    def __init__(self, data):
+    def __init__(self, data: 'dict[str, _typing.Any]') -> 'None':
+        """Initialize _Result with the supplied settings.
+
+        Args:
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            _Result(data)
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         copied = _plain(data)
         try:
             _validate(copied, self._kind)
@@ -218,15 +258,72 @@ class _Result:
             raise ValueError("invalid or missing performance schema fields") from error
         object.__setattr__(self, "_payload", json.dumps(copied, allow_nan=False, separators=(",", ":")))
 
-    def to_dict(self):
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         return json.loads(self._payload)
 
-    def to_json(self, path, *, overwrite=False):
+    def to_json(self, path: '_typing.Any', *, overwrite: 'bool'=False) -> 'None':
+        """Serialize this object using its native JSON format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json(path)
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         _write_export(path, json.dumps(self.to_dict(), ensure_ascii=False, allow_nan=False,
                                       sort_keys=True, indent=2) + "\n", overwrite)
 
-    def to_csv(self, path, *, overwrite=False):
-        """One row per quantile/window; JSON is the complete canonical record."""
+    def to_csv(self, path: '_typing.Any', *, overwrite: 'bool'=False) -> 'None':
+        """One row per quantile/window; JSON is the complete canonical record.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_csv(path)
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         data = self.to_dict()
         common = dict(format=data["format"], schema_version=1, result_id=data["result_id"],
                       device=data["provenance"]["environment"]["device"], scope=data["protocol"]["scope"])
@@ -296,105 +393,450 @@ class _Result:
 
 @dataclass(frozen=True, init=False)
 class LatencyAnalysis(_Result):
+    """Read and export validated P01 — Inference latency results; unavailable measurements retain their native status.
+
+    Args:
+        data: Plain validated native schema payload. Required.
+
+    Returns:
+        An instance of LatencyAnalysis with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        LatencyAnalysis(data)
+
+    HYSo Guide: analysis.p01
+    Offline: hyso docs show analysis.p01 --lang en
+    Open: hyso docs open analysis.p01 --lang en
+    """
     __slots__ = ()
     _kind = "latency_analysis"
 
 
 @dataclass(frozen=True, init=False)
 class ThroughputResult(_Result):
+    """Read and export validated P02 — Completed inference throughput results; unavailable measurements retain their native status.
+
+    Args:
+        data: Plain validated native schema payload. Required.
+
+    Returns:
+        An instance of ThroughputResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ThroughputResult(data)
+
+    HYSo Guide: analysis.p02
+    Offline: hyso docs show analysis.p02 --lang en
+    Open: hyso docs open analysis.p02 --lang en
+    """
     __slots__ = ()
     _kind = "throughput"
 
 
 @dataclass(frozen=True, init=False)
 class MemoryResult(_Result):
+    """Read and export validated P10 — Process RAM results; unavailable measurements retain their native status.
+
+    Args:
+        data: Plain validated native schema payload. Required.
+
+    Returns:
+        An instance of MemoryResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        MemoryResult(data)
+
+    HYSo Guide: analysis.p10
+    Offline: hyso docs show analysis.p10 --lang en
+    Open: hyso docs open analysis.p10 --lang en
+    """
     __slots__ = ()
     _kind = "memory"
 
 
 @dataclass(frozen=True, init=False)
 class FootprintResult(_Result):
+    """Read and export validated P11 — Tensor and artifact footprint results; unavailable measurements retain their native status.
+
+    Args:
+        data: Plain validated native schema payload. Required.
+
+    Returns:
+        An instance of FootprintResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        FootprintResult(data)
+
+    HYSo Guide: analysis.p11
+    Offline: hyso docs show analysis.p11 --lang en
+    Open: hyso docs open analysis.p11 --lang en
+    """
     __slots__ = ()
     _kind = "footprint"
 
 
 @dataclass(frozen=True, init=False)
 class PipelineResult(_Result):
+    """Read and export validated P03 — End-to-end latency results; unavailable measurements retain their native status.
+
+    Args:
+        data: Plain validated native schema payload. Required.
+
+    Returns:
+        An instance of PipelineResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        PipelineResult(data)
+
+    HYSo Guide: analysis.p03
+    Offline: hyso docs show analysis.p03 --lang en
+    Open: hyso docs open analysis.p03 --lang en
+    """
     __slots__ = ()
     _kind = 'pipeline'
 
 
 @dataclass(frozen=True, init=False)
 class StageTimingResult(_Result):
+    """Read and export validated P04 — Preprocessing and postprocessing results; unavailable measurements retain their native status.
+
+    Args:
+        data: Plain validated native schema payload. Required.
+
+    Returns:
+        An instance of StageTimingResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        StageTimingResult(data)
+
+    HYSo Guide: analysis.p04
+    Offline: hyso docs show analysis.p04 --lang en
+    Open: hyso docs open analysis.p04 --lang en
+    """
     __slots__ = ()
     _kind = 'stage_timing'
 
 
 @dataclass(frozen=True, init=False)
 class ColdStartResult(_Result):
+    """Read and export validated P05 — Cold start and loading results; unavailable measurements retain their native status.
+
+    Args:
+        data: Plain validated native schema payload. Required.
+
+    Returns:
+        An instance of ColdStartResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ColdStartResult(data)
+
+    HYSo Guide: analysis.p05
+    Offline: hyso docs show analysis.p05 --lang en
+    Open: hyso docs open analysis.p05 --lang en
+    """
     __slots__ = ()
     _kind = 'cold_start'
 
 
 @dataclass(frozen=True, init=False)
 class SweepResult(_Result):
+    """Read and export validated P06 — Batch-size sweep results; unavailable measurements retain their native status.
+
+    Args:
+        data: Plain validated native schema payload. Required.
+
+    Returns:
+        An instance of SweepResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        SweepResult(data)
+
+    HYSo Guide: analysis.p06
+    Offline: hyso docs show analysis.p06 --lang en
+    Open: hyso docs open analysis.p06 --lang en
+    """
     __slots__ = ()
     _kind = 'sweep'
 
 
 @dataclass(frozen=True, init=False)
 class PrecisionResult(_Result):
+    """Read and export validated P08 — Numerical-precision performance results; unavailable measurements retain their native status.
+
+    Args:
+        data: Plain validated native schema payload. Required.
+
+    Returns:
+        An instance of PrecisionResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        PrecisionResult(data)
+
+    HYSo Guide: analysis.p08
+    Offline: hyso docs show analysis.p08 --lang en
+    Open: hyso docs open analysis.p08 --lang en
+    """
     __slots__ = ()
     _kind = 'precision'
 
 
 @dataclass(frozen=True, init=False)
 class CapacityResult(_Result):
+    """Read and export validated P17 — Feasible batch search results; unavailable measurements retain their native status.
+
+    Args:
+        data: Plain validated native schema payload. Required.
+
+    Returns:
+        An instance of CapacityResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        CapacityResult(data)
+
+    HYSo Guide: analysis.p17
+    Offline: hyso docs show analysis.p17 --lang en
+    Open: hyso docs open analysis.p17 --lang en
+    """
     __slots__ = ()
     _kind = 'capacity'
 
 
 @dataclass(frozen=True, init=False)
 class OperatorProfileResult(_Result):
+    """Read and export validated P14 — Operator/kernel profiling results; unavailable measurements retain their native status.
+
+    Args:
+        data: Plain validated native schema payload. Required.
+
+    Returns:
+        An instance of OperatorProfileResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        OperatorProfileResult(data)
+
+    HYSo Guide: analysis.p14
+    Offline: hyso docs show analysis.p14 --lang en
+    Open: hyso docs open analysis.p14 --lang en
+    """
     __slots__ = ()
     _kind = 'operator_profile'
 
 
 @dataclass(frozen=True, init=False)
 class LayerProfileResult(_Result):
+    """Read and export validated P13 — Module/layer profiling results; unavailable measurements retain their native status.
+
+    Args:
+        data: Plain validated native schema payload. Required.
+
+    Returns:
+        An instance of LayerProfileResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        LayerProfileResult(data)
+
+    HYSo Guide: analysis.p13
+    Offline: hyso docs show analysis.p13 --lang en
+    Open: hyso docs open analysis.p13 --lang en
+    """
     __slots__ = ()
     _kind = 'layer_profile'
 
 
 @dataclass(frozen=True, init=False)
 class OperationCountResult(_Result):
+    """Read and export validated P12 — FLOPs and MACs results; unavailable measurements retain their native status.
+
+    Args:
+        data: Plain validated native schema payload. Required.
+
+    Returns:
+        An instance of OperationCountResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        OperationCountResult(data)
+
+    HYSo Guide: analysis.p12
+    Offline: hyso docs show analysis.p12 --lang en
+    Open: hyso docs open analysis.p12 --lang en
+    """
     __slots__ = ()
     _kind = 'operation_count'
 
 
 class _CanonicalEnvelopeExports:
-    """Lossless schema1 JSON/CSV for derived evidence envelopes."""
+    """Lossless schema1 JSON/CSV for derived evidence envelopes.
+
+    Returns:
+        An instance of _CanonicalEnvelopeExports with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        _CanonicalEnvelopeExports()
+
+    HYSo Guide: metrics.interpretation
+    Offline: hyso docs show metrics.interpretation --lang en
+    Open: hyso docs open metrics.interpretation --lang en
+    """
     __slots__ = ()
 
-    def to_json(self,path,*,overwrite=False):
+    def to_json(self,path: '_typing.Any',*,overwrite: 'bool'=False) -> 'None':
+        """Serialize this object using its native JSON format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json(path)
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         data=type(self)(self.to_dict()).to_dict()
         _write_export(path,json.dumps(data,ensure_ascii=False,allow_nan=False,sort_keys=True,indent=2)+'\n',overwrite)
 
-    def to_csv(self,path,*,overwrite=False):
+    def to_csv(self,path: '_typing.Any',*,overwrite: 'bool'=False) -> 'None':
+        """Export this object using its native CSV format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_csv(path)
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         data=type(self)(self.to_dict()).to_dict()
         columns=['format','schema_version','result_id','payload']
         row={k:data[k] for k in columns if k!='payload'};row['payload']=json.dumps(data,allow_nan=False)
         _write_export(path,_csv_text(columns,[row]),overwrite)
 
     @classmethod
-    def from_json(cls,path):
+    def from_json(cls,path: '_typing.Any') -> '_CanonicalEnvelopeExports':
+        """Read and validate this type from a local JSON file.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+
+        Returns:
+            A validated _CanonicalEnvelopeExports instance reconstructed from the supplied data.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            _CanonicalEnvelopeExports.from_json(path)
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         from pathlib import Path
         path=Path(path)
         if path.stat().st_size>128*1024**2:raise ValueError('oversized canonical evidence')
         return cls(json.loads(path.read_text(encoding='utf-8')))
 
     @classmethod
-    def from_csv(cls,path):
+    def from_csv(cls,path: '_typing.Any') -> '_typing.Any':
+        """Read and validate this type from its canonical CSV export.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+
+        Returns:
+            A validated _CanonicalEnvelopeExports instance reconstructed from the supplied data.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            _CanonicalEnvelopeExports.from_csv(path)
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         import csv
         from pathlib import Path
         if Path(path).stat().st_size>128*1024**2:raise ValueError('oversized canonical evidence')
@@ -414,29 +856,103 @@ class _CanonicalEnvelopeExports:
 
 @dataclass(frozen=True, init=False)
 class RooflineResult(_CanonicalEnvelopeExports,_Result):
+    """Read and export validated P18 — Roofline and arithmetic intensity results; unavailable measurements retain their native status.
+
+    Args:
+        data: Plain validated native schema payload. Required.
+
+    Returns:
+        An instance of RooflineResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        RooflineResult(data)
+
+    HYSo Guide: analysis.p18
+    Offline: hyso docs show analysis.p18 --lang en
+    Open: hyso docs open analysis.p18 --lang en
+    """
     __slots__ = ()
     _kind = 'roofline'
 
 
 @dataclass(frozen=True, init=False)
 class LayerOverheadResult(_CanonicalEnvelopeExports,_Result):
-    """Canonical schema1 envelope exports, also used by RooflineResult."""
+    """Canonical schema1 envelope exports, also used by RooflineResult.
+
+    Args:
+        data: Plain validated native schema payload. Required.
+
+    Returns:
+        An instance of LayerOverheadResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        LayerOverheadResult(data)
+
+    HYSo Guide: analysis.p13
+    Offline: hyso docs show analysis.p13 --lang en
+    Open: hyso docs open analysis.p13 --lang en
+    """
     __slots__ = ()
     _kind = 'layer_overhead'
 
 
 @dataclass(frozen=True, init=False)
 class TransferResult(_Result):
+    """Read and export validated P15 — CPU–GPU transfers results; unavailable measurements retain their native status.
+
+    Args:
+        data: Plain validated native schema payload. Required.
+
+    Returns:
+        An instance of TransferResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        TransferResult(data)
+
+    HYSo Guide: analysis.p15
+    Offline: hyso docs show analysis.p15 --lang en
+    Open: hyso docs open analysis.p15 --lang en
+    """
     __slots__ = ()
     _kind = 'transfer'
 
-    def nsys_activity_timeline(self, sqlite_path):
+    def nsys_activity_timeline(self, sqlite_path: '_typing.Any') -> '_typing.Any':
         """Return a linked GPU activity report from an external nsys SQLite export.
 
         Optional, read-only, no Nsight installation/import required for ordinary
         transfers. Checks this capture's token, PID, phases and GPU workloads.
         Original copy timings and optimization decisions remain unchanged.
         Without this external evidence the original overlap stays unsupported.
+
+        Args:
+            sqlite_path (_typing.Any): Local retained profiler SQLite capture path. Required.
+
+        Returns:
+            The retained nsys activity timeline value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.nsys_activity_timeline(sqlite_path)
+
+        HYSo Guide: analysis.p15
+        Offline: hyso docs show analysis.p15 --lang en
+        Open: hyso docs open analysis.p15 --lang en
         """
         from ._transfer_activity import analyze_nsys_activity
         return analyze_nsys_activity(self, sqlite_path)
@@ -444,5 +960,24 @@ class TransferResult(_Result):
 
 @dataclass(frozen=True, init=False)
 class UtilizationResult(_Result):
+    """Read and export validated P16 — Hardware utilization results; unavailable measurements retain their native status.
+
+    Args:
+        data: Plain validated native schema payload. Required.
+
+    Returns:
+        An instance of UtilizationResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        UtilizationResult(data)
+
+    HYSo Guide: analysis.p16
+    Offline: hyso docs show analysis.p16 --lang en
+    Open: hyso docs open analysis.p16 --lang en
+    """
     __slots__ = ()
     _kind = 'utilization'

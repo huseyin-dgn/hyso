@@ -4,6 +4,7 @@ No Trainer math, extra backward/step, scaler mutation, tensor CPU copy or reset.
 Dense real packed strided gradients are supported; sparse layouts stay explicit
 unsupported. Scalar CUDA readouts synchronize and perturb instrumented timing.
 """
+import typing as _typing
 from dataclasses import asdict, dataclass
 import hashlib
 import json
@@ -19,11 +20,49 @@ from .training_details import (_StageRecorder, TrainingStageProtocol, TrainingSt
 
 
 class GradientDiagnosticsError(RuntimeError):
-    """Incomplete observation; training may have advanced. No automatic retry."""
+    """Incomplete observation; training may have advanced. No automatic retry.
+
+    Returns:
+        An instance of GradientDiagnosticsError with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        GradientDiagnosticsError()
+
+    HYSo Guide: analysis.p25
+    Offline: hyso docs show analysis.p25 --lang en
+    Open: hyso docs open analysis.p25 --lang en
+    """
 
 
 @dataclass(frozen=True)
 class GradientDiagnosticsProtocol:
+    """Configure P25 — Gradient and AMP diagnostics measurement boundaries and resource limits; construction does not run the analysis.
+
+    Args:
+        max_attempts (int): Upper bound on attempts in this native protocol; this does not enable retries elsewhere. Default: 10000.
+        max_tensor_records (int): Upper bound on tensor records retained/accepted by this operation. Default: 100000.
+        chunk_elements (int): Maximum tensor elements per diagnostic processing chunk. Default: 65536.
+        observe_postclip (bool): Also observe gradients after the configured clipping boundary. Default: True.
+
+    Returns:
+        An instance of GradientDiagnosticsProtocol with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        GradientDiagnosticsProtocol()
+
+    HYSo Guide: analysis.p25
+    Offline: hyso docs show analysis.p25 --lang en
+    Open: hyso docs open analysis.p25 --lang en
+    """
     max_attempts: int = 10000
     max_tensor_records: int = 100000
     chunk_elements: int = 65536
@@ -384,10 +423,49 @@ def _instrumentation(rows,protocol,source):
 
 @dataclass(frozen=True,init=False)
 class GradientDiagnosticsResult:
+    """Read and export validated P25 — Gradient and AMP diagnostics results; unavailable measurements retain their native status.
+
+    Args:
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of GradientDiagnosticsResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        GradientDiagnosticsResult(data)
+
+    HYSo Guide: analysis.p25
+    Offline: hyso docs show analysis.p25 --lang en
+    Open: hyso docs open analysis.p25 --lang en
+    """
     __slots__ = ("_payload",)
     _payload: str
 
-    def __init__(self,data):
+    def __init__(self,data: 'dict[str, _typing.Any]') -> 'None':
+        """Initialize GradientDiagnosticsResult with the supplied settings.
+
+        Args:
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            GradientDiagnosticsResult(data)
+
+        HYSo Guide: analysis.p25
+        Offline: hyso docs show analysis.p25 --lang en
+        Open: hyso docs open analysis.p25 --lang en
+        """
         copied = _plain(data); self._check(copied)
         object.__setattr__(self,"_payload",json.dumps(copied,allow_nan=False,separators=(",",":")))
 
@@ -398,16 +476,74 @@ class GradientDiagnosticsResult:
         except (KeyError,TypeError,AttributeError) as error:
             raise ValueError("malformed P25 payload") from error
 
-    def to_dict(self):
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analysis.p25
+        Offline: hyso docs show analysis.p25 --lang en
+        Open: hyso docs open analysis.p25 --lang en
+        """
         return json.loads(self._payload)
 
     def _export_data(self):
         data = _plain(self.to_dict()); self._check(data); return data
 
-    def to_json(self,path,*,overwrite=False):
+    def to_json(self,path: '_typing.Any',*,overwrite: 'bool'=False) -> 'None':
+        """Serialize this object using its native JSON format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json(path)
+
+        HYSo Guide: analysis.p25
+        Offline: hyso docs show analysis.p25 --lang en
+        Open: hyso docs open analysis.p25 --lang en
+        """
         _write_export(path,json.dumps(self._export_data(),ensure_ascii=False,sort_keys=True,indent=2,allow_nan=False)+"\n",overwrite)
 
-    def to_csv(self,path,*,overwrite=False):
+    def to_csv(self,path: '_typing.Any',*,overwrite: 'bool'=False) -> 'None':
+        """Export this object using its native CSV format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_csv(path)
+
+        HYSo Guide: analysis.p25
+        Offline: hyso docs show analysis.p25 --lang en
+        Open: hyso docs open analysis.p25 --lang en
+        """
         data = self._export_data()
         columns = ["source_segment_id","epoch_id","window_id","attempt_id","samples","preclip_l2","norm_status",
                    "finite","nan_tensor_count","inf_tensor_count","with_gradient","without_gradient",
@@ -421,13 +557,39 @@ class GradientDiagnosticsResult:
         _write_export(path,_csv_text(columns,rows),overwrite)
 
 
-def measure_gradient_diagnostics(trainer,train_loader,val_loader=None,*,epochs=5,protocol=None,
-                                 timing_protocol=None,stage_protocol=None,save_last_to=None,resume_from=None):
+def measure_gradient_diagnostics(trainer: '_typing.Any',train_loader: '_typing.Any',val_loader: '_typing.Any'=None,*,epochs: 'int'=5,protocol: '_typing.Any'=None,
+                                 timing_protocol: '_typing.Any'=None,stage_protocol: '_typing.Any'=None,save_last_to: '_typing.Any'=None,resume_from: '_typing.Any'=None) -> 'GradientDiagnosticsResult':
     """One opt-in real fit; history/state/RNG advance normally. No rollback/retry.
 
     P20 native execution hooks and P19 source IDs are reused. Norm queries occur
     after normalization and before clipping; optional postclip is a separate read.
     Non-AMP nonfinite gradients retain Trainer's existing failure, without result.
+
+    Args:
+        trainer (_typing.Any): Caller-owned standard Trainer; a measurement may execute its fit lifecycle only when called explicitly. Required.
+        train_loader (_typing.Any): Finite training loader; batches must follow the task/model input contract. Required.
+        val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
+        epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after resume. Default: 5.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: None.
+        timing_protocol (_typing.Any): Typed timing measurement settings; boundaries and device guards remain explicit. Default: None.
+        stage_protocol (_typing.Any): Typed stage measurement settings; boundaries and device guards remain explicit. Default: None.
+        save_last_to (_typing.Any): Explicit checkpoint destination; writing occurs only during the requested fit. Default: None.
+        resume_from (_typing.Any): Existing compatible checkpoint; model/data/settings and total budget must match. Default: None.
+
+    Returns:
+        The retained measure gradient diagnostics value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        measure_gradient_diagnostics(trainer, train_loader)
+
+    HYSo Guide: analysis.p25
+    Offline: hyso docs show analysis.p25 --lang en
+    Open: hyso docs open analysis.p25 --lang en
     """
     protocol = GradientDiagnosticsProtocol() if protocol is None else protocol
     stage_protocol = TrainingStageProtocol() if stage_protocol is None else stage_protocol

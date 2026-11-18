@@ -1,3 +1,4 @@
+import typing as _typing
 # bcam.py
 
 import torch
@@ -246,7 +247,51 @@ def _validate_resume_progress(progress, plan):
 # CBAM Block
 
 class CBAMBlock(nn.Module):
-    def __init__(self, channels, reduction=16, kernel_size=7):
+    """Reweight convolutional features using channel attention followed by spatial attention.
+
+    Args:
+        channels (_typing.Any): Feature-channel count required by this block. Required.
+        reduction (int): Channel reduction ratio used by the attention bottleneck. Default: 16.
+        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 7.
+
+    Returns:
+        An instance of CBAMBlock with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        CBAMBlock(channels)
+
+    HYSo Guide: components.attention
+    Offline: hyso docs show components.attention --lang en
+    Open: hyso docs open components.attention --lang en
+    """
+    def __init__(self, channels: 'int', reduction: 'int'=16, kernel_size: 'int'=7) -> 'None':
+        """Initialize CBAMBlock with the supplied settings.
+
+        Args:
+            channels (int): Feature-channel count required by this block. Required.
+            reduction (int): Channel reduction ratio used by the attention bottleneck. Default: 16.
+            kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 7.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            CBAMBlock(channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
         super().__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.max_pool = nn.AdaptiveMaxPool2d(1)
@@ -254,7 +299,27 @@ class CBAMBlock(nn.Module):
         self.fc2 = nn.Linear(max(1, channels // reduction), channels)
         self.conv_spatial = nn.Conv2d(2, 1, kernel_size=kernel_size, padding=kernel_size // 2)
 
-    def forward(self, x):
+    def forward(self, x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
         b, c, _, _ = x.size()
         avg = self.avg_pool(x).view(b, c)
         mx = self.max_pool(x).view(b, c)
@@ -362,10 +427,64 @@ class BottleneckResidualBlock(nn.Module):
 # CNN + Residual + CBAM
 
 class ELO(nn.Module):
-    def __init__(self, input_channels=3, num_classes=10,
-                 conv_channels=[64,128,256,512], residual_per_block=2,
-                 p_drop=0.0, att_reduction=16, norm_type='auto',
-                 use_depthwise=False):
+    """Construct the legacy convolutional classifier with its attention and fit interface.
+
+    Args:
+        input_channels (int): Number of input image/feature channels. Default: 3.
+        num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 10.
+        conv_channels (_typing.Sequence[int]): Ordered channel widths for the convolutional stages. Default: [64, 128, 256, 512].
+        residual_per_block (int): Number of residual units in each stage. Default: 2.
+        p_drop (float): Drop probability used by this component. Default: 0.0.
+        att_reduction (int): Channel-attention bottleneck reduction ratio. Default: 16.
+        norm_type (str): Supported normalization family selected by this architecture. Default: 'auto'.
+        use_depthwise (bool): Select depthwise filtering where supported. Default: False.
+
+    Returns:
+        An instance of ELO with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ELO()
+
+    HYSo Guide: models.legacy
+    Offline: hyso docs show models.legacy --lang en
+    Open: hyso docs open models.legacy --lang en
+    """
+    def __init__(self, input_channels: 'int'=3, num_classes: 'int'=10,
+                 conv_channels: '_typing.Sequence[int]'=[64,128,256,512], residual_per_block: 'int'=2,
+                 p_drop: 'float'=0.0, att_reduction: 'int'=16, norm_type: 'str'='auto',
+                 use_depthwise: 'bool'=False) -> 'None':
+        """Initialize ELO with the supplied settings.
+
+        Args:
+            input_channels (int): Number of input image/feature channels. Default: 3.
+            num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 10.
+            conv_channels (_typing.Sequence[int]): Ordered channel widths for the convolutional stages. Default: [64, 128, 256, 512].
+            residual_per_block (int): Number of residual units in each stage. Default: 2.
+            p_drop (float): Drop probability used by this component. Default: 0.0.
+            att_reduction (int): Channel-attention bottleneck reduction ratio. Default: 16.
+            norm_type (str): Supported normalization family selected by this architecture. Default: 'auto'.
+            use_depthwise (bool): Select depthwise filtering where supported. Default: False.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ELO()
+
+        HYSo Guide: models.legacy
+        Offline: hyso docs show models.legacy --lang en
+        Open: hyso docs open models.legacy --lang en
+        """
         super().__init__()
         self.stem = nn.Sequential(
             nn.Conv2d(input_channels, conv_channels[0], 3, padding=1, bias=False),
@@ -395,7 +514,27 @@ class ELO(nn.Module):
             nn.Linear(conv_channels[-1] // 2, num_classes)
         )
 
-    def forward(self, x):
+    def forward(self, x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: models.legacy
+        Offline: hyso docs show models.legacy --lang en
+        Open: hyso docs open models.legacy --lang en
+        """
         x = self.stem(x)
         for blk in self.blocks:
             x = blk(x)
@@ -409,10 +548,66 @@ class ELO(nn.Module):
 # BCAMWithFit + Callbacks
 
 class EBO(nn.Module):
-    def __init__(self, input_channels=3, num_classes=10,
-                 conv_channels=[32,64,128,256], residual_per_block=2,
-                 p_drop=0.0, att_reduction=16, norm_type='auto', device=None,
-                 use_depthwise=False):
+    """Use the legacy EBO wrapper around ELO; pass device="cpu" to avoid its automatic device selection.
+
+    Args:
+        input_channels (int): Number of input image/feature channels. Default: 3.
+        num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 10.
+        conv_channels (_typing.Sequence[int]): Ordered channel widths for the convolutional stages. Default: [32, 64, 128, 256].
+        residual_per_block (int): Number of residual units in each stage. Default: 2.
+        p_drop (float): Drop probability used by this component. Default: 0.0.
+        att_reduction (int): Channel-attention bottleneck reduction ratio. Default: 16.
+        norm_type (str): Supported normalization family selected by this architecture. Default: 'auto'.
+        device (str | None): Optional device selector following this API's native placement/default rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
+        use_depthwise (bool): Select depthwise filtering where supported. Default: False.
+
+    Returns:
+        An instance of EBO with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        model = EBO(device="cpu")
+
+    HYSo Guide: models.legacy
+    Offline: hyso docs show models.legacy --lang en
+    Open: hyso docs open models.legacy --lang en
+    """
+    def __init__(self, input_channels: 'int'=3, num_classes: 'int'=10,
+                 conv_channels: '_typing.Sequence[int]'=[32,64,128,256], residual_per_block: 'int'=2,
+                 p_drop: 'float'=0.0, att_reduction: 'int'=16, norm_type: 'str'='auto', device: 'str | None'=None,
+                 use_depthwise: 'bool'=False) -> 'None':
+        """Initialize EBO with the supplied settings.
+
+        Args:
+            input_channels (int): Number of input image/feature channels. Default: 3.
+            num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 10.
+            conv_channels (_typing.Sequence[int]): Ordered channel widths for the convolutional stages. Default: [32, 64, 128, 256].
+            residual_per_block (int): Number of residual units in each stage. Default: 2.
+            p_drop (float): Drop probability used by this component. Default: 0.0.
+            att_reduction (int): Channel-attention bottleneck reduction ratio. Default: 16.
+            norm_type (str): Supported normalization family selected by this architecture. Default: 'auto'.
+            device (str | None): Optional device selector following this API's native placement/default rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
+            use_depthwise (bool): Select depthwise filtering where supported. Default: False.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            EBO()
+
+        HYSo Guide: models.legacy
+        Offline: hyso docs show models.legacy --lang en
+        Open: hyso docs open models.legacy --lang en
+        """
         super().__init__()
         self.model = ELO(
             input_channels=input_channels,
@@ -431,17 +626,64 @@ class EBO(nn.Module):
         self._callbacks = []
         self.optimizer = None
 
-    def forward(self, x):
+    def forward(self, x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: models.legacy
+        Offline: hyso docs show models.legacy --lang en
+        Open: hyso docs open models.legacy --lang en
+        """
         return self.model(x)
 
 
     # Callbacks & Optimizer
 
-    def callbacks(self, optimizer="Adam", optimizer_params=None,
-                  scheduler=None, scheduler_params=None,
-                  model_checkpoint=False, earlystop=None,
-                  lr=1e-3, weight_decay=1e-4):
+    def callbacks(self, optimizer: 'str'="Adam", optimizer_params: 'dict[str, _typing.Any] | None'=None,
+                  scheduler: '_typing.Any'=None, scheduler_params: 'dict[str, _typing.Any] | None'=None,
+                  model_checkpoint: 'bool'=False, earlystop: '_typing.Any'=None,
+                  lr: 'float'=1e-3, weight_decay: 'float'=1e-4) -> 'None':
         # ensure model on device
+        """Install the supported callback configuration for subsequent fit calls.
+
+        Args:
+            optimizer (str): Existing supported optimizer or a closed optimizer name, according to this API. Default: 'Adam'.
+            optimizer_params (dict[str, _typing.Any] | None): Closed native optimizer keyword options; unknown options are rejected. Default: None.
+            scheduler (_typing.Any): Supported native scheduler or closed scheduler name; stepping remains owned by Trainer. Default: None.
+            scheduler_params (dict[str, _typing.Any] | None): Closed scheduler settings; required scheduler-specific options remain mandatory. Default: None.
+            model_checkpoint (bool): Legacy checkpoint callback configuration. Default: False.
+            earlystop (_typing.Any): Legacy early-stopping callback configuration. Default: None.
+            lr (float): Optimizer learning rate. Default: 0.001.
+            weight_decay (float): Optimizer weight-decay coefficient. Default: 0.0001.
+
+        Returns:
+            None after the operation succeeds.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.callbacks()
+
+        HYSo Guide: models.legacy
+        Offline: hyso docs show models.legacy --lang en
+        Open: hyso docs open models.legacy --lang en
+        """
         try:
             self.model.to(self.device)
         except Exception:
@@ -497,13 +739,12 @@ class EBO(nn.Module):
 
     # Improved Fit Fonksiyonu (AMP, AdamW, OneCycle, grad_clip, accum_steps)
 
-    def fit(self, train_loader, val_loader=None, epochs=10, lr=1e-3,
-            optimizer_name="adamw", weight_decay=1e-4, use_ema=False,
-            use_amp=True, grad_clip=None, accum_steps=1,
-            scheduler_name=None, scheduler_params=None, max_lr=None, *,
-            resume_from=None, save_last_to=None):
-        """
-        optimizer_name: 'adamw' | 'adam' | 'sgd'
+    def fit(self, train_loader: '_typing.Any', val_loader: '_typing.Any'=None, epochs: 'int'=10, lr: 'float'=1e-3,
+            optimizer_name: 'str'="adamw", weight_decay: 'float'=1e-4, use_ema: 'bool'=False,
+            use_amp: 'bool'=True, grad_clip: '_typing.Any'=None, accum_steps: 'int'=1,
+            scheduler_name: '_typing.Any'=None, scheduler_params: 'dict[str, _typing.Any] | None'=None, max_lr: '_typing.Any'=None, *,
+            resume_from: '_typing.Any'=None, save_last_to: '_typing.Any'=None) -> '_typing.Any':
+        """optimizer_name: 'adamw' | 'adam' | 'sgd'
         scheduler_name: 'onecycle' | 'steplr' | 'reduceonplateau' | 'cosine'
         max_lr: required for onecycle
         accum_steps: positive Python integer; bool is not accepted
@@ -514,6 +755,38 @@ class EBO(nn.Module):
         standard loaders/samplers, num_workers=0 and bounded torchvision v1 transforms.
         Explicit generators and custom callbacks are unsupported; the original plan
         must match. Image identity uses paths/size/mtime, not image-content hashing.
+
+        Args:
+            train_loader (_typing.Any): Finite training loader; batches must follow the task/model input contract. Required.
+            val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
+            epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after resume. Default: 10.
+            lr (float): Optimizer learning rate. Default: 0.001.
+            optimizer_name (str): Closed supported optimizer name. Default: 'adamw'.
+            weight_decay (float): Optimizer weight-decay coefficient. Default: 0.0001.
+            use_ema (bool): Enable the supported EMA evaluation shadow. Default: False.
+            use_amp (bool): Enable the legacy supported mixed-precision path. Default: True.
+            grad_clip (_typing.Any): Optional positive gradient-norm clipping bound. Default: None.
+            accum_steps (int): Positive microbatch accumulation count per attempted optimizer update. Default: 1.
+            scheduler_name (_typing.Any): Closed supported scheduler name. Default: None.
+            scheduler_params (dict[str, _typing.Any] | None): Closed scheduler settings; required scheduler-specific options remain mandatory. Default: None.
+            max_lr (_typing.Any): Peak learning rate of the selected scheduler. Default: None.
+            resume_from (_typing.Any): Existing compatible checkpoint; model/data/settings and total budget must match. Default: None.
+            save_last_to (_typing.Any): Explicit checkpoint destination; writing occurs only during the requested fit. Default: None.
+
+        Returns:
+            The existing native history/result for this explicit training call; no automatic retry.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.fit(train_loader)
+
+        HYSo Guide: models.legacy
+        Offline: hyso docs show models.legacy --lang en
+        Open: hyso docs open models.legacy --lang en
         """
         if isinstance(accum_steps, bool) or not isinstance(accum_steps, int):
             raise TypeError("accum_steps must be a positive integer; bool is not accepted")

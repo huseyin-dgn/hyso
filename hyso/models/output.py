@@ -1,4 +1,5 @@
 """Explicit, parameter-sharing selection of one GraphModel Tensor output."""
+import typing as _typing
 
 import torch
 from torch import nn
@@ -19,9 +20,53 @@ class GraphTensorOutput(nn.Module):
     Automatic resume uses the closed NamedTensorDataset profile. Two-loss
     training uses raw GraphModel plus NamedTargetDataset; this adapter still
     selects exactly one Tensor output.
+
+    Args:
+        graph (_typing.Any): Validated GraphModel used by this output selector. Required.
+        output_name (_typing.Any): Exact named Graph output to expose. Required.
+        task (str | None): Explicit supported task; classification metrics do not imply detection or segmentation support. Default: None.
+        named_inputs (bool): Explicit named tensor inputs matching the graph contract. Default: False.
+
+    Returns:
+        An instance of GraphTensorOutput with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        GraphTensorOutput(graph, output_name)
+
+    HYSo Guide: models.graph-builder
+    Offline: hyso docs show models.graph-builder --lang en
+    Open: hyso docs open models.graph-builder --lang en
     """
 
-    def __init__(self, graph, output_name, *, task=None, named_inputs=False):
+    def __init__(self, graph: '_typing.Any', output_name: '_typing.Any', *, task: 'str | None'=None, named_inputs: 'bool'=False) -> 'None':
+        """Initialize GraphTensorOutput with the supplied settings.
+
+        Args:
+            graph (_typing.Any): Validated GraphModel used by this output selector. Required.
+            output_name (_typing.Any): Exact named Graph output to expose. Required.
+            task (str | None): Explicit supported task; classification metrics do not imply detection or segmentation support. Default: None.
+            named_inputs (bool): Explicit named tensor inputs matching the graph contract. Default: False.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            GraphTensorOutput(graph, output_name)
+
+        HYSo Guide: models.graph-builder
+        Offline: hyso docs show models.graph-builder --lang en
+        Open: hyso docs open models.graph-builder --lang en
+        """
         super().__init__()
         if not isinstance(graph, GraphModel):
             raise TypeError("graph must be a GraphModel")
@@ -60,7 +105,27 @@ class GraphTensorOutput(nn.Module):
         self.graph = graph
         self.output_name = output_name
 
-    def forward(self, inputs):
+    def forward(self, inputs: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            inputs (_typing.Any): Named input specifications for the builder, ordered references for add(), or supported runtime inputs for forward(). Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(inputs)
+
+        HYSo Guide: models.graph-builder
+        Offline: hyso docs show models.graph-builder --lang en
+        Open: hyso docs open models.graph-builder --lang en
+        """
         if len(self.graph.to_config()['inputs']) == 2:
             if type(inputs) is not dict:
                 raise TypeError('Two-input GraphTensorOutput expects a named Tensor dictionary')

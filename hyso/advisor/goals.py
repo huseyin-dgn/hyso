@@ -1,4 +1,5 @@
 """Record-local goal evaluation v1. No deployment or future feasibility proof."""
+import typing as _typing
 from fractions import Fraction
 import hashlib
 
@@ -63,12 +64,32 @@ def _context(resolver, resolved, metric):
     return request_scope, request_protocol
 
 
-def goal_context(resolver, record_id, metric):
+def goal_context(resolver: '_typing.Any', record_id: '_typing.Any', metric: '_typing.Any') -> '_typing.Any':
     """Explicitly request a retained record's scope/protocol selectors.
 
     This convenience call adds no target and leaves missing fields missing.
     In particular it cannot repair a missing backend, native clock or model link.
     Model/workload/dataset labels retain their original authority in evidence.
+
+    Args:
+        resolver (_typing.Any): Explicit resolver for the retained evidence. Required.
+        record_id (_typing.Any): Exact retained evidence identity. Required.
+        metric (_typing.Any): Exact supported metric selector; units and missing-value status are preserved. Required.
+
+    Returns:
+        The retained goal context value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        goal_context(resolver, record_id, metric)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
     """
     if type(resolver) is not NativeMetricResolver:
         raise AdvisorError('typed_resolver_required')
@@ -124,8 +145,28 @@ def _unknown(goal, support, reasons, evidence=()):
                           evidence=evidence, reasons=tuple(reasons))
 
 
-def evaluate_goal(resolver, goal):
-    """Evaluate one goal in exactly one eligible native capture, or abstain."""
+def evaluate_goal(resolver: '_typing.Any', goal: '_typing.Any') -> '_typing.Any':
+    """Evaluate one goal in exactly one eligible native capture, or abstain.
+
+    Args:
+        resolver (_typing.Any): Explicit resolver for the retained evidence. Required.
+        goal (_typing.Any): Typed measurable user goal. Required.
+
+    Returns:
+        The retained evaluate goal value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        evaluate_goal(resolver, goal)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+    """
     if type(resolver) is not NativeMetricResolver or type(goal) is not UserGoal:
         raise AdvisorError('typed_goal_and_resolver_required')
     if goal.input_validity != InputValidity.VALID:
@@ -183,7 +224,28 @@ def evaluate_goal(resolver, goal):
                           observed, Feasibility.UNKNOWN, (resolved.reference,), reasons)
 
 
-def evaluate_goals(resolver, request):
+def evaluate_goals(resolver: '_typing.Any', request: '_typing.Any') -> '_typing.Any':
+    """Evaluate the supplied user goals against resolved retained evidence without running missing measurements.
+
+    Args:
+        resolver (_typing.Any): Explicit resolver for the retained evidence. Required.
+        request (_typing.Any): Validated advisory/selection request; does not authorize execution. Required.
+
+    Returns:
+        A tuple of GoalEvaluation records; validity, evidence support and observed outcome remain separate.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        evaluate_goals(resolver, request)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+    """
     if type(request) is not AdvisorRequest or type(resolver) is not NativeMetricResolver:
         raise AdvisorError('typed_request_and_resolver_required')
     return tuple(evaluate_goal(resolver, goal) for goal in request.goals)

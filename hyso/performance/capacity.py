@@ -1,4 +1,5 @@
 """P17 finite worker admission; timing/forward probes reuse the P06/P08 core."""
+import typing as _typing
 from dataclasses import asdict, dataclass
 import errno
 import json
@@ -18,6 +19,34 @@ from .result import CapacityResult, PrecisionResult, _integer, _positive, _plain
 
 @dataclass(frozen=True)
 class BatchSearchProtocol:
+    """Configure P17 — Feasible batch search measurement boundaries and resource limits; construction does not run the analysis.
+
+    Args:
+        candidates (tuple[int, ...]): Explicit bounded candidate batch sizes/settings. Required.
+        maximum_batch (int): Upper batch-size search bound. Required.
+        cpu_memory_limit_bytes (int): Cpu memory limit in bytes; this does not imply a GPU hardware quota. Required.
+        input_limit_bytes (int): Input limit in bytes; this does not imply a GPU hardware quota. Required.
+        timeout_seconds (float): Timeout in seconds under the native protocol. Required.
+        stop_policy (str): Native stopping rule for the bounded search. Default: 'exhaust_candidates'.
+        warmup_iterations (int): Unreported warmup iteration count before measured samples. Default: 2.
+        measure_iterations (int): Measured iteration count per repeat. Default: 10.
+        repeats (int): Number of independently recorded measurement windows/repeats. Default: 1.
+        cuda_memory_fraction (float): Requested CUDA allocator fraction; not a hardware VRAM quota or admission grant. Default: 0.1.
+
+    Returns:
+        An instance of BatchSearchProtocol with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        BatchSearchProtocol(candidates=candidates, maximum_batch=maximum_batch, cpu_memory_limit_bytes=cpu_memory_limit_bytes, input_limit_bytes=input_limit_bytes, timeout_seconds=timeout_seconds)
+
+    HYSo Guide: analysis.p17
+    Offline: hyso docs show analysis.p17 --lang en
+    Open: hyso docs open analysis.p17 --lang en
+    """
     candidates: tuple[int, ...]
     maximum_batch: int
     cpu_memory_limit_bytes: int
@@ -157,13 +186,32 @@ def _summary(rows,plan):
         memory_scope='worker_private_commit_budget; process_RSS_snapshots; separate_single_forward_CUDA_allocator_probe; not_physical_VRAM')
 
 
-def find_max_batch_size(recipe,*,protocol):
+def find_max_batch_size(recipe: '_typing.Any',*,protocol: '_typing.Any') -> 'CapacityResult':
     """Search trusted CPU factory recipes in fresh bounded Windows workers.
 
     No live model, Tensor, stream or CUDA context is transferred. CPU memory is
     hard-limited by a worker Job Object; CUDA allocator fraction applies only in
     that child. An unexpected failure always stops admission and suppresses the
     successful maximum. Explicit OOM may continue in a NEW worker by policy.
+
+    Args:
+        recipe (_typing.Any): Trusted construction recipe; factory import/execution is governed by the existing operation contract. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Required.
+
+    Returns:
+        The retained find max batch size value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        find_max_batch_size(recipe, protocol=protocol)
+
+    HYSo Guide: analysis.p17
+    Offline: hyso docs show analysis.p17 --lang en
+    Open: hyso docs open analysis.p17 --lang en
     """
     if type(recipe) is not ColdStartRecipe: raise TypeError('expected ColdStartRecipe')
     if type(protocol) is not BatchSearchProtocol: raise TypeError('expected BatchSearchProtocol')

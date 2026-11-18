@@ -117,7 +117,26 @@ _ROWS = (
 
 
 def feature_explanations(*, language: str = "tr") -> list[dict[str, Any]]:
-    """Return detached bilingual metadata for every existing feature, without execution."""
+    """Return detached bilingual metadata for every existing feature, without execution.
+
+    Args:
+        language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'tr'.
+
+    Returns:
+        The retained feature explanations value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        feature_explanations()
+
+    HYSo Guide: metrics.interpretation
+    Offline: hyso docs show metrics.interpretation --lang en
+    Open: hyso docs open metrics.interpretation --lang en
+    """
     if language not in ("tr", "en"):
         raise ValueError("unsupported_language")
     rows = []

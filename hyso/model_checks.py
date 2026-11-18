@@ -4,6 +4,7 @@ These are user-model checks, not execution of the project's pytest/native suite.
 Preflight never builds a module. Runtime checks use synthetic zero inputs in eval
 mode, not a dataset, classification loss, quality or performance measurement.
 """
+import typing as _typing
 
 import copy
 import hashlib
@@ -16,8 +17,27 @@ import torch
 from .models import GraphModelBuilder, ModelBuilder
 
 
-def config_digest(config):
-    """Content identity for the exact supplied JSON architecture; no weight claim."""
+def config_digest(config: 'dict[str, _typing.Any]') -> '_typing.Any':
+    """Content identity for the exact supplied JSON architecture; no weight claim.
+
+    Args:
+        config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained state. Required.
+
+    Returns:
+        The retained config digest value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        config_digest(config)
+
+    HYSo Guide: models.checks
+    Offline: hyso docs show models.checks --lang en
+    Open: hyso docs open models.checks --lang en
+    """
     return hashlib.sha256(
         json.dumps(
             config, sort_keys=True, separators=(",", ":"), allow_nan=False
@@ -25,8 +45,28 @@ def config_digest(config):
     ).hexdigest()
 
 
-def preflight_model(config, *, batch_size=1):
-    """Dispatch existing allocation-free schema1/2/3 Core validation unchanged."""
+def preflight_model(config: 'dict[str, _typing.Any]', *, batch_size: 'int'=1) -> '_typing.Any':
+    """Dispatch existing allocation-free schema1/2/3 Core validation unchanged.
+
+    Args:
+        config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained state. Required.
+        batch_size (int): Positive batch-size setting or metadata assumption; no implicit batch search. Default: 1.
+
+    Returns:
+        The retained preflight model value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        preflight_model(config)
+
+    HYSo Guide: models.checks
+    Offline: hyso docs show models.checks --lang en
+    Open: hyso docs open models.checks --lang en
+    """
     builder = GraphModelBuilder if config.get("schema_version") == 3 else ModelBuilder
     return builder.preflight(config, batch_size=batch_size)
 
@@ -94,8 +134,28 @@ def _isolated_model(config, model=None):
     return candidate
 
 
-def count_parameters(config, *, model=None):
-    """Explicit <=1M-bound CPU construction/copy and numel; no forward pass."""
+def count_parameters(config: 'dict[str, _typing.Any]', *, model: '_typing.Any'=None) -> '_typing.Any':
+    """Explicit <=1M-bound CPU construction/copy and numel; no forward pass.
+
+    Args:
+        config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained state. Required.
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Default: None.
+
+    Returns:
+        The retained count parameters value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        count_parameters(config)
+
+    HYSo Guide: models.checks
+    Offline: hyso docs show models.checks --lang en
+    Open: hyso docs open models.checks --lang en
+    """
     _admit(config, preflight_model(config), runtime=False)
     with torch.random.fork_rng(devices=[]):
         torch.random.default_generator.manual_seed(0)
@@ -104,12 +164,12 @@ def count_parameters(config, *, model=None):
 
 
 def run_model_checks(
-    config,
+    config: 'dict[str, _typing.Any]',
     *,
-    model=None,
-    tests=("structure", "forward", "backward", "serialization"),
-    model_id=None,
-):
+    model: '_typing.Any'=None,
+    tests: '_typing.Any'=("structure", "forward", "backward", "serialization"),
+    model_id: '_typing.Any'=None,
+) -> '_typing.Any':
     """Run selected checks on a fresh model or isolated copy of supplied weights.
 
     Source parameters, buffers, gradients, modes and CPU RNG are not changed.
@@ -117,6 +177,27 @@ def run_model_checks(
     Backward differentiates sum(eval outputs), not a training loss. It may SKIP
     when no gradient exists. Forward prerequisites run even if not selected.
     Arbitrary custom Python side effects are not sandboxed by deepcopy.
+
+    Args:
+        config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained state. Required.
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Default: None.
+        tests (_typing.Any): Explicit supported checks to select; unsupported checks remain unavailable. Default: ('structure', 'forward', 'backward', 'serialization').
+        model_id (_typing.Any): Stable model label bound to this result/context. Default: None.
+
+    Returns:
+        The retained run model checks value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        run_model_checks(config)
+
+    HYSo Guide: models.checks
+    Offline: hyso docs show models.checks --lang en
+    Open: hyso docs open models.checks --lang en
     """
     allowed = ("structure", "forward", "backward", "serialization", "parameters")
     if (

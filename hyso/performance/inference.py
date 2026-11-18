@@ -1,4 +1,5 @@
 """P01 sample-only analytics and P02 continuous resident completion windows."""
+import typing as _typing
 from contextlib import ExitStack
 from dataclasses import asdict, dataclass
 import hashlib
@@ -22,6 +23,27 @@ from .result import LatencyAnalysis, ThroughputResult, _integer, _positive, _lat
 
 @dataclass(frozen=True)
 class TailPolicy:
+    """Set minimum observations for reporting latency quantiles and their tail adequacy.
+
+    Args:
+        min_samples (int): Minimum observations required for the statistic. Default: 1000.
+        min_tail_samples (int): Minimum tail observations required for a reported quantile. Default: 10.
+
+    Returns:
+        An instance of TailPolicy with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        TailPolicy()
+
+    HYSo Guide: analysis.p01
+    Offline: hyso docs show analysis.p01 --lang en
+    Open: hyso docs open analysis.p01 --lang en
+    """
     min_samples: int = 1000
     min_tail_samples: int = 10
 
@@ -32,6 +54,32 @@ class TailPolicy:
 
 @dataclass(frozen=True)
 class ThroughputProtocol:
+    """Configure P02 — Completed inference throughput measurement boundaries and resource limits; construction does not run the analysis.
+
+    Args:
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
+        precision (str): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: 'fp32'.
+        warmup_iterations (int): Unreported warmup iteration count before measured samples. Default: 10.
+        batch_count (int | None): Number of batches within the explicit measurement boundary. Default: 100.
+        duration_seconds (float | None): Duration in seconds under the native protocol. Default: None.
+        repeats (int): Number of independently recorded measurement windows/repeats. Default: 3.
+        queue_depth (int): Bound on in-flight pipeline work. Default: 16.
+        concurrency (int): Explicit supported in-flight concurrency; it is not inferred from throughput. Default: 1.
+
+    Returns:
+        An instance of ThroughputProtocol with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ThroughputProtocol()
+
+    HYSo Guide: analysis.p02
+    Offline: hyso docs show analysis.p02 --lang en
+    Open: hyso docs open analysis.p02 --lang en
+    """
     device: str = "cpu"
     precision: str = "fp32"
     warmup_iterations: int = 10
@@ -71,11 +119,31 @@ def _base(kind, feature, protocol, provenance):
                 diagnostics=dict(warnings=[], limitations=[]))
 
 
-def analyze_latency(benchmark_result, *, quantiles=(.99,), tail_policy=TailPolicy()):
+def analyze_latency(benchmark_result: '_typing.Any', *, quantiles: '_typing.Any'=(.99,), tail_policy: '_typing.Any'=TailPolicy()) -> 'LatencyAnalysis':
     """Analyze existing R*N samples; never execute a model or mutate the source.
 
     TailPolicy may be explicitly relaxed for descriptive exploration; no policy
     establishes independent repeats, effective sample size or a confidence interval.
+
+    Args:
+        benchmark_result (_typing.Any): Existing BenchmarkResult; the function analyzes retained samples without rerunning inference. Required.
+        quantiles (_typing.Any): Requested latency quantiles; tail adequacy is checked separately. Default: (0.99,).
+        tail_policy (_typing.Any): Minimum sample/tail requirements; insufficient observations remain unavailable. Default: TailPolicy().
+
+    Returns:
+        The retained analyze latency value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        analyze_latency(benchmark_result)
+
+    HYSo Guide: analysis.p01
+    Offline: hyso docs show analysis.p01 --lang en
+    Open: hyso docs open analysis.p01 --lang en
     """
     if not isinstance(benchmark_result, BenchmarkResult):
         raise TypeError("benchmark_result must be a validated BenchmarkResult")
@@ -218,7 +286,7 @@ def _window(model, inputs, plan, device, stream, expected):
         pending.clear()
 
 
-def measure_throughput(model, input_source, *, protocol=ThroughputProtocol()):
+def measure_throughput(model: '_typing.Any', input_source: '_typing.Any', *, protocol: '_typing.Any'=ThroughputProtocol()) -> 'ThroughputResult':
     """Continuous resident eager inference, completed images / host wall seconds.
 
     input_source is one resident contiguous NCHW Tensor, defensively cloned.
@@ -226,6 +294,26 @@ def measure_throughput(model, input_source, *, protocol=ThroughputProtocol()):
     Transfers, preflight/warmup, state/hash inspection and exports are outside
     windows. Loop/finite-check/queue instrumentation and terminal tail are inside.
     Hidden cross-stream/device work and concurrent caller activity are unsupported.
+
+    Args:
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+        input_source (_typing.Any): Caller-supplied resident batches/iterator; completion and sample accounting follow the protocol. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: ThroughputProtocol().
+
+    Returns:
+        The retained measure throughput value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        measure_throughput(model, input_source)
+
+    HYSo Guide: analysis.p02
+    Offline: hyso docs show analysis.p02 --lang en
+    Open: hyso docs open analysis.p02 --lang en
     """
     if type(protocol) is not ThroughputProtocol:
         raise TypeError("protocol must be ThroughputProtocol")

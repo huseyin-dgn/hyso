@@ -1,4 +1,5 @@
 """Closed native metric resolution and per-claim evidence checks (resolver v1)."""
+import typing as _typing
 from dataclasses import dataclass
 from enum import Enum
 import hashlib
@@ -13,6 +14,25 @@ RESOLVER_VERSION = '1'
 
 
 class NativeMetric(str, Enum):
+    """Select a native metric without inferring unavailable measurements or converting incompatible scopes.
+
+    Returns:
+        An instance of NativeMetric with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        NativeMetric.FORWARD_P50
+
+    HYSo Guide: metrics.interpretation
+    Offline: hyso docs show metrics.interpretation --lang en
+    Open: hyso docs open metrics.interpretation --lang en
+
+    Members:
+        FORWARD_P50, FORWARD_P95, FORWARD_P99, COMPLETED_IMAGES_PER_SECOND, E2E_P50, E2E_P95, E2E_P99, PRECISION_MEAN, PRECISION_THROUGHPUT, RSS_BASELINE, RSS_CURRENT, RSS_SAMPLED_PEAK, RSS_LIFETIME_HWM, PARAMETER_BYTES, BUFFER_BYTES, MODEL_LOGICAL_BYTES, ARTIFACT_BYTES, TEST_ACCURACY, TEST_MACRO_F1.
+    """
     FORWARD_P50 = 'resident_forward_p50'
     FORWARD_P95 = 'resident_forward_p95'
     FORWARD_P99 = 'resident_forward_p99'
@@ -37,7 +57,33 @@ class NativeMetric(str, Enum):
 @register
 @dataclass(frozen=True)
 class ResolvedMetric(Contract):
-    """A detached metric description; construction alone is not certification."""
+    """A detached metric description; construction alone is not certification.
+
+    Args:
+        metric (NativeMetric): Exact supported metric selector; units and missing-value status are preserved. Required.
+        value (float): Observed metric value; unavailable values retain their native null/status policy. Required.
+        reference (EvidenceRef): Exact retained reference evidence/identity. Required.
+        record_scope_json (str): Canonical metric scope serialized as JSON. Required.
+        protocol_json (str): Canonical protocol metadata serialized as JSON. Required.
+        native_context_json (str): Canonical native context serialized as JSON. Required.
+        origin (str): Explicit evidence origin/provenance. Required.
+        limitations (tuple): Explicit limitations of the evidence, comparison or proposed operation. Default: ().
+        resolver_version (str): Exact resolver/rule version. Default: RESOLVER_VERSION.
+
+    Returns:
+        An instance of ResolvedMetric with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ResolvedMetric(metric=metric, value=value, reference=reference, record_scope_json=record_scope_json, protocol_json=protocol_json, native_context_json=native_context_json, origin=origin)
+
+    HYSo Guide: metrics.interpretation
+    Offline: hyso docs show metrics.interpretation --lang en
+    Open: hyso docs open metrics.interpretation --lang en
+    """
     metric: NativeMetric
     value: float
     reference: EvidenceRef
@@ -67,21 +113,90 @@ class ResolvedMetric(Contract):
             raise AdvisorError('unsupported_resolver_version')
 
     @property
-    def record_scope(self):
+    def record_scope(self) -> '_typing.Any':
+        """Read the retained record scope from this ResolvedMetric record.
+
+        Returns:
+            The retained record scope value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.record_scope
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         return json.loads(self.record_scope_json)
 
     @property
-    def protocol(self):
+    def protocol(self) -> '_typing.Any':
+        """Read the retained protocol from this ResolvedMetric record.
+
+        Returns:
+            The retained protocol value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.protocol
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         return json.loads(self.protocol_json)
 
     @property
-    def native_context(self):
+    def native_context(self) -> '_typing.Any':
+        """Read the retained native context from this ResolvedMetric record.
+
+        Returns:
+            The retained native context value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.native_context
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         return json.loads(self.native_context_json)
 
 
 @register
 @dataclass(frozen=True)
 class MetricResolution(Contract):
+    """Retain a metric resolution with its supported value, unit, source and unavailability reasons.
+
+    Args:
+        status (str): Exact lifecycle/status filter accepted by this API. Required.
+        resolved (ResolvedMetric | None): Retained resolved value/status under the requested scope. Default: None.
+        reasons (tuple): Structured eligibility/compatibility reasons. Default: ().
+
+    Returns:
+        An instance of MetricResolution with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        MetricResolution(status=status)
+
+    HYSo Guide: metrics.interpretation
+    Offline: hyso docs show metrics.interpretation --lang en
+    Open: hyso docs open metrics.interpretation --lang en
+    """
     status: str
     resolved: ResolvedMetric | None = None
     reasons: tuple = ()
@@ -98,7 +213,25 @@ class MetricResolution(Contract):
 @register
 @dataclass(frozen=True)
 class NativeObservation(Finding):
-    """Add structured scalar/context to Finding without changing its v1 fields."""
+    """Add structured scalar/context to Finding without changing its v1 fields.
+
+    Args:
+        resolved_metric (ResolvedMetric | None): Native resolved metric retaining unit and scope. Default: None.
+
+    Returns:
+        An instance of NativeObservation with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        NativeObservation(finding_id, kind, statement)
+
+    HYSo Guide: metrics.interpretation
+    Offline: hyso docs show metrics.interpretation --lang en
+    Open: hyso docs open metrics.interpretation --lang en
+    """
     resolved_metric: ResolvedMetric | None = None
 
     def __post_init__(self):
@@ -113,6 +246,27 @@ class NativeObservation(Finding):
 @register
 @dataclass(frozen=True)
 class EvidenceEligibility(Contract):
+    """Describe why native evidence is eligible, incompatible or insufficient for a requested metric.
+
+    Args:
+        status (EvidenceSupport): Exact lifecycle/status filter accepted by this API. Required.
+        claim (str): Explicit evidence-backed statement to assess. Required.
+        reasons (tuple): Structured eligibility/compatibility reasons. Default: ().
+
+    Returns:
+        An instance of EvidenceEligibility with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        EvidenceEligibility(status=status, claim=claim)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+    """
     status: EvidenceSupport
     claim: str
     reasons: tuple = ()
@@ -151,13 +305,50 @@ class NativeMetricResolver:
 
     No source paths, factory strings, model classes or device APIs are followed.
     Native constructors may do bounded CPU arithmetic on recorded evidence.
+
+    Args:
+        report (_typing.Any): Validated retained analysis/advisory report. Required.
+
+    Returns:
+        An instance of NativeMetricResolver with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        NativeMetricResolver(report)
+
+    HYSo Guide: metrics.interpretation
+    Offline: hyso docs show metrics.interpretation --lang en
+    Open: hyso docs open metrics.interpretation --lang en
     """
     _payload: str
     _records: tuple
     source_report_id: str
     source_report_sha256: str
 
-    def __init__(self, report):
+    def __init__(self, report: '_typing.Any') -> 'None':
+        """Initialize NativeMetricResolver with the supplied settings.
+
+        Args:
+            report (_typing.Any): Validated retained analysis/advisory report. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            NativeMetricResolver(report)
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         from hyso.analysis import UnifiedAnalysisReport
         if type(report) is not UnifiedAnalysisReport:
             raise AdvisorError('typed_analysis_report_required')
@@ -172,16 +363,74 @@ class NativeMetricResolver:
         object.__setattr__(self, 'source_report_sha256', hashlib.sha256(raw.encode('utf-8')).hexdigest())
 
     @property
-    def report(self):
+    def report(self) -> '_typing.Any':
+        """Read the retained report from this NativeMetricResolver record.
+
+        Returns:
+            The retained report value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.report
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         return json.loads(self._payload)
 
-    def record(self, record_id):
+    def record(self, record_id: '_typing.Any') -> '_typing.Any':
+        """Read the retained record from this NativeMetricResolver record.
+
+        Args:
+            record_id (_typing.Any): Exact retained evidence identity. Required.
+
+        Returns:
+            The retained record value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.record(record_id)
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         for identity, raw in self._records:
             if identity == record_id:
                 return json.loads(raw)
         return None
 
-    def resolve(self, record_id, metric, *, point_id=None):
+    def resolve(self, record_id: '_typing.Any', metric: '_typing.Any', *, point_id: '_typing.Any'=None) -> '_typing.Any':
+        """Resolve the requested metric from retained native evidence without guessing a missing value.
+
+        Args:
+            record_id (_typing.Any): Exact retained evidence identity. Required.
+            metric (_typing.Any): Exact supported metric selector; units and missing-value status are preserved. Required.
+            point_id (_typing.Any): Exact sweep/calibration point identity. Default: None.
+
+        Returns:
+            A MetricResolution with the native value/unit/scope or explicit unavailability reasons.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.resolve(record_id, metric)
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         try:
             metric = NativeMetric(metric)
         except (ValueError, TypeError):
@@ -322,11 +571,32 @@ class NativeMetricResolver:
         return MetricResolution('supported', ResolvedMetric(metric, value, ref, canonical(r['scope']),
                                 canonical(p), canonical(context), r['origin'], tuple(notes)))
 
-    def check_reference(self, reference, metric, *, required_native=(), artifact_bytes=None):
+    def check_reference(self, reference: '_typing.Any', metric: '_typing.Any', *, required_native: '_typing.Sequence[str]'=(), artifact_bytes: '_typing.Any'=None) -> '_typing.Any':
         """Check the entire reference against a regenerated native resolution.
 
         Original artifact bytes are optional explicit input, never read by path.
         Without them, only the artifact hash's binding to the report is checked.
+
+        Args:
+            reference (_typing.Any): Exact retained reference evidence/identity. Required.
+            metric (_typing.Any): Exact supported metric selector; units and missing-value status are preserved. Required.
+            required_native (_typing.Sequence[str]): Exact native evidence prerequisites. Default: ().
+            artifact_bytes (_typing.Any): Artifact in bytes; this does not imply a GPU hardware quota. Default: None.
+
+        Returns:
+            The retained check reference value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.check_reference(reference, metric)
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
         """
         if type(reference) is not EvidenceRef:
             raise AdvisorError('typed_reference_required')
@@ -355,8 +625,27 @@ class NativeMetricResolver:
         return EvidenceEligibility(EvidenceSupport.INSUFFICIENT_EVIDENCE if reasons else EvidenceSupport.SUPPORTED,
                                    'observation', tuple(reasons))
 
-    def check_metric(self, resolved):
-        """Also reject tampered scalar, point context, origin or protocol claims."""
+    def check_metric(self, resolved: '_typing.Any') -> '_typing.Any':
+        """Also reject tampered scalar, point context, origin or protocol claims.
+
+        Args:
+            resolved (_typing.Any): Retained resolved value/status under the requested scope. Required.
+
+        Returns:
+            The retained check metric value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.check_metric(resolved)
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         if type(resolved) is not ResolvedMetric:
             raise AdvisorError('typed_resolved_metric_required')
         fresh = self.resolve(resolved.reference.record_id, resolved.metric, point_id=resolved.reference.point_ref)
@@ -364,8 +653,30 @@ class NativeMetricResolver:
             return EvidenceEligibility('insufficient_evidence', 'observation', ('resolved_metric_mismatch',))
         return self.check_reference(resolved.reference, resolved.metric)
 
-    def compare(self, left, left_metric, right, right_metric):
-        """Compatibility only, never independence, ranking or verified effect."""
+    def compare(self, left: '_typing.Any', left_metric: '_typing.Any', right: '_typing.Any', right_metric: '_typing.Any') -> '_typing.Any':
+        """Compatibility only, never independence, ranking or verified effect.
+
+        Args:
+            left (_typing.Any): Left retained input/source in this comparison. Required.
+            left_metric (_typing.Any): Resolved left-side metric with its unit and scope. Required.
+            right (_typing.Any): Right retained input/source in this comparison. Required.
+            right_metric (_typing.Any): Resolved right-side metric with its unit and scope. Required.
+
+        Returns:
+            The retained compare value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.compare(left, left_metric, right, right_metric)
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         a = self.check_reference(left, left_metric); b = self.check_reference(right, right_metric)
         reasons = list(a.reasons + b.reasons)
         if not reasons:

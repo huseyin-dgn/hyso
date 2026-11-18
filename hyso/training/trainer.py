@@ -46,6 +46,37 @@ class Trainer:
     Optimizers are
     standard non-fused SGD/Adam/AdamW; schedulers are bare OneCycleLR, StepLR
     or CosineAnnealingLR instances. The Trainer owns their stepping.
+
+    Args:
+        model (nn.Module): Caller-owned model; device, dtype and task must match the native operation. Required.
+        optimizer (torch.optim.Optimizer): Existing supported optimizer or a closed optimizer name, according to this API. Required.
+        loss_fn (nn.Module | dict[str, nn.Module]): Classification loss object, or the explicitly supported two-Graph-head loss mapping. Required.
+        device (str | torch.device): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
+        task (str): Explicit supported task; classification metrics do not imply detection or segmentation support. Default: 'multiclass'.
+        scheduler (_typing.Any): Supported native scheduler or closed scheduler name; stepping remains owned by Trainer. Default: None.
+        amp (bool): Enable the explicitly supported CUDA FP16 mixed-precision profile. Default: False.
+        accum_steps (int): Positive microbatch accumulation count per attempted optimizer update. Default: 1.
+        grad_clip (float | None): Optional positive gradient-norm clipping bound. Default: None.
+        ema_decay (float | None): Optional decay for the smoothed evaluation model. Default: None.
+        early_stopping (EarlyStopping | None): Supported early-stopping configuration/object; validation requirements still apply. Default: None.
+        callbacks (_typing.Sequence[_typing.Callable[[str, dict[str, _typing.Any]], None]]): Synchronous observers; their supported signatures and checkpoint restrictions are unchanged. Default: ().
+        model_config (dict[str, _typing.Any] | None): Separate exact architecture metadata for supported checkpoint/restore contracts. Default: None.
+        loss_weights (dict[str, float] | None): Positive weights matching the explicit named classification losses. Default: None.
+
+    Returns:
+        An instance of Trainer with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        trainer = Trainer(model, optimizer=optimizer, loss_fn=loss_fn)
+
+    HYSo Guide: training.trainer
+    Offline: hyso docs show training.trainer --lang en
+    Open: hyso docs open training.trainer --lang en
     """
 
     def __init__(self, model: nn.Module, *, optimizer: torch.optim.Optimizer,
@@ -56,7 +87,7 @@ class Trainer:
                  callbacks: _typing.Sequence[_typing.Callable[[str, dict[str, _typing.Any]], None]] = (),
                  model_config: dict[str, _typing.Any] | None = None,
                  loss_weights: dict[str, float] | None = None) -> None:
-        """Configure one caller-owned classification training lifecycle.
+        """Initialize Trainer with the supplied settings.
 
         Args:
             model: Eager nn.Module, already on device before optimizer creation.
@@ -77,6 +108,20 @@ class Trainer:
         Raises:
             TypeError: Unsupported model/optimizer/loss or callback contract.
             ValueError: Invalid parameter, device, tensor or training configuration.
+
+        Defaults:
+            device='cpu'; task='multiclass'; scheduler=None; amp=False; accum_steps=1; grad_clip=None; ema_decay=None; early_stopping=None; callbacks=(); model_config=None; loss_weights=None.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            Trainer(model, optimizer=optimizer, loss_fn=loss_fn)
+
+        HYSo Guide: training.trainer
+        Offline: hyso docs show training.trainer --lang en
+        Open: hyso docs open training.trainer --lang en
         """
         if not isinstance(model, nn.Module):
             raise TypeError("model must be an nn.Module")
@@ -166,7 +211,22 @@ class Trainer:
 
     @property
     def evaluation_model(self) -> nn.Module:
-        """Inference/best-weight target; EMA weights are never loaded into live model."""
+        """Inference/best-weight target; EMA weights are never loaded into live model.
+
+        Returns:
+            The existing EMA evaluation model when enabled, otherwise the caller-owned model.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.evaluation_model
+
+        HYSo Guide: training.trainer
+        Offline: hyso docs show training.trainer --lang en
+        Open: hyso docs open training.trainer --lang en
+        """
         return self.model if self.ema is None else self.ema.ema_model
 
     def _validate_ema(self):
@@ -589,6 +649,21 @@ class Trainer:
         and all seven ModularCNN constructor fields in model_config. It saves
         continuing state before best restoration. Resume requires the same plan
         and total epochs; completed/terminal checkpoints do not train again.
+
+        Defaults:
+            val_loader=None; epochs=5; save_last_to=None; resume_from=None.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.fit(train_loader)
+
+        HYSo Guide: training.trainer
+        Offline: hyso docs show training.trainer --lang en
+        Open: hyso docs open training.trainer --lang en
         """
         if type(epochs) is not int or epochs <= 0:
             raise ValueError("epochs must be a positive Python int")

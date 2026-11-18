@@ -4,6 +4,7 @@ No model or factory is loaded in this controller process. This is NOT a
 sandbox for adversarial Python, a generic checkpoint deserializer, or a
 35-feature production acceptance. Only G2's native P02/P11 CPU producers run.
 """
+import typing as _typing
 from dataclasses import asdict, dataclass, field
 import hashlib
 import json
@@ -53,6 +54,29 @@ def _source_receipt(path):
 
 @dataclass(frozen=True)
 class TrustedFactoryBinding:
+    """Bind an explicitly trusted factory and its code/input identities for isolated CPU execution.
+
+    Args:
+        model_id (str): Stable model label bound to this result/context. Required.
+        source_file (str): Local retained source-evidence path. Required.
+        source_sha256 (str): Exact SHA-256 digest of the source. Required.
+        factory_name (str): Trusted importable factory name. Default: 'build'.
+        kwargs (dict): Keyword options forwarded only to the native target documented by this API. Default: field(default_factory=dict).
+
+    Returns:
+        An instance of TrustedFactoryBinding with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        TrustedFactoryBinding(model_id=model_id, source_file=source_file, source_sha256=source_sha256)
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
+    """
     model_id: str
     source_file: str
     source_sha256: str
@@ -84,6 +108,32 @@ class TrustedFactoryBinding:
 
 @dataclass(frozen=True)
 class IsolatedCPUExecutionPolicy:
+    """Bound explicitly authorized CPU workers; this is not a general security sandbox or GPU admission.
+
+    Args:
+        explicit_authorization (bool): Explicit permission for the selected operation; prerequisites and guards still apply. Default: False.
+        timeout_seconds (int): Timeout in seconds under the native protocol. Default: 45.
+        job_memory_limit_bytes (int): Job memory limit in bytes; this does not imply a GPU hardware quota. Default: 2 * 1024 ** 3.
+        warmup_iterations (int): Unreported warmup iteration count before measured samples. Default: 1.
+        batch_count (int): Number of batches within the explicit measurement boundary. Default: 2.
+        repeats (int): Number of independently recorded measurement windows/repeats. Default: 1.
+        queue_depth (int): Bound on in-flight pipeline work. Default: 2.
+        max_input_bytes (int): Max input in bytes; this does not imply a GPU hardware quota. Default: 8 * 1024 ** 2.
+
+    Returns:
+        An instance of IsolatedCPUExecutionPolicy with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        IsolatedCPUExecutionPolicy()
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
+    """
     explicit_authorization: bool = False
     timeout_seconds: int = 45
     job_memory_limit_bytes: int = 2 * 1024**3
@@ -221,13 +271,34 @@ def _windows_available():
     return os.name == 'nt'
 
 
-def execute_isolated_cpu(request, bindings, *, authorized_features, policy=IsolatedCPUExecutionPolicy()):
+def execute_isolated_cpu(request: '_typing.Any', bindings: '_typing.Any', *, authorized_features: '_typing.Any', policy: '_typing.Any'=IsolatedCPUExecutionPolicy()) -> '_typing.Any':
     """Explicit, fail-closed Windows-only execution; no automatic in-process fallback.
 
     Parent validates factory file hashes WITHOUT importing or running factory.
     Child is created suspended and assigned a strict one-process Job prior to
     first Python instruction, with job/process commit limits and termination on
     timeout. Distinct worker-created model objects; no original model objects.
+
+    Args:
+        request (_typing.Any): Validated advisory/selection request; does not authorize execution. Required.
+        bindings (_typing.Any): Typed live/isolated/native bindings; identities and operation permissions must match the plan. Required.
+        authorized_features (_typing.Any): Explicit unique selected feature subset authorized for this call only. Required.
+        policy (_typing.Any): Existing protocol/resource policy; defaults do not grant additional consent. Default: IsolatedCPUExecutionPolicy().
+
+    Returns:
+        The retained execute isolated cpu value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        execute_isolated_cpu(request, bindings, authorized_features=authorized_features)
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
     """
     selected = _check_request(request, bindings, authorized_features, policy)
     if not _windows_available():

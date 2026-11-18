@@ -34,8 +34,8 @@ def build_parser():
     common_options(parser, export=False)
     parser.add_argument('--version', action='version', version='hyso 0.2.0')
     sub = parser.add_subparsers(dest='group', required=True)
-    from . import models, train, analysis, experiments, presentation
-    for module in (models, train, analysis, experiments, presentation):
+    from . import models, train, analysis, experiments, presentation, docs
+    for module in (models, train, analysis, experiments, presentation, docs):
         module.register(sub)
     examples = {
         'models': 'hyso models list\nhyso models show conv2d\nhyso models summary model.json\nhyso models inspect model.json --dry-run',
@@ -45,6 +45,7 @@ def build_parser():
         'advisor': 'hyso advisor recommend analysis.json --format markdown --language tr\nReads saved evidence and gives manual advice; does not train or edit model code.',
         'reports': 'hyso reports render result.json --format html --output report.html\nReads a supported saved HYSo result. Output parent must exist; files are not overwritten by default.',
         'experiments': 'hyso experiments list --root C:/local-hyso/store\nOpens an existing ExperimentManager store; does not create or migrate it.',
+        'docs': 'hyso docs list\nhyso docs show models.graph-builder --lang tr\nhyso docs open analysis.p23 --lang de\nOnly docs open opens a browser; --dry-run prints its local URI.',
     }
     for name, example in examples.items():
         sub.choices[name].formatter_class = argparse.RawDescriptionHelpFormatter

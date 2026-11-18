@@ -63,6 +63,7 @@
     "hyso/cli/__init__.py",
     "hyso/cli/analysis.py",
     "hyso/cli/common.py",
+    "hyso/cli/docs.py",
     "hyso/cli/experiments.py",
     "hyso/cli/main.py",
     "hyso/cli/models.py",
@@ -182,7 +183,8 @@
     "THIRD_PARTY_NOTICES.md",
     "hyso/py.typed",
     "hyso/data/user-guide.html",
-    "hyso/data/user-guide-topics.json"
+    "hyso/data/user-guide-topics.json",
+    "hyso/data/api-topics.json"
   ],
   "excluded_python_files": [
     "hyso/models/_development.py",

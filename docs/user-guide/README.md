@@ -46,6 +46,8 @@ commercial distribution.
 See [language-quality.md](language-quality.md) for semantic and terminology
 review, [the guide tests](../../tests/test_user_guide.py) for static/install checks,
 and the task QA receipt for actual browser screenshots and execution results.
+See [contextual-help.md](contextual-help.md) for hover documentation, the API/topic
+inventory and the `hyso docs list/show/open` commands, including editor limits.
 The reproducible browser check is `tools/docs/check_user_guide_browser.py`;
 pass an already-installed Chromium browser with `--browser` and a fresh
 `--output` directory. It uses offline headless mode with GPU disabled. Playwright

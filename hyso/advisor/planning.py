@@ -18,6 +18,43 @@ _STAGES = {'retained_review': 0, 'association_validation': 1, 'new_measurement':
 @register
 @dataclass(frozen=True)
 class DecisionPlan(Contract):
+    """Describe proposed measurements or experiments with dependencies and acceptance conditions.
+
+    Args:
+        domain (str): Feature/metric domain, separate from runtime support. Required.
+        stage (str): Workflow stage or timing-stage identity for this operation. Required.
+        decision (str): Retained advisory decision; this does not execute the proposal. Required.
+        rationale (str): Human-readable reasoning linked to retained evidence. Required.
+        change_parameter (str | None): Exact setting proposed for a controlled experiment. Default: None.
+        changed_variables (tuple): Variables intentionally changed in the proposed comparison. Default: ().
+        fixed_conditions (tuple): Variables held fixed for the proposed controlled comparison. Default: ().
+        remeasure_metrics (tuple): Metrics that a proposed experiment must measure again. Default: ().
+        missing_evidence (tuple): Explicit missing prerequisites; these are not filled by guesses. Default: ().
+        risks (tuple): Known limitations/risks attached to the proposal. Default: ().
+        acceptance_conditions (tuple): Explicit conditions that a proposed experiment must verify. Default: ().
+        goal_ids (tuple): Exact user-goal identities to which this finding applies. Default: ().
+        budget_ids (tuple): Exact referenced resource-budget identities. Default: ().
+        capture_records (tuple): Retained capture records required by this operation. Default: ().
+        authorization (str): Explicit operation permissions; prerequisites and guards remain independent. Default: 'not_authorized'.
+        readiness (str): Retained readiness status; planning readiness is not runtime admission. Default: 'blocked'.
+        cost (str): Declared advisory cost estimate; no runtime measurement is inferred. Default: 'unknown'.
+        expected_effect (str): Hypothesized effect to test; it is not a verified improvement. Default: 'unknown'.
+        verified_effect (str): Effect verified by the exact retained evidence, with scope and limitations. Default: 'not_measured'.
+
+    Returns:
+        An instance of DecisionPlan with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        DecisionPlan(domain=domain, stage=stage, decision=decision, rationale=rationale)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+    """
     domain: str
     stage: str
     decision: str
@@ -64,6 +101,25 @@ class DecisionPlan(Contract):
 @register
 @dataclass(frozen=True)
 class PlannedFinding(Finding):
+    """Bind a proposed advisory step to its finding, prerequisites and verification plan.
+
+    Args:
+        plan (DecisionPlan | None): Typed selection plan; a plan alone grants no execution permission. Default: None.
+
+    Returns:
+        An instance of PlannedFinding with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        PlannedFinding(finding_id, kind, statement)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+    """
     plan: DecisionPlan | None = None
 
     def __post_init__(self):

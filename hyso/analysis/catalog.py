@@ -37,6 +37,35 @@ class AnalysisFeature:
     supported_devices/modes refer only to the common executor. Empty coverage
     does not mean the original performance API is absent. Requirements and
     applicability still need plan and runtime validation.
+
+    Args:
+        feature_id (str): Exact P01-P35 feature identifier. Required.
+        name (str): Registered component name, exact metric label, or stored entity name in this API. Required.
+        description (str): Human-readable specification description. Required.
+        domain (str): Feature/metric domain, separate from runtime support. Required.
+        requirements (tuple[str, ...]): Explicit prerequisite contracts for the operation. Required.
+        required_capabilities (tuple[str, ...]): Explicit prerequisite capabilities; declarations are not runtime proof. Required.
+        supported_devices (tuple[str, ...]): Declared native device support; current acceptance/admission is separate. Required.
+        executor_modes (tuple[str, ...]): Explicit supported execution profiles for this feature. Required.
+        cost_class (str): Native cost category of the feature/operation. Required.
+        dependencies (tuple[str, ...]): Explicit prerequisite identities for this proposed step. Required.
+        applicability (str): Conditions under which the finding/evidence applies. Required.
+        executor_scope (str): Native execution boundary of this feature. Required.
+        limitations (tuple[str, ...]): Explicit limitations of the evidence, comparison or proposed operation. Required.
+
+    Returns:
+        An instance of AnalysisFeature with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        AnalysisFeature(feature_id=feature_id, name=name, description=description, domain=domain, requirements=requirements, required_capabilities=required_capabilities, supported_devices=supported_devices, executor_modes=executor_modes, cost_class=cost_class, dependencies=dependencies, applicability=applicability, executor_scope=executor_scope, limitations=limitations)
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
     """
     feature_id: str
     name: str
@@ -53,11 +82,46 @@ class AnalysisFeature:
     limitations: tuple[str, ...]
 
     def to_dict(self) -> dict[str, Any]:
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         return asdict(self)
 
 
 def feature_catalog(feature_id: str | None = None) -> tuple[AnalysisFeature, ...] | AnalysisFeature:
-    """Describe all 35 features, or one ID. Does not load models or probe devices."""
+    """Describe all 35 features, or one ID. Does not load models or probe devices.
+
+    Args:
+        feature_id (str | None): Exact P01-P35 feature identifier. Default: None.
+
+    Returns:
+        The retained feature catalog value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        feature_catalog()
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
+    """
     result = []
     for spec in CATALOG:
         modes = tuple(mode for mode, ids in EXECUTOR_FEATURES.items() if spec.feature_id in ids)

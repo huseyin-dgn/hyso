@@ -17,6 +17,7 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 DEVELOPMENT_MODULES = {
+    "hyso/cli/docs.py",
     "hyso/_graph_receiver.py",
     "hyso/analysis/graph_evidence.py",
     "hyso/analysis/graph_heads.py",
@@ -290,7 +291,7 @@ def test_canonical_packaging_configuration():
     assert {
         path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")
     } == DEVELOPMENT_MODULES
-    assert len(MODULES) == 169
+    assert len(MODULES) == 170
     assert MODULES.isdisjoint(PROFILE["excluded_python_files"])
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()

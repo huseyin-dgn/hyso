@@ -24,3 +24,4 @@ exclude hyso/models/m4_registry.py
 exclude hyso/models/m4_reparam.py
 exclude hyso/models/mobile_architectures.py
 exclude hyso/models/reparam_architectures.py
+include hyso/data/api-topics.json

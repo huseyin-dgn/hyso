@@ -5,6 +5,7 @@ implementations. The root MIT license and PyTorch dependency notices apply.
 All geometry and parameter accounting below operate on Python integers.
 """
 from __future__ import annotations
+import typing as _typing
 
 import math
 
@@ -28,17 +29,113 @@ def _input(x, channels):
 
 
 class PointwiseConv2D(nn.Conv2d):
-    """1x1 channel mixing with zero padding and configurable stride/bias."""
-    def __init__(self, in_channels, out_channels, stride=1, bias=True):
+    """1x1 channel mixing with zero padding and configurable stride/bias.
+
+    Args:
+        in_channels (_typing.Any): Expected input feature-channel count. Required.
+        out_channels (_typing.Any): Number of output feature channels. Required.
+        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+        bias (bool): Whether the component includes an additive trainable bias. Default: True.
+
+    Returns:
+        An instance of PointwiseConv2D with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        PointwiseConv2D(in_channels, out_channels)
+
+    HYSo Guide: components.convolution
+    Offline: hyso docs show components.convolution --lang en
+    Open: hyso docs open components.convolution --lang en
+    """
+    def __init__(self, in_channels: 'int', out_channels: 'int', stride: 'int | tuple[int, int] | list[int]'=1, bias: 'bool'=True) -> 'None':
+        """Initialize PointwiseConv2D with the supplied settings.
+
+        Args:
+            in_channels (int): Expected input feature-channel count. Required.
+            out_channels (int): Number of output feature channels. Required.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step; must produce a valid output shape. Default: 1.
+            bias (bool): Whether the component includes an additive trainable bias. Default: True.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            PointwiseConv2D(in_channels, out_channels)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
         p = _parameters('pointwise_conv2d', in_channels=in_channels, out_channels=out_channels,
                         stride=stride, bias=bias)
         super().__init__(**p, kernel_size=1, padding=0)
 
 
 class DepthwiseConv2D(nn.Conv2d):
-    """Independent spatial filters, groups=C and output=C*depth_multiplier."""
-    def __init__(self, in_channels, depth_multiplier=1, kernel_size=3, stride=1,
-                 padding=1, dilation=1, bias=True):
+    """Independent spatial filters, groups=C and output=C*depth_multiplier.
+
+    Args:
+        in_channels (_typing.Any): Expected input feature-channel count. Required.
+        depth_multiplier (int): Number of independent depthwise output filters per input channel. Default: 1.
+        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+        padding (int): Spatial padding under the closed registered component contract. Default: 1.
+        dilation (int): Spacing between filter taps; native output-shape rules remain applicable. Default: 1.
+        bias (bool): Whether the component includes an additive trainable bias. Default: True.
+
+    Returns:
+        An instance of DepthwiseConv2D with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        DepthwiseConv2D(in_channels)
+
+    HYSo Guide: components.convolution
+    Offline: hyso docs show components.convolution --lang en
+    Open: hyso docs open components.convolution --lang en
+    """
+    def __init__(self, in_channels: 'int', depth_multiplier: 'int'=1, kernel_size: 'int | tuple[int, int] | list[int]'=3, stride: 'int | tuple[int, int] | list[int]'=1,
+                 padding: 'int | tuple[int, int] | list[int]'=1, dilation: 'int | tuple[int, int] | list[int]'=1, bias: 'bool'=True) -> 'None':
+        """Initialize DepthwiseConv2D with the supplied settings.
+
+        Args:
+            in_channels (int): Expected input feature-channel count. Required.
+            depth_multiplier (int): Number of independent depthwise output filters per input channel. Default: 1.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step; must produce a valid output shape. Default: 1.
+            padding (int | tuple[int, int] | list[int]): Spatial padding under the closed registered component contract. Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between filter taps; native output-shape rules remain applicable. Default: 1.
+            bias (bool): Whether the component includes an additive trainable bias. Default: True.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            DepthwiseConv2D(in_channels)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
         p = _parameters('depthwise_conv2d', in_channels=in_channels, depth_multiplier=depth_multiplier,
                         kernel_size=kernel_size, stride=stride, padding=padding, dilation=dilation, bias=bias)
         multiplier = p.pop('depth_multiplier')
@@ -46,9 +143,62 @@ class DepthwiseConv2D(nn.Conv2d):
 
 
 class DepthwiseSeparableConv2D(nn.Module):
-    """Depthwise spatial filtering followed by dense 1x1 channel mixing."""
-    def __init__(self, in_channels, out_channels, depth_multiplier=1, kernel_size=3,
-                 stride=1, padding=1, dilation=1, bias=True):
+    """Depthwise spatial filtering followed by dense 1x1 channel mixing.
+
+    Args:
+        in_channels (_typing.Any): Expected input feature-channel count. Required.
+        out_channels (_typing.Any): Number of output feature channels. Required.
+        depth_multiplier (int): Number of independent depthwise output filters per input channel. Default: 1.
+        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+        padding (int): Spatial padding under the closed registered component contract. Default: 1.
+        dilation (int): Spacing between filter taps; native output-shape rules remain applicable. Default: 1.
+        bias (bool): Whether the component includes an additive trainable bias. Default: True.
+
+    Returns:
+        An instance of DepthwiseSeparableConv2D with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        DepthwiseSeparableConv2D(in_channels, out_channels)
+
+    HYSo Guide: components.convolution
+    Offline: hyso docs show components.convolution --lang en
+    Open: hyso docs open components.convolution --lang en
+    """
+    def __init__(self, in_channels: 'int', out_channels: 'int', depth_multiplier: 'int'=1, kernel_size: 'int | tuple[int, int] | list[int]'=3,
+                 stride: 'int | tuple[int, int] | list[int]'=1, padding: 'int | tuple[int, int] | list[int]'=1, dilation: 'int | tuple[int, int] | list[int]'=1, bias: 'bool'=True) -> 'None':
+        """Initialize DepthwiseSeparableConv2D with the supplied settings.
+
+        Args:
+            in_channels (int): Expected input feature-channel count. Required.
+            out_channels (int): Number of output feature channels. Required.
+            depth_multiplier (int): Number of independent depthwise output filters per input channel. Default: 1.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step; must produce a valid output shape. Default: 1.
+            padding (int | tuple[int, int] | list[int]): Spatial padding under the closed registered component contract. Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between filter taps; native output-shape rules remain applicable. Default: 1.
+            bias (bool): Whether the component includes an additive trainable bias. Default: True.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            DepthwiseSeparableConv2D(in_channels, out_channels)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
         p = _parameters('depthwise_separable_conv2d', in_channels=in_channels, out_channels=out_channels,
                         depth_multiplier=depth_multiplier, kernel_size=kernel_size, stride=stride,
                         padding=padding, dilation=dilation, bias=bias)
@@ -58,14 +208,87 @@ class DepthwiseSeparableConv2D(nn.Module):
                                    p['padding'], p['dilation'], p['in_channels'], bias=p['bias'])
         self.pointwise = nn.Conv2d(middle, p['out_channels'], 1, bias=p['bias'])
 
-    def forward(self, x):
+    def forward(self, x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
         return self.pointwise(self.depthwise(x))
 
 
 class SpatialSeparableConv2D(nn.Module):
-    """(kH,1) -> (1,kW), with separate H/W stride, padding and dilation."""
-    def __init__(self, in_channels, out_channels, intermediate_channels, kernel_size=3,
-                 stride=1, padding=1, dilation=1, bias=True):
+    """(kH,1) -> (1,kW), with separate H/W stride, padding and dilation.
+
+    Args:
+        in_channels (_typing.Any): Expected input feature-channel count. Required.
+        out_channels (_typing.Any): Number of output feature channels. Required.
+        intermediate_channels (_typing.Any): Internal feature width between projections. Required.
+        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+        padding (int): Spatial padding under the closed registered component contract. Default: 1.
+        dilation (int): Spacing between filter taps; native output-shape rules remain applicable. Default: 1.
+        bias (bool): Whether the component includes an additive trainable bias. Default: True.
+
+    Returns:
+        An instance of SpatialSeparableConv2D with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        SpatialSeparableConv2D(in_channels, out_channels, intermediate_channels)
+
+    HYSo Guide: components.convolution
+    Offline: hyso docs show components.convolution --lang en
+    Open: hyso docs open components.convolution --lang en
+    """
+    def __init__(self, in_channels: 'int', out_channels: 'int', intermediate_channels: 'int', kernel_size: 'int | tuple[int, int] | list[int]'=3,
+                 stride: 'int | tuple[int, int] | list[int]'=1, padding: 'int | tuple[int, int] | list[int]'=1, dilation: 'int | tuple[int, int] | list[int]'=1, bias: 'bool'=True) -> 'None':
+        """Initialize SpatialSeparableConv2D with the supplied settings.
+
+        Args:
+            in_channels (int): Expected input feature-channel count. Required.
+            out_channels (int): Number of output feature channels. Required.
+            intermediate_channels (int): intermediate channels Required.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step; must produce a valid output shape. Default: 1.
+            padding (int | tuple[int, int] | list[int]): Spatial padding under the closed registered component contract. Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between filter taps; native output-shape rules remain applicable. Default: 1.
+            bias (bool): Whether the component includes an additive trainable bias. Default: True.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            SpatialSeparableConv2D(in_channels, out_channels, intermediate_channels)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
         p = _parameters('spatial_separable_conv2d', in_channels=in_channels, out_channels=out_channels,
                         intermediate_channels=intermediate_channels, kernel_size=kernel_size,
                         stride=stride, padding=padding, dilation=dilation, bias=bias)
@@ -79,7 +302,27 @@ class SpatialSeparableConv2D(nn.Module):
         self.horizontal = nn.Conv2d(intermediate_channels, out_channels, (1, kw), (1, sw),
                                     (0, pw), (1, dw), bias=bias)
 
-    def forward(self, x):
+    def forward(self, x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
         return self.horizontal(self.vertical(x))
 
 
@@ -89,9 +332,61 @@ class FactorizedConv2D(nn.Module):
     intermediate_channels must not exceed either boundary channel count.
     Spatial stride/padding/dilation belong exclusively to the second operator.
     There is no hidden normalization, activation or residual connection.
+
+    Args:
+        in_channels (_typing.Any): Expected input feature-channel count. Required.
+        out_channels (_typing.Any): Number of output feature channels. Required.
+        intermediate_channels (_typing.Any): Internal feature width between projections. Required.
+        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+        padding (int): Spatial padding under the closed registered component contract. Default: 1.
+        dilation (int): Spacing between filter taps; native output-shape rules remain applicable. Default: 1.
+        bias (bool): Whether the component includes an additive trainable bias. Default: True.
+
+    Returns:
+        An instance of FactorizedConv2D with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        FactorizedConv2D(in_channels, out_channels, intermediate_channels)
+
+    HYSo Guide: components.convolution
+    Offline: hyso docs show components.convolution --lang en
+    Open: hyso docs open components.convolution --lang en
     """
-    def __init__(self, in_channels, out_channels, intermediate_channels, kernel_size=3,
-                 stride=1, padding=1, dilation=1, bias=True):
+    def __init__(self, in_channels: 'int', out_channels: 'int', intermediate_channels: 'int', kernel_size: 'int | tuple[int, int] | list[int]'=3,
+                 stride: 'int | tuple[int, int] | list[int]'=1, padding: 'int | tuple[int, int] | list[int]'=1, dilation: 'int | tuple[int, int] | list[int]'=1, bias: 'bool'=True) -> 'None':
+        """Initialize FactorizedConv2D with the supplied settings.
+
+        Args:
+            in_channels (int): Expected input feature-channel count. Required.
+            out_channels (int): Number of output feature channels. Required.
+            intermediate_channels (int): intermediate channels Required.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step; must produce a valid output shape. Default: 1.
+            padding (int | tuple[int, int] | list[int]): Spatial padding under the closed registered component contract. Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between filter taps; native output-shape rules remain applicable. Default: 1.
+            bias (bool): Whether the component includes an additive trainable bias. Default: True.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            FactorizedConv2D(in_channels, out_channels, intermediate_channels)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
         p = _parameters('factorized_conv2d', in_channels=in_channels, out_channels=out_channels,
                         intermediate_channels=intermediate_channels, kernel_size=kernel_size,
                         stride=stride, padding=padding, dilation=dilation, bias=bias)
@@ -100,7 +395,27 @@ class FactorizedConv2D(nn.Module):
         self.spatial = nn.Conv2d(intermediate_channels, out_channels, p['kernel_size'],
                                  p['stride'], p['padding'], p['dilation'], bias=bias)
 
-    def forward(self, x):
+    def forward(self, x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
         return self.spatial(self.reduce(x))
 
 
@@ -109,33 +424,195 @@ class ChannelLayerNorm(nn.Module):
 
     An internal movedim exposes C to torch LayerNorm, then restores NCHW.
     This differs from LayerNorm over the entire CHW sample.
+
+    Args:
+        channels (_typing.Any): Feature-channel count required by this block. Required.
+        eps (float): Small numerical stabilizer for normalization. Default: 1e-05.
+        affine (bool): Learn a normalization scale and offset. Default: True.
+
+    Returns:
+        An instance of ChannelLayerNorm with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ChannelLayerNorm(channels)
+
+    HYSo Guide: components.normalization
+    Offline: hyso docs show components.normalization --lang en
+    Open: hyso docs open components.normalization --lang en
     """
-    def __init__(self, channels, eps=1e-5, affine=True):
+    def __init__(self, channels: 'int', eps: 'float'=1e-5, affine: 'bool'=True) -> 'None':
+        """Initialize ChannelLayerNorm with the supplied settings.
+
+        Args:
+            channels (int): Feature-channel count required by this block. Required.
+            eps (float): eps Default: 1e-05.
+            affine (bool): affine Default: True.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ChannelLayerNorm(channels)
+
+        HYSo Guide: components.normalization
+        Offline: hyso docs show components.normalization --lang en
+        Open: hyso docs open components.normalization --lang en
+        """
         p = _parameters('channel_layer_norm', channels=channels, eps=eps, affine=affine)
         super().__init__()
         self.channels = channels
         self.norm = nn.LayerNorm(channels, eps=p['eps'], elementwise_affine=p['affine'])
 
-    def forward(self, x):
+    def forward(self, x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.normalization
+        Offline: hyso docs show components.normalization --lang en
+        Open: hyso docs open components.normalization --lang en
+        """
         _input(x, self.channels)
         return self.norm(x.movedim(1, -1)).movedim(-1, 1)
 
 
 class InstanceNorm2D(nn.InstanceNorm2d):
-    """NCHW InstanceNorm with mandatory channel matching even without affine."""
-    def __init__(self, num_features, eps=1e-5, momentum=.1, affine=False, track_running_stats=False):
+    """NCHW InstanceNorm with mandatory channel matching even without affine.
+
+    Args:
+        num_features (_typing.Any): Channel count normalized by this component. Required.
+        eps (float): Small numerical stabilizer for normalization. Default: 1e-05.
+        momentum (float): Running-statistic update factor in normalization. Default: 0.1.
+        affine (bool): Learn a normalization scale and offset. Default: False.
+        track_running_stats (bool): Maintain running mean/variance for evaluation. Default: False.
+
+    Returns:
+        An instance of InstanceNorm2D with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        InstanceNorm2D(num_features)
+
+    HYSo Guide: components.normalization
+    Offline: hyso docs show components.normalization --lang en
+    Open: hyso docs open components.normalization --lang en
+    """
+    def __init__(self, num_features: 'int', eps: 'float'=1e-5, momentum: 'float'=.1, affine: 'bool'=False, track_running_stats: 'bool'=False) -> 'None':
+        """Initialize InstanceNorm2D with the supplied settings.
+
+        Args:
+            num_features (int): Channel count normalized by this component. Required.
+            eps (float): eps Default: 1e-05.
+            momentum (float): momentum Default: 0.1.
+            affine (bool): affine Default: False.
+            track_running_stats (bool): track running stats Default: False.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            InstanceNorm2D(num_features)
+
+        HYSo Guide: components.normalization
+        Offline: hyso docs show components.normalization --lang en
+        Open: hyso docs open components.normalization --lang en
+        """
         p = _parameters('instance_norm', num_features=num_features, eps=eps, momentum=momentum,
                         affine=affine, track_running_stats=track_running_stats)
         super().__init__(**p)
 
-    def forward(self, x):
+    def forward(self, x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.normalization
+        Offline: hyso docs show components.normalization --lang en
+        Open: hyso docs open components.normalization --lang en
+        """
         _input(x, self.num_features)
         return super().forward(x)
 
 
 class GlobalAveragePool2D(nn.AdaptiveAvgPool2d):
-    """Average spatial axes and retain [N,C,1,1]."""
-    def __init__(self):
+    """Average spatial axes and retain [N,C,1,1].
+
+    Returns:
+        An instance of GlobalAveragePool2D with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        GlobalAveragePool2D()
+
+    HYSo Guide: components.pooling
+    Offline: hyso docs show components.pooling --lang en
+    Open: hyso docs open components.pooling --lang en
+    """
+    def __init__(self) -> 'None':
+        """Initialize GlobalAveragePool2D with the supplied settings.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            GlobalAveragePool2D()
+
+        HYSo Guide: components.pooling
+        Offline: hyso docs show components.pooling --lang en
+        Open: hyso docs open components.pooling --lang en
+        """
         super().__init__((1, 1))
 
 

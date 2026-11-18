@@ -1,5 +1,6 @@
 """Versioned HYSo DAG planning and execution using the closed Registry, root MIT."""
 from __future__ import annotations
+import typing as _typing
 from collections import Counter
 import heapq
 import json
@@ -274,8 +275,49 @@ def _analyze(config,batch_size=1,activation_limit=16_777_216):
 
 
 class GraphModel(nn.Module):
-    """Execute each registered node once and return sorted named tensor outputs."""
-    def __init__(self,config,report):
+    """Execute each registered node once and return sorted named tensor outputs.
+
+    Args:
+        config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained state. Required.
+        report (_typing.Any): Validated retained analysis/advisory report. Required.
+
+    Returns:
+        An instance of GraphModel with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        GraphModel(config, report)
+
+    HYSo Guide: models.graph-builder
+    Offline: hyso docs show models.graph-builder --lang en
+    Open: hyso docs open models.graph-builder --lang en
+    """
+    def __init__(self,config: 'dict[str, _typing.Any]',report: '_typing.Any') -> 'None':
+        """Initialize GraphModel with the supplied settings.
+
+        Args:
+            config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained state. Required.
+            report (_typing.Any): Validated retained analysis/advisory report. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            GraphModel(config, report)
+
+        HYSo Guide: models.graph-builder
+        Offline: hyso docs show models.graph-builder --lang en
+        Open: hyso docs open models.graph-builder --lang en
+        """
         super().__init__()
         self._architecture=json.dumps(config,sort_keys=True,allow_nan=False)
         self._report=report
@@ -286,9 +328,46 @@ class GraphModel(nn.Module):
                                  for key in report['topological_order']})
         self.register_buffer('_contract',torch.empty(0),persistent=False)
 
-    def to_config(self):return json.loads(self._architecture)
+    def to_config(self) -> 'dict[str, _typing.Any]':
+        """Copy the versioned architecture configuration without model weights.
 
-    def forward(self,inputs):
+        Returns:
+            Detached JSON-compatible architecture metadata including normalized defaults; no weights.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_config()
+
+        HYSo Guide: models.graph-builder
+        Offline: hyso docs show models.graph-builder --lang en
+        Open: hyso docs open models.graph-builder --lang en
+        """
+        return json.loads(self._architecture)
+
+    def forward(self,inputs: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            inputs (_typing.Any): Named input specifications for the builder, ordered references for add(), or supported runtime inputs for forward(). Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(inputs)
+
+        HYSo Guide: models.graph-builder
+        Offline: hyso docs show models.graph-builder --lang en
+        Open: hyso docs open models.graph-builder --lang en
+        """
         c=self.to_config()
         if isinstance(inputs,torch.Tensor) and len(c['inputs'])==1:inputs={next(iter(c['inputs'])):inputs}
         if type(inputs) is not dict or set(inputs)!=set(c['inputs']):
@@ -329,8 +408,47 @@ class GraphModel(nn.Module):
 
 
 class GraphModelBuilder:
-    """Closed schema3 DAG builder with allocation-free planning and preview."""
-    def __init__(self,inputs):
+    """Closed schema3 DAG builder with allocation-free planning and preview.
+
+    Args:
+        inputs (dict[str, list[int] | tuple[int, ...] | dict[str, object]]): Named input shapes without batch, or closed shape/layout/dtype/device specifications. Required.
+
+    Returns:
+        An instance of GraphModelBuilder with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        ModelConfigError: Input names, shapes, layout, dtype or device metadata violate the closed graph contract.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        builder = GraphModelBuilder({"image": [1, 4, 4]})
+
+    HYSo Guide: models.graph-builder
+    Offline: hyso docs show models.graph-builder --lang en
+    Open: hyso docs open models.graph-builder --lang en
+    """
+    def __init__(self,inputs: 'dict[str, _typing.Any]') -> 'None':
+        """Initialize GraphModelBuilder with the supplied settings.
+
+        Args:
+            inputs (dict[str, _typing.Any]): Dictionary of named concrete shape sequences or closed input-specification dictionaries. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            GraphModelBuilder(inputs)
+
+        HYSo Guide: models.graph-builder
+        Offline: hyso docs show models.graph-builder --lang en
+        Open: hyso docs open models.graph-builder --lang en
+        """
         specs={}
         if type(inputs) is not dict:raise _error('inputs must be a named dictionary')
         for key,value in inputs.items():
@@ -338,7 +456,30 @@ class GraphModelBuilder:
                         if type(value) in (list,tuple) else value)
         self._config=dict(format='hyso.model_config',schema_version=3,kind='graph',inputs=_inputs(_plain(specs)),nodes=[],outputs={})
 
-    def add(self,node_id,component,inputs,**params):
+    def add(self,node_id: 'str',component: 'str',inputs: 'list[str]',**params: '_typing.Any') -> 'GraphModelBuilder':
+        """Append a validated component and its ordered input references to the graph.
+
+        Args:
+            node_id (str): Unique stable Graph node name, distinct from graph inputs. Required.
+            component (str): Closed registered component or supported Graph fusion name. Required.
+            inputs (list[str]): Ordered list of 1..8 existing Graph input/node reference strings. Required.
+            **params (_typing.Any): Component keyword parameters; registered defaults apply to omitted optional keys.
+
+        Returns:
+            This builder after the existing component/reference validation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            builder.add("stem", "conv2d", ["image"], in_channels=1, out_channels=4, kernel_size=3, padding=1)
+
+        HYSo Guide: models.graph-builder
+        Offline: hyso docs show models.graph-builder --lang en
+        Open: hyso docs open models.graph-builder --lang en
+        """
         if not _identifier(node_id) or node_id in self._config['inputs'] or any(row['id']==node_id for row in self._config['nodes']):
             raise _error('invalid or duplicate node ID',layer_id=node_id if type(node_id) is str else None,actual=node_id)
         if len(self._config['nodes'])>=MAX_NODES:raise ModelConfigError('node limit exceeded',code='GRAPH_LIMIT_ERROR')
@@ -349,16 +490,72 @@ class GraphModelBuilder:
         self._config['nodes'].append(row)
         return self
 
-    def outputs(self,**references):
+    def outputs(self,**references: 'str') -> 'GraphModelBuilder':
+        """Assign names to 1..8 graph output references; this does not prune nodes.
+
+        Args:
+            **references (str): 1..8 output_name=node_id pairs; selecting an output does not prune other nodes.
+
+        Returns:
+            This builder with the explicit named outputs configured; other graph nodes are not pruned.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.outputs(logits="head")  # head is an existing node ID
+
+        HYSo Guide: models.graph-builder
+        Offline: hyso docs show models.graph-builder --lang en
+        Open: hyso docs open models.graph-builder --lang en
+        """
         if not 1<=len(references)<=8 or any(not _identifier(k) or type(v) is not str for k,v in references.items()):
             raise _error('named outputs require safe names and reference strings')
         self._config['outputs']=dict(sorted(references.items()));return self
 
-    def to_config(self):
+    def to_config(self) -> 'dict[str, _typing.Any]':
+        """Copy the versioned architecture configuration without model weights.
+
+        Returns:
+            Detached JSON-compatible architecture metadata including normalized defaults; no weights.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_config()
+
+        HYSo Guide: models.graph-builder
+        Offline: hyso docs show models.graph-builder --lang en
+        Open: hyso docs open models.graph-builder --lang en
+        """
         c=_plain(self._config);c['nodes']=sorted(c['nodes'],key=lambda row:row['id']);return c
 
     @classmethod
-    def from_config(cls,config):
+    def from_config(cls,config: 'dict[str, _typing.Any]') -> 'GraphModelBuilder':
+        """Validate a versioned configuration and reconstruct its builder.
+
+        Args:
+            config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained state. Required.
+
+        Returns:
+            A validated builder/configuration object; no executable names are imported.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            GraphModelBuilder.from_config(config)
+
+        HYSo Guide: models.graph-builder
+        Offline: hyso docs show models.graph-builder --lang en
+        Open: hyso docs open models.graph-builder --lang en
+        """
         report,c=_analyze(config)
         if not report['valid']:
             diagnostic=report['diagnostics'][0]
@@ -367,23 +564,124 @@ class GraphModelBuilder:
         result=cls.__new__(cls);result._config=c;return result
 
     @staticmethod
-    def preflight(config,*,batch_size=1,activation_limit=16_777_216):
+    def preflight(config: 'dict[str, _typing.Any]',*,batch_size: 'int'=1,activation_limit: 'int'=16_777_216) -> 'dict[str, _typing.Any]':
+        """Validate graph structure, infer shapes and estimate bounded resource needs without constructing a model.
+
+        Args:
+            config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained state. Required.
+            batch_size (int): Positive batch-size setting or metadata assumption; no implicit batch search. Default: 1.
+            activation_limit (int): Advisory per-tensor element threshold used by metadata preflight, not a physical-memory quota. Default: 16777216.
+
+        Returns:
+            Metadata validation, shapes, diagnostics and advisory resource estimates; no model is built.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.preflight(config)
+
+        HYSo Guide: models.graph-builder
+        Offline: hyso docs show models.graph-builder --lang en
+        Open: hyso docs open models.graph-builder --lang en
+        """
         return _analyze(config,batch_size,activation_limit)[0]
 
-    def preview(self,**options):return self.preflight(self.to_config(),**options)
+    def preview(self,**options: '_typing.Any') -> 'dict[str, _typing.Any]':
+        """Inspect this graph using the allocation-free preflight checks.
 
-    def build(self):
+        Args:
+            options (_typing.Any): Existing keyword options of the delegated API; unknown options are not silently inferred. Required.
+
+        Returns:
+            Allocation-free Graph metadata preview, preserving unknown/unsupported conditions.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.preview()
+
+        HYSo Guide: models.graph-builder
+        Offline: hyso docs show models.graph-builder --lang en
+        Open: hyso docs open models.graph-builder --lang en
+        """
+        return self.preflight(self.to_config(),**options)
+
+    def build(self) -> 'GraphModel':
+        """Construct the validated graph on CPU without running a forward pass.
+
+        Returns:
+            A fresh CPU model. No forward, training, CUDA move or checkpoint load is requested.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.build()
+
+        HYSo Guide: models.graph-builder
+        Offline: hyso docs show models.graph-builder --lang en
+        Open: hyso docs open models.graph-builder --lang en
+        """
         config=self.from_config(self.to_config()).to_config();report=self.preflight(config)
         with torch.device('cpu'):return GraphModel(config,report)
 
-    def to_json(self,path,*,overwrite=False):
+    def to_json(self,path: '_typing.Any',*,overwrite: 'bool'=False) -> 'None':
+        """Serialize this object using its native JSON format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json(path)
+
+        HYSo Guide: models.graph-builder
+        Offline: hyso docs show models.graph-builder --lang en
+        Open: hyso docs open models.graph-builder --lang en
+        """
         if type(overwrite) is not bool:raise _error('overwrite must be bool')
         raw=json.dumps(self.to_config(),indent=2,allow_nan=False)+'\n'
         if len(raw.encode('utf-8'))>MAX_BYTES:raise _error('graph JSON exceeds 2 MiB')
         with Path(path).open('w' if overwrite else 'x',encoding='utf-8',newline='\n') as stream:stream.write(raw)
 
     @classmethod
-    def from_json(cls,path):
+    def from_json(cls,path: '_typing.Any') -> 'GraphModelBuilder':
+        """Read and validate this type from a local JSON file.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+
+        Returns:
+            A validated GraphModelBuilder instance reconstructed from the supplied data.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            GraphModelBuilder.from_json(path)
+
+        HYSo Guide: models.graph-builder
+        Offline: hyso docs show models.graph-builder --lang en
+        Open: hyso docs open models.graph-builder --lang en
+        """
         with Path(path).open('rb') as stream:raw=stream.read(MAX_BYTES+1)
         if len(raw)>MAX_BYTES:raise _error('graph JSON exceeds 2 MiB')
         def invalid(value):raise _error('non-finite JSON number',actual=value)

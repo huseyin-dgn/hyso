@@ -3,6 +3,7 @@
 Mechanisms: https://arxiv.org/abs/1910.03151 (ECA) and
 https://arxiv.org/abs/2103.02907 (Coordinate Attention).
 """
+import typing as _typing
 
 import torch
 from torch import nn
@@ -30,9 +31,49 @@ class ECAAttention(nn.Module):
     implicit adaptive kernel selection or channel reduction. Padding preserves
     the C-element descriptor even for C < kernel_size. Parameters are created
     once; device/dtype follow normal Module.to(), including CPU float32/float64.
+
+    Args:
+        channels (_typing.Any): Feature-channel count required by this block. Required.
+        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+
+    Returns:
+        An instance of ECAAttention with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ECAAttention(channels)
+
+    HYSo Guide: components.attention
+    Offline: hyso docs show components.attention --lang en
+    Open: hyso docs open components.attention --lang en
     """
 
-    def __init__(self, channels, kernel_size=3):
+    def __init__(self, channels: 'int', kernel_size: 'int'=3) -> 'None':
+        """Initialize ECAAttention with the supplied settings.
+
+        Args:
+            channels (int): Feature-channel count required by this block. Required.
+            kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ECAAttention(channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
         super().__init__()
         self.channels = _positive_int(channels, "channels")
         self.kernel_size = _positive_int(kernel_size, "kernel_size")
@@ -42,7 +83,27 @@ class ECAAttention(nn.Module):
         self.conv = nn.Conv1d(1, 1, kernel_size, padding=kernel_size // 2, bias=False)
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self, x):
+    def forward(self, x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
         _check_input(x, self.channels)
         descriptor = self.pool(x).squeeze(-1).transpose(1, 2)  # B,1,C
         gate = self.sigmoid(self.conv(descriptor)).transpose(1, 2).unsqueeze(-1)
@@ -57,9 +118,49 @@ class CoordinateAttention(nn.Module):
     concatenated H+W descriptors. Gate convolutions preserve channels. For
     B=1,H=W=1 the shared BN still sees two spatial values (H+W=2); no small-batch
     fallback or frozen statistics are used. Train/eval retain normal BN semantics.
+
+    Args:
+        channels (_typing.Any): Feature-channel count required by this block. Required.
+        reduction (int): Channel reduction ratio used by the attention bottleneck. Default: 32.
+
+    Returns:
+        An instance of CoordinateAttention with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        CoordinateAttention(channels)
+
+    HYSo Guide: components.attention
+    Offline: hyso docs show components.attention --lang en
+    Open: hyso docs open components.attention --lang en
     """
 
-    def __init__(self, channels, reduction=32):
+    def __init__(self, channels: 'int', reduction: 'int'=32) -> 'None':
+        """Initialize CoordinateAttention with the supplied settings.
+
+        Args:
+            channels (int): Feature-channel count required by this block. Required.
+            reduction (int): Channel reduction ratio used by the attention bottleneck. Default: 32.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            CoordinateAttention(channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
         super().__init__()
         self.channels = _positive_int(channels, "channels")
         self.reduction = _positive_int(reduction, "reduction")
@@ -72,7 +173,27 @@ class CoordinateAttention(nn.Module):
         self.conv_h = nn.Conv2d(hidden, channels, 1)
         self.conv_w = nn.Conv2d(hidden, channels, 1)
 
-    def forward(self, x):
+    def forward(self, x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
         _check_input(x, self.channels)
         height, width = x.shape[2:]
         along_h = self.pool_h(x)                         # B,C,H,1

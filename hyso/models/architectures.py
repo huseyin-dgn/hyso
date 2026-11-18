@@ -67,9 +67,53 @@ class ResNet(TVResNet):
     input_channels and num_classes change only input/output contracts. No weights.
     State keys match torchvision when dimensions/norm match. Not original v1
     stride placement for bottleneck models: stride is on 3x3 (v1.5).
+
+    Args:
+        depth (int): Declared architecture depth. Default: 18.
+        input_channels (int): Number of input image/feature channels. Default: 3.
+        num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 1000.
+        norm (str | None): Supported normalization choice; native training-statistics requirements still apply. Default: 'batch'.
+
+    Returns:
+        An instance of ResNet with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ResNet()
+
+    HYSo Guide: models.development-families
+    Offline: hyso docs show models.development-families --lang en
+    Open: hyso docs open models.development-families --lang en
     """
     def __init__(self, depth: int = 18, input_channels: int = 3, num_classes: int = 1000,
                  norm: str | None = 'batch') -> None:
+        """Initialize ResNet with the supplied settings.
+
+        Args:
+            depth (int): depth Default: 18.
+            input_channels (int): input channels Default: 3.
+            num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 1000.
+            norm (str | None): Supported normalization choice; native training-statistics requirements still apply. Default: 'batch'.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ResNet()
+
+        HYSo Guide: models.development-families
+        Offline: hyso docs show models.development-families --lang en
+        Open: hyso docs open models.development-families --lang en
+        """
         validate_family('resnet',dict(depth=depth,input_channels=input_channels,num_classes=num_classes,norm=norm))
         super().__init__(BasicBlock if depth<50 else Bottleneck,RESNET_LAYERS[depth],num_classes=num_classes,norm_layer=normalization(norm))
         if input_channels!=3:self.conv1=nn.Conv2d(input_channels,64,7,2,3,bias=False);nn.init.kaiming_normal_(self.conv1.weight,mode='fan_out',nonlinearity='relu')
@@ -79,9 +123,57 @@ class ResNeXt(TVResNet):
     """Torchvision grouped bottleneck topology; default ResNeXt-50 32x4d.
 
     For the common 101-32x8d variant explicitly select width_per_group=8.
+
+    Args:
+        depth (int): Declared architecture depth. Default: 50.
+        input_channels (int): Number of input image/feature channels. Default: 3.
+        num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 1000.
+        groups (int): Convolution/group count; divisibility requirements remain unchanged. Default: 32.
+        width_per_group (int): Feature width within each convolution group. Default: 4.
+        norm (str | None): Supported normalization choice; native training-statistics requirements still apply. Default: 'batch'.
+
+    Returns:
+        An instance of ResNeXt with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ResNeXt()
+
+    HYSo Guide: models.development-families
+    Offline: hyso docs show models.development-families --lang en
+    Open: hyso docs open models.development-families --lang en
     """
     def __init__(self, depth: int = 50, input_channels: int = 3, num_classes: int = 1000,
                  groups: int = 32, width_per_group: int = 4, norm: str | None = 'batch') -> None:
+        """Initialize ResNeXt with the supplied settings.
+
+        Args:
+            depth (int): depth Default: 50.
+            input_channels (int): input channels Default: 3.
+            num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 1000.
+            groups (int): Convolution/group count; divisibility requirements remain unchanged. Default: 32.
+            width_per_group (int): width per group Default: 4.
+            norm (str | None): Supported normalization choice; native training-statistics requirements still apply. Default: 'batch'.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ResNeXt()
+
+        HYSo Guide: models.development-families
+        Offline: hyso docs show models.development-families --lang en
+        Open: hyso docs open models.development-families --lang en
+        """
         validate_family('resnext',dict(depth=depth,input_channels=input_channels,num_classes=num_classes,groups=groups,width_per_group=width_per_group,norm=norm))
         super().__init__(Bottleneck,RESNET_LAYERS[depth],num_classes=num_classes,groups=groups,width_per_group=width_per_group,norm_layer=normalization(norm))
         if input_channels!=3:self.conv1=nn.Conv2d(input_channels,64,7,2,3,bias=False);nn.init.kaiming_normal_(self.conv1.weight,mode='fan_out',nonlinearity='relu')
@@ -92,9 +184,55 @@ class DenseNet(TVDenseNet):
 
     Depth layouts 121/169/201, default growth=32 and initial channels=64 preserve
     standard topology. A custom growth_rate is explicitly a width variant.
+
+    Args:
+        depth (int): Declared architecture depth. Default: 121.
+        input_channels (int): Number of input image/feature channels. Default: 3.
+        num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 1000.
+        growth_rate (int): Feature channels added by each dense unit. Default: 32.
+        dropout (float): Drop probability; this regularization is active only in training mode. Default: 0.0.
+
+    Returns:
+        An instance of DenseNet with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        DenseNet()
+
+    HYSo Guide: models.development-families
+    Offline: hyso docs show models.development-families --lang en
+    Open: hyso docs open models.development-families --lang en
     """
     def __init__(self, depth: int = 121, input_channels: int = 3, num_classes: int = 1000,
                  growth_rate: int = 32, dropout: float = 0.) -> None:
+        """Initialize DenseNet with the supplied settings.
+
+        Args:
+            depth (int): depth Default: 121.
+            input_channels (int): input channels Default: 3.
+            num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 1000.
+            growth_rate (int): growth rate Default: 32.
+            dropout (float): dropout Default: 0.0.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            DenseNet()
+
+        HYSo Guide: models.development-families
+        Offline: hyso docs show models.development-families --lang en
+        Open: hyso docs open models.development-families --lang en
+        """
         validate_family('densenet',dict(depth=depth,input_channels=input_channels,num_classes=num_classes,growth_rate=growth_rate,dropout=dropout))
         super().__init__(growth_rate,DENSE_LAYERS[depth],2*growth_rate,4,dropout,num_classes)
         if input_channels!=3:self.features.conv0=nn.Conv2d(input_channels,2*growth_rate,7,2,3,bias=False);nn.init.kaiming_normal_(self.features.conv0.weight)
@@ -106,9 +244,55 @@ class PreActResNet(nn.Module):
     ImageNet 7x7/stride2/maxpool stem; no stem BN/ReLU, block preactivation
     supplies it. base_channels=64 default; custom widths are explicit variants.
     Bottlenecks use stride on their 3x3, not a claimed exact paper checkpoint.
+
+    Args:
+        depth (int): Declared architecture depth. Default: 18.
+        input_channels (int): Number of input image/feature channels. Default: 3.
+        num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 1000.
+        base_channels (int): Initial feature-channel width. Default: 64.
+        norm (str | None): Supported normalization choice; native training-statistics requirements still apply. Default: 'batch'.
+
+    Returns:
+        An instance of PreActResNet with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        PreActResNet()
+
+    HYSo Guide: models.development-families
+    Offline: hyso docs show models.development-families --lang en
+    Open: hyso docs open models.development-families --lang en
     """
     def __init__(self, depth: int = 18, input_channels: int = 3, num_classes: int = 1000,
                  base_channels: int = 64, norm: str | None = 'batch') -> None:
+        """Initialize PreActResNet with the supplied settings.
+
+        Args:
+            depth (int): depth Default: 18.
+            input_channels (int): input channels Default: 3.
+            num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 1000.
+            base_channels (int): base channels Default: 64.
+            norm (str | None): Supported normalization choice; native training-statistics requirements still apply. Default: 'batch'.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            PreActResNet()
+
+        HYSo Guide: models.development-families
+        Offline: hyso docs show models.development-families --lang en
+        Open: hyso docs open models.development-families --lang en
+        """
         super().__init__()
         validate_family('preact_resnet',dict(depth=depth,input_channels=input_channels,num_classes=num_classes,base_channels=base_channels,norm=norm))
         self.stem=nn.Sequential(nn.Conv2d(input_channels,base_channels,7,2,3,bias=False),nn.MaxPool2d(3,2,1))
@@ -123,6 +307,26 @@ class PreActResNet(nn.Module):
         self.classifier=nn.Linear(previous,num_classes)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: models.development-families
+        Offline: hyso docs show models.development-families --lang en
+        Open: hyso docs open models.development-families --lang en
+        """
         return self.classifier(self.final(self.stages(self.stem(x))))
 
 
@@ -131,9 +335,57 @@ class WideResNet(nn.Module):
 
     This is a basic-block WideResNet, not torchvision wide_resnet50_2 bottlenecks.
     Projection uses activated input; optional dropout sits between convolutions.
+
+    Args:
+        depth (int): Declared architecture depth. Default: 28.
+        input_channels (int): Number of input image/feature channels. Default: 3.
+        num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 10.
+        widen_factor (int): Channel-width multiplier of the wide residual architecture. Default: 10.
+        dropout (float): Drop probability; this regularization is active only in training mode. Default: 0.0.
+        norm (str | None): Supported normalization choice; native training-statistics requirements still apply. Default: 'batch'.
+
+    Returns:
+        An instance of WideResNet with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        WideResNet()
+
+    HYSo Guide: models.development-families
+    Offline: hyso docs show models.development-families --lang en
+    Open: hyso docs open models.development-families --lang en
     """
     def __init__(self, depth: int = 28, input_channels: int = 3, num_classes: int = 10,
                  widen_factor: int = 10, dropout: float = 0., norm: str | None = 'batch') -> None:
+        """Initialize WideResNet with the supplied settings.
+
+        Args:
+            depth (int): depth Default: 28.
+            input_channels (int): input channels Default: 3.
+            num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 10.
+            widen_factor (int): widen factor Default: 10.
+            dropout (float): dropout Default: 0.0.
+            norm (str | None): Supported normalization choice; native training-statistics requirements still apply. Default: 'batch'.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            WideResNet()
+
+        HYSo Guide: models.development-families
+        Offline: hyso docs show models.development-families --lang en
+        Open: hyso docs open models.development-families --lang en
+        """
         super().__init__()
         validate_family('wide_resnet',dict(depth=depth,input_channels=input_channels,num_classes=num_classes,widen_factor=widen_factor,dropout=dropout,norm=norm))
         self.stem=nn.Conv2d(input_channels,16,3,1,1,bias=False)
@@ -146,4 +398,24 @@ class WideResNet(nn.Module):
         self.classifier=nn.Linear(previous,num_classes)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: models.development-families
+        Offline: hyso docs show models.development-families --lang en
+        Open: hyso docs open models.development-families --lang en
+        """
         return self.classifier(self.final(self.blocks(self.stem(x))))

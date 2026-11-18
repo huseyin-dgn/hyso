@@ -1,4 +1,5 @@
 """Version 2 task companion; schema 1 loader and worker artifacts stay intact."""
+import typing as _typing
 from dataclasses import dataclass
 import json
 
@@ -200,10 +201,49 @@ def _derive(data):
 
 @dataclass(frozen=True, init=False)
 class WorkerTaskAnalysisResult:
+    """Read and export validated P21 — DataLoader waiting results; unavailable measurements retain their native status.
+
+    Args:
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of WorkerTaskAnalysisResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        WorkerTaskAnalysisResult(data)
+
+    HYSo Guide: analysis.p21
+    Offline: hyso docs show analysis.p21 --lang en
+    Open: hyso docs open analysis.p21 --lang en
+    """
     __slots__ = ("_payload",)
     _payload: str
 
-    def __init__(self, data):
+    def __init__(self, data: 'dict[str, _typing.Any]') -> 'None':
+        """Initialize WorkerTaskAnalysisResult with the supplied settings.
+
+        Args:
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            WorkerTaskAnalysisResult(data)
+
+        HYSo Guide: analysis.p21
+        Offline: hyso docs show analysis.p21 --lang en
+        Open: hyso docs open analysis.p21 --lang en
+        """
         data = _plain(data)
         self._check(data)
         object.__setattr__(self, "_payload", json.dumps(data, allow_nan=False))
@@ -225,10 +265,26 @@ class WorkerTaskAnalysisResult:
         if data["analysis"] != derived:
             raise ValueError("task derived evidence mismatch")
 
-    def to_dict(self):
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analysis.p21
+        Offline: hyso docs show analysis.p21 --lang en
+        Open: hyso docs open analysis.p21 --lang en
+        """
         return json.loads(self._payload)
 
-    def diagnostics(self):
+    def diagnostics(self) -> '_typing.Any':
         """Additional same-clock durations from audited task receipts.
 
         Retains the v2 artifact schema. Incomplete evidence never yields a
@@ -236,6 +292,21 @@ class WorkerTaskAnalysisResult:
         entry and collate completion; it excludes worker queue/serialization
         work. Parent buffer residence begins only at the observed receive call.
         Neither interval estimates physical queue wait or prefetch efficiency.
+
+        Returns:
+            The retained diagnostics value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.diagnostics()
+
+        HYSo Guide: analysis.p21
+        Offline: hyso docs show analysis.p21 --lang en
+        Open: hyso docs open analysis.p21 --lang en
         """
         data = self.to_dict()
         self._check(data)
@@ -264,17 +335,58 @@ class WorkerTaskAnalysisResult:
                                           reason="no_accuracy_bound_for_cross_process_clocks"),
             overhead="included_not_separately_calibrated")
 
-    def to_json(self, path, *, overwrite=False):
+    def to_json(self, path: '_typing.Any', *, overwrite: 'bool'=False) -> 'None':
+        """Serialize this object using its native JSON format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json(path)
+
+        HYSo Guide: analysis.p21
+        Offline: hyso docs show analysis.p21 --lang en
+        Open: hyso docs open analysis.p21 --lang en
+        """
         data = self.to_dict()
         self._check(data)
         _write_export(path, json.dumps(data, indent=2, allow_nan=False) + "\n", overwrite)
 
 
-def analyze_worker_tasks(loader_result, loader, *, worker_states=None):
+def analyze_worker_tasks(loader_result: '_typing.Any', loader: '_typing.Any', *, worker_states: '_typing.Any'=None) -> 'WorkerTaskAnalysisResult':
     """Consume final same-run channel receipts; never rerun training.
 
     Stop workers first using bounded caller-owned cleanup. Calling twice is
     deliberately incomplete: channel evidence is consumed once.
+
+    Args:
+        loader_result (_typing.Any): Retained loader-training result with trace identity. Required.
+        loader (_typing.Any): Caller-owned finite DataLoader with the required input/target batch format. Required.
+        worker_states (_typing.Any): Retained worker identity/state evidence. Default: None.
+
+    Returns:
+        The retained analyze worker tasks value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        analyze_worker_tasks(loader_result, loader)
+
+    HYSo Guide: analysis.p21
+    Offline: hyso docs show analysis.p21 --lang en
+    Open: hyso docs open analysis.p21 --lang en
     """
     if type(loader) is not WorkerTaskDataLoader or type(loader_result) is not DataLoaderAnalysisResult:
         raise TypeError("expected task loader and schema1 DataLoaderAnalysisResult")

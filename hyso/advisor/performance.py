@@ -2,6 +2,7 @@
 
 No workloads, model objects, significance tests or optimization certificates.
 """
+import typing as _typing
 from dataclasses import dataclass
 from decimal import Decimal, localcontext
 import math
@@ -50,7 +51,32 @@ def _numbers(baseline, candidate, quality):
 @register
 @dataclass(frozen=True)
 class MetricDifference(Contract):
-    """Values and source contexts; direct construction is not certification."""
+    """Values and source contexts; direct construction is not certification.
+
+    Args:
+        baseline (ResolvedMetric): Validated retained baseline source or predictions required by this comparison. Required.
+        candidate (ResolvedMetric): Validated retained candidate source or predictions required by this comparison. Required.
+        difference (float): Observed difference under the declared metric convention. Required.
+        percent_change (float | None): Relative change in percent; unavailable for an invalid/zero baseline under the native rule. Required.
+        percentage_point_change (float | None): Absolute difference between percentage-valued quality metrics, in percentage points. Required.
+        preferred_direction (str): Whether smaller or larger values are preferred for this metric. Required.
+        observed_direction (str): Direction actually observed for this metric. Required.
+        metric_effect (str): Expected or retained metric effect under the declared evidence status. Required.
+
+    Returns:
+        An instance of MetricDifference with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        MetricDifference(baseline=baseline, candidate=candidate, difference=difference, percent_change=percent_change, percentage_point_change=percentage_point_change, preferred_direction=preferred_direction, observed_direction=observed_direction, metric_effect=metric_effect)
+
+    HYSo Guide: metrics.interpretation
+    Offline: hyso docs show metrics.interpretation --lang en
+    Open: hyso docs open metrics.interpretation --lang en
+    """
     baseline: ResolvedMetric
     candidate: ResolvedMetric
     difference: float
@@ -107,6 +133,30 @@ _P26_MISSING = _MISSING + ('verified_dataset_origin', 'verified_split_membership
 @register
 @dataclass(frozen=True)
 class PerformanceComparison(Contract):
+    """Retain comparable metric differences and explicit incompatible or unavailable evidence.
+
+    Args:
+        contract (ComparisonContract | P26QualityComparisonContract | P26BoundQualityComparisonContract): Typed comparison/evaluation contract required by the operation. Required.
+        eligibility (ComparisonResult): Retained evidence eligibility assessment. Required.
+        difference (MetricDifference | None): Observed difference under the declared metric convention. Required.
+        warnings (tuple): Retained warnings and evidence limitations. Required.
+        limitations (tuple): Explicit limitations of the evidence, comparison or proposed operation. Default: _LIMITS.
+        missing_evidence (tuple): Explicit missing prerequisites; these are not filled by guesses. Default: _MISSING.
+
+    Returns:
+        An instance of PerformanceComparison with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        PerformanceComparison(contract=contract, eligibility=eligibility, difference=difference, warnings=warnings)
+
+    HYSo Guide: metrics.interpretation
+    Offline: hyso docs show metrics.interpretation --lang en
+    Open: hyso docs open metrics.interpretation --lang en
+    """
     contract: ComparisonContract | P26QualityComparisonContract | P26BoundQualityComparisonContract
     eligibility: ComparisonResult
     difference: MetricDifference | None
@@ -132,7 +182,7 @@ class PerformanceComparison(Contract):
             raise AdvisorError('performance_boundaries_required')
 
 
-def compare_performance(left_resolver, left_record_id, right_resolver, right_record_id, *, contract=None):
+def compare_performance(left_resolver: '_typing.Any', left_record_id: '_typing.Any', right_resolver: '_typing.Any', right_record_id: '_typing.Any', *, contract: '_typing.Any'=None) -> '_typing.Any':
     """Recheck eligibility and resolve both scalars; never trust caller results.
 
     Returns no difference for ineligible pairs or unsafe arithmetic. A favorable
@@ -142,6 +192,28 @@ def compare_performance(left_resolver, left_record_id, right_resolver, right_rec
     ordered P26 stream and retains its additional origin/preprocessing limits.
     P26BoundQualityComparisonContract additionally requires schema-3 binding
     validation under its distinct policy; old schema-2 semantics are unchanged.
+
+    Args:
+        left_resolver (_typing.Any): Resolver for the left retained source. Required.
+        left_record_id (_typing.Any): Exact left evidence identity. Required.
+        right_resolver (_typing.Any): Resolver for the right retained source. Required.
+        right_record_id (_typing.Any): Exact right evidence identity. Required.
+        contract (_typing.Any): Typed comparison/evaluation contract required by the operation. Default: None.
+
+    Returns:
+        The retained compare performance value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        compare_performance(left_resolver, left_record_id, right_resolver, right_record_id)
+
+    HYSo Guide: comparison.models
+    Offline: hyso docs show comparison.models --lang en
+    Open: hyso docs open comparison.models --lang en
     """
     contract = ComparisonContract() if contract is None else contract
     eligible = compare_records(left_resolver, left_record_id, right_resolver, right_record_id, contract=contract)

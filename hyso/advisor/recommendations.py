@@ -154,10 +154,47 @@ class RecommendationReport:
 
     Import rederives all decisions, including comparison gates. This verifies
     derivation from the supplied snapshot, not the authenticity of external files.
+
+    Args:
+        data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of RecommendationReport with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        RecommendationReport(data)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
     """
     _payload: str
 
     def __init__(self, data: dict[str, Any]) -> None:
+        """Initialize RecommendationReport with the supplied settings.
+
+        Args:
+            data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            RecommendationReport(data)
+
+        HYSo Guide: advisor.recommendations
+        Offline: hyso docs show advisor.recommendations --lang en
+        Open: hyso docs open advisor.recommendations --lang en
+        """
         try:
             body = plain(data)
             if len(canonical(body).encode("utf-8")) > _MAX_BYTES:
@@ -175,11 +212,46 @@ class RecommendationReport:
         object.__setattr__(self, "_payload", canonical(expected))
 
     def to_dict(self) -> dict[str, Any]:
-        """Return a detached neutral snapshot, including original Advisor reports."""
+        """Return a detached neutral snapshot, including original Advisor reports.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: advisor.recommendations
+        Offline: hyso docs show advisor.recommendations --lang en
+        Open: hyso docs open advisor.recommendations --lang en
+        """
         return json.loads(self._payload)
 
     def to_json(self, path: str | Path | None = None, *, overwrite: bool = False) -> str:
-        """Export deterministic neutral JSON; preserve existing files by default."""
+        """Export deterministic neutral JSON; preserve existing files by default.
+
+        Args:
+            path (str | Path | None): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            A JSON string when path is None, otherwise None after writing the file.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json()
+
+        HYSo Guide: advisor.recommendations
+        Offline: hyso docs show advisor.recommendations --lang en
+        Open: hyso docs open advisor.recommendations --lang en
+        """
         raw = self._payload + "\n"
         if path is not None:
             export(path, raw, overwrite)
@@ -187,7 +259,26 @@ class RecommendationReport:
 
     @classmethod
     def from_json(cls, path: str | Path) -> RecommendationReport:
-        """Reopen bounded JSON without executing a measurement or applying changes."""
+        """Reopen bounded JSON without executing a measurement or applying changes.
+
+        Args:
+            path (str | Path): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+
+        Returns:
+            A validated RecommendationReport instance reconstructed from the supplied data.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            RecommendationReport.from_json(path)
+
+        HYSo Guide: advisor.recommendations
+        Offline: hyso docs show advisor.recommendations --lang en
+        Open: hyso docs open advisor.recommendations --lang en
+        """
         data, _, _ = read_json(path, max_bytes=_MAX_BYTES)
         return cls(data)
 
@@ -196,6 +287,25 @@ class RecommendationReport:
 
         Native numbers, units, protocol bindings and original rule text remain
         unchanged. Coverage prompts explicitly distinguish gaps from measurements.
+
+        Args:
+            language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'tr'.
+            level (str): Existing beginner, technical or expert presentation detail level. Default: 'technical'.
+
+        Returns:
+            Localized presentation data; canonical comparison values and units are retained.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_display_dict()
+
+        HYSo Guide: advisor.recommendations
+        Offline: hyso docs show advisor.recommendations --lang en
+        Open: hyso docs open advisor.recommendations --lang en
         """
         from .presentation import to_display_dict
         if language not in ("tr", "en") or level not in ("beginner", "technical", "expert"):
@@ -253,13 +363,57 @@ class RecommendationReport:
 
     def to_markdown(self, path: str | Path | None = None, *, language: str = "tr",
                     level: str = "technical", overwrite: bool = False) -> str:
-        """Render through the existing Stage 8 presentation contract."""
+        """Render through the existing Stage 8 presentation contract.
+
+        Args:
+            path (str | Path | None): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+            language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'tr'.
+            level (str): Existing beginner, technical or expert presentation detail level. Default: 'technical'.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            The localized Markdown report string.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_markdown()
+
+        HYSo Guide: advisor.recommendations
+        Offline: hyso docs show advisor.recommendations --lang en
+        Open: hyso docs open advisor.recommendations --lang en
+        """
         from ..reporting import create_report
         return create_report(self, language=language, level=level).to_markdown(path, overwrite=overwrite)
 
     def to_html(self, path: str | Path | None = None, *, language: str = "tr",
                 level: str = "technical", overwrite: bool = False) -> str:
-        """Export portable HTML with source evidence and manual verification links."""
+        """Export portable HTML with source evidence and manual verification links.
+
+        Args:
+            path (str | Path | None): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+            language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'tr'.
+            level (str): Existing beginner, technical or expert presentation detail level. Default: 'technical'.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            The retained to html value, without recomputing measurements.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_html()
+
+        HYSo Guide: advisor.recommendations
+        Offline: hyso docs show advisor.recommendations --lang en
+        Open: hyso docs open advisor.recommendations --lang en
+        """
         from ..reporting import create_report
         return create_report(self, language=language, level=level).to_html(path, overwrite=overwrite)
 
@@ -273,6 +427,26 @@ def recommend(source: UnifiedAnalysisReport | EvidenceIndex | ModelComparisonRes
     Only the existing eligible CPU batch rule may yield a conditional experiment;
     all candidates remain manual, blocked and without an estimated improvement.
     Other domains receive evidence reviews, not unvalidated optimization recipes.
+
+    Args:
+        source (UnifiedAnalysisReport | EvidenceIndex | ModelComparisonResult): Typed native/retained source required by this API, not a declaration of producer authority. Required.
+        request (AdvisorRequest | None): Validated advisory/selection request; does not authorize execution. Default: None.
+        context (AnalysisContext | None): Explicit analysis/evaluation context; caller declarations are not producer attestation. Default: None.
+
+    Returns:
+        The retained recommend value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        recommend(source)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
     """
     if type(source) is EvidenceIndex:
         if type(context) is not AnalysisContext:

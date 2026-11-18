@@ -1,3 +1,4 @@
+import typing as _typing
 
 # Temel PyTorch ve yardımcı kütüphaneler
 
@@ -18,9 +19,53 @@ from hyso.callbacks.callbacks import EarlyStopping, ModelCheckpoint, LRScheduler
 __all__ = ["CNNSENormalWithFit", "EMA"]
 
 class EMA:
-    def __init__(self, model, decay=0.999, device=None):
+    """Keep an exponential moving average of a model for evaluation; this is not a separate training algorithm.
+
+    Args:
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+        decay (float): EMA decay factor in its accepted interval. Default: 0.999.
+        device (str | None): Optional device selector following this API's native placement/default rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
+
+    Returns:
+        An instance of EMA with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        EMA(model)
+
+    HYSo Guide: models.legacy
+    Offline: hyso docs show models.legacy --lang en
+    Open: hyso docs open models.legacy --lang en
+    """
+    def __init__(self, model: '_typing.Any', decay: 'float'=0.999, device: 'str | None'=None) -> 'None':
         # model can be either the model instance or a nn.Module
         # copy model to create ema model and stop grads
+        """Initialize EMA with the supplied settings.
+
+        Args:
+            model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+            decay (float): EMA decay factor in its accepted interval. Default: 0.999.
+            device (str | None): Optional device selector following this API's native placement/default rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            EMA(model)
+
+        HYSo Guide: models.legacy
+        Offline: hyso docs show models.legacy --lang en
+        Open: hyso docs open models.legacy --lang en
+        """
         self.ema_model = copy.deepcopy(model)
         self.decay = decay
         for p in self.ema_model.parameters():
@@ -28,15 +73,55 @@ class EMA:
         # keep track of device preference
         self.device = device
 
-    def to(self, device):
+    def to(self, device: 'str') -> 'None':
+        """Move the legacy EMA wrapper and its tracked tensors using the native placement contract.
+
+        Args:
+            device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Required.
+
+        Returns:
+            This object after the requested native device/dtype placement.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to(device)
+
+        HYSo Guide: models.legacy
+        Offline: hyso docs show models.legacy --lang en
+        Open: hyso docs open models.legacy --lang en
+        """
         try:
             self.ema_model.to(device)
             self.device = device
         except Exception:
             pass
 
-    def update(self, model):
+    def update(self, model: '_typing.Any') -> 'None':
         # update ema params from model (works whether model is wrapper or plain)
+        """Update the EMA shadow from the supplied live model weights.
+
+        Args:
+            model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+
+        Returns:
+            None after the operation succeeds.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.update(model)
+
+        HYSo Guide: models.legacy
+        Offline: hyso docs show models.legacy --lang en
+        Open: hyso docs open models.legacy --lang en
+        """
         with torch.no_grad():
             # align params by name/zip
             for ema_p, model_p in zip(self.ema_model.parameters(), model.parameters()):
@@ -51,7 +136,49 @@ class EMA:
 # SEBlock
 
 class SEBlock(nn.Module):
-    def __init__(self, channels: int, reduction: int = 8):
+    """Reweight feature channels using pooled context and a compact gating network.
+
+    Args:
+        channels (int): Feature-channel count required by this block. Required.
+        reduction (int): Channel reduction ratio used by the attention bottleneck. Default: 8.
+
+    Returns:
+        An instance of SEBlock with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        SEBlock(channels)
+
+    HYSo Guide: components.attention
+    Offline: hyso docs show components.attention --lang en
+    Open: hyso docs open components.attention --lang en
+    """
+    def __init__(self, channels: int, reduction: int = 8) -> 'None':
+        """Initialize SEBlock with the supplied settings.
+
+        Args:
+            channels (int): Feature-channel count required by this block. Required.
+            reduction (int): Channel reduction ratio used by the attention bottleneck. Default: 8.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            SEBlock(channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
         super().__init__()
         reduced = max(1, channels // reduction)
         self.fc1 = nn.Linear(channels, reduced)
@@ -59,6 +186,26 @@ class SEBlock(nn.Module):
         self.act = nn.SiLU()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
         n, c, h, w = x.size()
         y = x.mean(dim=(2, 3))
         y = self.act(self.fc1(y))
@@ -131,11 +278,40 @@ class BottleneckSEBlock(nn.Module):
 # CNNSENormalWithFit + EMA
 
 class CEMO(nn.Module):
+    """Construct the legacy convolutional classifier with its existing channel-attention configuration.
+
+    Args:
+        input_channels (int): Number of input image/feature channels. Default: 3.
+        num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 10.
+        conv_channels (_typing.Sequence[int]): Ordered channel widths for the convolutional stages. Default: [64, 128, 256].
+        residuals_per_stage (int): Ordered residual-unit counts per stage. Default: 2.
+        se_reduction (int): Squeeze-and-excitation bottleneck reduction ratio. Default: 8.
+        p_drop (float): Drop probability used by this component. Default: 0.1.
+        dropout_fc (float): Classifier-head dropout probability. Default: 0.3.
+        use_ema (bool): Enable the supported EMA evaluation shadow. Default: False.
+        ema_decay (float): Optional decay for the smoothed evaluation model. Default: 0.999.
+        device (str): Optional device selector following this API's native placement/default rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
+
+    Returns:
+        An instance of CEMO with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        CEMO()
+
+    HYSo Guide: models.legacy
+    Offline: hyso docs show models.legacy --lang en
+    Open: hyso docs open models.legacy --lang en
+    """
     def __init__(
         self,
         input_channels: int = 3,
         num_classes: int = 10,
-        conv_channels=[64, 128, 256],
+        conv_channels: '_typing.Sequence[int]'=[64, 128, 256],
         residuals_per_stage: int = 2,
         se_reduction: int = 8,
         p_drop: float = 0.1,
@@ -143,7 +319,36 @@ class CEMO(nn.Module):
         use_ema: bool = False,
         ema_decay: float = 0.999,
         device: str = None,
-    ):
+    ) -> 'None':
+        """Initialize CEMO with the supplied settings.
+
+        Args:
+            input_channels (int): Number of input image/feature channels. Default: 3.
+            num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 10.
+            conv_channels (_typing.Sequence[int]): Ordered channel widths for the convolutional stages. Default: [64, 128, 256].
+            residuals_per_stage (int): Ordered residual-unit counts per stage. Default: 2.
+            se_reduction (int): Squeeze-and-excitation bottleneck reduction ratio. Default: 8.
+            p_drop (float): Drop probability used by this component. Default: 0.1.
+            dropout_fc (float): Classifier-head dropout probability. Default: 0.3.
+            use_ema (bool): Enable the supported EMA evaluation shadow. Default: False.
+            ema_decay (float): Optional decay for the smoothed evaluation model. Default: 0.999.
+            device (str): Optional device selector following this API's native placement/default rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            CEMO()
+
+        HYSo Guide: models.legacy
+        Offline: hyso docs show models.legacy --lang en
+        Open: hyso docs open models.legacy --lang en
+        """
         super().__init__()
         self.num_classes = num_classes
         self.use_ema = use_ema
@@ -192,7 +397,27 @@ class CEMO(nn.Module):
             except Exception:
                 self.ema = EMA(self, decay=ema_decay)
 
-    def forward(self, x):
+    def forward(self, x: '_typing.Any') -> '_typing.Any':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: models.legacy
+        Offline: hyso docs show models.legacy --lang en
+        Open: hyso docs open models.legacy --lang en
+        """
         x = self.stem(x)
         for stage in self.stages:
             x = stage(x)
@@ -204,9 +429,35 @@ class CEMO(nn.Module):
 
     # Model-level callbacks (so CEMO.callbacks(...) works)
 
-    def callbacks(self, optimizer="Adam", lr=1e-3, weight_decay=1e-4,
-                  model_checkpoint=False, earlystop=None, scheduler=None, scheduler_params=None):
+    def callbacks(self, optimizer: 'str'="Adam", lr: 'float'=1e-3, weight_decay: 'float'=1e-4,
+                  model_checkpoint: 'bool'=False, earlystop: '_typing.Any'=None, scheduler: '_typing.Any'=None, scheduler_params: 'dict[str, _typing.Any] | None'=None) -> 'None':
         # ensure model & submodules moved to desired device BEFORE creating optimizer
+        """Install the supported callback configuration for subsequent fit calls.
+
+        Args:
+            optimizer (str): Existing supported optimizer or a closed optimizer name, according to this API. Default: 'Adam'.
+            lr (float): Optimizer learning rate. Default: 0.001.
+            weight_decay (float): Optimizer weight-decay coefficient. Default: 0.0001.
+            model_checkpoint (bool): Legacy checkpoint callback configuration. Default: False.
+            earlystop (_typing.Any): Legacy early-stopping callback configuration. Default: None.
+            scheduler (_typing.Any): Supported native scheduler or closed scheduler name; stepping remains owned by Trainer. Default: None.
+            scheduler_params (dict[str, _typing.Any] | None): Closed scheduler settings; required scheduler-specific options remain mandatory. Default: None.
+
+        Returns:
+            None after the operation succeeds.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.callbacks()
+
+        HYSo Guide: models.legacy
+        Offline: hyso docs show models.legacy --lang en
+        Open: hyso docs open models.legacy --lang en
+        """
         try:
             self.to(self.device)
         except Exception:
@@ -254,8 +505,33 @@ class CEMO(nn.Module):
 
     # Fit metodu (güncellendi: cihaz senkronizasyonu)
 
-    def fit(self, train_loader, val_loader=None, epochs=5, lr=1e-3, weight_decay=1e-4, use_ema=False):
+    def fit(self, train_loader: '_typing.Any', val_loader: '_typing.Any'=None, epochs: 'int'=5, lr: 'float'=1e-3, weight_decay: 'float'=1e-4, use_ema: 'bool'=False) -> '_typing.Any':
         # Ensure model is on right device
+        """Train this legacy model using its native loader and optimizer contract.
+
+        Args:
+            train_loader (_typing.Any): Finite training loader; batches must follow the task/model input contract. Required.
+            val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
+            epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after resume. Default: 5.
+            lr (float): Optimizer learning rate. Default: 0.001.
+            weight_decay (float): Optimizer weight-decay coefficient. Default: 0.0001.
+            use_ema (bool): Enable the supported EMA evaluation shadow. Default: False.
+
+        Returns:
+            The existing native history/result for this explicit training call; no automatic retry.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.fit(train_loader)
+
+        HYSo Guide: models.legacy
+        Offline: hyso docs show models.legacy --lang en
+        Open: hyso docs open models.legacy --lang en
+        """
         try:
             self.to(self.device)
         except Exception:

@@ -3,6 +3,7 @@
 Only parent iterator methods are extended. PyTorch's worker loop, queues,
 sampler, seeding, fetch scheduling and shutdown implementation are retained.
 """
+import typing as _typing
 from dataclasses import dataclass
 import hashlib
 import inspect
@@ -154,8 +155,50 @@ class WorkerTaskDataLoader(DataLoader):
     workers and custom samplers/collate functions. One measurement run per loader.
     Bulk __getitems__, IterableDataset, pin_memory and arbitrary torch versions
     are rejected rather than silently changing their behavior.
+
+    Args:
+        dataset (_typing.Any): Caller-owned finite Dataset used by the loader or trace wrapper. Required.
+        channel (_typing.Any): Explicit worker-trace evidence channel. Default: None.
+        kwargs (_typing.Any): Keyword options forwarded only to the native target documented by this API. Required.
+
+    Returns:
+        An instance of WorkerTaskDataLoader with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        WorkerTaskDataLoader(dataset)
+
+    HYSo Guide: analysis.p21
+    Offline: hyso docs show analysis.p21 --lang en
+    Open: hyso docs open analysis.p21 --lang en
     """
-    def __init__(self, dataset, *, channel=None, **kwargs):
+    def __init__(self, dataset: '_typing.Any', *, channel: '_typing.Any'=None, **kwargs: '_typing.Any') -> 'None':
+        """Initialize WorkerTaskDataLoader with the supplied settings.
+
+        Args:
+            dataset (_typing.Any): Caller-owned finite Dataset used by the loader or trace wrapper. Required.
+            channel (_typing.Any): Explicit worker-trace evidence channel. Default: None.
+            kwargs (_typing.Any): Keyword options forwarded only to the native target documented by this API. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            WorkerTaskDataLoader(dataset)
+
+        HYSo Guide: analysis.p21
+        Offline: hyso docs show analysis.p21 --lang en
+        Open: hyso docs open analysis.p21 --lang en
+        """
         check_adapter()
         if not isinstance(dataset, Dataset) or isinstance(dataset, IterableDataset):
             raise TypeError("task tracing requires a map-style Dataset")
@@ -178,14 +221,55 @@ class WorkerTaskDataLoader(DataLoader):
         if not self._auto_collation:
             raise ValueError("task tracing requires automatic batching")
 
-    def begin_trace_run(self, execution_id):
+    def begin_trace_run(self, execution_id: '_typing.Any') -> 'None':
+        """Begin a trace scope with an explicit execution identity.
+
+        Args:
+            execution_id (_typing.Any): Exact execution identity used to correlate trace records. Required.
+
+        Returns:
+            None after the operation succeeds.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.begin_trace_run(execution_id)
+
+        HYSo Guide: analysis.p21
+        Offline: hyso docs show analysis.p21 --lang en
+        Open: hyso docs open analysis.p21 --lang en
+        """
         if self.execution_id is not None:
             raise RuntimeError("task loader already belongs to a measurement run")
         self.execution_id = execution_id
         if self.trace_channel.trace_counters() != dict(attempted=0, accepted=0, rejected=0):
             raise RuntimeError("task trace channel must be fresh")
 
-    def begin_trace_epoch(self, epoch_id, phase):
+    def begin_trace_epoch(self, epoch_id: '_typing.Any', phase: '_typing.Any') -> 'None':
+        """Set the epoch and phase identity for subsequent worker-task trace records.
+
+        Args:
+            epoch_id (_typing.Any): Epoch identity for trace correlation. Required.
+            phase (_typing.Any): Explicit trace phase label. Required.
+
+        Returns:
+            None after the operation succeeds.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.begin_trace_epoch(epoch_id, phase)
+
+        HYSo Guide: analysis.p21
+        Offline: hyso docs show analysis.p21 --lang en
+        Open: hyso docs open analysis.p21 --lang en
+        """
         if phase != "training" or self.execution_id is None:
             raise RuntimeError("task adapter requires explicit training run/epoch")
         self.trace_epoch = epoch_id
@@ -195,7 +279,27 @@ class WorkerTaskDataLoader(DataLoader):
             raise RuntimeError("task receipt budget exceeded")
         self.trace_ledger.append(dict(sequence=len(self.trace_ledger), kind=kind, **payload))
 
-    def bind_trace_delivery(self, observation):
+    def bind_trace_delivery(self, observation: '_typing.Any') -> 'None':
+        """Bind one delivered observation to its worker-task trace record.
+
+        Args:
+            observation (_typing.Any): One retained delivered-batch observation. Required.
+
+        Returns:
+            None after the operation succeeds.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.bind_trace_delivery(observation)
+
+        HYSo Guide: analysis.p21
+        Offline: hyso docs show analysis.p21 --lang en
+        Open: hyso docs open analysis.p21 --lang en
+        """
         last = self.trace_ledger[-1]
         if last["kind"] != "deliver" or last["observation"] is not None:
             raise RuntimeError("unmatched parent delivery")

@@ -2,6 +2,7 @@
 """P21 explicit dataset stage instrumentation."""
 
 from __future__ import annotations
+import typing as _typing
 
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -56,12 +57,33 @@ def measure_stage(
         return operation(value)
 
 
-def trace_data_stage(stage, operation, value, *, sample_id=None):
+def trace_data_stage(stage: '_typing.Any', operation: '_typing.Any', value: '_typing.Any', *, sample_id: '_typing.Any'=None) -> '_typing.Any':
     """Run once; collect worker-local wall timing only in an active trace.
 
     A normal Dataset/DataLoader can call this without a profiler or custom
     loader. TracedDataset or the explicit task adapter activates collection.
     No I/O, RNG, result, exception or worker-lifecycle behavior is replaced.
+
+    Args:
+        stage (_typing.Any): Workflow stage or timing-stage identity for this operation. Required.
+        operation (_typing.Any): Supported operation name. Required.
+        value (_typing.Any): Observed metric value; unavailable values retain their native null/status policy. Required.
+        sample_id (_typing.Any): Stable sample identity for correlation. Default: None.
+
+    Returns:
+        The retained trace data stage value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        trace_data_stage(stage, operation, value)
+
+    HYSo Guide: analysis.p21
+    Offline: hyso docs show analysis.p21 --lang en
+    Open: hyso docs open analysis.p21 --lang en
     """
     if stage not in ("load", "decode", "transform"):
         raise ValueError("unsupported dataset stage")

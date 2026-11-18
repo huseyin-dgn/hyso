@@ -4,6 +4,7 @@ Only schema-3 native evaluations are admitted. No model code, artifact paths,
 checkpoint loaders or device APIs are followed. Source reports are retained once
 per identity so original metric references remain independently resolvable.
 """
+import typing as _typing
 from dataclasses import asdict, dataclass
 import json
 
@@ -37,6 +38,27 @@ _LIMITATIONS = (
 @register
 @dataclass(frozen=True)
 class P26ModelProfileComparisonContract(Contract):
+    """Declare the P26 evaluation alignment required to compare two model profiles.
+
+    Args:
+        allowed_changes (tuple): Explicit model/configuration changes that an advisory proposal may suggest; none are applied automatically. Default: ().
+        min_samples (int): Minimum observations required for the statistic. Default: 1.
+        policy (str): Existing protocol/resource policy; defaults do not grant additional consent. Default: 'p26_bound_model_profiles_v1'.
+
+    Returns:
+        An instance of P26ModelProfileComparisonContract with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        P26ModelProfileComparisonContract()
+
+    HYSo Guide: comparison.models
+    Offline: hyso docs show comparison.models --lang en
+    Open: hyso docs open comparison.models --lang en
+    """
     allowed_changes: tuple = ()
     min_samples: int = 1
     policy: str = 'p26_bound_model_profiles_v1'
@@ -55,6 +77,37 @@ class BoundEvaluationReference:
 
     A reference alone is not an attestation. Checkpoint SHA may be absent and
     never falls back to a structure or model-state SHA.
+
+    Args:
+        report_id (str): Exact retained report identity. Required.
+        report_sha256 (str): Exact SHA-256 digest of the report. Required.
+        record_id (str): Exact retained evidence identity. Required.
+        artifact_sha256 (str): Exact serialized artifact digest. Required.
+        payload_sha256 (str): Exact SHA-256 digest of the payload. Required.
+        evaluation_id (str): Exact evaluation identity. Required.
+        evaluation_source_sha256 (str): Exact SHA-256 digest of the evaluation source. Required.
+        structure_sha256 (str): Exact SHA-256 digest of the structure. Required.
+        model_state_method (str): Method used to identify the model state. Required.
+        model_state_sha256 (str): Exact SHA-256 digest of the model state. Required.
+        checkpoint_status (str): Retained checkpoint availability/compatibility status. Required.
+        checkpoint_sha256 (str | None): Exact SHA-256 digest of the checkpoint. Required.
+        binding_method (str): Method used to bind this evidence to its source. Required.
+        binding_scope (str): Exact scope within which the binding is valid. Required.
+        snapshot_path (str): Local retained structure-snapshot path. Default: 'native_payload.structure_binding.snapshot'.
+
+    Returns:
+        An instance of BoundEvaluationReference with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        BoundEvaluationReference(report_id=report_id, report_sha256=report_sha256, record_id=record_id, artifact_sha256=artifact_sha256, payload_sha256=payload_sha256, evaluation_id=evaluation_id, evaluation_source_sha256=evaluation_source_sha256, structure_sha256=structure_sha256, model_state_method=model_state_method, model_state_sha256=model_state_sha256, checkpoint_status=checkpoint_status, checkpoint_sha256=checkpoint_sha256, binding_method=binding_method, binding_scope=binding_scope)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
     """
     report_id: str
     report_sha256: str
@@ -130,6 +183,23 @@ class UnifiedModelComparison:
     Retained reports keep original EvidenceRefs intact; shared reports and bound
     snapshots are stored once. The structure wire projection is not a standalone
     D.2 JSON object; .structure_comparison returns the complete validated object.
+
+    Args:
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of UnifiedModelComparison with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        UnifiedModelComparison(data)
+
+    HYSo Guide: comparison.models
+    Offline: hyso docs show comparison.models --lang en
+    Open: hyso docs open comparison.models --lang en
     """
     _payload: str
     _structure: ModelStructureComparison
@@ -138,7 +208,27 @@ class UnifiedModelComparison:
     _baseline: BoundEvaluationReference
     _candidate: BoundEvaluationReference
 
-    def __init__(self, data):
+    def __init__(self, data: 'dict[str, _typing.Any]') -> 'None':
+        """Initialize UnifiedModelComparison with the supplied settings.
+
+        Args:
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            UnifiedModelComparison(data)
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
         try:
             d = plain(data)
             raw = canonical(d)
@@ -175,55 +265,308 @@ class UnifiedModelComparison:
             object.__setattr__(self, field, value)
 
     @property
-    def baseline(self): return self._baseline
+    def baseline(self) -> '_typing.Any':
+        """Read the retained baseline from this UnifiedModelComparison record.
+
+        Returns:
+            The retained baseline value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.baseline
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
+        return self._baseline
 
     @property
-    def candidate(self): return self._candidate
+    def candidate(self) -> '_typing.Any':
+        """Read the retained candidate from this UnifiedModelComparison record.
+
+        Returns:
+            The retained candidate value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.candidate
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
+        return self._candidate
 
     @property
-    def structure_comparison(self): return self._structure
+    def structure_comparison(self) -> '_typing.Any':
+        """Read the retained structure comparison from this UnifiedModelComparison record.
+
+        Returns:
+            The retained structure comparison value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.structure_comparison
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
+        return self._structure
 
     @property
-    def structure_eligibility(self): return 'COMPARABLE'
+    def structure_eligibility(self) -> '_typing.Any':
+        """Read the retained structure eligibility from this UnifiedModelComparison record.
+
+        Returns:
+            The retained structure eligibility value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.structure_eligibility
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
+        return 'COMPARABLE'
 
     @property
-    def accuracy_comparison(self): return self._accuracy
+    def accuracy_comparison(self) -> '_typing.Any':
+        """Read the retained accuracy comparison from this UnifiedModelComparison record.
+
+        Returns:
+            The retained accuracy comparison value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.accuracy_comparison
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
+        return self._accuracy
 
     @property
-    def macro_f1_comparison(self): return self._macro_f1
+    def macro_f1_comparison(self) -> '_typing.Any':
+        """Read the retained macro f1 comparison from this UnifiedModelComparison record.
+
+        Returns:
+            The retained macro f1 comparison value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.macro_f1_comparison
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
+        return self._macro_f1
 
     @property
-    def contract(self): return P26ModelProfileComparisonContract.from_dict(self.to_dict()['contract'])
+    def contract(self) -> '_typing.Any':
+        """Read the retained contract from this UnifiedModelComparison record.
+
+        Returns:
+            The retained contract value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.contract
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
+        return P26ModelProfileComparisonContract.from_dict(self.to_dict()['contract'])
 
     @property
-    def limitations(self): return tuple(self.to_dict()['limitations'])
+    def limitations(self) -> '_typing.Any':
+        """Read the retained limitations from this UnifiedModelComparison record.
+
+        Returns:
+            The retained limitations value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.limitations
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
+        return tuple(self.to_dict()['limitations'])
 
     @property
-    def content_sha256(self): return self.to_dict()['content_sha256']
+    def content_sha256(self) -> '_typing.Any':
+        """Return the canonical content digest of this retained record.
 
-    def to_dict(self): return json.loads(self._payload)
+        Returns:
+            The canonical SHA-256 digest string of this retained content.
 
-    def to_json(self, path=None):
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.content_sha256
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
+        return self.to_dict()['content_sha256']
+
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
+        return json.loads(self._payload)
+
+    def to_json(self, path: '_typing.Any'=None) -> '_typing.Any':
+        """Serialize this object using its native JSON format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+
+        Returns:
+            A JSON string when path is None, otherwise None after writing the file.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json()
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
         raw = self._payload + '\n'
         if path is not None: export(path, raw, overwrite=False)
         return raw
 
     @classmethod
-    def from_dict(cls, data): return cls(data)
+    def from_dict(cls, data: 'dict[str, _typing.Any]') -> 'UnifiedModelComparison':
+        """Validate plain retained data and reconstruct the typed result.
+
+        Args:
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            A validated UnifiedModelComparison instance reconstructed from the supplied data.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            UnifiedModelComparison.from_dict(data)
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
+        return cls(data)
 
     @classmethod
-    def from_json(cls, path):
+    def from_json(cls, path: '_typing.Any') -> 'UnifiedModelComparison':
+        """Read and validate this type from a local JSON file.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+
+        Returns:
+            A validated UnifiedModelComparison instance reconstructed from the supplied data.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            UnifiedModelComparison.from_json(path)
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
         data, _, _ = read_json(path, max_bytes=_MAX_BYTES)
         return cls(data)
 
 
-def compare_p26_model_profiles(baseline_resolver, baseline_record_id,
-                               candidate_resolver, candidate_record_id, *, contract=None):
+def compare_p26_model_profiles(baseline_resolver: '_typing.Any', baseline_record_id: '_typing.Any',
+                               candidate_resolver: '_typing.Any', candidate_record_id: '_typing.Any', *, contract: '_typing.Any'=None) -> '_typing.Any':
     """Compare two distinct, bound native evaluations without rerunning models.
 
     Structure eligibility is independent of quality. Accuracy and macro-F1 use
     the existing safety gate under a separate schema-3 policy. Without explicit
     model-change permission they never produce an eligible numerical difference.
+
+    Args:
+        baseline_resolver (_typing.Any): Native metric resolver for baseline evidence. Required.
+        baseline_record_id (_typing.Any): Exact baseline evidence-record identity. Required.
+        candidate_resolver (_typing.Any): Native metric resolver for candidate evidence. Required.
+        candidate_record_id (_typing.Any): Exact candidate evidence-record identity. Required.
+        contract (_typing.Any): Typed comparison/evaluation contract required by the operation. Default: None.
+
+    Returns:
+        The retained compare p26 model profiles value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        compare_p26_model_profiles(baseline_resolver, baseline_record_id, candidate_resolver, candidate_record_id)
+
+    HYSo Guide: comparison.models
+    Offline: hyso docs show comparison.models --lang en
+    Open: hyso docs open comparison.models --lang en
     """
     contract = P26ModelProfileComparisonContract() if contract is None else contract
     data, *_ = _derive(baseline_resolver, baseline_record_id,

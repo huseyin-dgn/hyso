@@ -1,4 +1,5 @@
 """Bounded plain JSON and integrity helpers; no workload execution."""
+import typing as _typing
 import hashlib
 import json
 import math
@@ -6,8 +7,46 @@ from pathlib import Path
 
 
 class EvidenceError(ValueError):
-    """Stable error code; raw source payloads are not included in messages."""
-    def __init__(self, code):
+    """Stable error code; raw source payloads are not included in messages.
+
+    Args:
+        code (_typing.Any): Explicit failure/status code. Required.
+
+    Returns:
+        An instance of EvidenceError with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        EvidenceError(code)
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
+    """
+    def __init__(self, code: '_typing.Any') -> 'None':
+        """Initialize EvidenceError with the supplied settings.
+
+        Args:
+            code (_typing.Any): Explicit failure/status code. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            EvidenceError(code)
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         self.code = code
         super().__init__(code)
 

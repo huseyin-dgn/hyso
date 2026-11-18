@@ -5,6 +5,7 @@ or certify acceptance. Trusted in-process execution has no hard timeout/RAM cap.
 The existing isolated route retains Windows Job limits without fallback.
 """
 from __future__ import annotations
+import typing as _typing
 
 from dataclasses import asdict, dataclass, replace
 import json
@@ -30,7 +31,22 @@ STATUSES = ('SUPPORTED','UNSUPPORTED','MISSING_PREREQUISITE','NOT_IMPLEMENTED_IN
 
 
 class AnalysisExecutionError(ValueError):
-    """Invalid selection, policy, identity, authorization or reused dry-run ticket."""
+    """Invalid selection, policy, identity, authorization or reused dry-run ticket.
+
+    Returns:
+        An instance of AnalysisExecutionError with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        AnalysisExecutionError()
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
+    """
 
 
 @dataclass(frozen=True)
@@ -42,6 +58,33 @@ class CPUAnalysisPolicy:
     P11 reads logical tensors only. Tail eligibility uses the native default
     TailPolicy unchanged. Availability thresholds are OS estimates, not reserved
     memory or an estimate of arbitrary forward activation usage.
+
+    Args:
+        warmup_iterations (int): Unreported warmup iteration count before measured samples. Default: 1.
+        latency_measure_iterations (int): Latency measure iteration count. Default: 1000.
+        batch_count (int): Number of batches within the explicit measurement boundary. Default: 2.
+        repeats (int): Number of independently recorded measurement windows/repeats. Default: 1.
+        queue_depth (int): Bound on in-flight pipeline work. Default: 2.
+        quantiles (tuple[float, ...]): Requested latency quantiles; tail adequacy is checked separately. Default: (0.5, 0.95, 0.99).
+        max_input_bytes (int): Max input in bytes; this does not imply a GPU hardware quota. Default: 8 * 1024 ** 2.
+        max_model_bytes (int): Max model in bytes; this does not imply a GPU hardware quota. Default: 256 * 1024 ** 2.
+        min_available_memory_bytes (int): Min available memory in bytes; this does not imply a GPU hardware quota. Default: 128 * 1024 ** 2.
+        min_available_commit_bytes (int): Min available commit in bytes; this does not imply a GPU hardware quota. Default: 256 * 1024 ** 2.
+
+    Returns:
+        An instance of CPUAnalysisPolicy with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        CPUAnalysisPolicy()
+
+    HYSo Guide: analysis.overview
+    Offline: hyso docs show analysis.overview --lang en
+    Open: hyso docs open analysis.overview --lang en
     """
     warmup_iterations: int = 1
     latency_measure_iterations: int = 1000
@@ -73,7 +116,28 @@ class CPUAnalysisPolicy:
 
 @dataclass(frozen=True)
 class AnalysisPlan:
-    """Pure selection and policy snapshot. to_dict() performs no native preflight."""
+    """Pure selection and policy snapshot. to_dict() performs no native preflight.
+
+    Args:
+        request (FeaturePlanRequest): Validated advisory/selection request; does not authorize execution. Required.
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Required.
+        execution_mode (str): Supported execution profile; selection does not authorize a workload. Required.
+        policy (CPUAnalysisPolicy): Existing protocol/resource policy; defaults do not grant additional consent. Required.
+
+    Returns:
+        An instance of AnalysisPlan with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        AnalysisPlan(request=request, device=device, execution_mode=execution_mode, policy=policy)
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
+    """
     request: FeaturePlanRequest
     device: str
     execution_mode: str
@@ -89,10 +153,42 @@ class AnalysisPlan:
 
     @property
     def selected_features(self) -> tuple[str, ...]:
+        """Return the feature IDs selected by this analysis plan.
+
+        Returns:
+            The selected feature-ID sequence; selection alone grants no execution permission.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.selected_features
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         return tuple(row.feature_id for row in plan_features(self.request).features
                      if row.selection != 'prerequisite')
 
     def to_dict(self) -> dict[str,Any]:
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         legacy = plan_features(self.request)
         rows = []
         for row in legacy.features:
@@ -119,6 +215,30 @@ def plan_analysis(models: ModelContext | Sequence[ModelContext] | FeaturePlanReq
     Exactly one of features/profile is required unless a FeaturePlanRequest is
     supplied. Device selection never moves models or enables automatic fallback.
     Profiles choose IDs, not permissions. Existing G1 dependency semantics remain.
+
+    Args:
+        models (ModelContext | Sequence[ModelContext] | FeaturePlanRequest): Explicit model contexts or architecture definitions required by this planner/comparison. Required.
+        features (str | Sequence[str] | None): Explicit feature IDs to compare/plan; prerequisites are never silently executed. Default: None.
+        profile (str | None): Retained calibration/profile evidence with its exact identity and scope. Default: None.
+        capabilities (Sequence[str]): Explicit supported runtime/provider capabilities used by preflight. Default: ().
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
+        execution_mode (str): Supported execution profile; selection does not authorize a workload. Default: 'trusted_cpu'.
+        policy (CPUAnalysisPolicy): Existing protocol/resource policy; defaults do not grant additional consent. Default: CPUAnalysisPolicy().
+
+    Returns:
+        The retained plan analysis value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        plan_analysis(models)
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
     """
     if type(policy) is not CPUAnalysisPolicy or type(execution_mode) is not str or execution_mode not in EXECUTOR_FEATURES:
         raise AnalysisExecutionError('typed_policy_and_known_execution_mode_required')
@@ -156,14 +276,72 @@ class AnalysisDryRun:
 
     Nothing is imported from factory code during preflight. The common executor
     refreshes metadata/resource preflight before invoking any authorized adapter.
+
+    Args:
+        plan (_typing.Any): Typed selection plan; a plan alone grants no execution permission. Required.
+        bindings (_typing.Any): Typed live/isolated/native bindings; identities and operation permissions must match the plan. Required.
+        isolated_policy (_typing.Any): Explicit existing isolation/resource policy; not a generic Python security sandbox. Required.
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of AnalysisDryRun with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        AnalysisDryRun(plan, bindings, isolated_policy, data)
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
     """
-    def __init__(self, plan, bindings, isolated_policy, data):
+    def __init__(self, plan: '_typing.Any', bindings: '_typing.Any', isolated_policy: '_typing.Any', data: 'dict[str, _typing.Any]') -> 'None':
+        """Initialize AnalysisDryRun with the supplied settings.
+
+        Args:
+            plan (_typing.Any): Typed selection plan; a plan alone grants no execution permission. Required.
+            bindings (_typing.Any): Typed live/isolated/native bindings; identities and operation permissions must match the plan. Required.
+            isolated_policy (_typing.Any): Explicit existing isolation/resource policy; not a generic Python security sandbox. Required.
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            AnalysisDryRun(plan, bindings, isolated_policy, data)
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         self._plan = plan; self._bindings = bindings; self._isolated_policy = isolated_policy
         self._payload = canonical(data); self._used = False
         self._execution_lock = threading.Lock()
 
     def to_dict(self) -> dict[str,Any]:
-        """Return detached per-model support, reasons, costs, limits and OS estimates."""
+        """Return detached per-model support, reasons, costs, limits and OS estimates.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         return json.loads(self._payload)
 
     def tracking_config(self) -> dict[str,Any]:
@@ -172,6 +350,20 @@ class AnalysisDryRun:
         ExperimentManager rejects auth-named snapshot keys. This summary carries
         plan identity, selection and unchanged policy, without approval flags or
         factory kwargs. It neither starts a run nor logs anything automatically.
+
+        Returns:
+            The retained tracking config value, without recomputing measurements.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.tracking_config()
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
         """
         snapshot = self.to_dict()
         plan = snapshot['plan']
@@ -255,6 +447,26 @@ def preflight_analysis(plan: AnalysisPlan, bindings: Sequence[LiveCPUModel | Tru
     Missing bindings/prerequisites are per-model rows. Wrong or duplicate model
     identities are request errors. RAM/commit estimates fail closed if unavailable.
     In-process byte/operation limits do not bound arbitrary trusted Python runtime.
+
+    Args:
+        plan (AnalysisPlan): Typed selection plan; a plan alone grants no execution permission. Required.
+        bindings (Sequence[LiveCPUModel | TrustedFactoryBinding | NativeBinding]): Typed live/isolated/native bindings; identities and operation permissions must match the plan. Default: ().
+        isolated_policy (IsolatedCPUExecutionPolicy): Explicit existing isolation/resource policy; not a generic Python security sandbox. Default: IsolatedCPUExecutionPolicy().
+
+    Returns:
+        The retained preflight analysis value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        preflight_analysis(plan)
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
     """
     if type(plan) is not AnalysisPlan or type(isolated_policy) is not IsolatedCPUExecutionPolicy:
         raise AnalysisExecutionError('typed_plan_and_isolated_policy_required')
@@ -356,31 +568,139 @@ def _invoke(plan, context, binding, feature, isolated_policy):
 
 @dataclass(frozen=True)
 class AnalysisExecutionResult:
-    """Detached execution outcomes and native evidence, without acceptance claims."""
+    """Detached execution outcomes and native evidence, without acceptance claims.
+
+    Args:
+        _payload: Canonical serialized payload required by this existing low-level constructor; prefer the public parser/factory. Required.
+
+    Returns:
+        An instance of AnalysisExecutionResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        result = execute_analysis(dry_run, authorized_features=features)
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
+    """
     _payload: str
 
     def to_dict(self) -> dict[str,Any]:
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         return json.loads(self._payload)
 
-    def to_json(self, path, *, overwrite: bool = False) -> None:
-        """Explicit no-clobber export. No files are written by execution itself."""
+    def to_json(self, path: '_typing.Any', *, overwrite: bool = False) -> None:
+        """Explicit no-clobber export. No files are written by execution itself.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json(path)
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         export(path,self._payload+'\n',overwrite)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> AnalysisExecutionResult:
-        """Reopen through the existing Manager result validation, without execution."""
+        """Reopen through the existing Manager result validation, without execution.
+
+        Args:
+            data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            A validated AnalysisExecutionResult instance reconstructed from the supplied data.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            AnalysisExecutionResult.from_dict(data)
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         from hyso.experiments.workflow import _restore_result
         return _restore_result('analysis_execution', data)
 
     @classmethod
-    def from_json(cls, path) -> AnalysisExecutionResult:
-        """Read a bounded execution snapshot through the same native readers."""
+    def from_json(cls, path: '_typing.Any') -> AnalysisExecutionResult:
+        """Read a bounded execution snapshot through the same native readers.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+
+        Returns:
+            A validated AnalysisExecutionResult instance reconstructed from the supplied data.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            AnalysisExecutionResult.from_json(path)
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         from ._codec import read_json
         data, _, _ = read_json(path, None, 128*1024**2)
         return cls.from_dict(data)
 
     def artifact_sources(self) -> tuple[ArtifactSource, ...]:
-        """Return file dependencies for explicit ExperimentManager registration."""
+        """Return file dependencies for explicit ExperimentManager registration.
+
+        Returns:
+            The retained artifact sources value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.artifact_sources()
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         from .sources import ArtifactSource
         items = {}
         for row in self.to_dict()['features']:
@@ -391,11 +711,43 @@ class AnalysisExecutionResult:
         return tuple(items.values())
 
     def verify_artifacts(self) -> list[dict[str, Any]]:
-        """Report current file availability alongside the retained native snapshot."""
+        """Report current file availability alongside the retained native snapshot.
+
+        Returns:
+            The retained verify artifacts value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.verify_artifacts()
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         return [item.verify() for item in self.artifact_sources()]
 
     def to_evidence_index(self) -> EvidenceIndex:
-        """Preserve validated native payloads and explicit unavailable reasons."""
+        """Preserve validated native payloads and explicit unavailable reasons.
+
+        Returns:
+            The retained to evidence index value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_evidence_index()
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         records = []
         for row in self.to_dict()['features']:
             if row['evidence_record'] is not None:
@@ -408,7 +760,26 @@ class AnalysisExecutionResult:
         return EvidenceIndex(records)
 
     def to_unified_report(self, *, context: AnalysisContext) -> UnifiedAnalysisReport:
-        """Use the existing evidence report. Advisor interpretation is a separate call."""
+        """Convert completed selections to a unified report under an explicit analysis context.
+
+        Args:
+            context (AnalysisContext): Explicit analysis/evaluation context; caller declarations are not producer attestation. Required.
+
+        Returns:
+            A unified report for completed native selections; blocked/missing features are not fabricated.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_unified_report(context=context)
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         risks = tuple('Executor '+row['model_id']+'/'+row['feature_id']+': '+row['status']+'; '+';'.join(row['reasons'])
                       for row in self.to_dict()['features'] if row['status']!='COMPLETED')
         return self.to_evidence_index().analyze(context=context,risks=risks)
@@ -422,6 +793,26 @@ def execute_analysis(dry_run: AnalysisDryRun, *, authorized_features: Sequence[s
     Ordinary per-feature failures are retained while independent rows continue.
     KeyboardInterrupt/SystemExit propagate. In-process trusted forwards may hang;
     use the existing isolated CPU route where a hard Job deadline is required.
+
+    Args:
+        dry_run (AnalysisDryRun): Typed preflight result; missing prerequisites remain blocking. Required.
+        authorized_features (Sequence[str]): Explicit unique selected feature subset authorized for this call only. Required.
+        explicit_authorization (bool): Explicit permission for the selected operation; prerequisites and guards still apply. Default: False.
+
+    Returns:
+        The retained execute analysis value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        execute_analysis(dry_run, authorized_features=authorized_features)
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
     """
     if type(dry_run) is not AnalysisDryRun:
         raise AnalysisExecutionError('typed_dry_run_required')

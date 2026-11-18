@@ -52,6 +52,30 @@ class ModularCNN(nn.Module):
     CoordinateAttention retains its own BatchNorm. Attention defaults come from
     the existing modules. No device selection, fit/optimizer/AMP/checkpoint API,
     or EBO epoch-boundary resume support is provided. Use normal Module.to().
+
+    Args:
+        input_channels (int): Number of input image/feature channels. Default: 3.
+        num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 10.
+        widths (tuple[int, ...] | list[int]): Ordered feature widths for the architecture stages. Default: (32, 64, 128).
+        repeats (tuple[int, ...] | list[int]): Number of independently recorded measurement windows/repeats. Default: (1, 1, 1).
+        strides (tuple[int, ...] | list[int]): Ordered spatial sampling steps for the architecture stages. Default: (1, 2, 2).
+        attention (str): Supported attention object/configuration for this constructor; no external plugin is inferred. Default: 'none'.
+        norm (str | None): Supported normalization choice; native training-statistics requirements still apply. Default: 'batch'.
+
+    Returns:
+        An instance of ModularCNN with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ModularCNN()
+
+    HYSo Guide: models.support
+    Offline: hyso docs show models.support --lang en
+    Open: hyso docs open models.support --lang en
     """
 
     def __init__(self, input_channels: int = 3, num_classes: int = 10,
@@ -72,6 +96,20 @@ class ModularCNN(nn.Module):
 
         Raises:
             ValueError: Invalid dimensions or unsupported attention/normalization.
+
+        Defaults:
+            input_channels=3; num_classes=10; widths=(32, 64, 128); repeats=(1, 1, 1); strides=(1, 2, 2); attention='none'; norm='batch'.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ModularCNN()
+
+        HYSo Guide: models.support
+        Offline: hyso docs show models.support --lang en
+        Open: hyso docs open models.support --lang en
         """
         super().__init__()
         self.input_channels = _positive_int(input_channels, "input_channels")
@@ -103,7 +141,26 @@ class ModularCNN(nn.Module):
         self.classifier = nn.Linear(self.widths[-1], num_classes)
 
     def forward_features(self, x: torch.Tensor) -> torch.Tensor:
-        """Return the final stage's NCHW feature map, before global pooling."""
+        """Return the final stage's NCHW feature map, before global pooling.
+
+        Args:
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            The retained forward features value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward_features(x)
+
+        HYSo Guide: models.support
+        Offline: hyso docs show models.support --lang en
+        Open: hyso docs open models.support --lang en
+        """
         if not isinstance(x, torch.Tensor) or x.ndim != 4:
             raise ValueError("input must be an NCHW tensor")
         if x.shape[1] != self.input_channels or any(size <= 0 for size in x.shape):
@@ -114,5 +171,24 @@ class ModularCNN(nn.Module):
         return x
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Map nonempty NCHW inputs to [batch, num_classes] unnormalized logits."""
+        """Map nonempty NCHW inputs to [batch, num_classes] unnormalized logits.
+
+        Args:
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: models.support
+        Offline: hyso docs show models.support --lang en
+        Open: hyso docs open models.support --lang en
+        """
         return self.classifier(torch.flatten(self.pool(self.forward_features(x)), 1))

@@ -1,4 +1,5 @@
 """P16 sampled native counters. No workload execution, CUDA calls or busy inference."""
+import typing as _typing
 from dataclasses import asdict,dataclass
 import math
 import os
@@ -13,6 +14,32 @@ from .result import UtilizationResult,_integer,_positive
 
 @dataclass(frozen=True)
 class UtilizationProtocol:
+    """Configure P16 — Hardware utilization measurement boundaries and resource limits; construction does not run the analysis.
+
+    Args:
+        duration_seconds (float): Duration in seconds under the native protocol. Default: 1.0.
+        interval_seconds (float): Interval in seconds under the native protocol. Default: 0.1.
+        max_samples (int): Upper bound on collected samples. Default: 128.
+        min_valid_intervals (int): Minimum valid sensor intervals for reporting. Default: 2.
+        gpu (bool): Explicit selected GPU context/identity in this API. Default: False.
+        gpu_selector (str): Exact supported GPU selection identity. Default: '0'.
+        sensor_timeout_seconds (float): Sensor timeout in seconds under the native protocol. Default: 1.0.
+        workload_label (str | None): Human-readable label bound to this workload evidence. Default: None.
+
+    Returns:
+        An instance of UtilizationProtocol with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        UtilizationProtocol()
+
+    HYSo Guide: analysis.p16
+    Offline: hyso docs show analysis.p16 --lang en
+    Open: hyso docs open analysis.p16 --lang en
+    """
     duration_seconds: float = 1.
     interval_seconds: float = .1
     max_samples: int = 128
@@ -89,12 +116,30 @@ def _utilization_metrics(cpu,gpu,cores,p):
         gap_count=sum(r['gap'] for r in intervals),missing_interval_count=sum(r['status']!='measured' for r in intervals))
 
 
-def measure_utilization(*,protocol=UtilizationProtocol()):
+def measure_utilization(*,protocol: '_typing.Any'=UtilizationProtocol()) -> 'UtilizationResult':
     """Blocking bounded sampler of caller process CPU and optional physical GPU.
 
     Workload must run independently; label is caller-declared, not attribution.
     No writes occur in the window. GPU queries use installed nvidia-smi/NVML,
     one bounded subprocess per query; no Python NVML dependency is required.
+
+    Args:
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: UtilizationProtocol().
+
+    Returns:
+        The retained measure utilization value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        measure_utilization()
+
+    HYSo Guide: analysis.p16
+    Offline: hyso docs show analysis.p16 --lang en
+    Open: hyso docs open analysis.p16 --lang en
     """
     if type(protocol) is not UtilizationProtocol: raise TypeError('UtilizationProtocol required')
     p=protocol; cpu=[]; gpu=[]; cores=os.cpu_count() or 1; start=time.perf_counter_ns()

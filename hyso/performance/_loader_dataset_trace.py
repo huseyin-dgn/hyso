@@ -2,6 +2,7 @@
 """P21 opt-in map-style dataset tracing."""
 
 from __future__ import annotations
+import typing as _typing
 
 import uuid
 
@@ -12,14 +13,62 @@ from ._loader_stage_trace import activate_recorder
 
 
 class TracedDataset(Dataset):
+    """Wrap an existing Dataset with bounded worker-side timing evidence.
+
+    Args:
+        dataset (Dataset): Caller-owned finite Dataset used by the loader or trace wrapper. Required.
+        recorder (WorkerTimingRecorder | None): Existing bounded evidence recorder. Default: None.
+        channel (_typing.Any): Explicit worker-trace evidence channel. Default: None.
+        max_events_per_sample (int): Upper bound on events per sample retained/accepted by this operation. Default: 64.
+        trace_batches (bool): Observe the explicitly selected batch trace profile. Default: False.
+
+    Returns:
+        An instance of TracedDataset with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        TracedDataset(dataset)
+
+    HYSo Guide: analysis.p21
+    Offline: hyso docs show analysis.p21 --lang en
+    Open: hyso docs open analysis.p21 --lang en
+    """
     def __init__(
         self,
         dataset: Dataset,
         recorder: WorkerTimingRecorder | None = None,
-        channel=None,
+        channel: '_typing.Any'=None,
         max_events_per_sample: int = 64,
         trace_batches: bool = False,
-    ):
+    ) -> 'None':
+        """Initialize TracedDataset with the supplied settings.
+
+        Args:
+            dataset (Dataset): Caller-owned finite Dataset used by the loader or trace wrapper. Required.
+            recorder (WorkerTimingRecorder | None): Existing bounded evidence recorder. Default: None.
+            channel (_typing.Any): Explicit worker-trace evidence channel. Default: None.
+            max_events_per_sample (int): Upper bound on events per sample retained/accepted by this operation. Default: 64.
+            trace_batches (bool): Observe the explicitly selected batch trace profile. Default: False.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            TracedDataset(dataset)
+
+        HYSo Guide: analysis.p21
+        Offline: hyso docs show analysis.p21 --lang en
+        Open: hyso docs open analysis.p21 --lang en
+        """
         if not isinstance(dataset, Dataset):
             raise TypeError("expected torch Dataset")
 

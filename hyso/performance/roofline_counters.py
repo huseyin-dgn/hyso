@@ -3,6 +3,7 @@
 Empirical session observations are not hardware limits or confidence intervals.
 The existing analytic Roofline API and its schema remain unchanged.
 """
+import typing as _typing
 import csv
 from decimal import Decimal, InvalidOperation
 import hashlib
@@ -96,14 +97,40 @@ def _source_expected(receipt):
                 cuda=origin.get('source_sha256'), ptx=origin.get('ptx_sha256'))
 
 
-def read_ncu_counters(csv_path, *, receipt_path, session_id, role, kernel_name,
-                      number_format='decimal_point', source_paths=None, sensor_paths=None, report_path=None):
+def read_ncu_counters(csv_path: '_typing.Any', *, receipt_path: '_typing.Any', session_id: '_typing.Any', role: '_typing.Any', kernel_name: '_typing.Any',
+                      number_format: 'str'='decimal_point', source_paths: '_typing.Any'=None, sensor_paths: '_typing.Any'=None, report_path: '_typing.Any'=None) -> '_typing.Any':
     """Read an existing ``--page raw --csv --print-units base`` export + receipt.
 
     No binary report decoding, Nsight import, subprocess, driver or GPU query.
     ``report_path`` retains a fingerprint only, not proof of CSV/binary equivalence.
     Optional source_paths maps worker/cuda/ptx to files checked against the receipt.
     sensor_paths maps phase names to saved nvidia-smi -q -x XML snapshots.
+
+    Args:
+        csv_path (_typing.Any): Local retained CSV evidence path. Required.
+        receipt_path (_typing.Any): Local retained receipt path. Required.
+        session_id (_typing.Any): Exact calibration/profiler session identity. Required.
+        role (_typing.Any): Input, output or report relation accepted by this operation. Required.
+        kernel_name (_typing.Any): Explicit kernel identity for evidence selection. Required.
+        number_format (str): Explicit supported numeric representation in imported evidence. Default: 'decimal_point'.
+        source_paths (_typing.Any): Local retained input-evidence paths. Default: None.
+        sensor_paths (_typing.Any): Local retained sensor-evidence paths. Default: None.
+        report_path (_typing.Any): Explicit output report path. Default: None.
+
+    Returns:
+        The retained read ncu counters value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        read_ncu_counters(csv_path, receipt_path=receipt_path, session_id=session_id, role=role, kernel_name=kernel_name)
+
+    HYSo Guide: analysis.p18
+    Offline: hyso docs show analysis.p18 --lang en
+    Open: hyso docs open analysis.p18 --lang en
     """
     if number_format not in ('decimal_point', 'decimal_comma'):
         raise ValueError('choose decimal_point or decimal_comma explicitly')
@@ -331,7 +358,7 @@ def _derive(raw):
             limitations=_LIMITATIONS))
 
 
-def analyze_counter_roofline(target, *, compute_sessions=(), memory_session=None):
+def analyze_counter_roofline(target: '_typing.Any', *, compute_sessions: '_typing.Sequence[dict[str, _typing.Any]]'=(), memory_session: '_typing.Any'=None) -> '_typing.Any':
     """Offline empirical comparison, preserving every sample and session.
 
     No spread, traffic-ratio, minimum-duration policy or resource quota. Missing
@@ -339,6 +366,26 @@ def analyze_counter_roofline(target, *, compute_sessions=(), memory_session=None
     Omit unqualified references to retain measured target values in a partial
     result without manufacturing a two-roof comparison. Invalid supplied
     sessions still raise rather than silently disappearing from the evidence.
+
+    Args:
+        target (_typing.Any): Explicit target value/model/context required by this operation. Required.
+        compute_sessions (_typing.Sequence[dict[str, _typing.Any]]): Retained compute calibration sessions. Default: ().
+        memory_session (_typing.Any): Retained memory-bandwidth calibration session. Default: None.
+
+    Returns:
+        The retained analyze counter roofline value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        analyze_counter_roofline(target)
+
+    HYSo Guide: analysis.p18
+    Offline: hyso docs show analysis.p18 --lang en
+    Open: hyso docs open analysis.p18 --lang en
     """
     raw = dict(target=target, compute_sessions=list(compute_sessions), memory_session=memory_session)
     derived = _derive(raw)
@@ -357,8 +404,29 @@ def _validate_counter_result(data):
         raise ValueError('native Roofline derived evidence mismatch')
 
 
-def plot_counter_roofline(result, path, *, overwrite=False):
-    """Save a CPU-only PNG/SVG; observed bands, separate sessions, no speedup claim."""
+def plot_counter_roofline(result: '_typing.Any', path: '_typing.Any', *, overwrite: 'bool'=False) -> '_typing.Any':
+    """Save a CPU-only PNG/SVG; observed bands, separate sessions, no speedup claim.
+
+    Args:
+        result (_typing.Any): Retained typed result required by this operation. Required.
+        path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+        overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+    Returns:
+        The retained plot counter roofline value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        plot_counter_roofline(result, path)
+
+    HYSo Guide: analysis.p18
+    Offline: hyso docs show analysis.p18 --lang en
+    Open: hyso docs open analysis.p18 --lang en
+    """
     if type(result) is not RooflineResult:
         raise TypeError('RooflineResult required')
     data = RooflineResult(result.to_dict()).to_dict()

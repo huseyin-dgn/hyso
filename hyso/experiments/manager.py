@@ -304,6 +304,25 @@ class ExperimentManager:
     explicit persisted policy: reopening must specify the same nondefault value.
     Root ACLs and absence of synchronization software are the caller's duty;
     known OneDrive roots, network drives and reparse points are rejected.
+
+    Args:
+        root_dir (str | _PathLike[str]): Dedicated local ExperimentManager directory outside synchronized folders. Required.
+        max_metrics_per_run (int): Maximum persisted metric observation count per run. Default: _MAX_METRICS.
+
+    Returns:
+        An instance of ExperimentManager with the documented native validation and defaults.
+
+    Raises:
+        ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+        OSError: Native filesystem access fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        manager = ExperimentManager("C:/local-hyso/store")
+
+    HYSo Guide: experiments.manager
+    Offline: hyso docs show experiments.manager --lang en
+    Open: hyso docs open experiments.manager --lang en
     """
 
     def __init__(self, root_dir: str | _PathLike[str], *, max_metrics_per_run: int = _MAX_METRICS) -> None:
@@ -315,6 +334,24 @@ class ExperimentManager:
 
         Call close() to release this thread/process-owned handle (no context manager).
         Opening a store never starts training, benchmarking or run completion.
+
+        Defaults:
+            max_metrics_per_run=_MAX_METRICS.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ExperimentManager(root_dir)
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
         """
         self._pid, self._thread = os.getpid(), threading.get_ident()
         self._lock = threading.Lock()
@@ -458,6 +495,23 @@ class ExperimentManager:
         self._db.commit()
 
     def close(self) -> None:
+        """Close this object's owned resources according to its lifecycle.
+
+        Returns:
+            None. The owned store/sampler resources are closed according to the existing lifecycle.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.close()
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
+        """
         if os.getpid() != self._pid or threading.get_ident() != self._thread:
             _error("session_context", "close")
         if self._closed:
@@ -483,6 +537,25 @@ class ExperimentManager:
         """Persist experiment metadata; return its identity/name dictionary.
 
         request_id is an optional idempotency key, not a model identifier.
+
+        Args:
+            name (str): Registered component name, exact metric label, or stored entity name in this API. Required.
+            request_id (str | None): Optional idempotency key for the stored operation; not a model or artifact identity. Default: None.
+
+        Returns:
+            The retained create experiment value, without recomputing measurements.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.create_experiment(name)
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
         """
         name = _label(name, 256)
         request_id, identity = _request(request_id), uuid.uuid4().hex
@@ -498,7 +571,27 @@ class ExperimentManager:
             result = self._experiment(self._row(db, "experiments", identity))
         return result
 
-    def get_experiment(self, id):
+    def get_experiment(self, id: 'str') -> 'dict[str, _typing.Any]':
+        """Read the exact existing experiment record.
+
+        Args:
+            id (str): Exact existing entity identifier in this store. Required.
+
+        Returns:
+            The exact existing stored entity record as a plain dictionary.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.get_experiment(id)
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
+        """
         identity = _id(id)
         with self._access("get_experiment") as db:
             return self._experiment(self._row(db, "experiments", identity))
@@ -509,6 +602,28 @@ class ExperimentManager:
         """List experiments by exact name and matching run kind/status, with a seq cursor.
 
         kind/status match the same run. Existing run states remain authoritative.
+
+        Args:
+            name (str | None): Registered component name, exact metric label, or stored entity name in this API. Default: None.
+            kind (str | None): Existing run or artifact kind accepted by this operation. Default: None.
+            status (str | None): Exact lifecycle/status filter accepted by this API. Default: None.
+            after_seq (int | None): Exclusive sequence cursor from the previous page. Default: None.
+            limit (int): Bounded page/record count; native Manager limits still apply. Default: 100.
+
+        Returns:
+            A bounded list of stored records in native sequence order; no workload is executed.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.list_experiments()
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
         """
         cursor, limit = _page(after_seq, limit, 100)
         clauses, values = ["e.seq>?"], [cursor]
@@ -545,6 +660,35 @@ class ExperimentManager:
         tracking_config(). Context labels are caller declarations. Omitted context
         stays None. Creation only persists immutable snapshots, on schema1 or schema2.
         Start/finish/fail/interrupt remain explicit ExperimentRun operations.
+
+        Args:
+            experiment_id (str): Exact existing experiment identifier. Required.
+            stage (str): Workflow stage or timing-stage identity for this operation. Required.
+            model_ids (_typing.Sequence[str]): Explicit ordered model identities for the recorded workflow. Required.
+            architectures (dict[str, ModelBuilder | GraphModelBuilder] | None): Plain architecture configurations to compare. Default: None.
+            training_config (TrainingConfig | None): Retained training settings to record; this does not start training. Default: None.
+            analysis (AnalysisDryRun | None): Retained analysis selection/context metadata. Default: None.
+            comparison (ModelComparisonResult | None): Retained comparison configuration. Default: None.
+            dataset (dict[str, _typing.Any] | None): Caller-owned finite Dataset used by the loader or trace wrapper. Default: None.
+            device (str | None): Optional device selector following this API's native placement/default rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
+            precision (str | None): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: None.
+            protocol (dict[str, _typing.Any] | None): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: None.
+            request_id (str | None): Optional idempotency key for the stored operation; not a model or artifact identity. Default: None.
+
+        Returns:
+            The retained create workflow run value, without recomputing measurements.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.create_workflow_run(experiment_id, stage, model_ids=model_ids)
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
         """
         from .workflow import workflow_config
         kind, config = workflow_config(stage, model_ids, architectures, training_config,
@@ -558,6 +702,26 @@ class ExperimentManager:
         Summary precedence is running, created, failed, interrupted, completed.
         An empty experiment is created. This derived view never changes run states.
         next_after_seq continues a full page using the existing seq pagination.
+
+        Args:
+            experiment_id (str): Exact existing experiment identifier. Required.
+            after_seq (int | None): Exclusive sequence cursor from the previous page. Default: None.
+            limit (int): Bounded page/record count; native Manager limits still apply. Default: 100.
+
+        Returns:
+            The retained get experiment history value, without recomputing measurements.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.get_experiment_history(experiment_id)
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
         """
         identity = _id(experiment_id)
         cursor, limit = _page(after_seq, limit, 100)
@@ -581,6 +745,27 @@ class ExperimentManager:
 
         Availability observations are read-only, without appending artifact checks.
         Each full page supplies a cursor. schema1 reports schema2_required for artifacts.
+
+        Args:
+            run_id (str): Exact existing run identifier; never a process ID. Required.
+            after_metric_seq (int | None): Exclusive metric sequence cursor for the next page. Default: None.
+            after_artifact_seq (int | None): Exclusive artifact cursor for the next page. Default: None.
+            limit (int): Bounded page/record count; native Manager limits still apply. Default: 100.
+
+        Returns:
+            The retained get run details value, without recomputing measurements.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.get_run_details(run_id)
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
         """
         from .workflow import run_details
         return run_details(self, run_id, after_metric_seq, after_artifact_seq, limit)
@@ -596,12 +781,58 @@ class ExperimentManager:
         Additional JSON kinds: graph_evaluation_association, graph_evidence_comparison,
         graph_multi_head_evaluation, analysis_report and presentation_report.
         Generic files keep their own kind.
+
+        Args:
+            artifact_id (str): Exact registered artifact identifier. Required.
+            path (str | _PathLike[str] | None): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+
+        Returns:
+            The retained open result value, without recomputing measurements.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.open_result(artifact_id)
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
         """
         from .workflow import open_result
         return open_result(self, artifact_id, path)
 
-    def create_run(self, experiment_id, kind, config, provenance=None, *, redact_paths=(),
-                   retry_of_run_id=None, resume_artifact_id=None, request_id=None):
+    def create_run(self, experiment_id: 'str', kind: 'str', config: 'dict[str, _typing.Any]', provenance: '_typing.Any'=None, *, redact_paths: '_typing.Sequence[str]'=(),
+                   retry_of_run_id: 'str | None'=None, resume_artifact_id: 'str | None'=None, request_id: 'str | None'=None) -> 'ExperimentRun':
+        """Persist a new run and return its lifecycle handle; no training is started.
+
+        Args:
+            experiment_id (str): Exact existing experiment identifier. Required.
+            kind (str): Existing run or artifact kind accepted by this operation. Required.
+            config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained state. Required.
+            provenance (_typing.Any): Plain origin/environment metadata; declarations are not producer attestation. Default: None.
+            redact_paths (_typing.Sequence[int]): Paths within configuration/provenance to redact before persistence. Default: ().
+            retry_of_run_id (str | None): Explicit previous attempt identity; this records lineage and never retries automatically. Default: None.
+            resume_artifact_id (str | None): Registered checkpoint artifact identity used for resume lineage. Default: None.
+            request_id (str | None): Optional idempotency key for the stored operation; not a model or artifact identity. Default: None.
+
+        Returns:
+            An ExperimentRun handle bound to this manager and the exact stored run.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.create_run(experiment_id, kind, config)
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
+        """
         if retry_of_run_id is not None or resume_artifact_id is not None:
             self._b2()
             if retry_of_run_id is not None:
@@ -677,7 +908,7 @@ class ExperimentManager:
             _error("unsupported_b2", "schema2_required")
 
     @classmethod
-    def migrate_store(cls, root_dir):
+    def migrate_store(cls, root_dir: '_typing.Any') -> 'dict[str, _typing.Any]':
         """Explicit offline schema1 -> schema2. New stores intentionally use schema1.
 
         Stop/coordinate writers first. Persisted running records must be explicitly
@@ -685,6 +916,24 @@ class ExperimentManager:
         fenced at their next access. A SQLite reserved lock excludes new writers
         throughout backup/DDL; it is not a process liveness detector.
         Backups remain after any failure; no automatic restore/delete is performed.
+
+        Args:
+            root_dir (_typing.Any): Dedicated local ExperimentManager directory outside synchronized folders. Required.
+
+        Returns:
+            The retained migrate store value, without recomputing measurements.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ExperimentManager.migrate_store(root_dir)
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
         """
         manager = None
         backup = None
@@ -764,11 +1013,31 @@ class ExperimentManager:
         if db.execute("SELECT 1 FROM runs WHERE status='running' LIMIT 1").fetchone():
             _error("offline_required", "maintenance")
 
-    def recover_interrupted(self, run_id, expected_revision, reason):
+    def recover_interrupted(self, run_id: 'str', expected_revision: 'int', reason: 'str') -> 'dict[str, _typing.Any]':
         """Fence tracking writes only; caller must coordinate the old workload.
 
         Also available on schema1 so an abandoned running record can be explicitly
         recovered before offline migration. Does not kill a process or cancel GPU work.
+
+        Args:
+            run_id (str): Exact existing run identifier; never a process ID. Required.
+            expected_revision (int): Expected stored revision for optimistic concurrency checks. Required.
+            reason (str): Explicit human-readable lifecycle reason; not an automatic workload diagnosis. Required.
+
+        Returns:
+            The retained recover interrupted value, without recomputing measurements.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.recover_interrupted(run_id, expected_revision, reason)
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
         """
         run_id = _id(run_id)
         if type(expected_revision) is not int or not 0 <= expected_revision < _MAX_INT:
@@ -801,12 +1070,54 @@ class ExperimentManager:
         result.pop("writer_session_id")
         return result
 
-    def get_artifact(self, artifact_id):
+    def get_artifact(self, artifact_id: 'str') -> 'dict[str, _typing.Any]':
+        """Read registered artifact metadata without loading its model/checkpoint.
+
+        Args:
+            artifact_id (str): Exact registered artifact identifier. Required.
+
+        Returns:
+            The exact existing stored entity record as a plain dictionary.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.get_artifact(artifact_id)
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
+        """
         self._b2()
         with self._access("get_artifact") as db:
             return self._artifact_record(self._row(db, "artifacts", _id(artifact_id)))
 
-    def list_artifacts(self, run_id=None, *, after_seq=None, limit=100):
+    def list_artifacts(self, run_id: 'str | None'=None, *, after_seq: 'int | None'=None, limit: 'int'=100) -> 'list[dict[str, _typing.Any]]':
+        """Read a bounded page of registered artifact records.
+
+        Args:
+            run_id (str | None): Exact existing run identifier; never a process ID. Default: None.
+            after_seq (int | None): Exclusive sequence cursor from the previous page. Default: None.
+            limit (int): Bounded page/record count; native Manager limits still apply. Default: 100.
+
+        Returns:
+            A bounded list of stored records in native sequence order; no workload is executed.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.list_artifacts()
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
+        """
         self._b2()
         cursor, limit = _page(after_seq, limit, 100)
         if run_id is not None:
@@ -841,7 +1152,29 @@ class ExperimentManager:
         return dict(db.execute("SELECT * FROM run_artifacts WHERE run_id=? AND artifact_id=? AND role=?",
                               (run_id, artifact_id, role)).fetchone())
 
-    def link_artifact(self, run_id, artifact_id, *, role="input"):
+    def link_artifact(self, run_id: 'str', artifact_id: 'str', *, role: 'str'="input") -> 'dict[str, _typing.Any]':
+        """Attach an existing artifact to a run with an explicit input/output/report role.
+
+        Args:
+            run_id (str): Exact existing run identifier; never a process ID. Required.
+            artifact_id (str): Exact registered artifact identifier. Required.
+            role (str): Input, output or report relation accepted by this operation. Default: 'input'.
+
+        Returns:
+            The persisted run-artifact relation dictionary.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.link_artifact(run_id, artifact_id)
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
+        """
         self._b2()
         run_id, artifact_id = _id(run_id), _id(artifact_id)
         self._role(role)
@@ -1018,11 +1351,30 @@ class ExperimentManager:
             (artifact_id, observation["status"], observation.get("observed_size_bytes"), observation.get("observed_sha256"), _now(), source))
         return dict(db.execute("SELECT * FROM artifact_checks WHERE seq=?", (cursor.lastrowid,)).fetchone())
 
-    def verify_artifact(self, artifact_id, *, path=None):
+    def verify_artifact(self, artifact_id: 'str', *, path: '_typing.Any'=None) -> 'dict[str, _typing.Any]':
         """Observe bytes only. Redacted references require caller-supplied path.
 
         This never deserializes a checkpoint or establishes model compatibility.
         Every observation is appended; expected identity remains immutable.
+
+        Args:
+            artifact_id (str): Exact registered artifact identifier. Required.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+
+        Returns:
+            The retained verify artifact value, without recomputing measurements.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.verify_artifact(artifact_id)
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
         """
         self._b2()
         artifact_id = _id(artifact_id)
@@ -1033,7 +1385,7 @@ class ExperimentManager:
             result = self._check(db, artifact_id, observation, "verify")
         return result
 
-    def reconcile_storage(self, *, limit=1000):
+    def reconcile_storage(self, *, limit: 'int'=1000) -> 'dict[str, _typing.Any]':
         """Explicit offline bounded reconciliation; reports unknown files, never deletes.
 
         One reserved transaction prevents cooperating writers from starting while
@@ -1041,6 +1393,24 @@ class ExperimentManager:
         hashing; callers budget disk/time and coordinate maintenance themselves.
         No failed ingest is adopted. Pending bytes without expected identity are
         quarantined by report only. Ready identity is never rewritten.
+
+        Args:
+            limit (int): Bounded page/record count; native Manager limits still apply. Default: 1000.
+
+        Returns:
+            The retained reconcile storage value, without recomputing measurements.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.reconcile_storage()
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
         """
         self._b2()
         _, limit = _page(None, limit, 1000)
@@ -1108,7 +1478,27 @@ class ExperimentManager:
                     reports.append(report)
         return {"status": "reconciled", "observations": reports}
 
-    def get_run(self, id):
+    def get_run(self, id: 'str') -> 'ExperimentRun':
+        """Return a handle to the exact existing run.
+
+        Args:
+            id (str): Exact existing entity identifier in this store. Required.
+
+        Returns:
+            An ExperimentRun handle bound to this manager and the exact stored run.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.get_run(id)
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
+        """
         identity = _id(id)
         with self._access("get_run") as db:
             self._row(db, "runs", identity)
@@ -1128,7 +1518,31 @@ class ExperimentManager:
         record["writer_liveness"] = "unknown" if row["status"] == "running" else "not_applicable"
         return record
 
-    def list_runs(self, experiment_id=None, *, kind=None, status=None, after_seq=None, limit=100):
+    def list_runs(self, experiment_id: 'str | None'=None, *, kind: 'str | None'=None, status: 'str | None'=None, after_seq: 'int | None'=None, limit: 'int'=100) -> 'list[dict[str, _typing.Any]]':
+        """Read a bounded page of run records using the optional filters.
+
+        Args:
+            experiment_id (str | None): Exact existing experiment identifier. Default: None.
+            kind (str | None): Existing run or artifact kind accepted by this operation. Default: None.
+            status (str | None): Exact lifecycle/status filter accepted by this API. Default: None.
+            after_seq (int | None): Exclusive sequence cursor from the previous page. Default: None.
+            limit (int): Bounded page/record count; native Manager limits still apply. Default: 100.
+
+        Returns:
+            A bounded list of stored records in native sequence order; no workload is executed.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.list_runs()
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
+        """
         after_seq, limit = _page(after_seq, limit, 100)
         clauses, values = ["seq> ?"], [after_seq]
         for key, value, options in (("experiment_id", experiment_id, None), ("kind", kind, _KINDS), ("status", status, _STATES)):
@@ -1145,17 +1559,90 @@ class ExperimentManager:
 
 
 class ExperimentRun:
-    """Manager-created runtime handle; all reads reflect persisted records."""
+    """Manager-created runtime handle; all reads reflect persisted records.
 
-    def __init__(self, manager, identity):
+    Args:
+        manager (_typing.Any): Open ExperimentManager instance used for existing history and artifacts. Required.
+        identity (_typing.Any): Exact stored or measured identity bound to this object. Required.
+
+    Returns:
+        An instance of ExperimentRun with the documented native validation and defaults.
+
+    Raises:
+        ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+        OSError: Native filesystem access fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ExperimentRun(manager, identity)
+
+    HYSo Guide: experiments.manager
+    Offline: hyso docs show experiments.manager --lang en
+    Open: hyso docs open experiments.manager --lang en
+    """
+
+    def __init__(self, manager: 'ExperimentManager', identity: 'str') -> 'None':
+        """Initialize ExperimentRun with the supplied settings.
+
+        Args:
+            manager (ExperimentManager): Open ExperimentManager instance used for existing history and artifacts. Required.
+            identity (str): Exact stored or measured identity bound to this object. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ExperimentRun(manager, identity)
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
+        """
         self._manager = manager
         self._id = identity
 
     @property
-    def id(self):
+    def id(self) -> 'str':
+        """Return this run's stable identifier.
+
+        Returns:
+            The stable identifier string bound to this object.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.id
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
+        """
         return self._id
 
-    def to_dict(self):
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
+        """
         with self._manager._access("get_run", entity_id=self.id) as db:
             return self._manager._run_record(db, self._manager._row(db, "runs", self.id))
 
@@ -1197,9 +1684,36 @@ class ExperimentRun:
                        (request_id, digest, self.id, revision, row["status"], target, now, reason_json))
         return json.loads(reason_json)
 
-    def add_artifact(self, path, *, kind="checkpoint", ownership="reference", role="output",
-                     request_id=None, metadata=None, retain_locator=False,
-                     max_size_bytes=1024**3):
+    def add_artifact(self, path: '_typing.Any', *, kind: 'str'="checkpoint", ownership: 'str'="reference", role: 'str'="output",
+                     request_id: 'str | None'=None, metadata: '_typing.Any'=None, retain_locator: 'bool'=False,
+                     max_size_bytes: '_typing.Any'=1024**3) -> 'dict[str, _typing.Any]':
+        """Register a file by reference or managed copy under the store ownership rules.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            kind (str): Existing run or artifact kind accepted by this operation. Default: 'checkpoint'.
+            ownership (str): Reference or managed-copy ownership policy; artifact identity checks remain unchanged. Default: 'reference'.
+            role (str): Input, output or report relation accepted by this operation. Default: 'output'.
+            request_id (str | None): Optional idempotency key for the stored operation; not a model or artifact identity. Default: None.
+            metadata (_typing.Any): Plain JSON-compatible descriptive metadata. Default: None.
+            retain_locator (bool): Retain the source locator in artifact metadata. Default: False.
+            max_size_bytes (_typing.Any): Max size in bytes; this does not imply a GPU hardware quota. Default: 1024 ** 3.
+
+        Returns:
+            The registered artifact record; a reference does not copy or load the source file.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.add_artifact(path)
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
+        """
         return self._manager._add_artifact(self.id, path, kind=kind, ownership=ownership,
                     role=role, request_id=request_id, metadata=metadata,
                     retain_locator=retain_locator, max_size_bytes=max_size_bytes)
@@ -1212,23 +1726,127 @@ class ExperimentRun:
         Repeating identical recording reuses its artifact and metric events. Different
         results/inputs conflict. Partial ingest requires explicit existing recovery.
         Run lifecycle remains explicit, including after a storage/logging failure.
+
+        Args:
+            result (TrainingResult | AnalysisExecutionResult | ModelComparisonResult): Retained typed result required by this operation. Required.
+            input_artifact_ids (_typing.Sequence[str]): Existing input artifacts to link to the recorded result. Default: ().
+
+        Returns:
+            The retained record result value, without recomputing measurements.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.record_result(result)
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
         """
         from .workflow import record_result
         return record_result(self, result, input_artifact_ids)
 
-    def start(self, *, request_id=None):
+    def start(self, *, request_id: 'str | None'=None) -> 'dict[str, _typing.Any]':
+        """Transition this run to running and record the lifecycle event.
+
+        Args:
+            request_id (str | None): Optional idempotency key for the stored operation; not a model or artifact identity. Default: None.
+
+        Returns:
+            The recorded transition reason dictionary; lifecycle preconditions remain enforced.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.start()
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
+        """
         return self._transition("running", {}, request_id)
 
-    def finish(self, reason="completed", *, request_id=None):
+    def finish(self, reason: 'str'="completed", *, request_id: 'str | None'=None) -> 'dict[str, _typing.Any]':
+        """Mark this run completed; this records status and does not verify workload success independently.
+
+        Args:
+            reason (str): Explicit human-readable lifecycle reason; not an automatic workload diagnosis. Default: 'completed'.
+            request_id (str | None): Optional idempotency key for the stored operation; not a model or artifact identity. Default: None.
+
+        Returns:
+            The recorded transition reason dictionary; lifecycle preconditions remain enforced.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.finish()
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
+        """
         return self._transition("completed", {"reason": _label(reason, 256)}, request_id)
 
-    def fail(self, code, *, failure_domain="workload", workload_outcome="failed", request_id=None):
+    def fail(self, code: 'str', *, failure_domain: 'str'="workload", workload_outcome: 'str'="failed", request_id: 'str | None'=None) -> 'dict[str, _typing.Any]':
+        """Record a failed run with the supplied code, failure domain and outcome.
+
+        Args:
+            code (str): Explicit failure/status code. Required.
+            failure_domain (str): Failure classification recorded by the caller. Default: 'workload'.
+            workload_outcome (str): Caller-declared workload outcome; store metadata alone does not attest success. Default: 'failed'.
+            request_id (str | None): Optional idempotency key for the stored operation; not a model or artifact identity. Default: None.
+
+        Returns:
+            The recorded transition reason dictionary; lifecycle preconditions remain enforced.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.fail(code)
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
+        """
         if failure_domain not in ("workload", "tracking", "artifact") or workload_outcome not in ("failed", "succeeded", "unknown"):
             _error("invalid_failure")
         return self._transition("failed", dict(code=_label(code), failure_domain=failure_domain,
                                                workload_outcome=workload_outcome), request_id)
 
-    def interrupt(self, reason="interrupted", *, request_id=None):
+    def interrupt(self, reason: 'str'="interrupted", *, request_id: 'str | None'=None) -> 'dict[str, _typing.Any]':
+        """Record this run as interrupted with the supplied reason.
+
+        Args:
+            reason (str): Explicit human-readable lifecycle reason; not an automatic workload diagnosis. Default: 'interrupted'.
+            request_id (str | None): Optional idempotency key for the stored operation; not a model or artifact identity. Default: None.
+
+        Returns:
+            The recorded transition reason dictionary; lifecycle preconditions remain enforced.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.interrupt()
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
+        """
         return self._transition("interrupted", {"reason": _label(reason, 256)}, request_id)
 
     @staticmethod
@@ -1272,8 +1890,36 @@ class ExperimentRun:
                       axis_index=axis_index, epoch_context=context, observed_at_utc=observed)
         return result, _json(result), None if event is None else _id(event)
 
-    def log_metric(self, *, name, value, unit, source, epoch=None, step=None,
-                   step_kind=None, event_id=None, observed_at_utc=None):
+    def log_metric(self, *, name: 'str', value: 'int | float', unit: 'str', source: 'str', epoch: 'int | None'=None, step: 'int | None'=None,
+                   step_kind: '_typing.Any'=None, event_id: 'str | None'=None, observed_at_utc: '_typing.Any'=None) -> 'dict[str, _typing.Any]':
+        """Persist one metric observation on an explicit epoch/update/observation axis.
+
+        Args:
+            name (str): Registered component name, exact metric label, or stored entity name in this API. Required.
+            value (int | float): Finite observed metric value; this store does not accept unavailable/null observations. Required.
+            unit (str): Recorded metric unit; fractions, percentages and percentage points are distinct. Required.
+            source (str): Typed native/retained source required by this API, not a declaration of producer authority. Required.
+            epoch (int | None): One-based training epoch context where applicable. Default: None.
+            step (int | None): Nonnegative index on the explicitly named metric axis. Default: None.
+            step_kind (_typing.Any): Supported update/attempt/microbatch/observation axis. Default: None.
+            event_id (str | None): Optional idempotency identity for this metric event. Default: None.
+            observed_at_utc (_typing.Any): Optional UTC observation timestamp; persistence time is recorded separately. Default: None.
+
+        Returns:
+            Persisted metric record(s), including their sequence identities.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.log_metric(name=name, value=value, unit=unit, source=source)
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
+        """
         return self.log_metrics([dict(name=name, value=value, unit=unit, source=source,
                                      epoch=epoch, step=step, step_kind=step_kind,
                                      event_id=event_id, observed_at_utc=observed_at_utc)])[0]
@@ -1284,7 +1930,27 @@ class ExperimentRun:
         result.update({key: row[key] for key in ("seq", "event_id", "run_id", "recorded_at_utc")})
         return result
 
-    def log_metrics(self, records):
+    def log_metrics(self, records: '_typing.Any') -> 'list[dict[str, _typing.Any]]':
+        """Validate and persist metric observations as one bounded batch.
+
+        Args:
+            records (_typing.Any): Bounded sequence of plain observation records. Required.
+
+        Returns:
+            Persisted metric record(s), including their sequence identities.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.log_metrics(records)
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
+        """
         if type(records) not in (list, tuple) or not 1 <= len(records) <= 256:
             _error("invalid_batch")
         prepared = [self._metric(record) for record in records]
@@ -1335,7 +2001,29 @@ class ExperimentRun:
                     _error("stale_revision", "log_metrics")
         return output
 
-    def read_metrics(self, name=None, *, after_seq=None, limit=1000):
+    def read_metrics(self, name: 'str | None'=None, *, after_seq: 'int | None'=None, limit: 'int'=1000) -> 'list[dict[str, _typing.Any]]':
+        """Read a bounded page of recorded metric observations without recomputing them.
+
+        Args:
+            name (str | None): Registered component name, exact metric label, or stored entity name in this API. Default: None.
+            after_seq (int | None): Exclusive sequence cursor from the previous page. Default: None.
+            limit (int): Bounded page/record count; native Manager limits still apply. Default: 1000.
+
+        Returns:
+            A bounded list of stored records in native sequence order; no workload is executed.
+
+        Raises:
+            ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
+            OSError: Native filesystem access fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.read_metrics()
+
+        HYSo Guide: experiments.manager
+        Offline: hyso docs show experiments.manager --lang en
+        Open: hyso docs open experiments.manager --lang en
+        """
         after_seq, limit = _page(after_seq, limit, 1000)
         if name is not None:
             _label(name)

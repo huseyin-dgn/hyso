@@ -1,4 +1,5 @@
 """P31 bounded owned-process execution and reopenable, hash-chained health journal."""
+import typing as _typing
 from dataclasses import dataclass, asdict, field
 import hashlib
 import importlib
@@ -20,6 +21,28 @@ from hyso.benchmark.result import _write_export
 
 @dataclass(frozen=True)
 class WorkloadRecipe:
+    """Describe the trusted factory and inputs for P31 — Uninterrupted long-run stability; the recipe alone does not start its worker.
+
+    Args:
+        factory (str): Trusted importable factory identity required by the worker recipe. Required.
+        configuration (dict): Plain native configuration metadata. Default: field(default_factory=dict).
+        search_path (str | None): Explicit trusted import search directory. Default: None.
+        gpu_uuid (str | None): Exact GPU identity required by the operation; a UUID alone does not authorize execution. Default: None.
+
+    Returns:
+        An instance of WorkloadRecipe with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        WorkloadRecipe(factory=factory)
+
+    HYSo Guide: analysis.p31
+    Offline: hyso docs show analysis.p31 --lang en
+    Open: hyso docs open analysis.p31 --lang en
+    """
     factory: str
     configuration: dict = field(default_factory=dict)
     search_path: str | None = None
@@ -42,6 +65,34 @@ class StabilityProtocol:
 
     OS memory limits constrain private commit, not RSS. Ownership and deadlines
     remain active when quotas are None; no free-memory admission gate is used.
+
+    Args:
+        duration_seconds (float): Duration in seconds under the native protocol. Default: 1.0.
+        interval_seconds (float): Interval in seconds under the native protocol. Default: 0.1.
+        idle_seconds (float): Idle baseline observation duration in seconds. Default: 0.0.
+        startup_timeout_seconds (float): Startup timeout in seconds under the native protocol. Default: 45.0.
+        step_timeout_seconds (float): Step timeout in seconds under the native protocol. Default: 5.0.
+        max_samples (int): Upper bound on collected samples. Default: 10000.
+        chunk_rows (int): Maximum CSV rows processed per chunk. Default: 64.
+        max_journal_bytes (int): Max journal in bytes; this does not imply a GPU hardware quota. Default: 128 * 1024 ** 2.
+        seed (int): Random seed recorded/applied by this operation; reproducibility still depends on the device/backend. Default: 0.
+        process_memory_bytes (int | None): Per-process committed host-memory limit in bytes. Default: None.
+        job_memory_bytes (int | None): Aggregate Job committed host-memory limit in bytes; not a GPU VRAM quota. Default: None.
+        max_processes (int | None): Maximum contained process count. Default: None.
+
+    Returns:
+        An instance of StabilityProtocol with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        StabilityProtocol()
+
+    HYSo Guide: analysis.p31
+    Offline: hyso docs show analysis.p31 --lang en
+    Open: hyso docs open analysis.p31 --lang en
     """
     duration_seconds: float = 1.
     interval_seconds: float = .1
@@ -206,7 +257,29 @@ def _run_owned(root, mode, request, *, startup_timeout, heartbeat_timeout, max_r
     return root
 
 
-def measure_stability(recipe, directory, *, protocol=StabilityProtocol()):
+def measure_stability(recipe: '_typing.Any', directory: '_typing.Any', *, protocol: '_typing.Any'=StabilityProtocol()) -> 'RuntimeResult':
+    """Run an explicitly requested bounded stability workload in its owned worker.
+
+    Args:
+        recipe (_typing.Any): Trusted construction recipe; factory import/execution is governed by the existing operation contract. Required.
+        directory (_typing.Any): Dedicated output/owned-run directory; existing overwrite and ownership rules apply. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: StabilityProtocol().
+
+    Returns:
+        A validated RuntimeResult retaining actual evidence, coverage and unavailable-status fields.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        measure_stability(recipe, directory)
+
+    HYSo Guide: analysis.p31
+    Offline: hyso docs show analysis.p31 --lang en
+    Open: hyso docs open analysis.p31 --lang en
+    """
     if type(recipe) is not WorkloadRecipe or type(protocol) is not StabilityProtocol:raise TypeError('typed recipe/protocol required')
     if recipe.search_path is not None and not Path(recipe.search_path).is_dir():raise ValueError('missing factory search directory')
     p=protocol
@@ -247,8 +320,27 @@ def _read_journal(root):
     return evidence
 
 
-def reopen_stability(directory):
-    """Committed chunks survive failure. Reopen validates hashes/order/terminal."""
+def reopen_stability(directory: '_typing.Any') -> '_typing.Any':
+    """Committed chunks survive failure. Reopen validates hashes/order/terminal.
+
+    Args:
+        directory (_typing.Any): Dedicated output/owned-run directory; existing overwrite and ownership rules apply. Required.
+
+    Returns:
+        The retained reopen stability value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        reopen_stability(directory)
+
+    HYSo Guide: analysis.p31
+    Offline: hyso docs show analysis.p31 --lang en
+    Open: hyso docs open analysis.p31 --lang en
+    """
     try:return _result('P31',_read_journal(directory))
     except (KeyError,TypeError,IndexError) as exc:raise ValueError('malformed stability journal') from exc
 
@@ -373,8 +465,54 @@ class InferenceWorkload:
 
     cuda_memory_fraction=None leaves the allocator quota unset. An explicit
     fraction constrains only the admitted worker allocator, not physical VRAM.
+
+    Args:
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+        inputs (_typing.Any): Named input specifications for the builder, ordered references for add(), or supported runtime inputs for forward(). Required.
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
+        gpu_uuid (_typing.Any): Exact GPU identity required by the operation; a UUID alone does not authorize execution. Default: None.
+        cuda_memory_fraction (_typing.Any): Requested CUDA allocator fraction; not a hardware VRAM quota or admission grant. Default: None.
+
+    Returns:
+        An instance of InferenceWorkload with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        InferenceWorkload(model, inputs)
+
+    HYSo Guide: analysis.p31
+    Offline: hyso docs show analysis.p31 --lang en
+    Open: hyso docs open analysis.p31 --lang en
     """
-    def __init__(self, model, inputs, *, device='cpu', gpu_uuid=None, cuda_memory_fraction=None):
+    def __init__(self, model: '_typing.Any', inputs: '_typing.Any', *, device: 'str'='cpu', gpu_uuid: '_typing.Any'=None, cuda_memory_fraction: '_typing.Any'=None) -> 'None':
+        """Initialize InferenceWorkload with the supplied settings.
+
+        Args:
+            model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+            inputs (_typing.Any): Named input specifications for the builder, ordered references for add(), or supported runtime inputs for forward(). Required.
+            device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
+            gpu_uuid (_typing.Any): Exact GPU identity required by the operation; a UUID alone does not authorize execution. Default: None.
+            cuda_memory_fraction (_typing.Any): Requested CUDA allocator fraction; not a hardware VRAM quota or admission grant. Default: None.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            InferenceWorkload(model, inputs)
+
+        HYSo Guide: analysis.p31
+        Offline: hyso docs show analysis.p31 --lang en
+        Open: hyso docs open analysis.p31 --lang en
+        """
         import copy
         import torch
         from hyso.benchmark.runner import _profile,_descriptor,_Snapshot,_output
@@ -399,7 +537,24 @@ class InferenceWorkload:
             model_sha256=digest,structural_descriptor=descriptor,input_shape=list(self.inputs.shape),backend='pytorch_eager',
             cuda_memory_fraction=cuda_memory_fraction)
 
-    def step(self):
+    def step(self) -> '_typing.Any':
+        """Perform one explicit workload step in this recipe implementation.
+
+        Returns:
+            The implementation's per-step output under this explicit worker protocol.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.step()
+
+        HYSo Guide: analysis.p31
+        Offline: hyso docs show analysis.p31 --lang en
+        Open: hyso docs open analysis.p31 --lang en
+        """
         with self.torch.inference_mode():
             output=self.model(self.inputs)
             if self.device.type=='cuda':self.torch.cuda.synchronize(self.device)
@@ -407,7 +562,24 @@ class InferenceWorkload:
             self.guard.check(full=True)
             return len(self.inputs)
 
-    def close(self):
+    def close(self) -> 'None':
+        """Close this object's owned resources according to its lifecycle.
+
+        Returns:
+            None. The owned store/sampler resources are closed according to the existing lifecycle.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.close()
+
+        HYSo Guide: analysis.p31
+        Offline: hyso docs show analysis.p31 --lang en
+        Open: hyso docs open analysis.p31 --lang en
+        """
         self.guard.check(full=True)
 
 

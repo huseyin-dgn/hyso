@@ -1,4 +1,5 @@
 """P26 finite CPU classification evaluation, independent of training artifacts."""
+import typing as _typing
 from dataclasses import dataclass
 import copy
 import hashlib
@@ -20,7 +21,24 @@ from ._graph_receiver import _ReceiverCapture
 __all__ = ["EvaluationResult", "evaluate_predictions", "evaluate_classification", "evaluation_capabilities"]
 
 
-def evaluation_capabilities():
+def evaluation_capabilities() -> '_typing.Any':
+    """Describe supported evaluation inputs and metrics without evaluating a model.
+
+    Returns:
+        A plain capability description of the supported tasks, input types and metrics.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        evaluation_capabilities()
+
+    HYSo Guide: analysis.p26
+    Offline: hyso docs show analysis.p26 --lang en
+    Open: hyso docs open analysis.p26 --lang en
+    """
     return {"binary": "supported", "multiclass": "supported",
             "detection": "unsupported", "segmentation": "unsupported"}
 
@@ -115,10 +133,49 @@ def _metrics(raw, config):
 
 @dataclass(frozen=True, init=False)
 class EvaluationResult:
+    """Read and export validated P26 — Classification quality results; unavailable measurements retain their native status.
+
+    Args:
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of EvaluationResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        EvaluationResult(data)
+
+    HYSo Guide: analysis.p26
+    Offline: hyso docs show analysis.p26 --lang en
+    Open: hyso docs open analysis.p26 --lang en
+    """
     __slots__ = ("_payload", "__weakref__")
     _payload: str
 
-    def __init__(self, data):
+    def __init__(self, data: 'dict[str, _typing.Any]') -> 'None':
+        """Initialize EvaluationResult with the supplied settings.
+
+        Args:
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            EvaluationResult(data)
+
+        HYSo Guide: analysis.p26
+        Offline: hyso docs show analysis.p26 --lang en
+        Open: hyso docs open analysis.p26 --lang en
+        """
         data = _plain(data)
         self._check(data)
         object.__setattr__(self, "_payload", json.dumps(data, allow_nan=False))
@@ -180,23 +237,96 @@ class EvaluationResult:
         except (TypeError, KeyError, RuntimeError, OverflowError) as exc:
             raise ValueError("malformed evaluation evidence") from exc
 
-    def to_dict(self):
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analysis.p26
+        Offline: hyso docs show analysis.p26 --lang en
+        Open: hyso docs open analysis.p26 --lang en
+        """
         return json.loads(self._payload)
 
     @property
-    def structure_snapshot(self):
-        """Validated structure of the isolated receiver, or None for schema 1/2."""
+    def structure_snapshot(self) -> '_typing.Any':
+        """Validated structure of the isolated receiver, or None for schema 1/2.
+
+        Returns:
+            The retained structure snapshot value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.structure_snapshot
+
+        HYSo Guide: analysis.p26
+        Offline: hyso docs show analysis.p26 --lang en
+        Open: hyso docs open analysis.p26 --lang en
+        """
         data = self.to_dict(); self._check(data)
         if data['schema_version'] != 3:
             return None
         from .structure import ModelStructureSnapshot
         return ModelStructureSnapshot(data['structure_binding']['snapshot'])
 
-    def to_json(self, path, *, overwrite=False):
+    def to_json(self, path: '_typing.Any', *, overwrite: 'bool'=False) -> 'None':
+        """Serialize this object using its native JSON format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json(path)
+
+        HYSo Guide: analysis.p26
+        Offline: hyso docs show analysis.p26 --lang en
+        Open: hyso docs open analysis.p26 --lang en
+        """
         data = self.to_dict(); self._check(data)
         _write_export(path, json.dumps(data, indent=2, ensure_ascii=False, allow_nan=False)+"\n", overwrite)
 
-    def to_csv(self, path, *, overwrite=False):
+    def to_csv(self, path: '_typing.Any', *, overwrite: 'bool'=False) -> 'None':
+        """Export this object using its native CSV format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_csv(path)
+
+        HYSo Guide: analysis.p26
+        Offline: hyso docs show analysis.p26 --lang en
+        Open: hyso docs open analysis.p26 --lang en
+        """
         d = self.to_dict(); self._check(d)
         rows = []
         for kind, row in [("class", r) for r in d["metrics"]["per_class"]] + list(d["metrics"]["averages"].items()):
@@ -232,12 +362,37 @@ def _result(raw, config, source, accounting, evidence=None, structure=None):
         status="complete" if metrics["sample_count"] else "empty"))
 
 
-def evaluate_predictions(targets, predictions, *, class_names, split, task="multiclass",
-                         prediction_type="labels", zero_division=0, source_id=None):
+def evaluate_predictions(targets: '_typing.Any', predictions: '_typing.Any', *, class_names: '_typing.Any', split: '_typing.Any', task: 'str'="multiclass",
+                         prediction_type: 'str'="labels", zero_division: 'int'=0, source_id: '_typing.Any'=None) -> '_typing.Any':
     """Evaluate hard labels or finite logits; class_names order defines 0..C-1.
 
     Empty evaluation has null metrics and status empty. For nonempty data,
     absent classes participate in macro; zero denominators use 0 or 1 explicitly.
+
+    Args:
+        targets (_typing.Any): Ground-truth targets with the task’s required shape, dtype and label space. Required.
+        predictions (_typing.Any): Caller-supplied predictions with the declared label space and sample order. Required.
+        class_names (_typing.Any): Ordered class labels matching the prediction class dimension. Required.
+        split (_typing.Any): Explicit dataset split label used in evaluation identity. Required.
+        task (str): Explicit supported task; classification metrics do not imply detection or segmentation support. Default: 'multiclass'.
+        prediction_type (str): Supported logits/probabilities/labels interpretation. Default: 'labels'.
+        zero_division (int): Policy for undefined ratios with a zero denominator. Default: 0.
+        source_id (_typing.Any): Stable identity of the measured/retained source. Default: None.
+
+    Returns:
+        The retained evaluate predictions value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        evaluate_predictions(targets, predictions, class_names=class_names, split=split)
+
+    HYSo Guide: analysis.p26
+    Offline: hyso docs show analysis.p26 --lang en
+    Open: hyso docs open analysis.p26 --lang en
     """
     config = _metadata(task, class_names, split, zero_division)
     if source_id is not None and (type(source_id) is not str or not source_id.strip()):
@@ -272,9 +427,9 @@ def _model_hash(model,*,allow_device=False):
     return digest.hexdigest()
 
 
-def evaluate_classification(model, loader, *, class_names, split, task="multiclass", zero_division=0,
-                            source_id=None, max_samples=1000000, capture_evidence=False, capture_structure=False,device='cpu',
-                            capture_receiver_runtime=False):
+def evaluate_classification(model: '_typing.Any', loader: '_typing.Any', *, class_names: '_typing.Any', split: '_typing.Any', task: 'str'="multiclass", zero_division: 'int'=0,
+                            source_id: '_typing.Any'=None, max_samples: 'int'=1000000, capture_evidence: 'bool'=False, capture_structure: 'bool'=False,device: 'str'='cpu',
+                            capture_receiver_runtime: 'bool'=False) -> '_typing.Any':
     """Inference on an isolated deepcopy; default CPU, explicit device opt-in.
 
     Finite standard sequential map-style loaders, num_workers=0, no drop-last.
@@ -297,6 +452,35 @@ def evaluate_classification(model, loader, *, class_names, split, task="multicla
     inference and a live supported Graph v2 source receipt. Core observes the
     exact isolated receiver before/after every forward. The separate process-local
     binding does not change EvaluationResult schema1/2/3 or legacy P26 evidence.
+
+    Args:
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+        loader (_typing.Any): Caller-owned finite DataLoader with the required input/target batch format. Required.
+        class_names (_typing.Any): Ordered class labels matching the prediction class dimension. Required.
+        split (_typing.Any): Explicit dataset split label used in evaluation identity. Required.
+        task (str): Explicit supported task; classification metrics do not imply detection or segmentation support. Default: 'multiclass'.
+        zero_division (int): Policy for undefined ratios with a zero denominator. Default: 0.
+        source_id (_typing.Any): Stable identity of the measured/retained source. Default: None.
+        max_samples (int): Upper bound on collected samples. Default: 1000000.
+        capture_evidence (bool): Retain the supported evidence payload; this does not add missing measurements. Default: False.
+        capture_structure (bool): Request supported structure evidence in the explicit operation. Default: False.
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
+        capture_receiver_runtime (bool): Request supported receiver runtime evidence in the explicit operation. Default: False.
+
+    Returns:
+        The retained evaluate classification value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        evaluate_classification(model, loader, class_names=class_names, split=split)
+
+    HYSo Guide: analysis.p26
+    Offline: hyso docs show analysis.p26 --lang en
+    Open: hyso docs open analysis.p26 --lang en
     """
     config = _metadata(task, class_names, split, zero_division)
     if type(capture_receiver_runtime) is not bool:

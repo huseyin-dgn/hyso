@@ -5,6 +5,7 @@ WorkerTaskDataLoader explicitly collects a separate versioned task companion.
 The observer drops its iterator references; PyTorch retains normal teardown and
 persistent-worker ownership. No retrospective inference of wait from P19 clocks.
 """
+import typing as _typing
 from dataclasses import asdict, dataclass
 import hashlib
 import json
@@ -24,7 +25,25 @@ from .training_details import (_StageRecorder, TrainingStageProtocol, TrainingSt
 
 @dataclass(frozen=True)
 class DataLoaderAnalysisProtocol:
-    """Hard P21 record ceiling, including iterator init and exhaustion calls."""
+    """Hard P21 record ceiling, including iterator init and exhaustion calls.
+
+    Args:
+        max_records (int): Upper bound on records retained/accepted by this operation. Default: 100000.
+
+    Returns:
+        An instance of DataLoaderAnalysisProtocol with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        DataLoaderAnalysisProtocol()
+
+    HYSo Guide: analysis.p21
+    Offline: hyso docs show analysis.p21 --lang en
+    Open: hyso docs open analysis.p21 --lang en
+    """
     max_records: int = 100000
 
     def __post_init__(self):
@@ -340,11 +359,49 @@ def _validate(data):
 
 @dataclass(frozen=True, init=False)
 class DataLoaderAnalysisResult:
-    """Immutable P21 raw host waits plus validated P19/P20 source association."""
+    """Immutable P21 raw host waits plus validated P19/P20 source association.
+
+    Args:
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of DataLoaderAnalysisResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        DataLoaderAnalysisResult(data)
+
+    HYSo Guide: analysis.p21
+    Offline: hyso docs show analysis.p21 --lang en
+    Open: hyso docs open analysis.p21 --lang en
+    """
     __slots__ = ("_payload",)
     _payload: str
 
-    def __init__(self, data):
+    def __init__(self, data: 'dict[str, _typing.Any]') -> 'None':
+        """Initialize DataLoaderAnalysisResult with the supplied settings.
+
+        Args:
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            DataLoaderAnalysisResult(data)
+
+        HYSo Guide: analysis.p21
+        Offline: hyso docs show analysis.p21 --lang en
+        Open: hyso docs open analysis.p21 --lang en
+        """
         data = _plain(data)
         self._check(data)
         object.__setattr__(self, "_payload", json.dumps(data, allow_nan=False, separators=(",", ":")))
@@ -356,16 +413,47 @@ class DataLoaderAnalysisResult:
         except (KeyError, TypeError, AttributeError) as exc:
             raise ValueError("malformed P21 payload") from exc
 
-    def to_dict(self):
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analysis.p21
+        Offline: hyso docs show analysis.p21 --lang en
+        Open: hyso docs open analysis.p21 --lang en
+        """
         return json.loads(self._payload)
 
-    def core_metrics(self):
+    def core_metrics(self) -> '_typing.Any':
         """Derive core diagnostics without changing the v1 JSON/CSV contract.
 
         Rates use the observed phase wall clock, including training/validation
         work, iterator startup and exhaustion. They are achieved in-run rates,
         not estimates of standalone loader capacity. Delivery gaps also include
         consumer work between calls. No resource probes or loader operations.
+
+        Returns:
+            The retained core metrics value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.core_metrics()
+
+        HYSo Guide: analysis.p21
+        Offline: hyso docs show analysis.p21 --lang en
+        Open: hyso docs open analysis.p21 --lang en
         """
         data = self._export_data()
         epochs = {e["epoch_id"]: e for e in data["source_p19"]["epochs"]}
@@ -403,20 +491,81 @@ class DataLoaderAnalysisResult:
         data = _plain(self.to_dict()); self._check(data)
         return data
 
-    def diagnostics(self, *, worker_tasks=None, worker_traces=None):
+    def diagnostics(self, *, worker_tasks: '_typing.Any'=None, worker_traces: '_typing.Any'=None) -> '_typing.Any':
         """Offline same-run wait/compute/stage comparison; never rerun a loader.
 
         Worker timing is opt-in. Queue occupancy/residence and prefetch
         efficiency are not inferred from next(), task counts or clock offsets.
         Existing v1 JSON/CSV and the separate worker companion schemas stay intact.
+
+        Args:
+            worker_tasks (_typing.Any): Retained worker-task trace evidence. Default: None.
+            worker_traces (_typing.Any): Retained worker trace evidence. Default: None.
+
+        Returns:
+            The retained diagnostics value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.diagnostics()
+
+        HYSo Guide: analysis.p21
+        Offline: hyso docs show analysis.p21 --lang en
+        Open: hyso docs open analysis.p21 --lang en
         """
         from ._loader_diagnostics import analyze
         return analyze(self, worker_tasks=worker_tasks, worker_traces=worker_traces)
 
-    def to_json(self, path, *, overwrite=False):
+    def to_json(self, path: '_typing.Any', *, overwrite: 'bool'=False) -> 'None':
+        """Serialize this object using its native JSON format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json(path)
+
+        HYSo Guide: analysis.p21
+        Offline: hyso docs show analysis.p21 --lang en
+        Open: hyso docs open analysis.p21 --lang en
+        """
         _write_export(path, json.dumps(self._export_data(), ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False) + "\n", overwrite)
 
-    def to_csv(self, path, *, overwrite=False):
+    def to_csv(self, path: '_typing.Any', *, overwrite: 'bool'=False) -> 'None':
+        """Export this object using its native CSV format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_csv(path)
+
+        HYSo Guide: analysis.p21
+        Offline: hyso docs show analysis.p21 --lang en
+        Open: hyso docs open analysis.p21 --lang en
+        """
         data = self._export_data()
         columns = ["source_segment_id", "kind", "phase", "epoch_id", "batch_index", "microbatch_id", "window_id", "attempt_id", "samples", "start_ns", "end_ns", "delivery_ns", "host_ms"]
         _write_export(path, _csv_text(columns, [{k: data["source_segment_id"] if k == "source_segment_id" else row[k] for k in columns} for row in data["observations"]]), overwrite)
@@ -424,20 +573,69 @@ class DataLoaderAnalysisResult:
 
 @dataclass(frozen=True)
 class LoaderTrainingResult:
+    """Read and export validated P21 — DataLoader waiting results; unavailable measurements retain their native status.
+
+    Args:
+        timing (TrainingPerformanceResult): Native timing protocol/settings. Required.
+        loader (DataLoaderAnalysisResult): Caller-owned finite DataLoader with the required input/target batch format. Required.
+        stages (TrainingStageResult | None): Explicit ordered pipeline stages and their timing boundaries. Required.
+        throughput (TrainingThroughputResult): Native continuous-window throughput protocol/settings. Required.
+
+    Returns:
+        An instance of LoaderTrainingResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        LoaderTrainingResult(timing=timing, loader=loader, stages=stages, throughput=throughput)
+
+    HYSo Guide: analysis.p21
+    Offline: hyso docs show analysis.p21 --lang en
+    Open: hyso docs open analysis.p21 --lang en
+    """
     timing: TrainingPerformanceResult
     loader: DataLoaderAnalysisResult
     stages: TrainingStageResult | None
     throughput: TrainingThroughputResult
 
 
-def measure_training_with_loader(trainer, train_loader, val_loader=None, *, epochs=5,
-        protocol=None, loader_protocol=None, stages=True, stage_protocol=None,
-        save_last_to=None, resume_from=None):
+def measure_training_with_loader(trainer: '_typing.Any', train_loader: '_typing.Any', val_loader: '_typing.Any'=None, *, epochs: 'int'=5,
+        protocol: '_typing.Any'=None, loader_protocol: '_typing.Any'=None, stages: 'bool'=True, stage_protocol: '_typing.Any'=None,
+        save_last_to: '_typing.Any'=None, resume_from: '_typing.Any'=None) -> 'LoaderTrainingResult':
     """One actual fit; main wait observed, optional P20, P22 derived.
 
     DataLoader configuration/ownership stays caller-owned. No strict multiworker
     checkpoint/resume support is added. Worker service/queue metrics stay null.
     Explicit WorkerTaskDataLoader receipts can be analyzed as a v2 companion.
+
+    Args:
+        trainer (_typing.Any): Caller-owned standard Trainer; a measurement may execute its fit lifecycle only when called explicitly. Required.
+        train_loader (_typing.Any): Finite training loader; batches must follow the task/model input contract. Required.
+        val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
+        epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after resume. Default: 5.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: None.
+        loader_protocol (_typing.Any): Typed loader measurement settings; boundaries and device guards remain explicit. Default: None.
+        stages (bool): Explicit ordered pipeline stages and their timing boundaries. Default: True.
+        stage_protocol (_typing.Any): Typed stage measurement settings; boundaries and device guards remain explicit. Default: None.
+        save_last_to (_typing.Any): Explicit checkpoint destination; writing occurs only during the requested fit. Default: None.
+        resume_from (_typing.Any): Existing compatible checkpoint; model/data/settings and total budget must match. Default: None.
+
+    Returns:
+        The retained measure training with loader value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        measure_training_with_loader(trainer, train_loader)
+
+    HYSo Guide: analysis.p21
+    Offline: hyso docs show analysis.p21 --lang en
+    Open: hyso docs open analysis.p21 --lang en
     """
     loader_protocol = DataLoaderAnalysisProtocol() if loader_protocol is None else loader_protocol
     if type(loader_protocol) is not DataLoaderAnalysisProtocol or type(stages) is not bool:

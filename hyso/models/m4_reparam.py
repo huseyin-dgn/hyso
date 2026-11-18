@@ -132,9 +132,55 @@ class RepVGGBlock(_ReparamBlock):
 
     Groups divide both channel counts. deploy=True constructs the single biased
     3x3 topology used to load explicitly converted weights.
+
+    Args:
+        in_channels (int): Expected input feature-channel count. Required.
+        out_channels (int): Number of output feature channels. Required.
+        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+        groups (int): Convolution/group count; divisibility requirements remain unchanged. Default: 1.
+        deploy (bool): Use the deployment form of this reparameterized block; conversion support remains explicit. Default: False.
+
+    Returns:
+        An instance of RepVGGBlock with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        RepVGGBlock(in_channels, out_channels)
+
+    HYSo Guide: components.mobile
+    Offline: hyso docs show components.mobile --lang en
+    Open: hyso docs open components.mobile --lang en
     """
     def __init__(self, in_channels: int, out_channels: int, stride: int = 1,
                  groups: int = 1, deploy: bool = False) -> None:
+        """Initialize RepVGGBlock with the supplied settings.
+
+        Args:
+            in_channels (int): Expected input feature-channel count. Required.
+            out_channels (int): Number of output feature channels. Required.
+            stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+            groups (int): Convolution/group count; divisibility requirements remain unchanged. Default: 1.
+            deploy (bool): deploy Default: False.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            RepVGGBlock(in_channels, out_channels)
+
+        HYSo Guide: components.mobile
+        Offline: hyso docs show components.mobile --lang en
+        Open: hyso docs open components.mobile --lang en
+        """
         super().__init__()
         block_channels(in_channels, out_channels, stride)
         if type(groups) is not int or groups < 1 or in_channels % groups or out_channels % groups:
@@ -156,6 +202,26 @@ class RepVGGBlock(_ReparamBlock):
         return [*self.branches, self.scale] + ([] if self.identity is None else [self.identity])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.mobile
+        Offline: hyso docs show components.mobile --lang en
+        Open: hyso docs open components.mobile --lang en
+        """
         if self.deploy:
             return self.activation(self.reparam(x))
         value = self.branches[0](x) + self.scale(x)
@@ -169,10 +235,62 @@ class MobileOneBlock(_ReparamBlock):
 
     kernel_size=1 has no scale branch. use_se reuses HYSo's sigmoid SE with
     reduction=16 and a minimum hidden width of one for small configurations.
+
+    Args:
+        in_channels (int): Expected input feature-channel count. Required.
+        out_channels (int): Number of output feature channels. Required.
+        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+        groups (int): Convolution/group count; divisibility requirements remain unchanged. Default: 1.
+        num_conv_branches (int): Parallel convolution branch count in the training form. Default: 1.
+        use_se (bool): Enable squeeze-and-excitation attention. Default: False.
+        deploy (bool): Use the deployment form of this reparameterized block; conversion support remains explicit. Default: False.
+
+    Returns:
+        An instance of MobileOneBlock with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        MobileOneBlock(in_channels, out_channels)
+
+    HYSo Guide: components.mobile
+    Offline: hyso docs show components.mobile --lang en
+    Open: hyso docs open components.mobile --lang en
     """
     def __init__(self, in_channels: int, out_channels: int, kernel_size: int = 3,
                  stride: int = 1, groups: int = 1, num_conv_branches: int = 1,
                  use_se: bool = False, deploy: bool = False) -> None:
+        """Initialize MobileOneBlock with the supplied settings.
+
+        Args:
+            in_channels (int): Expected input feature-channel count. Required.
+            out_channels (int): Number of output feature channels. Required.
+            kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+            stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+            groups (int): Convolution/group count; divisibility requirements remain unchanged. Default: 1.
+            num_conv_branches (int): num conv branches Default: 1.
+            use_se (bool): use se Default: False.
+            deploy (bool): deploy Default: False.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            MobileOneBlock(in_channels, out_channels)
+
+        HYSo Guide: components.mobile
+        Offline: hyso docs show components.mobile --lang en
+        Open: hyso docs open components.mobile --lang en
+        """
         super().__init__()
         block_channels(in_channels, out_channels, stride)
         odd_kernel(kernel_size)
@@ -205,6 +323,26 @@ class MobileOneBlock(_ReparamBlock):
         return result
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.mobile
+        Offline: hyso docs show components.mobile --lang en
+        Open: hyso docs open components.mobile --lang en
+        """
         if self.deploy:
             return self.activation(self.se(self.reparam(x)))
         value = self.branches[0](x)

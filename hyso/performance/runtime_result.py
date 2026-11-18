@@ -1,4 +1,5 @@
 """Additive P30--P33 immutable evidence; independent of legacy schema v1."""
+import typing as _typing
 from dataclasses import dataclass
 import hashlib
 import json
@@ -56,11 +57,49 @@ def _derive(feature, evidence):
 
 @dataclass(frozen=True, init=False)
 class RuntimeResult:
-    """Self-contained snapshot. Hashes detect inconsistency, not signed authenticity."""
+    """Self-contained snapshot. Hashes detect inconsistency, not signed authenticity.
+
+    Args:
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of RuntimeResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        RuntimeResult(data)
+
+    HYSo Guide: metrics.interpretation
+    Offline: hyso docs show metrics.interpretation --lang en
+    Open: hyso docs open metrics.interpretation --lang en
+    """
     __slots__=('_payload',)
     _payload: str
 
-    def __init__(self, data):
+    def __init__(self, data: 'dict[str, _typing.Any]') -> 'None':
+        """Initialize RuntimeResult with the supplied settings.
+
+        Args:
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            RuntimeResult(data)
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         try:
             value=json.loads(json.dumps(data, allow_nan=False))
             if (set(value)!={'format','schema_version','feature_id','result_id','evidence','source_sha256','analysis'}
@@ -75,34 +114,143 @@ class RuntimeResult:
             raise ValueError('malformed runtime evidence') from exc
         object.__setattr__(self, '_payload', json.dumps(value, allow_nan=False))
 
-    def to_dict(self):
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         return json.loads(self._payload)
 
-    def stability_diagnostics(self):
-        """P31 descriptive diagnostics; legacy JSON/CSV schemas stay intact."""
+    def stability_diagnostics(self) -> '_typing.Any':
+        """P31 descriptive diagnostics; legacy JSON/CSV schemas stay intact.
+
+        Returns:
+            The retained stability diagnostics value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.stability_diagnostics()
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         data=RuntimeResult(self.to_dict()).to_dict()
         if data['feature_id']!='P31':raise TypeError('P31 result required')
         from ._stability_diagnostics import _diagnostics
         return _diagnostics(data['evidence'],data['analysis'])
 
-    def provider_diagnostics(self):
-        """P35 observed providers, host Node durations and explicit fallback limits."""
+    def provider_diagnostics(self) -> '_typing.Any':
+        """P35 observed providers, host Node durations and explicit fallback limits.
+
+        Returns:
+            The retained provider diagnostics value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.provider_diagnostics()
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         data=RuntimeResult(self.to_dict()).to_dict()
         if data['feature_id']!='P35':raise TypeError('P35 result required')
         from .providers import _diagnostics
         return _diagnostics(data['evidence'],data['analysis'])
 
-    def device_diagnostics(self, *, baseline_device=None):
-        """P34 offline pairwise comparisons; never launches inference or sensors."""
+    def device_diagnostics(self, *, baseline_device: '_typing.Any'=None) -> '_typing.Any':
+        """P34 offline pairwise comparisons; never launches inference or sensors.
+
+        Args:
+            baseline_device (_typing.Any): Device label used as the comparison baseline. Default: None.
+
+        Returns:
+            The retained device diagnostics value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.device_diagnostics()
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         data=RuntimeResult(self.to_dict()).to_dict()
         if data['feature_id']!='P34':raise TypeError('P34 result required')
         from ._device_diagnostics import _diagnostics
         return _diagnostics(data['evidence'],data['analysis'],baseline_device=baseline_device)
 
-    def to_json(self, path, *, overwrite=False):
+    def to_json(self, path: '_typing.Any', *, overwrite: 'bool'=False) -> 'None':
+        """Serialize this object using its native JSON format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json(path)
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         _write_export(path, json.dumps(self.to_dict(), indent=2, allow_nan=False)+'\n', overwrite)
 
-    def to_csv(self, path, *, overwrite=False):
+    def to_csv(self, path: '_typing.Any', *, overwrite: 'bool'=False) -> 'None':
+        """Export this object using its native CSV format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_csv(path)
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         data=self.to_dict();rows=[]
         if data['feature_id'] in ('P34','P35') or (data['feature_id']=='P33' and
                 data['evidence'].get('energy_version')==2) or (data['feature_id']=='P32' and
@@ -126,12 +274,52 @@ class RuntimeResult:
         _write_export(path,_csv_text(['feature_id','result_id','source_sha256','field','value'],rows),overwrite)
 
     @classmethod
-    def from_json(cls, path):
+    def from_json(cls, path: '_typing.Any') -> 'RuntimeResult':
+        """Read and validate this type from a local JSON file.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+
+        Returns:
+            A validated RuntimeResult instance reconstructed from the supplied data.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            RuntimeResult.from_json(path)
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         from .stability import _load
         return cls(_load(path))
 
     @classmethod
-    def from_csv(cls, path):
+    def from_csv(cls, path: '_typing.Any') -> '_typing.Any':
+        """Read and validate this type from its canonical CSV export.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+
+        Returns:
+            A validated RuntimeResult instance reconstructed from the supplied data.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            RuntimeResult.from_csv(path)
+
+        HYSo Guide: metrics.interpretation
+        Offline: hyso docs show metrics.interpretation --lang en
+        Open: hyso docs open metrics.interpretation --lang en
+        """
         import csv
         from pathlib import Path
         if Path(path).stat().st_size>128*1024**2:raise ValueError('oversized evidence')

@@ -1,4 +1,5 @@
 """Immutable inference results, explicit exports and condition compatibility."""
+import typing as _typing
 import csv
 from dataclasses import dataclass
 import io
@@ -194,16 +195,69 @@ class BenchmarkResult:
     to_dict returns a new defensive copy. Explicit exports never run inference.
     Constructing a result validates plain data,
     protocol/sample consistency, statistics and the derived service rate.
+
+    Args:
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of BenchmarkResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        BenchmarkResult(data)
+
+    HYSo Guide: analysis.p01
+    Offline: hyso docs show analysis.p01 --lang en
+    Open: hyso docs open analysis.p01 --lang en
     """
     __slots__ = ("_payload",)
     _payload: str
 
-    def __init__(self, data):
+    def __init__(self, data: 'dict[str, _typing.Any]') -> 'None':
+        """Initialize BenchmarkResult with the supplied settings.
+
+        Args:
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            BenchmarkResult(data)
+
+        HYSo Guide: analysis.p01
+        Offline: hyso docs show analysis.p01 --lang en
+        Open: hyso docs open analysis.p01 --lang en
+        """
         copied = _plain(data)
         _validate(copied)
         object.__setattr__(self, "_payload", json.dumps(copied, allow_nan=False, separators=(",", ":")))
 
-    def to_dict(self):
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analysis.p01
+        Offline: hyso docs show analysis.p01 --lang en
+        Open: hyso docs open analysis.p01 --lang en
+        """
         return json.loads(self._payload)
 
     def _export_data(self):
@@ -211,34 +265,91 @@ class BenchmarkResult:
         _validate(data)
         return data
 
-    def to_json(self, path, *, overwrite=False):
+    def to_json(self, path: '_typing.Any', *, overwrite: 'bool'=False) -> 'None':
         """Write full schema-v1 UTF-8 JSON, sorted keys and lossless samples.
 
         Existing destinations raise FileExistsError unless overwrite=True.
         A completed sibling temporary file is atomically published; parents
         must exist. I/O failures propagate and leave the result unchanged.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json(path)
+
+        HYSo Guide: analysis.p01
+        Offline: hyso docs show analysis.p01 --lang en
+        Open: hyso docs open analysis.p01 --lang en
         """
         data = self._export_data()
         _write_export(path, json.dumps(data, ensure_ascii=False, allow_nan=False, sort_keys=True, indent=2) + "\n", overwrite)
 
-    def to_csv(self, path, *, overwrite=False):
+    def to_csv(self, path: '_typing.Any', *, overwrite: 'bool'=False) -> 'None':
         """Write one summary row; JSON remains the canonical complete record.
 
         Null cells are empty; status/reason distinguish missing measurements.
         Spreadsheet formula-like text is prefixed with an apostrophe. Column
         order is fixed by _SUMMARY_COLUMNS; floats use Python round-trip text.
         Destination/overwrite policy is identical to to_json.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_csv(path)
+
+        HYSo Guide: analysis.p01
+        Offline: hyso docs show analysis.p01 --lang en
+        Open: hyso docs open analysis.p01 --lang en
         """
         data = self._export_data()
         row = {column: _field(data, key) for column, key in _SUMMARY_COLUMNS}
         row["input_shape"] = json.dumps(data["input"]["shape"], separators=(",", ":"))
         _write_export(path, _csv_text(list(row), [row]), overwrite)
 
-    def to_samples_csv(self, path, *, overwrite=False):
+    def to_samples_csv(self, path: '_typing.Any', *, overwrite: 'bool'=False) -> 'None':
         """Write R*N measured samples in repeat/iteration order (zero based).
 
         No warmup/preflight/memory samples are invented. Null/escaping and
         destination policy match to_csv; no append or automatic directory creation.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the operation succeeds.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_samples_csv(path)
+
+        HYSo Guide: analysis.p01
+        Offline: hyso docs show analysis.p01 --lang en
+        Open: hyso docs open analysis.p01 --lang en
         """
         data = self._export_data()
         common = dict(schema_version=data["schema_version"], run_id=data["identity"]["run_id"],
@@ -385,7 +496,7 @@ def _conditions(left, right, fields):
     return dict(status=status, mismatched_fields=mismatched, missing_required_fields=missing, compared_fields=compared)
 
 
-def compare_results(a, b):
+def compare_results(a: '_typing.Any', b: '_typing.Any') -> '_typing.Any':
     """Return a plain compatibility report for two exact BenchmarkResult objects.
 
     Status describes timing conditions, never a winner or significance test.
@@ -394,6 +505,25 @@ def compare_results(a, b):
     isolation yields insufficient_metadata for measured GPU memory. Optional
     provenance.memory_isolation='exclusive_fresh_process' is a caller assertion,
     never inferred or verified here. No model/runtime/CUDA calls or I/O occur.
+
+    Args:
+        a (_typing.Any): Left retained input/source in this comparison. Required.
+        b (_typing.Any): Right retained input/source in this comparison. Required.
+
+    Returns:
+        The retained compare results value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        compare_results(a, b)
+
+    HYSo Guide: comparison.models
+    Offline: hyso docs show comparison.models --lang en
+    Open: hyso docs open comparison.models --lang en
     """
     if type(a) is not BenchmarkResult or type(b) is not BenchmarkResult:
         raise TypeError("compare_results requires two BenchmarkResult objects")

@@ -1,5 +1,6 @@
 """Deterministic observations and record-local goals; no execution engine."""
 from __future__ import annotations
+import typing as _typing
 
 from ..analysis import UnifiedAnalysisReport
 import hashlib
@@ -33,6 +34,25 @@ def advise(report: UnifiedAnalysisReport, request: AdvisorRequest | None = None)
 
     Advanced goals are assessed within single matching native captures only.
     Priority changes order only. Each observation is local to its source capture.
+
+    Args:
+        report (UnifiedAnalysisReport): Validated retained analysis/advisory report. Required.
+        request (AdvisorRequest | None): Validated advisory/selection request; does not authorize execution. Default: None.
+
+    Returns:
+        The retained advise value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        advise(report)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
     """
     request = AdvisorRequest() if request is None else request
     if type(request) is not AdvisorRequest:
@@ -154,8 +174,28 @@ def _advise_validated(resolver, request, *, evaluate_goals=True, plan_experiment
     return result
 
 
-def validate_advisor_report(result, source):
-    """Reproduce engine output against the actual source, not merely JSON hashes."""
+def validate_advisor_report(result: '_typing.Any', source: '_typing.Any') -> '_typing.Any':
+    """Reproduce engine output against the actual source, not merely JSON hashes.
+
+    Args:
+        result (_typing.Any): Retained typed result required by this operation. Required.
+        source (_typing.Any): Typed native/retained source required by this API, not a declaration of producer authority. Required.
+
+    Returns:
+        The retained validate advisor report value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        validate_advisor_report(result, source)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
+    """
     if type(result) is not AdvisorReport:
         raise AdvisorError('typed_advisor_report_required')
     if result.evaluation_status not in ('observations_only', 'goals_evaluated', 'planning_only'):

@@ -1,4 +1,5 @@
 """P32 descriptive memory trends and explicit weak-reference tensor witnesses."""
+import typing as _typing
 import math
 import time
 import uuid
@@ -8,11 +9,71 @@ from .runtime_result import RuntimeResult, _result, _int, _number, _name
 
 
 class RetentionTracker:
-    """Opt-in observed objects, not a heap census. Never owns watched tensors."""
-    def __init__(self, *, max_objects=1024):
+    """Opt-in observed objects, not a heap census. Never owns watched tensors.
+
+    Args:
+        max_objects (int): Upper bound on objects retained/accepted by this operation. Default: 1024.
+
+    Returns:
+        An instance of RetentionTracker with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        RetentionTracker()
+
+    HYSo Guide: analysis.p32
+    Offline: hyso docs show analysis.p32 --lang en
+    Open: hyso docs open analysis.p32 --lang en
+    """
+    def __init__(self, *, max_objects: 'int'=1024) -> 'None':
+        """Initialize RetentionTracker with the supplied settings.
+
+        Args:
+            max_objects (int): Upper bound on objects retained/accepted by this operation. Default: 1024.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            RetentionTracker()
+
+        HYSo Guide: analysis.p32
+        Offline: hyso docs show analysis.p32 --lang en
+        Open: hyso docs open analysis.p32 --lang en
+        """
         _int(max_objects,1,4096);self.max_objects=max_objects;self._entries={}
 
-    def watch(self,tensor,*,label):
+    def watch(self,tensor: '_typing.Any',*,label: '_typing.Any') -> 'None':
+        """Register a tensor for this recorder's bounded lifetime observations.
+
+        Args:
+            tensor (_typing.Any): Caller-supplied tensor to observe without changing its numerical behavior. Required.
+            label (_typing.Any): Human-readable label for this observation. Required.
+
+        Returns:
+            None after the operation succeeds.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.watch(tensor, label=label)
+
+        HYSo Guide: analysis.p32
+        Offline: hyso docs show analysis.p32 --lang en
+        Open: hyso docs open analysis.p32 --lang en
+        """
         import torch
         _name(label)
         if not isinstance(tensor,torch.Tensor) or tensor.layout!=torch.strided:raise TypeError('dense Tensor required')
@@ -21,7 +82,24 @@ class RetentionTracker:
         if any(ref() is tensor for _,ref in self._entries.values()):raise ValueError('same Tensor already tracked')
         self._entries[label]=(str(uuid.uuid4()),weakref.ref(tensor))
 
-    def snapshot(self):
+    def snapshot(self) -> '_typing.Any':
+        """Read a bounded snapshot of the recorder's currently retained memory observations.
+
+        Returns:
+            The retained snapshot value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.snapshot()
+
+        HYSo Guide: analysis.p32
+        Offline: hyso docs show analysis.p32 --lang en
+        Open: hyso docs open analysis.p32 --lang en
+        """
         rows=[]
         for label,(token,ref) in self._entries.items():
             value=ref();alive=value is not None
@@ -59,7 +137,30 @@ def _fit(points):
         confidence_interval=None,confidence_status='unsupported_correlated_native_samples')
 
 
-def analyze_memory_trend(stability_result, *, warmup_seconds=0., plateau_range_bytes=1024**2,slope_tolerance_bytes_per_second=1024.):
+def analyze_memory_trend(stability_result: '_typing.Any', *, warmup_seconds: 'float'=0., plateau_range_bytes: '_typing.Any'=1024**2,slope_tolerance_bytes_per_second: 'float'=1024.) -> 'RuntimeResult':
+    """Analyze retained stability memory samples for growth and plateau evidence.
+
+    Args:
+        stability_result (_typing.Any): Existing retained long-run result; continuity and source identity must remain valid. Required.
+        warmup_seconds (float): Warmup in seconds under the native protocol. Default: 0.0.
+        plateau_range_bytes (_typing.Any): Maximum byte range for the native plateau rule. Default: 1024 ** 2.
+        slope_tolerance_bytes_per_second (float): Tolerance on the fitted memory-growth slope in bytes per second. Default: 1024.0.
+
+    Returns:
+        A validated RuntimeResult retaining actual evidence, coverage and unavailable-status fields.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        analyze_memory_trend(stability_result)
+
+    HYSo Guide: analysis.p32
+    Offline: hyso docs show analysis.p32 --lang en
+    Open: hyso docs open analysis.p32 --lang en
+    """
     if type(stability_result) is not RuntimeResult or stability_result.to_dict()['feature_id']!='P31':raise TypeError('P31 RuntimeResult required')
     for v in (warmup_seconds,plateau_range_bytes,slope_tolerance_bytes_per_second):_number(v)
     return _result('P32',dict(trend_version=2,stability=stability_result.to_dict(),warmup_seconds=warmup_seconds,

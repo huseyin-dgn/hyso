@@ -1,5 +1,6 @@
 """User-experience adapter around ONE existing Trainer.fit, not a training engine."""
 from __future__ import annotations
+import typing as _typing
 
 from dataclasses import dataclass
 import copy
@@ -57,22 +58,89 @@ class TrainingResult:
     This is a UX report, not P19 timing evidence or a new checkpoint format.
     A resumed history may contain an unmeasured checkpoint prefix. Epoch interval
     timings exist only for observer-enabled, non-checkpoint runs.
+
+    Args:
+        _payload: Canonical serialized payload required by this existing low-level constructor; prefer the public parser/factory. Required.
+
+    Returns:
+        An instance of TrainingResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        result = session.fit()  # Only when training is explicitly requested.
+
+    HYSo Guide: training.configuration
+    Offline: hyso docs show training.configuration --lang en
+    Open: hyso docs open training.configuration --lang en
     """
     _payload: str
 
     def to_dict(self) -> dict[str,Any]:
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
+        """
         return json.loads(self._payload)
 
     @property
     def history(self) -> dict[str,list[float | None]]:
+        """Return a detached view of the completed training history.
+
+        Returns:
+            A detached training-history dictionary; no training is run.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.history
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
+        """
         return self.to_dict()['history']
 
-    def log_to(self, run) -> list[dict[str,Any]]:
+    def log_to(self, run: '_typing.Any') -> list[dict[str,Any]]:
         """Explicitly log history/observed intervals to a running training run.
 
         Does not start/finish the ExperimentManager run or re-execute training.
         Tracking failures propagate; retry/lifecycle policy belongs to the caller.
         History metrics can include a restored prefix; interval metrics cannot.
+
+        Args:
+            run (_typing.Any): Existing run handle or run context required by this operation. Required.
+
+        Returns:
+            The retained log to value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.log_to(run)
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
         """
         state=run.to_dict()
         if state['kind']!='training' or state['status']!='running':
@@ -100,11 +168,63 @@ class TrainingSession:
     Prefer TrainingConfig.prepare(). Model device/dtype is verified, never silently
     changed. Access trainer/evaluation_model for the existing APIs. fit() delegates
     once and never retries; an exception can leave training state advanced.
+
+    Args:
+        config (TrainingConfig): Plain versioned configuration; never executable code or trained state. Required.
+        model (nn.Module): Caller-owned model; device, dtype and task must match the native operation. Required.
+        train_loader (DataLoader): Finite training loader; batches must follow the task/model input contract. Required.
+        val_loader (DataLoader | None): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
+        model_config (dict[str, Any] | None): Separate exact architecture metadata for supported checkpoint/restore contracts. Default: None.
+        loss_fn (_typing.Any): Classification loss object, or the explicitly supported two-Graph-head loss mapping. Default: None.
+        loss_weights (dict[str, float] | None): Positive weights matching the explicit named classification losses. Default: None.
+        on_epoch (Callable[[dict[str, Any]], None] | None): Optional synchronous observer receiving an independent epoch-log dictionary. Default: None.
+
+    Returns:
+        An instance of TrainingSession with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        session = config.prepare_datasets(model, train_dataset)
+
+    HYSo Guide: training.configuration
+    Offline: hyso docs show training.configuration --lang en
+    Open: hyso docs open training.configuration --lang en
     """
     def __init__(self, config: TrainingConfig, model: nn.Module, train_loader: DataLoader,
                  val_loader: DataLoader | None=None, *, model_config: dict[str,Any] | None=None,
-                 loss_fn=None, loss_weights: dict[str,float] | None=None,
+                 loss_fn: '_typing.Any'=None, loss_weights: dict[str,float] | None=None,
                  on_epoch: Callable[[dict[str,Any]],None] | None=None) -> None:
+        """Initialize TrainingSession with the supplied settings.
+
+        Args:
+            config (TrainingConfig): Plain versioned configuration; never executable code or trained state. Required.
+            model (nn.Module): Caller-owned model; device, dtype and task must match the native operation. Required.
+            train_loader (DataLoader): Finite training loader; batches must follow the task/model input contract. Required.
+            val_loader (DataLoader | None): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
+            model_config (dict[str, Any] | None): Separate exact architecture metadata for supported checkpoint/restore contracts. Default: None.
+            loss_fn (_typing.Any): Classification loss object, or the explicitly supported two-Graph-head loss mapping. Default: None.
+            loss_weights (dict[str, float] | None): Positive weights matching the explicit named classification losses. Default: None.
+            on_epoch (Callable[[dict[str, Any]], None] | None): Optional synchronous observer receiving an independent epoch-log dictionary. Default: None.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            TrainingSession(config, model, train_loader)
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
+        """
         if type(config) is not TrainingConfig: raise TrainingConfigError('TrainingConfig required')
         self.config=config;c=config.to_dict();self._c=c
         opt,sched,early=_resolved(c)
@@ -174,7 +294,22 @@ class TrainingSession:
 
     @property
     def evaluation_model(self) -> nn.Module:
-        """Existing Trainer inference target: EMA when enabled, otherwise live model."""
+        """Existing Trainer inference target: EMA when enabled, otherwise live model.
+
+        Returns:
+            The existing EMA evaluation model when enabled, otherwise the caller-owned model.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.evaluation_model
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
+        """
         return self.trainer.evaluation_model
 
     def _effective(self):
@@ -210,6 +345,20 @@ class TrainingSession:
 
         OneCycle may change optimizer LR at scheduler construction. Resumed values
         are restored by Trainer inside fit; this snapshot makes no pre-restore claim.
+
+        Returns:
+            Requested, resolved and effective training settings plus the current one-shot session state.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.settings()
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
         """
         return dict(requested=copy.deepcopy(self._c),model_config=copy.deepcopy(self.trainer.model_config),resolved=copy.deepcopy(self._resolved),
                     effective=self._effective(),state=self._state)
@@ -228,6 +377,21 @@ class TrainingSession:
         With automatic checkpoint/resume no callbacks are installed: per-epoch
         timing is unavailable, not synthesized from total wall time. Total fit
         wall seconds include validation, serialization, restore and observers.
+
+        Returns:
+            The existing native history/result for this explicit training call; no automatic retry.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.fit()
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
         """
         return self._fit_with_native()
 

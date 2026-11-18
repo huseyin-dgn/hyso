@@ -1,5 +1,6 @@
 """Versioned training settings only; no dataset, model, callable or code loading."""
 from __future__ import annotations
+import typing as _typing
 
 from dataclasses import dataclass
 import json
@@ -147,6 +148,24 @@ class TrainingConfig:
     JSON contains no model, dataset, loader, callable, optimizer object or code.
     Loading settings never runs training or authorizes accelerator use. No seed,
     dtype cast or model movement is silently applied. Use torch.manual_seed yourself.
+
+    Defaults:
+        epochs=5; batch_size=32; optimizer='adamw'; learning_rate=0.001; optimizer_params=None; scheduler=None; scheduler_params=None; device='cpu'; precision='fp32'; accum_steps=1; grad_clip=None; ema_decay=None; early_stopping=None; validation=False; shuffle=False; drop_last=False; num_workers=0; task='multiclass'; save_last_to=None; resume_from=None.
+
+    Returns:
+        An instance of TrainingConfig with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        config = TrainingConfig(epochs=1, batch_size=2)
+
+    HYSo Guide: training.configuration
+    Offline: hyso docs show training.configuration --lang en
+    Open: hyso docs open training.configuration --lang en
     """
     _payload: str
 
@@ -158,6 +177,45 @@ class TrainingConfig:
                  early_stopping: dict[str,Any] | None=None, validation: bool=False,
                  shuffle: bool=False, drop_last: bool=False, num_workers: int=0,
                  task: str='multiclass', save_last_to: str | None=None, resume_from: str | None=None) -> None:
+        """Initialize TrainingConfig with the supplied settings.
+
+        Args:
+            epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after resume. Default: 5.
+            batch_size (int): Positive batch-size setting or metadata assumption; no implicit batch search. Default: 32.
+            optimizer (str): Existing supported optimizer or a closed optimizer name, according to this API. Default: 'adamw'.
+            learning_rate (float): Positive optimizer-construction learning rate, before any scheduler adjustment. Default: 0.001.
+            optimizer_params (dict[str, Any] | None): Closed native optimizer keyword options; unknown options are rejected. Default: None.
+            scheduler (str | None): Supported native scheduler or closed scheduler name; stepping remains owned by Trainer. Default: None.
+            scheduler_params (dict[str, Any] | None): Closed scheduler settings; required scheduler-specific options remain mandatory. Default: None.
+            device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
+            precision (str): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: 'fp32'.
+            accum_steps (int): Positive microbatch accumulation count per attempted optimizer update. Default: 1.
+            grad_clip (float | None): Optional positive gradient-norm clipping bound. Default: None.
+            ema_decay (float | None): Optional decay for the smoothed evaluation model. Default: None.
+            early_stopping (dict[str, Any] | None): Supported early-stopping configuration/object; validation requirements still apply. Default: None.
+            validation (bool): Whether a matching validation dataset/loader is required. Default: False.
+            shuffle (bool): Training-loader RandomSampler choice; no hidden seed reset. Default: False.
+            drop_last (bool): Whether the training loader drops an incomplete final batch. Default: False.
+            num_workers (int): Loader worker count; TrainingConfig currently admits zero only. Default: 0.
+            task (str): Explicit supported task; classification metrics do not imply detection or segmentation support. Default: 'multiclass'.
+            save_last_to (str | None): Explicit checkpoint destination; writing occurs only during the requested fit. Default: None.
+            resume_from (str | None): Existing compatible checkpoint; model/data/settings and total budget must match. Default: None.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            TrainingConfig()
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
+        """
         c=_plain(dict(epochs=epochs,batch_size=batch_size,optimizer=optimizer,learning_rate=learning_rate,
             optimizer_params=optimizer_params,scheduler=scheduler,scheduler_params=scheduler_params,
             device=device,precision=precision,accum_steps=accum_steps,grad_clip=grad_clip,ema_decay=ema_decay,
@@ -167,12 +225,46 @@ class TrainingConfig:
         object.__setattr__(self,'_payload',json.dumps(dict(format='hyso.training_config',schema_version=1,**c),sort_keys=True,allow_nan=False))
 
     def to_dict(self) -> dict[str,Any]:
-        """Return a detached request, including user-supplied option dictionaries."""
+        """Return a detached request, including user-supplied option dictionaries.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
+        """
         return json.loads(self._payload)
 
     @classmethod
     def from_dict(cls, data: dict[str,Any]) -> TrainingConfig:
-        """Load exact schema1 fields; unknown fields/objects are rejected."""
+        """Load exact schema1 fields; unknown fields/objects are rejected.
+
+        Args:
+            data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            A validated TrainingConfig instance reconstructed from the supplied data.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            TrainingConfig.from_dict(data)
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
+        """
         d=_plain(data)
         if type(d) is not dict or d.get('format')!='hyso.training_config' or type(d.get('schema_version')) is not int or d['schema_version']!=1:
             raise TrainingConfigError('unsupported training configuration format/version')
@@ -181,14 +273,53 @@ class TrainingConfig:
         return cls(**d)
 
     def to_json(self, path: str | Path, *, overwrite: bool=False) -> None:
-        """Write settings only; refuse an existing file by default."""
+        """Write settings only; refuse an existing file by default.
+
+        Args:
+            path (str | Path): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json(path)
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
+        """
         if type(overwrite) is not bool: raise TrainingConfigError('overwrite must be bool')
         with Path(path).open('w' if overwrite else 'x',encoding='utf-8',newline='\n') as f:
             f.write(json.dumps(self.to_dict(),indent=2,allow_nan=False)+'\n')
 
     @classmethod
     def from_json(cls, path: str | Path) -> TrainingConfig:
-        """Read <=64 KiB UTF-8 JSON; reject duplicates/nonfinite values, never code."""
+        """Read <=64 KiB UTF-8 JSON; reject duplicates/nonfinite values, never code.
+
+        Args:
+            path (str | Path): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+
+        Returns:
+            A validated TrainingConfig instance reconstructed from the supplied data.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            TrainingConfig.from_json(path)
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
+        """
         with Path(path).open('rb') as f: raw=f.read(65537)
         if len(raw)>65536: raise TrainingConfigError('training settings exceed 64 KiB')
         def pairs(items):
@@ -202,7 +333,27 @@ class TrainingConfig:
         except (ValueError,TypeError,RecursionError) as error: raise TrainingConfigError(str(error)) from error
 
     def make_loaders(self, train_dataset: Dataset, val_dataset: Dataset | None=None) -> tuple[DataLoader,DataLoader | None]:
-        """Construct ordinary finite CPU-side loaders; do not iterate or seed them."""
+        """Construct ordinary finite CPU-side loaders; do not iterate or seed them.
+
+        Args:
+            train_dataset (Dataset): Finite nonempty map-style training Dataset; no data is iterated during preparation. Required.
+            val_dataset (Dataset | None): Optional validation Dataset; must match the explicit validation flag. Default: None.
+
+        Returns:
+            A training DataLoader and an optional validation DataLoader; neither is iterated.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.make_loaders(train_dataset)
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
+        """
         from torch.utils.data import Dataset,IterableDataset,DataLoader
         c=self.to_dict()
         if c['validation'] != (val_dataset is not None): raise TrainingConfigError('validation flag and validation dataset must agree')
@@ -214,7 +365,7 @@ class TrainingConfig:
 
     def prepare(self, model: nn.Module, train_loader: DataLoader, val_loader: DataLoader | None=None, *,
                 model_config: dict[str,Any] | None=None,
-                loss_fn=None, loss_weights: dict[str,float] | None=None,
+                loss_fn: '_typing.Any'=None, loss_weights: dict[str,float] | None=None,
                 on_epoch: Callable[[dict[str,Any]],None] | None=None) -> TrainingSession:
         """Validate before updates, create native optimizer/scheduler and one Trainer.
 
@@ -226,13 +377,37 @@ class TrainingConfig:
         Graph two-head CPU fp32 path; they are separate from config JSON. Its
         one- or two-input automatic resume requires NamedTargetDataset, SGD/Adam,
         no scheduler/EMA/early stopping/accumulation/clipping or callbacks.
+
+        Args:
+            model (nn.Module): Caller-owned model; device, dtype and task must match the native operation. Required.
+            train_loader (DataLoader): Finite training loader; batches must follow the task/model input contract. Required.
+            val_loader (DataLoader | None): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
+            model_config (dict[str, Any] | None): Separate exact architecture metadata for supported checkpoint/restore contracts. Default: None.
+            loss_fn (_typing.Any): Classification loss object, or the explicitly supported two-Graph-head loss mapping. Default: None.
+            loss_weights (dict[str, float] | None): Positive weights matching the explicit named classification losses. Default: None.
+            on_epoch (Callable[[dict[str, Any]], None] | None): Optional synchronous observer receiving an independent epoch-log dictionary. Default: None.
+
+        Returns:
+            A prepared TrainingSession; fit() has not been called.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.prepare(model, train_loader)
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
         """
         from .session import TrainingSession
         return TrainingSession(self,model,train_loader,val_loader,model_config=model_config,
             loss_fn=loss_fn,loss_weights=loss_weights,on_epoch=on_epoch)
 
     def prepare_datasets(self, model: nn.Module, train_dataset: Dataset, val_dataset: Dataset | None=None, *,
-                         model_config: dict[str,Any] | None=None, loss_fn=None,
+                         model_config: dict[str,Any] | None=None, loss_fn: '_typing.Any'=None,
                          loss_weights: dict[str,float] | None=None,
                          on_epoch: Callable[[dict[str,Any]],None] | None=None) -> TrainingSession:
         """Make matching loaders and prepare one session; never call fit().
@@ -240,6 +415,30 @@ class TrainingConfig:
         Uses the existing make_loaders/prepare contracts and defaults. Validation
         must still be explicitly configured. No model movement, cast or seed.
         Supply existing loaders to prepare() when custom loader control is needed.
+
+        Args:
+            model (nn.Module): Caller-owned model; device, dtype and task must match the native operation. Required.
+            train_dataset (Dataset): Finite nonempty map-style training Dataset; no data is iterated during preparation. Required.
+            val_dataset (Dataset | None): Optional validation Dataset; must match the explicit validation flag. Default: None.
+            model_config (dict[str, Any] | None): Separate exact architecture metadata for supported checkpoint/restore contracts. Default: None.
+            loss_fn (_typing.Any): Classification loss object, or the explicitly supported two-Graph-head loss mapping. Default: None.
+            loss_weights (dict[str, float] | None): Positive weights matching the explicit named classification losses. Default: None.
+            on_epoch (Callable[[dict[str, Any]], None] | None): Optional synchronous observer receiving an independent epoch-log dictionary. Default: None.
+
+        Returns:
+            A prepared TrainingSession using the unchanged make_loaders/prepare contracts.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.prepare_datasets(model, train_dataset)
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
         """
         train_loader,val_loader=self.make_loaders(train_dataset,val_dataset)
         return self.prepare(model,train_loader,val_loader,model_config=model_config,

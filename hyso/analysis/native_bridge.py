@@ -4,6 +4,7 @@ P02/P11 only. Explicit trusted-in-process consent is required. This is not a
 sandbox, arbitrary-model executor, long-run scheduler, or 35-feature acceptance.
 No model factory/module path is imported from user-supplied strings.
 """
+import typing as _typing
 from dataclasses import asdict, dataclass
 import hashlib
 import json
@@ -21,7 +22,30 @@ SUPPORTED = frozenset(('P02', 'P11'))
 
 @dataclass(frozen=True)
 class TrustedCPUExecutionPolicy:
-    """Bounds operation counts and input size, NOT time/RAM/hangs/crashes."""
+    """Bounds operation counts and input size, NOT time/RAM/hangs/crashes.
+
+    Args:
+        explicit_trusted_inprocess_consent (bool): Explicit trust/consent for this bounded in-process CPU operation. Default: False.
+        warmup_iterations (int): Unreported warmup iteration count before measured samples. Default: 1.
+        batch_count (int): Number of batches within the explicit measurement boundary. Default: 2.
+        repeats (int): Number of independently recorded measurement windows/repeats. Default: 1.
+        queue_depth (int): Bound on in-flight pipeline work. Default: 2.
+        max_input_bytes (int): Max input in bytes; this does not imply a GPU hardware quota. Default: 8 * 1024 * 1024.
+
+    Returns:
+        An instance of TrustedCPUExecutionPolicy with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        TrustedCPUExecutionPolicy()
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
+    """
 
     explicit_trusted_inprocess_consent: bool = False
     warmup_iterations: int = 1
@@ -43,6 +67,27 @@ class TrustedCPUExecutionPolicy:
 
 @dataclass(frozen=True)
 class LiveCPUModel:
+    """Bind a caller-owned live CPU model and its input to the scoped CPU execution contract.
+
+    Args:
+        model_id (str): Stable model label bound to this result/context. Required.
+        model (object): Caller-owned model; device, dtype and task must match the native operation. Required.
+        input_tensor (object): Caller-supplied input Tensor with the declared shape/device/dtype. Default: None.
+
+    Returns:
+        An instance of LiveCPUModel with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        LiveCPUModel(model_id=model_id, model=model)
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
+    """
     model_id: str
     model: object
     input_tensor: object = None
@@ -198,12 +243,33 @@ def _observed_pair(feature, a, b):
                                    'OBSERVED_DESCRIPTIVE_ONLY' if same else 'BLOCKED', reason)
 
 
-def execute_scoped_cpu(plan, bindings, *, authorized_features, policy=TrustedCPUExecutionPolicy()):
+def execute_scoped_cpu(plan: '_typing.Any', bindings: '_typing.Any', *, authorized_features: '_typing.Any', policy: '_typing.Any'=TrustedCPUExecutionPolicy()) -> '_typing.Any':
     """Runs only individually authorized P02/P11, for trusted, local CPU models.
 
     This is intentionally NOT safe for untrusted code: execution is in-process,
     no hard watchdog, no OS memory isolation, and no promise against side effects.
     This function never writes checkpoints or modifies model weights intentionally.
+
+    Args:
+        plan (_typing.Any): Typed selection plan; a plan alone grants no execution permission. Required.
+        bindings (_typing.Any): Typed live/isolated/native bindings; identities and operation permissions must match the plan. Required.
+        authorized_features (_typing.Any): Explicit unique selected feature subset authorized for this call only. Required.
+        policy (_typing.Any): Existing protocol/resource policy; defaults do not grant additional consent. Default: TrustedCPUExecutionPolicy().
+
+    Returns:
+        The retained execute scoped cpu value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        execute_scoped_cpu(plan, bindings, authorized_features=authorized_features)
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
     """
     if type(plan) is not FeaturePlan or type(policy) is not TrustedCPUExecutionPolicy:
         raise NativeBridgeError('typed_G1_plan_and_G2_policy_required')

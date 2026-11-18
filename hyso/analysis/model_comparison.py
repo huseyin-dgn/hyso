@@ -1,5 +1,6 @@
 """Two-model, retained-evidence comparison. No capture, model or factory execution."""
 from __future__ import annotations
+import typing as _typing
 
 from dataclasses import dataclass
 import hashlib
@@ -40,7 +41,22 @@ _STRICT_CONTEXT_POLICY = dict(id='strict_declared_context_v1', version=1,
 
 
 class ModelComparisonError(ValueError):
-    """Invalid selection, model/record association or inconsistent serialized result."""
+    """Invalid selection, model/record association or inconsistent serialized result.
+
+    Returns:
+        An instance of ModelComparisonError with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ModelComparisonError()
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
+    """
 
 
 @dataclass(frozen=True, init=False)
@@ -57,6 +73,23 @@ class ModelComparisonSource:
         benchmark: Optional original P01 raw result; linkage is checked before use.
 
     Scope declarations never repair missing producer comparison_capture metadata.
+
+    Defaults:
+        records=None; structure=None; benchmark=None.
+
+    Returns:
+        An instance of ModelComparisonSource with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ModelComparisonSource(model_id, report)
+
+    HYSo Guide: comparison.models
+    Offline: hyso docs show comparison.models --lang en
+    Open: hyso docs open comparison.models --lang en
     """
     _payload: str
 
@@ -64,6 +97,30 @@ class ModelComparisonSource:
                  records: Mapping[str,str] | None = None,
                  structure: ModelStructureSnapshot | None = None,
                  benchmark: BenchmarkResult | None = None) -> None:
+        """Initialize ModelComparisonSource with the supplied settings.
+
+        Args:
+            model_id (str): Stable model label bound to this result/context. Required.
+            report (UnifiedAnalysisReport): Validated retained analysis/advisory report. Required.
+            records (Mapping[str, str] | None): Bounded sequence of plain observation records. Default: None.
+            structure (ModelStructureSnapshot | None): Validated retained structural evidence. Default: None.
+            benchmark (BenchmarkResult | None): Validated retained benchmark source; no benchmark is started by merely supplying it. Default: None.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ModelComparisonSource(model_id, report)
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
         ModelContext(model_id)
         if type(report) is not UnifiedAnalysisReport:
             raise ModelComparisonError('validated_analysis_report_required')
@@ -97,14 +154,66 @@ class ModelComparisonSource:
 
     @property
     def model_id(self) -> str:
+        """Return the model label bound to this comparison source.
+
+        Returns:
+            The stable identifier string bound to this object.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.model_id
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
         return self.to_dict()['model_id']
 
     def to_dict(self) -> dict[str,Any]:
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
         return json.loads(self._payload)
 
     @classmethod
     def from_execution(cls, result: AnalysisExecutionResult, model_id: str) -> ModelComparisonSource:
-        """Adapt retained Stage-5 output; never execute missing analyses or refresh data."""
+        """Adapt retained Stage-5 output; never execute missing analyses or refresh data.
+
+        Args:
+            result (AnalysisExecutionResult): Retained typed result required by this operation. Required.
+            model_id (str): Stable model label bound to this result/context. Required.
+
+        Returns:
+            A validated ModelComparisonSource instance reconstructed from the supplied data.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ModelComparisonSource.from_execution(result, model_id)
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
         if type(result) is not AnalysisExecutionResult:
             raise ModelComparisonError('analysis_execution_result_required')
         rows = [r for r in result.to_dict()['features'] if r['model_id']==model_id]
@@ -322,11 +431,49 @@ def _derive(a, b, features, include_structure, context_policy='legacy', *, p12_c
 
 @dataclass(frozen=True, init=False)
 class ModelComparisonResult:
-    """Immutable, rederived JSON result. Differences are candidate minus baseline."""
+    """Immutable, rederived JSON result. Differences are candidate minus baseline.
+
+    Args:
+        data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of ModelComparisonResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ModelComparisonResult(data)
+
+    HYSo Guide: comparison.models
+    Offline: hyso docs show comparison.models --lang en
+    Open: hyso docs open comparison.models --lang en
+    """
     _payload: str
     _structure: Any
 
     def __init__(self, data: dict[str,Any]) -> None:
+        """Initialize ModelComparisonResult with the supplied settings.
+
+        Args:
+            data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ModelComparisonResult(data)
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
         try:
             d = plain(data)
             if len(canonical(d).encode('utf-8'))>_MAX_BYTES:
@@ -346,33 +493,162 @@ class ModelComparisonResult:
         object.__setattr__(self,'_payload',canonical(expected));object.__setattr__(self,'_structure',structure)
 
     def to_dict(self) -> dict[str,Any]:
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
         return json.loads(self._payload)
 
     @property
-    def structure_comparison(self):
-        """Original typed structure result, or None; JSON retains a labeled projection."""
+    def structure_comparison(self) -> '_typing.Any':
+        """Original typed structure result, or None; JSON retains a labeled projection.
+
+        Returns:
+            The retained structure comparison value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.structure_comparison
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
         return self._structure
 
-    def to_json(self, path=None, *, overwrite: bool = False) -> str:
+    def to_json(self, path: '_typing.Any'=None, *, overwrite: bool = False) -> str:
+        """Serialize this object using its native JSON format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            A JSON string when path is None, otherwise None after writing the file.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json()
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
         raw = self._payload+'\n'
         if path is not None: export(path,raw,overwrite)
         return raw
 
     @classmethod
-    def from_json(cls, path) -> ModelComparisonResult:
+    def from_json(cls, path: '_typing.Any') -> ModelComparisonResult:
+        """Read and validate this type from a local JSON file.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+
+        Returns:
+            A validated ModelComparisonResult instance reconstructed from the supplied data.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ModelComparisonResult.from_json(path)
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
         data,_,_ = read_json(path,max_bytes=_MAX_BYTES)
         return cls(data)
 
     def to_display_dict(self, *, language: str = 'en') -> dict[str,Any]:
+        """Return localized display text while preserving canonical comparison data.
+
+        Args:
+            language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'en'.
+
+        Returns:
+            Localized presentation data; canonical comparison values and units are retained.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_display_dict()
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
         from ..advisor.model_comparison_presentation import to_display_dict
         return to_display_dict(self,language=language)
 
-    def to_markdown(self, path=None, *, language: str = 'en', overwrite: bool = False) -> str:
+    def to_markdown(self, path: '_typing.Any'=None, *, language: str = 'en', overwrite: bool = False) -> str:
+        """Format retained comparison findings as Markdown without rerunning models.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+            language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'en'.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            The localized Markdown report string.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_markdown()
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
         from ..advisor.model_comparison_presentation import to_markdown
         return to_markdown(self,path,language=language,overwrite=overwrite)
 
     def tracking_config(self) -> dict[str,Any]:
-        """Existing Manager benchmark-run config; no run or store is changed."""
+        """Existing Manager benchmark-run config; no run or store is changed.
+
+        Returns:
+            The retained tracking config value, without recomputing measurements.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.tracking_config()
+
+        HYSo Guide: comparison.models
+        Offline: hyso docs show comparison.models --lang en
+        Open: hyso docs open comparison.models --lang en
+        """
         data = self.to_dict()
         return dict(comparison_sha256=data['content_sha256'],selection=data['selection'],
                     models={side:source['model_id'] for side,source in data['sources'].items()},policy=data['policy'])
@@ -396,6 +672,28 @@ def compare_models(baseline: ModelComparisonSource, candidate: ModelComparisonSo
     Selecting P12 uses schema3 with a separate native CPU operation-count
     policy. Historical schema1/2 readers retain their original P12 semantics.
     P12 counts describe observed logical work, never runtime or energy savings.
+
+    Args:
+        baseline (ModelComparisonSource): Validated retained baseline source or predictions required by this comparison. Required.
+        candidate (ModelComparisonSource): Validated retained candidate source or predictions required by this comparison. Required.
+        features (str | Sequence[str]): Explicit feature IDs to compare/plan; prerequisites are never silently executed. Required.
+        include_structure (bool): Whether to include supported retained structure comparisons. Default: False.
+        context_policy (str): Existing legacy or strict declared-context policy; strict P26 prerequisites still apply. Default: 'legacy'.
+
+    Returns:
+        The retained compare models value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        compare_models(baseline, candidate, features=features)
+
+    HYSo Guide: comparison.models
+    Offline: hyso docs show comparison.models --lang en
+    Open: hyso docs open comparison.models --lang en
     """
     if type(baseline) is not ModelComparisonSource or type(candidate) is not ModelComparisonSource:
         raise ModelComparisonError('exactly_two_retained_model_sources_required')

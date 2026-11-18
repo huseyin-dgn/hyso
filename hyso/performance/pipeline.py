@@ -1,4 +1,5 @@
 """Serial instrumented pipeline: explicit frame IDs, bounded admission and stage clocks."""
+import typing as _typing
 from collections import deque
 from contextlib import ExitStack
 from dataclasses import asdict, dataclass
@@ -19,12 +20,55 @@ from .result import PipelineResult, StageTimingResult, _integer, _latency_metric
 
 @dataclass(frozen=True)
 class PipelineSample:
+    """Describe one input sample and its identity for pipeline accounting.
+
+    Args:
+        sample_id (str): Stable sample identity for correlation. Required.
+        payload (torch.Tensor): Plain retained evidence payload. Required.
+
+    Returns:
+        An instance of PipelineSample with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        PipelineSample(sample_id=sample_id, payload=payload)
+
+    HYSo Guide: analysis.p03
+    Offline: hyso docs show analysis.p03 --lang en
+    Open: hyso docs open analysis.p03 --lang en
+    """
     sample_id: str
     payload: torch.Tensor
 
 
 @dataclass(frozen=True)
 class PipelineStage:
+    """Describe one explicit pipeline stage callable and its timing boundary.
+
+    Args:
+        name (str): Registered component name, exact metric label, or stored entity name in this API. Required.
+        function (object): Explicit caller-supplied callable to observe. Required.
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
+
+    Returns:
+        An instance of PipelineStage with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        PipelineStage(name=name, function=function)
+
+    HYSo Guide: analysis.p04
+    Offline: hyso docs show analysis.p04 --lang en
+    Open: hyso docs open analysis.p04 --lang en
+    """
     name: str
     function: object
     device: str = 'cpu'
@@ -45,6 +89,30 @@ def _callable(fn):
 
 @dataclass(frozen=True)
 class PipelineProtocol:
+    """Configure P03 — End-to-end latency measurement boundaries and resource limits; construction does not run the analysis.
+
+    Args:
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
+        precision (str): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: 'fp32'.
+        samples (int): Explicit observations/sample count required by this API. Default: 10.
+        repeats (int): Number of independently recorded measurement windows/repeats. Default: 1.
+        warmup_samples (int): Samples discarded as warmup before reporting. Default: 1.
+        queue_depth (int): Bound on in-flight pipeline work. Default: 2.
+
+    Returns:
+        An instance of PipelineProtocol with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        PipelineProtocol()
+
+    HYSo Guide: analysis.p03
+    Offline: hyso docs show analysis.p03 --lang en
+    Open: hyso docs open analysis.p03 --lang en
+    """
     device: str = 'cpu'
     precision: str = 'fp32'
     samples: int = 10
@@ -106,14 +174,38 @@ def _metrics(rows):
                 p95_ms=dict(value=_quantile(latencies,.95),unit='ms',status='derived',reason=None),p99_ms=tail)
 
 
-def measure_pipeline(model, source, *, preprocess=None, transfer=None, postprocess=None, deliver=None,
-                     protocol=PipelineProtocol()):
+def measure_pipeline(model: '_typing.Any', source: '_typing.Any', *, preprocess: '_typing.Any'=None, transfer: '_typing.Any'=None, postprocess: '_typing.Any'=None, deliver: '_typing.Any'=None,
+                     protocol: '_typing.Any'=PipelineProtocol()) -> 'PipelineResult':
     """Measured source/read-start to postprocess completion, plus optional delivery.
 
     source() returns unique PipelineSample IDs and CPU tensors; stages accept and
     return the same-ID wrapper. Queue policy is bounded block, no dropping/overlap.
     CUDA stages are isolated with selected-stream end-event sync. This is separate
     instrumented analysis, never a BenchmarkRunner latency or sustained FPS run.
+
+    Args:
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+        source (_typing.Any): Typed native/retained source required by this API, not a declaration of producer authority. Required.
+        preprocess (_typing.Any): Explicit preprocessing stage callable. Default: None.
+        transfer (_typing.Any): Explicit transfer stage callable. Default: None.
+        postprocess (_typing.Any): Explicit postprocessing stage callable. Default: None.
+        deliver (_typing.Any): Explicit delivery stage callable. Default: None.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: PipelineProtocol().
+
+    Returns:
+        The retained measure pipeline value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        measure_pipeline(model, source)
+
+    HYSo Guide: analysis.p03
+    Offline: hyso docs show analysis.p03 --lang en
+    Open: hyso docs open analysis.p03 --lang en
     """
     if type(protocol) is not PipelineProtocol: raise TypeError('protocol must be PipelineProtocol')
     _callable(source)
@@ -247,8 +339,27 @@ def measure_pipeline(model, source, *, preprocess=None, transfer=None, postproce
                     finally: _RUN_LOCK.release()
 
 
-def analyze_stages(pipeline_result):
-    """Build separate P04 result from measured stage evidence without rerunning."""
+def analyze_stages(pipeline_result: '_typing.Any') -> 'StageTimingResult':
+    """Build separate P04 result from measured stage evidence without rerunning.
+
+    Args:
+        pipeline_result (_typing.Any): Existing retained pipeline result with its original timing boundaries. Required.
+
+    Returns:
+        The retained analyze stages value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        analyze_stages(pipeline_result)
+
+    HYSo Guide: analysis.p04
+    Offline: hyso docs show analysis.p04 --lang en
+    Open: hyso docs open analysis.p04 --lang en
+    """
     if not isinstance(pipeline_result,PipelineResult): raise TypeError('source must be PipelineResult')
     source=PipelineResult(pipeline_result.to_dict()).to_dict()
     data=copy.deepcopy(source)
@@ -260,7 +371,29 @@ def analyze_stages(pipeline_result):
     return StageTimingResult(data)
 
 
-def measure_stages(model, source, **kwargs):
+def measure_stages(model: '_typing.Any', source: '_typing.Any', **kwargs: '_typing.Any') -> 'StageTimingResult':
+    """Measure caller-declared pipeline stages using the measure_pipeline contract.
+
+    Args:
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+        source (_typing.Any): Typed native/retained source required by this API, not a declaration of producer authority. Required.
+        kwargs (_typing.Any): Keyword options forwarded only to the native target documented by this API. Required.
+
+    Returns:
+        The retained measure stages value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        measure_stages(model, source)
+
+    HYSo Guide: analysis.p04
+    Offline: hyso docs show analysis.p04 --lang en
+    Open: hyso docs open analysis.p04 --lang en
+    """
     return analyze_stages(measure_pipeline(model,source,**kwargs))
 
 

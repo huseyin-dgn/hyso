@@ -4,6 +4,7 @@ Tensor payload estimates are neither DRAM traffic nor lower bounds on it.
 Optional caller-supplied theoretical roofs are scenario references, not verified
 calibrations. P15 transfer rates and P10/P23 allocator/RSS bytes are not traffic.
 """
+import typing as _typing
 from dataclasses import dataclass,asdict
 import hashlib
 import json
@@ -21,6 +22,25 @@ def _hash(data):
 
 @dataclass(frozen=True)
 class RooflineProtocol:
+    """Configure P18 — Roofline and arithmetic intensity measurement boundaries and resource limits; construction does not run the analysis.
+
+    Args:
+        traffic (str): Retained memory-traffic evidence for the roofline calculation. Default: 'dispatch_payload_estimate'.
+
+    Returns:
+        An instance of RooflineProtocol with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        RooflineProtocol()
+
+    HYSo Guide: analysis.p18
+    Offline: hyso docs show analysis.p18 --lang en
+    Open: hyso docs open analysis.p18 --lang en
+    """
     traffic: str = 'dispatch_payload_estimate'
 
     def __post_init__(self):
@@ -34,6 +54,27 @@ class RooflineReference:
 
     No calibration or hardware-limit validity is asserted from caller numbers.
     Consequently this reference cannot license a bottleneck or headroom claim.
+
+    Args:
+        profile_sha256 (str): Exact calibration profile digest. Required.
+        compute_flops_per_second (float): Calibrated compute throughput in FLOP/s, not a guessed device peak. Required.
+        memory_bytes_per_second (float): Calibrated memory bandwidth in bytes/s. Required.
+        source (str): Typed native/retained source required by this API, not a declaration of producer authority. Required.
+
+    Returns:
+        An instance of RooflineReference with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        RooflineReference(profile_sha256=profile_sha256, compute_flops_per_second=compute_flops_per_second, memory_bytes_per_second=memory_bytes_per_second, source=source)
+
+    HYSo Guide: analysis.p18
+    Offline: hyso docs show analysis.p18 --lang en
+    Open: hyso docs open analysis.p18 --lang en
     """
     profile_sha256: str
     compute_flops_per_second: float
@@ -48,7 +89,30 @@ class RooflineReference:
             raise ValueError('bounded theoretical reference source required')
 
     @classmethod
-    def for_profile(cls,profile,*,compute_flops_per_second,memory_bytes_per_second,source):
+    def for_profile(cls,profile: '_typing.Any',*,compute_flops_per_second: '_typing.Any',memory_bytes_per_second: '_typing.Any',source: '_typing.Any') -> '_typing.Any':
+        """Construct a roofline protocol bound to the supplied calibration profile.
+
+        Args:
+            profile (_typing.Any): Retained calibration/profile evidence with its exact identity and scope. Required.
+            compute_flops_per_second (_typing.Any): Calibrated compute throughput in FLOP/s, not a guessed device peak. Required.
+            memory_bytes_per_second (_typing.Any): Calibrated memory bandwidth in bytes/s. Required.
+            source (_typing.Any): Typed native/retained source required by this API, not a declaration of producer authority. Required.
+
+        Returns:
+            A RooflineProtocol bound to the exact supplied calibration identity.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            RooflineReference.for_profile(profile, compute_flops_per_second=compute_flops_per_second, memory_bytes_per_second=memory_bytes_per_second, source=source)
+
+        HYSo Guide: analysis.p18
+        Offline: hyso docs show analysis.p18 --lang en
+        Open: hyso docs open analysis.p18 --lang en
+        """
         return cls(_hash(_profile(profile)),compute_flops_per_second,memory_bytes_per_second,source)
 
 
@@ -177,11 +241,31 @@ _LIMITATIONS=[
     'No resource-occupancy admission gate or default RAM/VRAM quota; existing capture errors and OOM propagate.']
 
 
-def analyze_roofline(source,*,protocol=RooflineProtocol(),reference=None):
+def analyze_roofline(source: '_typing.Any',*,protocol: '_typing.Any'=RooflineProtocol(),reference: '_typing.Any'=None) -> 'RooflineResult':
     """Pure analysis of one existing P14/P12/P13 capture; no model execution.
 
     Default arithmetic intensity is explicitly estimated. Measured DRAM traffic,
     calibrated hardware roofs, bottleneck and valid hardware gap stay unsupported.
+
+    Args:
+        source (_typing.Any): Typed native/retained source required by this API, not a declaration of producer authority. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: RooflineProtocol().
+        reference (_typing.Any): Exact retained reference evidence/identity. Default: None.
+
+    Returns:
+        The retained analyze roofline value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        analyze_roofline(source)
+
+    HYSo Guide: analysis.p18
+    Offline: hyso docs show analysis.p18 --lang en
+    Open: hyso docs open analysis.p18 --lang en
     """
     if type(protocol) is not RooflineProtocol:raise TypeError('RooflineProtocol required')
     if reference is not None and type(reference) is not RooflineReference:raise TypeError('RooflineReference required')
@@ -195,11 +279,31 @@ def analyze_roofline(source,*,protocol=RooflineProtocol(),reference=None):
     return RooflineResult(result)
 
 
-def measure_roofline(recipe,*,protocol=RooflineProtocol(),profiling_protocol=None):
+def measure_roofline(recipe: '_typing.Any',*,protocol: '_typing.Any'=RooflineProtocol(),profiling_protocol: '_typing.Any'=None) -> 'RooflineResult':
     """One existing owned capture path; default one forward, no extra benchmark.
 
     Trusted importable recipe, eval/inference mode; no live caller model transfer.
     No external profiler install or hardware calibration stress is performed.
+
+    Args:
+        recipe (_typing.Any): Trusted construction recipe; factory import/execution is governed by the existing operation contract. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: RooflineProtocol().
+        profiling_protocol (_typing.Any): Typed profiling measurement settings; boundaries and device guards remain explicit. Default: None.
+
+    Returns:
+        The retained measure roofline value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        measure_roofline(recipe)
+
+    HYSo Guide: analysis.p18
+    Offline: hyso docs show analysis.p18 --lang en
+    Open: hyso docs open analysis.p18 --lang en
     """
     if type(recipe) is not ColdStartRecipe:raise TypeError('ColdStartRecipe required')
     if type(protocol) is not RooflineProtocol:raise TypeError('RooflineProtocol required')

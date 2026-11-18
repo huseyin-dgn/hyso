@@ -1,4 +1,5 @@
 """Multi-architecture metadata comparison; separate from binary evidence comparison."""
+import typing as _typing
 
 from collections import Counter
 
@@ -6,13 +7,33 @@ from .model_checks import config_digest, count_parameters, preflight_model
 from .models import ModelRegistry
 
 
-def compare_architectures(configs, *, names=None, exact_parameters=False):
+def compare_architectures(configs: '_typing.Any', *, names: '_typing.Any'=None, exact_parameters: 'bool'=False) -> '_typing.Any':
     """Compare 2..32 schema1/2/3 descriptions without changing them.
 
     Default: allocation-free Core metadata only. ``exact_parameters=True`` opts
     into the <=1M-bound CPU numel path, never inference or training. Invalid
     descriptions retain diagnostics and no runtime counts. No performance or
     quality value is derived from architecture metadata.
+
+    Args:
+        configs (_typing.Any): Plain architecture configurations; no executable source strings. Required.
+        names (_typing.Any): Explicit model/component labels corresponding to the supplied inputs. Default: None.
+        exact_parameters (bool): Request exact static parameter accounting where supported. Default: False.
+
+    Returns:
+        The retained compare architectures value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        compare_architectures(configs)
+
+    HYSo Guide: comparison.architecture
+    Offline: hyso docs show comparison.architecture --lang en
+    Open: hyso docs open comparison.architecture --lang en
     """
     if not isinstance(configs, (list, tuple)) or not 2 <= len(configs) <= 32:
         raise ValueError("Provide 2..32 architecture configurations")

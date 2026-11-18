@@ -1,4 +1,5 @@
 """Pure unified views of validated evidence; no optimization/recommendation rules."""
+import typing as _typing
 from dataclasses import dataclass
 import html
 import json
@@ -28,11 +29,61 @@ _EXPLANATIONS = (
 
 @dataclass(frozen=True, init=False)
 class AnalysisContext:
-    """Caller declarations, explicitly not evidence measurements or attestations."""
+    """Caller declarations, explicitly not evidence measurements or attestations.
+
+    Args:
+        workload_id (_typing.Any): Exact workload identity for scope alignment. Required.
+        task (str): Explicit supported task; classification metrics do not imply detection or segmentation support. Required.
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+        dataset (_typing.Any): Caller-owned finite Dataset used by the loader or trace wrapper. Required.
+        training (_typing.Any): Explicit training settings/evidence required by this operation. Default: None.
+        source_revision (_typing.Any): Exact source code/configuration revision. Default: None.
+        references (_typing.Sequence[int]): Named output-to-node references; selecting an output does not prune other nodes. Default: ().
+
+    Returns:
+        An instance of AnalysisContext with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        AnalysisContext(workload_id=workload_id, task=task, model=model, dataset=dataset)
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
+    """
     _payload: str
 
-    def __init__(self, *, workload_id, task, model, dataset, training=None,
-                 source_revision=None, references=()):
+    def __init__(self, *, workload_id: '_typing.Any', task: 'str', model: '_typing.Any', dataset: '_typing.Any', training: '_typing.Any'=None,
+                 source_revision: '_typing.Any'=None, references: '_typing.Sequence[_typing.Any]'=()) -> 'None':
+        """Initialize AnalysisContext with the supplied settings.
+
+        Args:
+            workload_id (_typing.Any): Exact workload identity for scope alignment. Required.
+            task (str): Explicit supported task; classification metrics do not imply detection or segmentation support. Required.
+            model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+            dataset (_typing.Any): Caller-owned finite Dataset used by the loader or trace wrapper. Required.
+            training (_typing.Any): Explicit training settings/evidence required by this operation. Default: None.
+            source_revision (_typing.Any): Exact source code/configuration revision. Default: None.
+            references (_typing.Sequence[_typing.Any]): Named output-to-node references; selecting an output does not prune other nodes. Default: ().
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            AnalysisContext(workload_id=workload_id, task=task, model=model, dataset=dataset)
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         if any(type(x) is not str or not x.strip() for x in (workload_id,task)):
             raise EvidenceError('invalid_context_identity')
         if type(model) is not dict or type(dataset) is not dict or (training is not None and type(training) is not dict):
@@ -42,7 +93,24 @@ class AnalysisContext:
                         authority='caller_declared; not a measured or verified association'))
         object.__setattr__(self,'_payload',canonical(data))
 
-    def to_dict(self): return json.loads(self._payload)
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
+        return json.loads(self._payload)
 
     @classmethod
     def _restore(cls,data):
@@ -100,9 +168,48 @@ def _derive(index, context, title, risks):
 
 @dataclass(frozen=True, init=False)
 class UnifiedAnalysisReport:
+    """Validate and export retained analysis records under one explicit context without rerunning measurements.
+
+    Args:
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of UnifiedAnalysisReport with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        UnifiedAnalysisReport(data)
+
+    HYSo Guide: analyzer.workflow
+    Offline: hyso docs show analyzer.workflow --lang en
+    Open: hyso docs open analyzer.workflow --lang en
+    """
     _payload: str
 
-    def __init__(self,data):
+    def __init__(self,data: 'dict[str, _typing.Any]') -> 'None':
+        """Initialize UnifiedAnalysisReport with the supplied settings.
+
+        Args:
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            UnifiedAnalysisReport(data)
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         d=plain(data)
         if (type(d) is not dict or d.get('format')!='hyso.analysis_report'
                 or type(d.get('schema_version')) is not int or d['schema_version']!=1):
@@ -124,7 +231,30 @@ class UnifiedAnalysisReport:
         object.__setattr__(self,'_payload',canonical(d))
 
     @classmethod
-    def build(cls,index,*,context,title='HYSo unified analysis',risks=()):
+    def build(cls,index: '_typing.Any',*,context: '_typing.Any',title: 'str'='HYSo unified analysis',risks: '_typing.Sequence[str]'=()) -> 'UnifiedAnalysisReport':
+        """Build a unified report from retained evidence under the supplied context; no model is constructed.
+
+        Args:
+            index (_typing.Any): Retained EvidenceIndex; adding a source does not run it. Required.
+            context (_typing.Any): Explicit analysis/evaluation context; caller declarations are not producer attestation. Required.
+            title (str): Human-readable report title. Default: 'HYSo unified analysis'.
+            risks (_typing.Sequence[str]): Known limitations/risks attached to the proposal. Default: ().
+
+        Returns:
+            A validated UnifiedAnalysisReport combining the supplied retained index and caller context.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            UnifiedAnalysisReport.build(index, context=context)
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         if type(index) is not EvidenceIndex or type(context) is not AnalysisContext:
             raise EvidenceError('typed_index_and_context_required')
         d=dict(format='hyso.analysis_report',schema_version=1,context=context.to_dict(),
@@ -132,17 +262,96 @@ class UnifiedAnalysisReport:
         d['report_id']=digest(d)
         return cls(d)
 
-    def to_dict(self):return json.loads(self._payload)
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
 
-    def to_json(self,path,*,overwrite=False):export(path,self._payload+'\n',overwrite)
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
+        return json.loads(self._payload)
+
+    def to_json(self,path: '_typing.Any',*,overwrite: 'bool'=False) -> 'None':
+        """Serialize this object using its native JSON format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json(path)
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
+        export(path,self._payload+'\n',overwrite)
 
     @classmethod
-    def from_json(cls,path):
+    def from_json(cls,path: '_typing.Any') -> 'UnifiedAnalysisReport':
+        """Read and validate this type from a local JSON file.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+
+        Returns:
+            A validated UnifiedAnalysisReport instance reconstructed from the supplied data.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            UnifiedAnalysisReport.from_json(path)
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         d,_,_=read_json(path,max_bytes=128*1024**2)
         return cls(d)
 
-    def to_markdown(self,path,*,overwrite=False):
-        """Render human explanations and exact scalar references from this report."""
+    def to_markdown(self,path: '_typing.Any',*,overwrite: 'bool'=False) -> 'None':
+        """Render human explanations and exact scalar references from this report.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after writing the Markdown report to the required path.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_markdown(path)
+
+        HYSo Guide: analyzer.workflow
+        Offline: hyso docs show analyzer.workflow --lang en
+        Open: hyso docs open analyzer.workflow --lang en
+        """
         d=self.to_dict();a=d['analysis'];c=d['context'];records=d['index']['records']
         def esc(v):return html.escape(str(v)).replace('|','\\|').replace('`','\\`').replace('[','&#91;').replace(']','&#93;').replace('\n',' ')
         lines=['# '+esc(a['title']),'',

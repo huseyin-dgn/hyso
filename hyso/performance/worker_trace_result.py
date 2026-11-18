@@ -6,6 +6,7 @@ Execution, epoch and batch association remain explicitly unknown.
 """
 
 from __future__ import annotations
+import typing as _typing
 
 from collections import defaultdict
 from dataclasses import dataclass
@@ -214,12 +215,50 @@ def _derive(parent, packets, counters, worker_states):
 
 @dataclass(frozen=True, init=False)
 class WorkerTraceAnalysisResult:
-    """Immutable, independently auditable P21 companion artifact."""
+    """Immutable, independently auditable P21 companion artifact.
+
+    Args:
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of WorkerTraceAnalysisResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        WorkerTraceAnalysisResult(data)
+
+    HYSo Guide: analysis.p21
+    Offline: hyso docs show analysis.p21 --lang en
+    Open: hyso docs open analysis.p21 --lang en
+    """
 
     __slots__ = ("_payload",)
     _payload: str
 
-    def __init__(self, data):
+    def __init__(self, data: 'dict[str, _typing.Any]') -> 'None':
+        """Initialize WorkerTraceAnalysisResult with the supplied settings.
+
+        Args:
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            WorkerTraceAnalysisResult(data)
+
+        HYSo Guide: analysis.p21
+        Offline: hyso docs show analysis.p21 --lang en
+        Open: hyso docs open analysis.p21 --lang en
+        """
         data = _plain(data)
         self._check(data)
 
@@ -296,10 +335,47 @@ class WorkerTraceAnalysisResult:
         ]:
             raise ValueError("invalid evidence limitations")
 
-    def to_dict(self):
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analysis.p21
+        Offline: hyso docs show analysis.p21 --lang en
+        Open: hyso docs open analysis.p21 --lang en
+        """
         return json.loads(self._payload)
 
-    def to_json(self, path, *, overwrite=False):
+    def to_json(self, path: '_typing.Any', *, overwrite: 'bool'=False) -> 'None':
+        """Serialize this object using its native JSON format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json(path)
+
+        HYSo Guide: analysis.p21
+        Offline: hyso docs show analysis.p21 --lang en
+        Open: hyso docs open analysis.p21 --lang en
+        """
         data = self.to_dict()
         self._check(data)
 
@@ -315,15 +391,36 @@ class WorkerTraceAnalysisResult:
 
 
 def analyze_worker_traces(
-    loader_result,
-    packets,
+    loader_result: '_typing.Any',
+    packets: '_typing.Any',
     *,
-    trace_counters,
-    worker_states,
-):
+    trace_counters: '_typing.Any',
+    worker_states: '_typing.Any',
+) -> 'WorkerTraceAnalysisResult':
     """Attach caller-supplied same-execution evidence to P21.
 
     Does not rerun training or mutate the original P21 result.
+
+    Args:
+        loader_result (_typing.Any): Retained loader-training result with trace identity. Required.
+        packets (_typing.Any): Retained bounded calibration packets. Required.
+        trace_counters (_typing.Any): Retained trace-counter evidence. Required.
+        worker_states (_typing.Any): Retained worker identity/state evidence. Required.
+
+    Returns:
+        The retained analyze worker traces value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        analyze_worker_traces(loader_result, packets, trace_counters=trace_counters, worker_states=worker_states)
+
+    HYSo Guide: analysis.p21
+    Offline: hyso docs show analysis.p21 --lang en
+    Open: hyso docs open analysis.p21 --lang en
     """
     if type(loader_result) is not DataLoaderAnalysisResult:
         raise TypeError("expected DataLoaderAnalysisResult")

@@ -1,4 +1,5 @@
 """Typed, immutable static architecture audit. Source-based reader validation."""
+import typing as _typing
 from dataclasses import dataclass
 from enum import Enum
 import json
@@ -149,10 +150,49 @@ def _derived(d):
 
 @dataclass(frozen=True, init=False)
 class ModelArchitectureAudit:
+    """Inspect rule findings, coverage and evidence gaps from a retained architecture audit.
+
+    Args:
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of ModelArchitectureAudit with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ModelArchitectureAudit(data)
+
+    HYSo Guide: comparison.architecture
+    Offline: hyso docs show comparison.architecture --lang en
+    Open: hyso docs open comparison.architecture --lang en
+    """
     __slots__ = ('_payload',)
     _payload: str
 
-    def __init__(self, data):
+    def __init__(self, data: 'dict[str, _typing.Any]') -> 'None':
+        """Initialize ModelArchitectureAudit with the supplied settings.
+
+        Args:
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ModelArchitectureAudit(data)
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
         try:
             d = plain(data)
             raw = canonical(d)
@@ -172,25 +212,107 @@ class ModelArchitectureAudit:
             raise ModelArchitectureAuditError('invalid_architecture_audit') from exc
         object.__setattr__(self, '_payload', raw)
 
-    def to_dict(self): return json.loads(self._payload)
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return json.loads(self._payload)
 
     @property
-    def source_snapshot(self): return ModelStructureSnapshot(self.to_dict()['source_snapshot'])
+    def source_snapshot(self) -> '_typing.Any':
+        """Read the retained source snapshot from this ModelArchitectureAudit record.
+
+        Returns:
+            The retained source snapshot value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.source_snapshot
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return ModelStructureSnapshot(self.to_dict()['source_snapshot'])
 
     @property
-    def audit_policy(self):
+    def audit_policy(self) -> '_typing.Any':
+        """Read the retained audit policy from this ModelArchitectureAudit record.
+
+        Returns:
+            The retained audit policy value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.audit_policy
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
         d = self.to_dict()['audit_policy']
         return ArchitectureAuditPolicy(**dict(d, rules=tuple(ArchitectureAuditRule(**r) for r in d['rules'])))
 
     @property
-    def findings(self):
+    def findings(self) -> '_typing.Any':
+        """Read the retained findings from this ModelArchitectureAudit record.
+
+        Returns:
+            The retained findings value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.findings
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
         return tuple(ArchitectureAuditFinding(**dict(d,
             classification=ArchitectureFindingClass(d['classification']), related_paths=tuple(d['related_paths']),
             observations=tuple(AuditEvidence(f['field'], f['status'], canonical(f['value'])) for f in d['observations']),
             expected=_derived(d['expected']), derived=_derived(d['derived']))) for d in self.to_dict()['findings'])
 
     @property
-    def module_assessments(self):
+    def module_assessments(self) -> '_typing.Any':
+        """Read the retained module assessments from this ModelArchitectureAudit record.
+
+        Returns:
+            The retained module assessments value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.module_assessments
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
         return tuple(ArchitectureModuleAssessment(**dict(d, checks=tuple(ArchitectureAuditCheck(
             c['code'], c['status'], tuple(c['source_fields']), _derived(c['expected'])) for c in d['checks'])))
             for d in self.to_dict()['coverage']['module_assessments'])
@@ -201,52 +323,246 @@ class ModelArchitectureAudit:
         return self.to_dict()['coverage']
 
     @property
-    def rule_applicability(self):
+    def rule_applicability(self) -> '_typing.Any':
+        """Read the retained rule applicability from this ModelArchitectureAudit record.
+
+        Returns:
+            The retained rule applicability value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.rule_applicability
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
         return tuple(ArchitectureRuleApplicability(**dict(d, status=ArchitectureCoverageStatus(d['status']),
             observations=tuple(AuditEvidence(f['field'], f['status'], canonical(f['value'])) for f in d['observations'])))
             for d in self._v2_coverage()['rule_applicability'])
 
     @property
-    def unassessed_areas(self):
+    def unassessed_areas(self) -> '_typing.Any':
+        """Read the retained unassessed areas from this ModelArchitectureAudit record.
+
+        Returns:
+            The retained unassessed areas value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.unassessed_areas
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
         return tuple(ArchitectureUnassessedArea(**dict(d, status=ArchitectureCoverageStatus(d['status']),
             observations=tuple(AuditEvidence(f['field'], f['status'], canonical(f['value'])) for f in d['observations'])))
             for d in self._v2_coverage()['unassessed_areas'])
 
     @property
-    def evidence_gaps(self):
+    def evidence_gaps(self) -> '_typing.Any':
+        """Read the retained evidence gaps from this ModelArchitectureAudit record.
+
+        Returns:
+            The retained evidence gaps value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.evidence_gaps
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
         return tuple(ArchitectureEvidenceGap(**dict(d, status=ArchitectureCoverageStatus(d['status']),
             module_ids=tuple(d['module_ids']), source_fields=tuple(d['source_fields'])))
             for d in self._v2_coverage()['evidence_gaps'])
 
     @property
-    def schema_version(self): return self.to_dict()['schema_version']
+    def schema_version(self) -> '_typing.Any':
+        """Return the retained record's schema version.
+
+        Returns:
+            The integer schema version of this retained record.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.schema_version
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return self.to_dict()['schema_version']
 
     @property
-    def summary(self): return self.to_dict()['summary']
+    def summary(self) -> '_typing.Any':
+        """Read the retained summary from this ModelArchitectureAudit record.
+
+        Returns:
+            The retained summary value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.summary
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return self.to_dict()['summary']
 
     @property
-    def coverage(self): return self.to_dict()['coverage']
+    def coverage(self) -> '_typing.Any':
+        """Read the retained coverage from this ModelArchitectureAudit record.
+
+        Returns:
+            The retained coverage value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.coverage
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return self.to_dict()['coverage']
 
     @property
-    def limitations(self): return tuple(self.to_dict()['limitations'])
+    def limitations(self) -> '_typing.Any':
+        """Read the retained limitations from this ModelArchitectureAudit record.
+
+        Returns:
+            The retained limitations value, without recomputing measurements.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.limitations
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return tuple(self.to_dict()['limitations'])
 
     @property
-    def content_sha256(self): return self.to_dict()['content_sha256']
+    def content_sha256(self) -> '_typing.Any':
+        """Return the canonical content digest of this retained record.
 
-    def to_json(self, path=None):
+        Returns:
+            The canonical SHA-256 digest string of this retained content.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.content_sha256
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return self.to_dict()['content_sha256']
+
+    def to_json(self, path: '_typing.Any'=None) -> '_typing.Any':
+        """Serialize this object using its native JSON format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+
+        Returns:
+            A JSON string when path is None, otherwise None after writing the file.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json()
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
         if path is not None: export(path, self._payload + '\n')
         return self._payload + '\n'
 
     @classmethod
-    def from_dict(cls, data): return cls(data)
+    def from_dict(cls, data: 'dict[str, _typing.Any]') -> 'ModelArchitectureAudit':
+        """Validate plain retained data and reconstruct the typed result.
+
+        Args:
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            A validated ModelArchitectureAudit instance reconstructed from the supplied data.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ModelArchitectureAudit.from_dict(data)
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
+        return cls(data)
 
     @classmethod
-    def from_json(cls, path):
+    def from_json(cls, path: '_typing.Any') -> 'ModelArchitectureAudit':
+        """Read and validate this type from a local JSON file.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+
+        Returns:
+            A validated ModelArchitectureAudit instance reconstructed from the supplied data.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ModelArchitectureAudit.from_json(path)
+
+        HYSo Guide: comparison.architecture
+        Offline: hyso docs show comparison.architecture --lang en
+        Open: hyso docs open comparison.architecture --lang en
+        """
         d, _, _ = read_json(path, max_bytes=_MAX_BYTES + 1)
         return cls(d)
 
 
-def audit_model_architecture(snapshot, *, policy_version=2, max_entries=_MAX_ENTRIES, max_bytes=_MAX_BYTES):
+def audit_model_architecture(snapshot: '_typing.Any', *, policy_version: 'int'=2, max_entries: '_typing.Any'=_MAX_ENTRIES, max_bytes: '_typing.Any'=_MAX_BYTES) -> '_typing.Any':
     """Assess one validated static snapshot; v2 is the creation default.
 
     policy_version=1 reproduces the original v1 bytes/semantics. Readers select
@@ -254,6 +570,27 @@ def audit_model_architecture(snapshot, *, policy_version=2, max_entries=_MAX_ENT
     Accepts no live model, model factory, filename or checkpoint. Consistency is
     limited to named recorded fields, with explicit observations and coverage
     gaps. No runtime behavior or model-wide correctness verdict is inferred.
+
+    Args:
+        snapshot (_typing.Any): Validated retained model-structure snapshot. Required.
+        policy_version (int): Exact supported audit policy version. Default: 2.
+        max_entries (_typing.Any): Upper bound on entries retained/accepted by this operation. Default: _MAX_ENTRIES.
+        max_bytes (_typing.Any): Maximum accepted or retained byte count. Default: _MAX_BYTES.
+
+    Returns:
+        The retained audit model architecture value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        audit_model_architecture(snapshot)
+
+    HYSo Guide: comparison.architecture
+    Offline: hyso docs show comparison.architecture --lang en
+    Open: hyso docs open comparison.architecture --lang en
     """
     if type(snapshot) is not ModelStructureSnapshot:
         raise ModelArchitectureAuditError('validated_structure_snapshot_required')

@@ -47,9 +47,53 @@ class InvertedResidual(TVInvertedResidual):
     """MobileNetV2 expansion/ReLU6, depthwise and linear projection adapter.
 
     Residual addition requires stride=1 and equal input/output channels.
+
+    Args:
+        in_channels (int): Expected input feature-channel count. Required.
+        out_channels (int): Number of output feature channels. Required.
+        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+        expand_ratio (float): Internal channel expansion ratio. Default: 6.0.
+
+    Returns:
+        An instance of InvertedResidual with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        InvertedResidual(in_channels, out_channels)
+
+    HYSo Guide: components.mobile
+    Offline: hyso docs show components.mobile --lang en
+    Open: hyso docs open components.mobile --lang en
     """
     def __init__(self, in_channels: int, out_channels: int, stride: int = 1,
                  expand_ratio: float = 6.) -> None:
+        """Initialize InvertedResidual with the supplied settings.
+
+        Args:
+            in_channels (int): Expected input feature-channel count. Required.
+            out_channels (int): Number of output feature channels. Required.
+            stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+            expand_ratio (float): Expansion ratio in [1,16]. Default: 6.0.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            InvertedResidual(in_channels, out_channels)
+
+        HYSo Guide: components.mobile
+        Offline: hyso docs show components.mobile --lang en
+        Open: hyso docs open components.mobile --lang en
+        """
         block_channels(in_channels, out_channels, stride)
         expansion_ratio(expand_ratio)
         super().__init__(in_channels, out_channels, stride, expand_ratio)
@@ -59,10 +103,58 @@ class MBConv(TVMBConv):
     """Torchvision SiLU MBConv with input-width/4 SE and row stochastic depth.
 
     Expanded width follows torchvision's divisor-eight rounding convention.
+
+    Args:
+        in_channels (int): Expected input feature-channel count. Required.
+        out_channels (int): Number of output feature channels. Required.
+        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+        expand_ratio (float): Internal channel expansion ratio. Default: 6.0.
+        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+        stochastic_depth (float): Probability/schedule for dropping residual paths during training. Default: 0.0.
+
+    Returns:
+        An instance of MBConv with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        MBConv(in_channels, out_channels)
+
+    HYSo Guide: components.mobile
+    Offline: hyso docs show components.mobile --lang en
+    Open: hyso docs open components.mobile --lang en
     """
     def __init__(self, in_channels: int, out_channels: int, stride: int = 1,
                  expand_ratio: float = 6., kernel_size: int = 3,
                  stochastic_depth: float = 0.) -> None:
+        """Initialize MBConv with the supplied settings.
+
+        Args:
+            in_channels (int): Expected input feature-channel count. Required.
+            out_channels (int): Number of output feature channels. Required.
+            stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+            expand_ratio (float): Expansion ratio in [1,16]. Default: 6.0.
+            kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+            stochastic_depth (float): stochastic depth Default: 0.0.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            MBConv(in_channels, out_channels)
+
+        HYSo Guide: components.mobile
+        Offline: hyso docs show components.mobile --lang en
+        Open: hyso docs open components.mobile --lang en
+        """
         block_channels(in_channels, out_channels, stride)
         expansion_ratio(expand_ratio)
         odd_kernel(kernel_size)
@@ -75,10 +167,59 @@ class MBConv(TVMBConv):
 
 
 class FusedMBConv(TVFusedMBConv):
-    """Torchvision fused spatial expansion and linear projection with SiLU."""
+    """Torchvision fused spatial expansion and linear projection with SiLU.
+
+    Args:
+        in_channels (int): Expected input feature-channel count. Required.
+        out_channels (int): Number of output feature channels. Required.
+        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+        expand_ratio (float): Internal channel expansion ratio. Default: 4.0.
+        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+        stochastic_depth (float): Probability/schedule for dropping residual paths during training. Default: 0.0.
+
+    Returns:
+        An instance of FusedMBConv with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        FusedMBConv(in_channels, out_channels)
+
+    HYSo Guide: components.mobile
+    Offline: hyso docs show components.mobile --lang en
+    Open: hyso docs open components.mobile --lang en
+    """
     def __init__(self, in_channels: int, out_channels: int, stride: int = 1,
                  expand_ratio: float = 4., kernel_size: int = 3,
                  stochastic_depth: float = 0.) -> None:
+        """Initialize FusedMBConv with the supplied settings.
+
+        Args:
+            in_channels (int): Expected input feature-channel count. Required.
+            out_channels (int): Number of output feature channels. Required.
+            stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+            expand_ratio (float): expand ratio Default: 4.0.
+            kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+            stochastic_depth (float): stochastic depth Default: 0.0.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            FusedMBConv(in_channels, out_channels)
+
+        HYSo Guide: components.mobile
+        Offline: hyso docs show components.mobile --lang en
+        Open: hyso docs open components.mobile --lang en
+        """
         block_channels(in_channels, out_channels, stride)
         expansion_ratio(expand_ratio)
         odd_kernel(kernel_size)
@@ -92,10 +233,60 @@ class GhostConv(nn.Module):
 
     ratio>=2 selects ceil(out/ratio) primary channels. The final concatenation
     is sliced to exactly out_channels. relu=False preserves a linear projection.
+
+    Args:
+        in_channels (int): Expected input feature-channel count. Required.
+        out_channels (int): Number of output feature channels. Required.
+        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 1.
+        ratio (int): Feature expansion/split ratio used by this block. Default: 2.
+        cheap_kernel (int): Spatial kernel of the inexpensive feature-generation branch. Default: 3.
+        relu (bool): Enable the block's ReLU activation. Default: True.
+
+    Returns:
+        An instance of GhostConv with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        GhostConv(in_channels, out_channels)
+
+    HYSo Guide: components.mobile
+    Offline: hyso docs show components.mobile --lang en
+    Open: hyso docs open components.mobile --lang en
     """
     def __init__(self, in_channels: int, out_channels: int, stride: int = 1,
                  kernel_size: int = 1, ratio: int = 2, cheap_kernel: int = 3,
                  relu: bool = True) -> None:
+        """Initialize GhostConv with the supplied settings.
+
+        Args:
+            in_channels (int): Expected input feature-channel count. Required.
+            out_channels (int): Number of output feature channels. Required.
+            stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+            kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 1.
+            ratio (int): ratio Default: 2.
+            cheap_kernel (int): cheap kernel Default: 3.
+            relu (bool): relu Default: True.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            GhostConv(in_channels, out_channels)
+
+        HYSo Guide: components.mobile
+        Offline: hyso docs show components.mobile --lang en
+        Open: hyso docs open components.mobile --lang en
+        """
         super().__init__()
         block_channels(in_channels, out_channels, stride)
         odd_kernel(kernel_size)
@@ -112,6 +303,26 @@ class GhostConv(nn.Module):
                                          groups=primary, activation_layer=activation)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.mobile
+        Offline: hyso docs show components.mobile --lang en
+        Open: hyso docs open components.mobile --lang en
+        """
         _check_input(x, self.in_channels)
         primary = self.primary(x)
         return torch.cat((primary, self.cheap(primary)), dim=1)[:, :self.out_channels]
@@ -122,9 +333,57 @@ class GhostBottleneck(nn.Module):
 
     The shortcut uses depthwise plus pointwise convolution on shape changes.
     hidden_channels is explicit so published expansion widths can be preserved.
+
+    Args:
+        in_channels (int): Expected input feature-channel count. Required.
+        out_channels (int): Number of output feature channels. Required.
+        hidden_channels (int): Internal feature width. Required.
+        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+        se_ratio (float): Squeeze-and-excitation reduction setting. Default: 0.0.
+
+    Returns:
+        An instance of GhostBottleneck with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        GhostBottleneck(in_channels, out_channels, hidden_channels)
+
+    HYSo Guide: components.mobile
+    Offline: hyso docs show components.mobile --lang en
+    Open: hyso docs open components.mobile --lang en
     """
     def __init__(self, in_channels: int, out_channels: int, hidden_channels: int,
                  stride: int = 1, kernel_size: int = 3, se_ratio: float = 0.) -> None:
+        """Initialize GhostBottleneck with the supplied settings.
+
+        Args:
+            in_channels (int): Expected input feature-channel count. Required.
+            out_channels (int): Number of output feature channels. Required.
+            hidden_channels (int): hidden channels Required.
+            stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+            kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+            se_ratio (float): se ratio Default: 0.0.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            GhostBottleneck(in_channels, out_channels, hidden_channels)
+
+        HYSo Guide: components.mobile
+        Offline: hyso docs show components.mobile --lang en
+        Open: hyso docs open components.mobile --lang en
+        """
         super().__init__()
         block_channels(in_channels, out_channels, stride)
         _positive_int(hidden_channels, 'hidden_channels')
@@ -146,6 +405,26 @@ class GhostBottleneck(nn.Module):
             Conv2dNormActivation(in_channels, out_channels, 1, activation_layer=None)))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: components.mobile
+        Offline: hyso docs show components.mobile --lang en
+        Open: hyso docs open components.mobile --lang en
+        """
         _check_input(x, self.in_channels)
         return self.project(self.se(self.depthwise(self.expand(x)))) + self.shortcut(x)
 
@@ -153,8 +432,51 @@ class GhostBottleneck(nn.Module):
 
 
 class ShuffleUnit(TVShuffleUnit):
-    """Torchvision ShuffleNetV2 split/concat/shuffle unit with even output width."""
+    """Torchvision ShuffleNetV2 split/concat/shuffle unit with even output width.
+
+    Args:
+        in_channels (int): Expected input feature-channel count. Required.
+        out_channels (int): Number of output feature channels. Required.
+        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+
+    Returns:
+        An instance of ShuffleUnit with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ShuffleUnit(in_channels, out_channels)
+
+    HYSo Guide: components.mobile
+    Offline: hyso docs show components.mobile --lang en
+    Open: hyso docs open components.mobile --lang en
+    """
     def __init__(self, in_channels: int, out_channels: int, stride: int = 1) -> None:
+        """Initialize ShuffleUnit with the supplied settings.
+
+        Args:
+            in_channels (int): Expected input feature-channel count. Required.
+            out_channels (int): Number of output feature channels. Required.
+            stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ShuffleUnit(in_channels, out_channels)
+
+        HYSo Guide: components.mobile
+        Offline: hyso docs show components.mobile --lang en
+        Open: hyso docs open components.mobile --lang en
+        """
         block_channels(in_channels, out_channels, stride)
         if out_channels % 2 or (stride == 1 and in_channels != out_channels):
             raise ValueError('even out_channels required, with equal channels for stride=1')

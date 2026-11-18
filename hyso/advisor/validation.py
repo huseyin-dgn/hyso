@@ -1,4 +1,5 @@
 """Static interval consistency only. No performance or feasibility inference."""
+import typing as _typing
 from fractions import Fraction
 
 from ._json import AdvisorError
@@ -6,11 +7,29 @@ from .contracts import (AdvisorRequest, Consistency, GoalEvaluation, InputValidi
                         RequestValidation, _METRICS)
 
 
-def validate_request(request):
+def validate_request(request: '_typing.Any') -> '_typing.Any':
     """Find impossible hard intervals for exactly matching, complete goal contexts.
 
     Soft goals, priorities, budgets and different metrics cannot create a hard
     contradiction here. A missing match or conflict is no feasibility proof.
+
+    Args:
+        request (_typing.Any): Validated advisory/selection request; does not authorize execution. Required.
+
+    Returns:
+        The retained validate request value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        validate_request(request)
+
+    HYSo Guide: advisor.recommendations
+    Offline: hyso docs show advisor.recommendations --lang en
+    Open: hyso docs open advisor.recommendations --lang en
     """
     if type(request) is not AdvisorRequest:
         raise AdvisorError('typed_request_required')

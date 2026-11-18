@@ -4,6 +4,7 @@ The builder reuses existing blocks; it does not implement a new convolution,
 attention family, checkpoint format, arbitrary graph compiler or code loader.
 """
 from __future__ import annotations
+import typing as _typing
 
 import json
 import math
@@ -148,8 +149,50 @@ class BuiltClassifier(nn.Module):
     Standard state_dict/save_training_checkpoint can store component state, but
     Trainer's automatic ModularCNN-only epoch-resume profile does not cover this
     class. Configuration JSON contains no weights or executable source.
+
+    Args:
+        features (list[nn.Module]): Explicit feature IDs to compare/plan; prerequisites are never silently executed. Required.
+        config (dict[str, Any]): Plain versioned configuration; never executable code or trained state. Required.
+        output_channels (int): Number of output feature channels. Required.
+
+    Returns:
+        An instance of BuiltClassifier with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        BuiltClassifier(features, config, output_channels)
+
+    HYSo Guide: models.model-builder
+    Offline: hyso docs show models.model-builder --lang en
+    Open: hyso docs open models.model-builder --lang en
     """
-    def __init__(self, features: list[nn.Module], config: dict[str, Any], output_channels: int):
+    def __init__(self, features: list[nn.Module], config: dict[str, Any], output_channels: int) -> 'None':
+        """Initialize BuiltClassifier with the supplied settings.
+
+        Args:
+            features (list[nn.Module]): Explicit feature IDs to compare/plan; prerequisites are never silently executed. Required.
+            config (dict[str, Any]): Plain versioned configuration; never executable code or trained state. Required.
+            output_channels (int): Number of output feature channels. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            BuiltClassifier(features, config, output_channels)
+
+        HYSo Guide: models.model-builder
+        Offline: hyso docs show models.model-builder --lang en
+        Open: hyso docs open models.model-builder --lang en
+        """
         super().__init__()
         self.features = nn.Sequential(*features)
         self.pool = nn.AdaptiveAvgPool2d(1)
@@ -158,7 +201,22 @@ class BuiltClassifier(nn.Module):
         self.input_shape = tuple(config['input_shape'])
 
     def to_config(self) -> dict[str, Any]:
-        """Return an independent architecture description, never model weights."""
+        """Return an independent architecture description, never model weights.
+
+        Returns:
+            Detached JSON-compatible architecture metadata including normalized defaults; no weights.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_config()
+
+        HYSo Guide: models.model-builder
+        Offline: hyso docs show models.model-builder --lang en
+        Open: hyso docs open models.model-builder --lang en
+        """
         config = json.loads(self._architecture)
         for block,entry in zip(self.features,config['blocks']):
             if entry['name'] in ('repvgg_block','mobileone_block'):
@@ -166,7 +224,26 @@ class BuiltClassifier(nn.Module):
         return config
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Return [N, num_classes] logits; reject incompatible input before work."""
+        """Return [N, num_classes] logits; reject incompatible input before work.
+
+        Args:
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: models.model-builder
+        Offline: hyso docs show models.model-builder --lang en
+        Open: hyso docs open models.model-builder --lang en
+        """
         x = self._forward_features(x)
         return self.classifier(torch.flatten(self.pool(x), 1))
 
@@ -192,8 +269,51 @@ class BuiltClassifier(nn.Module):
 
 
 class BuiltSequential(BuiltClassifier):
-    """Opt-in schema2 features and explicit prediction head."""
-    def __init__(self, features, config, head):
+    """Opt-in schema2 features and explicit prediction head.
+
+    Args:
+        features (_typing.Any): Explicit feature IDs to compare/plan; prerequisites are never silently executed. Required.
+        config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained state. Required.
+        head (_typing.Any): Explicit prediction-head kind, such as classification, regression or embedding. Required.
+
+    Returns:
+        An instance of BuiltSequential with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        BuiltSequential(features, config, head)
+
+    HYSo Guide: models.model-builder
+    Offline: hyso docs show models.model-builder --lang en
+    Open: hyso docs open models.model-builder --lang en
+    """
+    def __init__(self, features: '_typing.Any', config: 'dict[str, _typing.Any]', head: '_typing.Any') -> 'None':
+        """Initialize BuiltSequential with the supplied settings.
+
+        Args:
+            features (_typing.Any): Explicit feature IDs to compare/plan; prerequisites are never silently executed. Required.
+            config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained state. Required.
+            head (_typing.Any): Explicit prediction-head kind, such as classification, regression or embedding. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            BuiltSequential(features, config, head)
+
+        HYSo Guide: models.model-builder
+        Offline: hyso docs show models.model-builder --lang en
+        Open: hyso docs open models.model-builder --lang en
+        """
         nn.Module.__init__(self)
         self.features = nn.Sequential(*features)
         self.head = head
@@ -201,15 +321,51 @@ class BuiltSequential(BuiltClassifier):
         self._architecture = json.dumps(config,sort_keys=True,allow_nan=False)
 
     @property
-    def classifier(self):
+    def classifier(self) -> 'nn.Linear':
+        """Return the built classifier module.
+
+        Returns:
+            The existing Linear classification projection. Heads without a linear attribute do not support this accessor.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.classifier
+
+        HYSo Guide: models.model-builder
+        Offline: hyso docs show models.model-builder --lang en
+        Open: hyso docs open models.model-builder --lang en
+        """
         return self.head.linear
 
-    def forward(self,x):
+    def forward(self,x: '_typing.Any') -> 'torch.Tensor':
+        """Apply this module to inputs with its declared shape, dtype and device.
+
+        Args:
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+
+        Returns:
+            Native Tensor output(s) of this model/block; this call performs the forward computation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.forward(x)
+
+        HYSo Guide: models.model-builder
+        Offline: hyso docs show models.model-builder --lang en
+        Open: hyso docs open models.model-builder --lang en
+        """
         return self.head(self._forward_features(x))
 
 
 class ModelBuilder:
-    """Configure a bounded CPU classifier without rewriting registered blocks.
+    """Assemble a sequential classifier or explicit sequential model from registered components.
 
     Args:
         input_shape: Exact positive (C,H,W), each dimension <=8192.
@@ -222,8 +378,44 @@ class ModelBuilder:
     Named M3 families use a separate conservative 200-million parameter bound. ``build`` allocates
     fresh CPU weights; call .to(device/dtype) explicitly afterwards. Arbitrary
     user nn.Module objects remain usable directly with Trainer/BenchmarkRunner.
+
+    Returns:
+        An instance of ModelBuilder with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+        RuntimeError: A requested native construction/forward operation fails.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        builder = ModelBuilder((1, 4, 4), 2)
+
+    HYSo Guide: models.model-builder
+    Offline: hyso docs show models.model-builder --lang en
+    Open: hyso docs open models.model-builder --lang en
     """
-    def __init__(self, input_shape: tuple[int, int, int], num_classes: int):
+    def __init__(self, input_shape: tuple[int, int, int], num_classes: int) -> 'None':
+        """Initialize ModelBuilder with the supplied settings.
+
+        Args:
+            input_shape (tuple[int, int, int]): Per-sample (C, H, W) dimensions; batch is excluded. Required.
+            num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ModelBuilder(input_shape, num_classes)
+
+        HYSo Guide: models.model-builder
+        Offline: hyso docs show models.model-builder --lang en
+        Open: hyso docs open models.model-builder --lang en
+        """
         config = dict(format='hyso.model_config', schema_version=1, kind='sequential_classifier',
                       input_shape=input_shape, num_classes=num_classes, blocks=[])
         self._config, _ = self._validate(config)
@@ -309,31 +501,125 @@ class ModelBuilder:
         return c, tuple(shape)
 
     @classmethod
-    def sequential(cls, input_shape, *, head='classification', **head_params):
-        """Create an opt-in schema2 chain with an explicit terminal head."""
+    def sequential(cls, input_shape: '_typing.Sequence[int]', *, head: 'str'='classification', **head_params: '_typing.Any') -> 'ModelBuilder':
+        """Create an opt-in schema2 chain with an explicit terminal head.
+
+        Args:
+            input_shape (_typing.Sequence[int]): Per-sample (C, H, W) dimensions; batch is excluded. Required.
+            head (str): Explicit prediction-head kind, such as classification, regression or embedding. Default: 'classification'.
+            head_params (_typing.Any): Parameters for the explicit prediction head; schema2 rules remain unchanged. Required.
+
+        Returns:
+            The retained sequential value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ModelBuilder.sequential(input_shape)
+
+        HYSo Guide: models.model-builder
+        Offline: hyso docs show models.model-builder --lang en
+        Open: hyso docs open models.model-builder --lang en
+        """
         return cls.from_config(dict(format='hyso.model_config',schema_version=2,kind='sequential',
                                     input_shape=input_shape,blocks=[],head=dict(name=f'{head}_head',params=head_params)))
 
     @classmethod
     def named(cls, name: str, **params: Any) -> ModelBuilder:
-        """Describe a closed model family; validation allocates no model or weights."""
+        """Describe a closed model family; validation allocates no model or weights.
+
+        Args:
+            name (str): Registered component name, exact metric label, or stored entity name in this API. Required.
+            params (Any): Closed registered keyword parameters; inspect ModelRegistry.get(name) for supported kinds/defaults. Required.
+
+        Returns:
+            The retained named value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ModelBuilder.named(name)
+
+        HYSo Guide: models.model-builder
+        Offline: hyso docs show models.model-builder --lang en
+        Open: hyso docs open models.model-builder --lang en
+        """
         return cls.from_config(dict(format='hyso.model_config',schema_version=1,kind='registered_model',name=name,params=params))
 
     @classmethod
     def modular(cls, **params: Any) -> ModelBuilder:
-        """Describe the original ModularCNN; build() returns exactly that class."""
+        """Describe the original ModularCNN; build() returns exactly that class.
+
+        Args:
+            params (Any): Closed registered keyword parameters; inspect ModelRegistry.get(name) for supported kinds/defaults. Required.
+
+        Returns:
+            The retained modular value, without recomputing measurements.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ModelBuilder.modular()
+
+        HYSo Guide: models.model-builder
+        Offline: hyso docs show models.model-builder --lang en
+        Open: hyso docs open models.model-builder --lang en
+        """
         return cls.from_config(dict(format='hyso.model_config', schema_version=1,kind='modular_cnn',params=params))
 
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> ModelBuilder:
-        """Validate/copy plain architecture data; never imports configuration names."""
+        """Validate/copy plain architecture data; never imports configuration names.
+
+        Args:
+            config (dict[str, Any]): Plain versioned configuration; never executable code or trained state. Required.
+
+        Returns:
+            A validated builder/configuration object; no executable names are imported.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ModelBuilder.from_config(config)
+
+        HYSo Guide: models.model-builder
+        Offline: hyso docs show models.model-builder --lang en
+        Open: hyso docs open models.model-builder --lang en
+        """
         checked, _ = cls._validate(config)
         result = cls.__new__(cls)
         result._config = checked
         return result
 
     def to_config(self) -> dict[str, Any]:
-        """Return a detached JSON-compatible configuration including defaults."""
+        """Return a detached JSON-compatible configuration including defaults.
+
+        Returns:
+            Detached JSON-compatible architecture metadata including normalized defaults; no weights.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_config()
+
+        HYSo Guide: models.model-builder
+        Offline: hyso docs show models.model-builder --lang en
+        Open: hyso docs open models.model-builder --lang en
+        """
         return _plain(self._config)
 
     @classmethod
@@ -349,6 +635,26 @@ class ModelBuilder:
         batch_size is an explicit activation-count assumption, while statistical
         conditions retain symbolic N. activation_limit is an advisory per-tensor
         element threshold and preserves acceptance of existing configurations.
+
+        Args:
+            config (dict[str, Any]): Plain versioned configuration; never executable code or trained state. Required.
+            batch_size (int): Positive batch-size setting or metadata assumption; no implicit batch search. Default: 1.
+            activation_limit (int): Advisory per-tensor element threshold used by metadata preflight, not a physical-memory quota. Default: 16777216.
+
+        Returns:
+            Metadata validation, shapes, diagnostics and advisory resource estimates; no model is built.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ModelBuilder.preflight(config)
+
+        HYSo Guide: models.model-builder
+        Offline: hyso docs show models.model-builder --lang en
+        Open: hyso docs open models.model-builder --lang en
         """
         report = dict(valid=False, diagnostics=[], warnings=[], input_shape=None, output_shape=None,
                       feature_shape=None, layers=[], parameter_estimate=None,
@@ -471,7 +777,27 @@ class ModelBuilder:
         return report
 
     def add(self, name: str, **params: Any) -> ModelBuilder:
-        """Append a registered block transactionally; return self for chaining."""
+        """Append a registered block transactionally; return self for chaining.
+
+        Args:
+            name (str): Registered component name, exact metric label, or stored entity name in this API. Required.
+            params (Any): Closed registered keyword parameters; inspect ModelRegistry.get(name) for supported kinds/defaults. Required.
+
+        Returns:
+            This builder after the existing component/reference validation.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.add(name)
+
+        HYSo Guide: models.model-builder
+        Offline: hyso docs show models.model-builder --lang en
+        Open: hyso docs open models.model-builder --lang en
+        """
         if self._config['kind'] not in ('sequential_classifier','sequential'):
             raise ModelConfigError('add is unavailable for fixed complete-model profiles', code='INVALID_BLOCK_ORDER')
         candidate = self.to_config()
@@ -480,7 +806,23 @@ class ModelBuilder:
         return self
 
     def build(self) -> nn.Module:
-        """Allocate a fresh CPU model; architecture round trips do not restore weights."""
+        """Allocate a fresh CPU model; architecture round trips do not restore weights.
+
+        Returns:
+            A fresh CPU model. No forward, training, CUDA move or checkpoint load is requested.
+
+        Raises:
+            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
+            RuntimeError: A requested native construction/forward operation fails.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.build()
+
+        HYSo Guide: models.model-builder
+        Offline: hyso docs show models.model-builder --lang en
+        Open: hyso docs open models.model-builder --lang en
+        """
         config, shape = self._validate(self._config)
         reg = ModelRegistry()
         with torch.device('cpu'):
@@ -496,7 +838,27 @@ class ModelBuilder:
             return BuiltClassifier(blocks,config,shape[0])
 
     def to_json(self, path: str | Path, *, overwrite: bool = False) -> None:
-        """Save architecture only, UTF-8 JSON; refuse to overwrite by default."""
+        """Save architecture only, UTF-8 JSON; refuse to overwrite by default.
+
+        Args:
+            path (str | Path): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json(path)
+
+        HYSo Guide: models.model-builder
+        Offline: hyso docs show models.model-builder --lang en
+        Open: hyso docs open models.model-builder --lang en
+        """
         if type(overwrite) is not bool: raise ModelConfigError('overwrite must be bool')
         raw = json.dumps(self.to_config(),indent=2,allow_nan=False)+'\n'
         with Path(path).open('w' if overwrite else 'x',encoding='utf-8',newline='\n') as stream:
@@ -504,7 +866,26 @@ class ModelBuilder:
 
     @classmethod
     def from_json(cls, path: str | Path) -> ModelBuilder:
-        """Read bounded UTF-8 JSON; reject duplicates, NaN and unsupported names."""
+        """Read bounded UTF-8 JSON; reject duplicates, NaN and unsupported names.
+
+        Args:
+            path (str | Path): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+
+        Returns:
+            A validated ModelBuilder instance reconstructed from the supplied data.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ModelBuilder.from_json(path)
+
+        HYSo Guide: models.model-builder
+        Offline: hyso docs show models.model-builder --lang en
+        Open: hyso docs open models.model-builder --lang en
+        """
         with Path(path).open('rb') as stream: raw = stream.read(_MAX_BYTES+1)
         if len(raw) > _MAX_BYTES: raise ModelConfigError('configuration exceeds 2 MiB')
         def invalid(value): raise ModelConfigError(f'nonfinite JSON number: {value}')

@@ -3,6 +3,7 @@
 No inference, CUDA runtime calls, allocator resets or global GC manipulation.
 Memory sampling is current-process instrumentation, not an isolated model peak.
 """
+import typing as _typing
 from dataclasses import asdict, dataclass
 from functools import lru_cache
 import hashlib
@@ -31,6 +32,26 @@ class _BackendUnavailable(RuntimeError):
 
 @dataclass(frozen=True)
 class MemoryProtocol:
+    """Configure P10 — Process RAM measurement boundaries and resource limits; construction does not run the analysis.
+
+    Args:
+        interval_seconds (float): Interval in seconds under the native protocol. Default: 0.01.
+        max_samples (int): Upper bound on collected samples. Default: 10000.
+
+    Returns:
+        An instance of MemoryProtocol with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        MemoryProtocol()
+
+    HYSo Guide: analysis.p10
+    Offline: hyso docs show analysis.p10 --lang en
+    Open: hyso docs open analysis.p10 --lang en
+    """
     interval_seconds: float = .01
     max_samples: int = 10000
 
@@ -129,7 +150,7 @@ def _memory_metrics(observations, reason=None):
     return dict(zip(names, map(_metric, values)))
 
 
-def measure_memory(workload=None, *, protocol=MemoryProtocol()):
+def measure_memory(workload: '_typing.Any'=None, *, protocol: '_typing.Any'=MemoryProtocol()) -> 'MemoryResult':
     """Observe current process RSS; optionally sample while a synchronous callable runs.
 
     None performs one native snapshot. Callable return values are discarded before
@@ -137,6 +158,25 @@ def measure_memory(workload=None, *, protocol=MemoryProtocol()):
     The workload owns its mutations/resources; no model transaction is promised.
     Python/NumPy/Torch CPU RNG are restored, under caller-exclusive process usage.
     Unsupported backend returns null/status/reason without executing the workload.
+
+    Args:
+        workload (_typing.Any): Explicit workload callable/recipe; execution occurs only when the measurement is called. Default: None.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: MemoryProtocol().
+
+    Returns:
+        The retained measure memory value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        measure_memory()
+
+    HYSo Guide: analysis.p10
+    Offline: hyso docs show analysis.p10 --lang en
+    Open: hyso docs open analysis.p10 --lang en
     """
     if type(protocol) is not MemoryProtocol:
         raise TypeError('protocol must be MemoryProtocol')
@@ -310,14 +350,38 @@ def _serialize(model, destination, verify, overwrite):
         if temporary is not None: temporary.unlink(missing_ok=True)
 
 
-def measure_footprint(model, *, artifact_path=None, serialize_to=None, artifact_format=None,
-                      verify_roundtrip=False, expected_sha256=None, overwrite=False):
+def measure_footprint(model: '_typing.Any', *, artifact_path: '_typing.Any'=None, serialize_to: '_typing.Any'=None, artifact_format: '_typing.Any'=None,
+                      verify_roundtrip: 'bool'=False, expected_sha256: '_typing.Any'=None, overwrite: 'bool'=False) -> 'FootprintResult':
     """Logical dense CPU model bytes plus an optional real artifact.
 
     Existing artifacts are opaque byte observations: format is caller-declared,
     never deserialized or asserted to match the model. Only explicit serialize_to
     creates a PyTorch state_dict; optional round-trip reads that trusted temp file
     with weights_only=True. Future formats can associate bytes without conversion.
+
+    Args:
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+        artifact_path (_typing.Any): Explicit local artifact path; native ownership and overwrite rules apply. Default: None.
+        serialize_to (_typing.Any): Explicit artifact output path. Default: None.
+        artifact_format (_typing.Any): Supported serialized artifact format. Default: None.
+        verify_roundtrip (bool): Verify the exported artifact using the native roundtrip contract. Default: False.
+        expected_sha256 (_typing.Any): Exact expected artifact/content digest. Default: None.
+        overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+    Returns:
+        The retained measure footprint value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        measure_footprint(model)
+
+    HYSo Guide: analysis.p11
+    Offline: hyso docs show analysis.p11 --lang en
+    Open: hyso docs open analysis.p11 --lang en
     """
     if type(verify_roundtrip) is not bool or type(overwrite) is not bool:
         raise TypeError('verify_roundtrip/overwrite must be bool')

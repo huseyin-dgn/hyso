@@ -1,4 +1,5 @@
 """P15 bounded owned-buffer copies. Event intervals are not CUPTI activities."""
+import typing as _typing
 from dataclasses import asdict, dataclass
 import json
 import math
@@ -26,6 +27,39 @@ class TransferProtocol:
     CSV and actual.completed_copies keep their existing copy-only scope.
     profile_capture=True additionally enables cudaProfilerStart/Stop and unique
     NVTX phase labels for an external nsys capture; no profiler is launched here.
+
+    Args:
+        shape (tuple[int, ...]): Explicit target tensor shape; element-count and batch-preservation rules apply. Default: (262144,).
+        dtype (str): Explicit supported tensor dtype. Default: 'float32'.
+        directions (tuple[str, ...]): Explicit host/device transfer directions. Default: ('H2D', 'D2H').
+        pinned (bool): Use pinned host memory where supported. Default: False.
+        non_blocking (bool): Request asynchronous copies where supported; completion is still measured explicitly. Default: False.
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cuda:0'.
+        layout (str): Declared tensor memory layout. Default: 'contiguous_dense'.
+        warmup_iterations (int): Unreported warmup iteration count before measured samples. Default: 2.
+        measure_iterations (int): Measured iteration count per repeat. Default: 5.
+        repeats (int): Number of independently recorded measurement windows/repeats. Default: 2.
+        timeout_seconds (float): Timeout in seconds under the native protocol. Default: 45.0.
+        cpu_memory_limit_bytes (int | None): Cpu memory limit in bytes; this does not imply a GPU hardware quota. Default: None.
+        input_limit_bytes (int | None): Input limit in bytes; this does not imply a GPU hardware quota. Default: None.
+        cuda_memory_fraction (float | None): Requested CUDA allocator fraction; not a hardware VRAM quota or admission grant. Default: None.
+        probe_overlap (bool): Request a separately reported overlap probe. Default: False.
+        compare_execution (bool): Request the supported execution comparison within this explicit measurement. Default: False.
+        profile_capture (bool): Retained profiling capture bound to this identity. Default: False.
+
+    Returns:
+        An instance of TransferProtocol with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        TransferProtocol()
+
+    HYSo Guide: analysis.p15
+    Offline: hyso docs show analysis.p15 --lang en
+    Open: hyso docs open analysis.p15 --lang en
     """
     shape: tuple[int, ...] = (262144,)
     dtype: str = 'float32'
@@ -75,7 +109,47 @@ class TransferProtocol:
 
 
 class TransferError(RuntimeError):
-    def __init__(self, diagnostics):
+    """Carry structured diagnostics from a rejected or failed transfer measurement.
+
+    Args:
+        diagnostics (_typing.Any): Structured native failure/coverage diagnostics. Required.
+
+    Returns:
+        An instance of TransferError with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        TransferError(diagnostics)
+
+    HYSo Guide: analysis.p15
+    Offline: hyso docs show analysis.p15 --lang en
+    Open: hyso docs open analysis.p15 --lang en
+    """
+    def __init__(self, diagnostics: '_typing.Any') -> 'None':
+        """Initialize TransferError with the supplied settings.
+
+        Args:
+            diagnostics (_typing.Any): Structured native failure/coverage diagnostics. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            TransferError(diagnostics)
+
+        HYSo Guide: analysis.p15
+        Offline: hyso docs show analysis.p15 --lang en
+        Open: hyso docs open analysis.p15 --lang en
+        """
         self.diagnostics = _plain(diagnostics)
         super().__init__(json.dumps(self.diagnostics, sort_keys=True))
 
@@ -158,7 +232,7 @@ def _comparison_metrics(comparison):
         hardware_overlap_proven=False,pinning_benefit='not_isolated; both_modes_use_pinned_memory')
 
 
-def measure_transfers(*, protocol=TransferProtocol()):
+def measure_transfers(*, protocol: '_typing.Any'=TransferProtocol()) -> 'TransferResult':
     """Fresh Windows worker; recipe only, never consumes a caller Tensor.
 
     Dense contiguous buffers on cuda:0 only. Pinned refers to H2D source or
@@ -168,6 +242,24 @@ def measure_transfers(*, protocol=TransferProtocol()):
     hardware overlap remains unsupported without direct activity evidence.
     compare_execution optionally compares that same work serially and on distinct
     streams, with paired wall timings, warmup, validation and a scoped decision.
+
+    Args:
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: TransferProtocol().
+
+    Returns:
+        The retained measure transfers value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        measure_transfers()
+
+    HYSo Guide: analysis.p15
+    Offline: hyso docs show analysis.p15 --lang en
+    Open: hyso docs open analysis.p15 --lang en
     """
     if type(protocol) is not TransferProtocol: raise TypeError('TransferProtocol required')
     receipt = dict(status='failed', reason=None, worker_pid=None, launcher_pid=None,

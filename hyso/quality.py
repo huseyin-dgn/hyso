@@ -1,4 +1,5 @@
 """P24/P27/P28/P29: bounded CPU experiments with embedded source evidence."""
+import typing as _typing
 from dataclasses import dataclass
 import hashlib
 import inspect
@@ -117,11 +118,62 @@ class _CohortDataset(Dataset):
 
 @dataclass(frozen=True, init=False)
 class EvaluationCohort:
-    """Explicit paired IDs, labels, order, split, preprocessing and input content."""
+    """Explicit paired IDs, labels, order, split, preprocessing and input content.
+
+    Args:
+        inputs (_typing.Any): Named input specifications for the builder, ordered references for add(), or supported runtime inputs for forward(). Required.
+        targets (_typing.Any): Ground-truth targets with the task’s required shape, dtype and label space. Required.
+        sample_ids (_typing.Any): Unique ordered sample identities for cohort alignment. Required.
+        class_names (_typing.Any): Ordered class labels matching the prediction class dimension. Required.
+        split (_typing.Any): Explicit dataset split label used in evaluation identity. Required.
+        preprocessing_id (_typing.Any): Identity of the preprocessing used to produce this fixed cohort. Required.
+        task (str): Explicit supported task; classification metrics do not imply detection or segmentation support. Default: 'multiclass'.
+
+    Returns:
+        An instance of EvaluationCohort with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        EvaluationCohort(inputs, targets, sample_ids=sample_ids, class_names=class_names, split=split, preprocessing_id=preprocessing_id)
+
+    HYSo Guide: analysis.p26
+    Offline: hyso docs show analysis.p26 --lang en
+    Open: hyso docs open analysis.p26 --lang en
+    """
     __slots__ = ("_payload",)
     _payload: str
 
-    def __init__(self, inputs, targets, *, sample_ids, class_names, split, preprocessing_id, task="multiclass"):
+    def __init__(self, inputs: '_typing.Any', targets: '_typing.Any', *, sample_ids: '_typing.Any', class_names: '_typing.Any', split: '_typing.Any', preprocessing_id: '_typing.Any', task: 'str'="multiclass") -> 'None':
+        """Initialize EvaluationCohort with the supplied settings.
+
+        Args:
+            inputs (_typing.Any): Named input specifications for the builder, ordered references for add(), or supported runtime inputs for forward(). Required.
+            targets (_typing.Any): Ground-truth targets with the task’s required shape, dtype and label space. Required.
+            sample_ids (_typing.Any): Unique ordered sample identities for cohort alignment. Required.
+            class_names (_typing.Any): Ordered class labels matching the prediction class dimension. Required.
+            split (_typing.Any): Explicit dataset split label used in evaluation identity. Required.
+            preprocessing_id (_typing.Any): Identity of the preprocessing used to produce this fixed cohort. Required.
+            task (str): Explicit supported task; classification metrics do not imply detection or segmentation support. Default: 'multiclass'.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            EvaluationCohort(inputs, targets, sample_ids=sample_ids, class_names=class_names, split=split, preprocessing_id=preprocessing_id)
+
+        HYSo Guide: analysis.p26
+        Offline: hyso docs show analysis.p26 --lang en
+        Open: hyso docs open analysis.p26 --lang en
+        """
         _name(preprocessing_id)
         config=_metadata(task,class_names,split,0)
         if (type(inputs) is not torch.Tensor or inputs.device.type!='cpu' or inputs.dtype not in (torch.float32,torch.float64)
@@ -150,12 +202,63 @@ class EvaluationCohort:
                   configuration=config,preprocessing_id=preprocessing_id)
         object.__setattr__(self,'_payload',json.dumps(data,allow_nan=False))
 
-    def to_dict(self): return json.loads(self._payload)
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
+
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analysis.p26
+        Offline: hyso docs show analysis.p26 --lang en
+        Open: hyso docs open analysis.p26 --lang en
+        """
+        return json.loads(self._payload)
 
     @property
-    def sha256(self): return _hash(self.to_dict())
+    def sha256(self) -> '_typing.Any':
+        """Return the content identity of this fixed evaluation cohort.
 
-    def tensors(self):
+        Returns:
+            The canonical SHA-256 digest string of this retained content.
+
+        Raises:
+            No additional input validation; corrupt retained state or native access errors propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.sha256
+
+        HYSo Guide: analysis.p26
+        Offline: hyso docs show analysis.p26 --lang en
+        Open: hyso docs open analysis.p26 --lang en
+        """
+        return _hash(self.to_dict())
+
+    def tensors(self) -> '_typing.Any':
+        """Return this object's recorded tensor data according to its native copy policy.
+
+        Returns:
+            Defensive clones of the fixed input and target tensors.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.tensors()
+
+        HYSo Guide: analysis.p26
+        Offline: hyso docs show analysis.p26 --lang en
+        Open: hyso docs open analysis.p26 --lang en
+        """
         d=self.to_dict()
         return torch.cat(list(_input_chunks(d))),torch.tensor(d['targets'])
 
@@ -324,7 +427,32 @@ def _precision_evaluation(adapter,proof,cohort,*,batch_size=16,device='cpu',stri
     return result
 
 
-def evaluate_robustness(model,cohort,perturbation, *, corruption_id, severity, seed):
+def evaluate_robustness(model: '_typing.Any',cohort: '_typing.Any',perturbation: '_typing.Any', *, corruption_id: '_typing.Any', severity: '_typing.Any', seed: '_typing.Any') -> '_typing.Any':
+    """Evaluate baseline and explicitly supplied perturbed predictions/cohorts under the robustness contract.
+
+    Args:
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+        cohort (_typing.Any): Fixed evaluation inputs, targets, labels and sample identity. Required.
+        perturbation (_typing.Any): Explicit perturbed prediction/cohort evidence; no perturbation is synthesized implicitly. Required.
+        corruption_id (_typing.Any): Stable identifier of the applied corruption. Required.
+        severity (_typing.Any): Explicit corruption severity recorded in the comparison. Required.
+        seed (_typing.Any): Random seed recorded/applied by this operation; reproducibility still depends on the device/backend. Required.
+
+    Returns:
+        A QualityExperimentResult with the explicit perturbation and baseline evidence.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        evaluate_robustness(model, cohort, perturbation, corruption_id=corruption_id, severity=severity, seed=seed)
+
+    HYSo Guide: analysis.p27
+    Offline: hyso docs show analysis.p27 --lang en
+    Open: hyso docs open analysis.p27 --lang en
+    """
     if type(cohort) is not EvaluationCohort:raise TypeError('explicit cohort required')
     _name(corruption_id);_fraction(severity);_integer(seed,0,2**32-1)
     if not callable(perturbation):raise TypeError('perturbation callable required')
@@ -349,12 +477,34 @@ def evaluate_robustness(model,cohort,perturbation, *, corruption_id, severity, s
     finally:_restore_rng(rng)
 
 
-def evaluate_precision_quality(model,cohort, *, candidate='int8_dynamic',device='cpu',batch_size=16):
+def evaluate_precision_quality(model: '_typing.Any',cohort: '_typing.Any', *, candidate: 'str'='int8_dynamic',device: 'str'='cpu',batch_size: 'int'=16) -> '_typing.Any':
     """Paired labeled quality against a fresh same-device FP32 master copy.
 
     CPU: FP32/FP64/BF16/dynamic Linear INT8. CUDA opt-in: FP32/AMP FP16/BF16.
     Large cohorts stream lossless encoded slabs; metrics retain all labels/logits.
     No performance benchmark, training, fallback or statistical claim is made.
+
+    Args:
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+        cohort (_typing.Any): Fixed evaluation inputs, targets, labels and sample identity. Required.
+        candidate (str): Validated retained candidate source or predictions required by this comparison. Default: 'int8_dynamic'.
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
+        batch_size (int): Positive batch-size setting or metadata assumption; no implicit batch search. Default: 16.
+
+    Returns:
+        The retained evaluate precision quality value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        evaluate_precision_quality(model, cohort)
+
+    HYSo Guide: analysis.p28
+    Offline: hyso docs show analysis.p28 --lang en
+    Open: hyso docs open analysis.p28 --lang en
     """
     if type(cohort) is not EvaluationCohort:raise TypeError('explicit cohort required')
     rng=_rng_state()
@@ -371,8 +521,33 @@ def evaluate_precision_quality(model,cohort, *, candidate='int8_dynamic',device=
     finally:_restore_rng(rng)
 
 
-def measure_time_to_quality(factory,cohort, *, seeds, target, epochs=3,cadence=1,metric='accuracy'):
-    """2..8 fresh CPU fits, <=10 epochs/seed, <=256 train/eval samples."""
+def measure_time_to_quality(factory: '_typing.Any',cohort: '_typing.Any', *, seeds: '_typing.Any', target: '_typing.Any', epochs: 'int'=3,cadence: 'int'=1,metric: 'str'='accuracy') -> '_typing.Any':
+    """2..8 fresh CPU fits, <=10 epochs/seed, <=256 train/eval samples.
+
+    Args:
+        factory (_typing.Any): Trusted importable factory identity required by the worker recipe. Required.
+        cohort (_typing.Any): Fixed evaluation inputs, targets, labels and sample identity. Required.
+        seeds (_typing.Any): Explicit trial seeds. Required.
+        target (_typing.Any): Explicit target value/model/context required by this operation. Required.
+        epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after resume. Default: 3.
+        cadence (int): Observation cadence under this protocol. Default: 1.
+        metric (str): Exact supported metric selector; units and missing-value status are preserved. Default: 'accuracy'.
+
+    Returns:
+        The retained measure time to quality value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        measure_time_to_quality(factory, cohort, seeds=seeds, target=target)
+
+    HYSo Guide: analysis.p24
+    Offline: hyso docs show analysis.p24 --lang en
+    Open: hyso docs open analysis.p24 --lang en
+    """
     from .training import Trainer
     from .performance.training import measure_training
     if type(cohort) is not EvaluationCohort:raise TypeError('explicit cohort required')
@@ -476,9 +651,9 @@ def _bundle(model,cohort,precision,iterations,memory_metric='logical_model_bytes
     return bundle
 
 
-def compare_performance_quality(baseline,candidate,cohort, *, precision='fp32',iterations=5,
-        metric='accuracy',min_quality=0.,max_quality_drop=.01,max_latency_regression=.05,independent_samples=False,
-        memory_metric='logical_model_bytes',max_memory_regression=.05,memory_protocol=None,batch_size=None):
+def compare_performance_quality(baseline: '_typing.Any',candidate: '_typing.Any',cohort: '_typing.Any', *, precision: 'str'='fp32',iterations: 'int'=5,
+        metric: 'str'='accuracy',min_quality: 'float'=0.,max_quality_drop: 'float'=.01,max_latency_regression: 'float'=.05,independent_samples: 'bool'=False,
+        memory_metric: 'str'='logical_model_bytes',max_memory_regression: 'float'=.05,memory_protocol: '_typing.Any'=None,batch_size: '_typing.Any'=None) -> '_typing.Any':
     """Observed quality/latency/memory, same CPU FP32/64 protocol.
 
     Memory defaults to P11 registered logical bytes. Opt-in process RSS executes
@@ -487,6 +662,37 @@ def compare_performance_quality(baseline,candidate,cohort, *, precision='fp32',i
     Explicit batch_size streams the full quality cohort, and times/probes its
     first ordered batch separately. Large encoded cohorts require this choice;
     they are never automatically submitted as one inference batch.
+
+    Args:
+        baseline (_typing.Any): Validated retained baseline source or predictions required by this comparison. Required.
+        candidate (_typing.Any): Validated retained candidate source or predictions required by this comparison. Required.
+        cohort (_typing.Any): Fixed evaluation inputs, targets, labels and sample identity. Required.
+        precision (str): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: 'fp32'.
+        iterations (int): Explicit iteration count within the measurement protocol. Default: 5.
+        metric (str): Exact supported metric selector; units and missing-value status are preserved. Default: 'accuracy'.
+        min_quality (float): Minimum required quality under the selected metric and its native unit. Default: 0.0.
+        max_quality_drop (float): Maximum allowed quality decrease under the selected quality metric. Default: 0.01.
+        max_latency_regression (float): Maximum allowed latency regression under the native comparison convention. Default: 0.05.
+        independent_samples (bool): Declare whether the supplied evidence represents independent samples; not inferred from counts. Default: False.
+        memory_metric (str): Exact retained memory metric selected for the comparison. Default: 'logical_model_bytes'.
+        max_memory_regression (float): Maximum allowed regression under the selected memory metric. Default: 0.05.
+        memory_protocol (_typing.Any): Typed memory measurement settings; boundaries and device guards remain explicit. Default: None.
+        batch_size (_typing.Any): Positive batch-size setting or metadata assumption; no implicit batch search. Default: None.
+
+    Returns:
+        The retained compare performance quality value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        compare_performance_quality(baseline, candidate, cohort)
+
+    HYSo Guide: analysis.p29
+    Offline: hyso docs show analysis.p29 --lang en
+    Open: hyso docs open analysis.p29 --lang en
     """
     from dataclasses import asdict
     from ._quality_memory import MEMORY_METRICS
@@ -732,11 +938,50 @@ def _derive(feature,s):
 
 @dataclass(frozen=True,init=False)
 class QualityExperimentResult:
+    """Read and export validated P29 — Quality/speed/memory tradeoffs results; unavailable measurements retain their native status.
+
+    Args:
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+    Returns:
+        An instance of QualityExperimentResult with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        QualityExperimentResult(data)
+
+    HYSo Guide: analysis.p29
+    Offline: hyso docs show analysis.p29 --lang en
+    Open: hyso docs open analysis.p29 --lang en
+    """
     __slots__=('_payload',)
     _payload:str
 
-    def __init__(self,data):
+    def __init__(self,data: 'dict[str, _typing.Any]') -> 'None':
         # Embedded P19/P26/benchmark nesting exceeds the legacy plain depth cap.
+        """Initialize QualityExperimentResult with the supplied settings.
+
+        Args:
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            QualityExperimentResult(data)
+
+        HYSo Guide: analysis.p29
+        Offline: hyso docs show analysis.p29 --lang en
+        Open: hyso docs open analysis.p29 --lang en
+        """
         data=json.loads(json.dumps(data,allow_nan=False));self._check(data)
         object.__setattr__(self,'_payload',json.dumps(data,allow_nan=False))
 
@@ -751,12 +996,71 @@ class QualityExperimentResult:
             if _hash(data['analysis'])!=_hash(_derive(data['feature_id'],data['sources'])):raise ValueError('derived quality evidence mismatch')
         except (KeyError,TypeError,IndexError,OverflowError,RuntimeError) as exc:raise ValueError('malformed quality evidence') from exc
 
-    def to_dict(self):return json.loads(self._payload)
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return a detached plain-data view of the stored state.
 
-    def to_json(self,path,*,overwrite=False):
+        Returns:
+            A detached plain-data view of this validated object; native units and unavailable values are retained.
+
+        Raises:
+            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_dict()
+
+        HYSo Guide: analysis.p29
+        Offline: hyso docs show analysis.p29 --lang en
+        Open: hyso docs open analysis.p29 --lang en
+        """
+        return json.loads(self._payload)
+
+    def to_json(self,path: '_typing.Any',*,overwrite: 'bool'=False) -> 'None':
+        """Serialize this object using its native JSON format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_json(path)
+
+        HYSo Guide: analysis.p29
+        Offline: hyso docs show analysis.p29 --lang en
+        Open: hyso docs open analysis.p29 --lang en
+        """
         d=self.to_dict();self._check(d);_write_export(path,json.dumps(d,indent=2,allow_nan=False)+'\n',overwrite)
 
-    def to_csv(self,path,*,overwrite=False):
+    def to_csv(self,path: '_typing.Any',*,overwrite: 'bool'=False) -> 'None':
+        """Export this object using its native CSV format and overwrite policy.
+
+        Args:
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+
+        Returns:
+            None after the native file export succeeds.
+
+        Raises:
+            OSError: Filesystem access fails.
+            ValueError: The native format, version or overwrite contract is rejected.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            obj.to_csv(path)
+
+        HYSo Guide: analysis.p29
+        Offline: hyso docs show analysis.p29 --lang en
+        Open: hyso docs open analysis.p29 --lang en
+        """
         d=self.to_dict();self._check(d);rows=[]
         def walk(value,path):
             if type(value) is dict:

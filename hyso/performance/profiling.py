@@ -1,4 +1,5 @@
 """Isolated profiler capture and pure P12/P13 derivation from its plain evidence."""
+import typing as _typing
 from dataclasses import asdict,dataclass
 import hashlib
 import json
@@ -21,7 +22,37 @@ from ._profile_evidence import validate_events,validate_modules,module_timings,c
 
 @dataclass(frozen=True)
 class ProfilingProtocol:
-    """Capture bounds plus opt-in resource limits; None imposes no resource quota."""
+    """Capture bounds plus opt-in resource limits; None imposes no resource quota.
+
+    Args:
+        warmup_iterations (int): Unreported warmup iteration count before measured samples. Default: 1.
+        measure_iterations (int): Measured iteration count per repeat. Default: 3.
+        timeout_seconds (float): Timeout in seconds under the native protocol. Default: 60.0.
+        cpu_memory_limit_bytes (int | None): Cpu memory limit in bytes; this does not imply a GPU hardware quota. Default: None.
+        input_limit_bytes (int | None): Input limit in bytes; this does not imply a GPU hardware quota. Default: None.
+        cuda_memory_fraction (float | None): Requested CUDA allocator fraction; not a hardware VRAM quota or admission grant. Default: None.
+        max_events (int): Upper bound on events retained/accepted by this operation. Default: 20000.
+        max_cpu_witness_items (int): Upper bound on cpu witness items retained/accepted by this operation. Default: 250000.
+        max_cpu_result_bytes (int): Max cpu result in bytes; this does not imply a GPU hardware quota. Default: 128 * 1024 ** 2.
+        max_trace_bytes (int): Max trace in bytes; this does not imply a GPU hardware quota. Default: 16 * 1024 ** 2.
+        profile_memory (bool): Enable supported profiler memory observations. Default: False.
+        allocation_lifetimes (bool): Request supported allocation-lifetime observations. Default: False.
+        cpu_memory_ownership (bool): Request supported CPU allocation-ownership evidence. Default: False.
+
+    Returns:
+        An instance of ProfilingProtocol with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ProfilingProtocol()
+
+    HYSo Guide: analysis.p13
+    Offline: hyso docs show analysis.p13 --lang en
+    Open: hyso docs open analysis.p13 --lang en
+    """
     warmup_iterations:int=1
     measure_iterations:int=3
     timeout_seconds:float=60.
@@ -57,7 +88,47 @@ class ProfilingProtocol:
         if self.max_cpu_result_bytes>128*1024**2:raise ValueError('CPU result evidence budget too large')
 
 class ProfilingError(RuntimeError):
-    def __init__(self,diagnostics):
+    """Carry the profiler's structured diagnostics for a rejected or failed request.
+
+    Args:
+        diagnostics (_typing.Any): Structured native failure/coverage diagnostics. Required.
+
+    Returns:
+        An instance of ProfilingError with the documented native validation and defaults.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        ProfilingError(diagnostics)
+
+    HYSo Guide: analysis.p13
+    Offline: hyso docs show analysis.p13 --lang en
+    Open: hyso docs open analysis.p13 --lang en
+    """
+    def __init__(self,diagnostics: '_typing.Any') -> 'None':
+        """Initialize ProfilingError with the supplied settings.
+
+        Args:
+            diagnostics (_typing.Any): Structured native failure/coverage diagnostics. Required.
+
+        Returns:
+            None. Initialize this object; use its explicit operation methods to request work.
+
+        Raises:
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+        Example:
+            # Caller-supplied values; explicitly requested operations only.
+            ProfilingError(diagnostics)
+
+        HYSo Guide: analysis.p13
+        Offline: hyso docs show analysis.p13 --lang en
+        Open: hyso docs open analysis.p13 --lang en
+        """
         self.diagnostics=_plain(diagnostics)
         super().__init__(json.dumps(self.diagnostics,sort_keys=True))
 
@@ -118,27 +189,86 @@ def _validate_p12_binding(data,kind):
         raise ValueError('invalid native P12 source/checkpoint hash')
 
 
-def profile_operators(recipe,*,protocol=ProfilingProtocol(),trace_path=None):
+def profile_operators(recipe: '_typing.Any',*,protocol: '_typing.Any'=ProfilingProtocol(),trace_path: '_typing.Any'=None) -> 'OperatorProfileResult':
     """Fresh Windows worker; no live caller model or hooks cross the boundary.
 
     Owned model uses eval/inference mode. Torch profiler self/total CPU timings
     are instrumented costs, not BenchmarkRunner latency. Only exported kernel
     activities qualify as kernel evidence; legacy event.kernels is not used.
+
+    Args:
+        recipe (_typing.Any): Trusted construction recipe; factory import/execution is governed by the existing operation contract. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: ProfilingProtocol().
+        trace_path (_typing.Any): Local retained trace path. Default: None.
+
+    Returns:
+        The retained profile operators value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        profile_operators(recipe)
+
+    HYSo Guide: analysis.p14
+    Offline: hyso docs show analysis.p14 --lang en
+    Open: hyso docs open analysis.p14 --lang en
     """
     return _execute_profile(recipe,protocol,trace_path=trace_path)
 
 
-def analyze_nsys_modules(configuration, *, max_rows=20000):
-    """Read-only, hash-pinned P13 module evidence; never runs a capture."""
+def analyze_nsys_modules(configuration: '_typing.Any', *, max_rows: 'int'=20000) -> '_typing.Any':
+    """Read-only, hash-pinned P13 module evidence; never runs a capture.
+
+    Args:
+        configuration (_typing.Any): Plain native configuration metadata. Required.
+        max_rows (int): Upper bound on rows retained/accepted by this operation. Default: 20000.
+
+    Returns:
+        The retained analyze nsys modules value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        analyze_nsys_modules(configuration)
+
+    HYSo Guide: analysis.p13
+    Offline: hyso docs show analysis.p13 --lang en
+    Open: hyso docs open analysis.p13 --lang en
+    """
     from ._module_activity import analyze
     return analyze(configuration, max_rows=max_rows)
 
 
-def analyze_nsys_operators(sqlite_path,*,capture_path):
+def analyze_nsys_operators(sqlite_path: '_typing.Any',*,capture_path: '_typing.Any') -> '_typing.Any':
     """Optional linked P14 GPU/ATen report from one external Nsight capture.
 
     Requires autograd-nvtx and the capture receipt, launches no GPU/profiler work.
     Ordinary profiling and its unsupported GPU fields are unchanged without it.
+
+    Args:
+        sqlite_path (_typing.Any): Local retained profiler SQLite capture path. Required.
+        capture_path (_typing.Any): Local retained profiler capture path. Required.
+
+    Returns:
+        The retained analyze nsys operators value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        analyze_nsys_operators(sqlite_path, capture_path=capture_path)
+
+    HYSo Guide: analysis.p14
+    Offline: hyso docs show analysis.p14 --lang en
+    Open: hyso docs open analysis.p14 --lang en
     """
     from ._operator_activity import analyze
     return analyze(sqlite_path,capture_path)
@@ -236,8 +366,28 @@ def _derived(kind,feature,source,raw,measurements):
     return data
 
 
-def analyze_flops(source,*,protocol=ProfilingProtocol()):
-    """Analytic observed-ATen operation models. No timing or hardware FLOP counter."""
+def analyze_flops(source: '_typing.Any',*,protocol: '_typing.Any'=ProfilingProtocol()) -> 'OperationCountResult':
+    """Analytic observed-ATen operation models. No timing or hardware FLOP counter.
+
+    Args:
+        source (_typing.Any): Typed native/retained source required by this API, not a declaration of producer authority. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: ProfilingProtocol().
+
+    Returns:
+        The retained analyze flops value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        analyze_flops(source)
+
+    HYSo Guide: analysis.p12
+    Offline: hyso docs show analysis.p12 --lang en
+    Open: hyso docs open analysis.p12 --lang en
+    """
     s=_source(source,protocol);calls=s['raw_evidence']['aten_calls']
     rows,m=summarize(calls,s['actual']['measured_forwards'],s['provenance']['input']['shape'][0],model_version=3)
     data=_derived('operation_count','P12',s,dict(aten_calls=calls,operations=rows),m)
@@ -299,7 +449,7 @@ def _layer_metrics(inventory,invocations,*,evidence=None,cuda_events=None):
     return result
 
 
-def profile_layers(source,*,protocol=ProfilingProtocol(),memory_analysis_version=None):
+def profile_layers(source: '_typing.Any',*,protocol: '_typing.Any'=ProfilingProtocol(),memory_analysis_version: '_typing.Any'=None) -> 'LayerProfileResult':
     """Module invocation tree from the same capture; shared calls remain distinct.
 
     Opt into allocation-event attribution with ProfilingProtocol(profile_memory=True)
@@ -314,6 +464,26 @@ def profile_layers(source,*,protocol=ProfilingProtocol(),memory_analysis_version
     CPU-only cpu_memory_ownership=True starts memory capture before construction,
     reports the captured C10 counter baseline/peak and observable reference graph,
     and samples RSS at call boundaries. It does not claim global heap coverage.
+
+    Args:
+        source (_typing.Any): Typed native/retained source required by this API, not a declaration of producer authority. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: ProfilingProtocol().
+        memory_analysis_version (_typing.Any): Exact supported memory-analysis schema/profile. Default: None.
+
+    Returns:
+        The retained profile layers value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        profile_layers(source)
+
+    HYSo Guide: analysis.p13
+    Offline: hyso docs show analysis.p13 --lang en
+    Open: hyso docs open analysis.p13 --lang en
     """
     if memory_analysis_version is not None and (type(memory_analysis_version) is not int or memory_analysis_version!=2):
         raise ValueError('memory_analysis_version must be None or 2')
@@ -557,8 +727,24 @@ def _validate_memory_indices(raw,budget):
             raise ValueError('invalid memory/trace association')
 
 
-def layer_profiling_capabilities():
-    """Build/API capabilities only; no CUDA initialization or fake native PASS."""
+def layer_profiling_capabilities() -> '_typing.Any':
+    """Build/API capabilities only; no CUDA initialization or fake native PASS.
+
+    Returns:
+        The retained layer profiling capabilities value, without recomputing measurements.
+
+    Raises:
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        RuntimeError: A requested native workload fails; inspect retained state before retrying.
+
+    Example:
+        # Caller-supplied values; explicitly requested operations only.
+        layer_profiling_capabilities()
+
+    HYSo Guide: analysis.p13
+    Offline: hyso docs show analysis.p13 --lang en
+    Open: hyso docs open analysis.p13 --lang en
+    """
     import torch
     activities=sorted(str(a).split('.')[-1] for a in torch.profiler.supported_activities())
     return dict(torch=str(torch.__version__),supported_activities=activities,
