@@ -63,13 +63,13 @@ def evaluate(capture, review, *, run_id, manifest_sha256, now_ns=None):
 def collect():
     """One capture, exactly three samples, no polling for an eligible state."""
     start = time.time_ns()
-    command = '''$ErrorActionPreference='Stop'; $p=@(Get-CimInstance Win32_Process | ForEach-Object {
+    command = '''[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false); $ErrorActionPreference='Stop'; $p=@(Get-CimInstance Win32_Process | ForEach-Object {
       @{pid=[int]$_.ProcessId;name=$_.Name;parent_pid=[int]$_.ParentProcessId;
         path=$_.ExecutablePath;command_line=$_.CommandLine;creation_date=[string]$_.CreationDate}
     }); $o=Get-CimInstance Win32_OperatingSystem;
     @{processes=$p;host_free_bytes=[long]$o.FreePhysicalMemory*1024} | ConvertTo-Json -Depth 6 -Compress'''
     result = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-Command', command],
-                            capture_output=True, text=True, timeout=12,
+                            capture_output=True, text=True, encoding='utf-8', timeout=12,
                             creationflags=subprocess.CREATE_NO_WINDOW)
     if result.returncode:
         raise RuntimeError('CIM capture failed: '+result.stderr[:512])
