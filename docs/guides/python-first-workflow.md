@@ -8,6 +8,12 @@ Reporting/store tariflerini ve güncel CUDA/B4 sınırlarını bir araya getirir
 
 Install Python >=3.10 and a compatible Torch/torchvision pair, then `python -m pip install -e .`. Use `python -m hyso --help` or `hyso --help`. Existing groups are models, train, analysis, compare, advisor, experiments and reports. Dry-run and explicit workload/resource authorization contracts are unchanged.
 
+For a built wheel, install `C:/local-hyso/dist/hyso-0.2.0-py3-none-any.whl`
+with `python -m pip install` in a separate venv. Public `hyso` imports and CLI
+commands work outside the checkout. The `python -m examples...` commands below
+require the source checkout; examples are intentionally absent from the commercial
+distribution. See the [CPU beta installation scope](python-first-acceptance-and-limits.md#cpu-beta-installation).
+
 ## Select a graph output explicitly
 
 ```python

@@ -6,6 +6,49 @@ otomatik optimizasyon tanımlamaz. 2026-11-16 tarihli [13.5.16 kabulü](../repor
 sentetik fp32 fixture kapsamındadır. CUDA admission **BLOCKED**, execution
 **NOT_TESTED**, B4 **ROOT_CAUSE_UNRESOLVED** olarak kalır.
 
+<a id="cpu-beta-installation"></a>
+## CPU beta kurulumu ve kapsamı
+
+[13.5.22 CPU beta raporu](../reports/stage13-5-22-cpu-beta-readiness.md), wheel/sdist,
+izole kurulum ve kısa kullanıcı kabulünün kanıt kapsamını kaydeder.
+
+Yerel wheel kurulumu için Python >=3.10 ile ayrı bir ortam kullanın:
+
+```powershell
+python -m venv C:/local-hyso/cpu-beta-env
+C:/local-hyso/cpu-beta-env/Scripts/python.exe -m pip install C:/local-hyso/dist/hyso-0.2.0-py3-none-any.whl
+C:/local-hyso/cpu-beta-env/Scripts/python.exe -m hyso --help
+C:/local-hyso/cpu-beta-env/Scripts/hyso.exe --help
+```
+
+Wheel konumu örnektir; kendi yerel build dosyanızı seçin. Platformunuza uygun
+Torch/torchvision çiftini kullanın; CPU iş akışı CUDA context gerektirmez.
+Kurulum bağımlılıkları mevcut değilse pip ağ isteyebilir; offline kullanımda
+bağımlılık wheel'lerini ayrıca yerel önbellekten sağlayın. Geliştirici checkout'u
+için `pip install -e .` ayrı bir kurulum yoludur; temiz wheel kurulumunun kanıtı
+sayılmaz. Örnekler ve rehberler commercial dağıtıma dahil değildir;
+`python -m examples...` komutları checkout içinden çalıştırılır.
+
+Commercial profil açık allowlist ile **168** Python modülünü paketler; on
+development modülü dışarıda kalır. Sürüm `0.2.0`, console entry point
+`hyso.cli:main`, tek package-data dosyası `hyso/py.typed` olarak korunur.
+Bu aşama sürüm yayımlamaz veya bağımlılık minimumlarını geniş bir platform
+uyumluluğu garantisine dönüştürmez.
+
+Beta kapsamı aşağıdaki destek matrisindeki bounded CPU sınıflandırma
+profilleridir. `analysis.MultiHeadGraphEvaluationResult.from_json` ve
+`ExperimentManager.open_result` çoklu-head kayıtlarını okur; CLI'nin genel
+saved-result dispatcher'ı ham `hyso.graph_multi_head_evaluation` formatını
+desteklemez. CLI ile kayıtlı tek-head Graph evaluation/comparison veya
+`PresentationReport` okuyup render edin. Python ve CLI seçenekleri eşdeğer
+değildir. Genel multi-task, distributed training, belirtilmemiş Graph task'ları
+ve destek matrisi dışındaki resume birleşimleri beta kabulü değildir.
+
+Native P12 receipt yoksa karşılaştırma `INSUFFICIENT_EVIDENCE` ve `null` fark
+üretir. Raporlar `presentation_only=true`, `authoritative_evidence=false`
+olarak kalır. Artifact SHA doğrulaması import edilmiş metadata'ya native
+otorite kazandırmaz. CUDA/B4 durumu bu CPU kapsamından bağımsızdır.
+
 <a id="urun-akisi"></a>
 ## Ürün akışı ve sorumluluklar
 

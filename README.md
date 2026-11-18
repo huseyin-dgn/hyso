@@ -15,6 +15,12 @@ and [short CPU training/evaluation example](examples/models/image_classification
 Metadata minimums: Python >=3.10, Torch >=2.2.2, torchvision >=0.17.2. Install a
 matching Torch/torchvision CPU or CUDA pair for your platform; minimum version
 bounds do not guarantee all combinations. For this checkout: `python -m pip install -e .`.
+For a locally built distribution, use a separate virtual environment and
+`python -m pip install C:/local-hyso/dist/hyso-0.2.0-py3-none-any.whl`, then
+`python -m hyso --help` from outside the checkout. Wheel/sdist use the commercial
+allowlist; repository examples and guides are source-checkout files, not installed
+modules. CPU beta acceptance and its exact limits are recorded in the
+[acceptance guide](docs/guides/python-first-acceptance-and-limits.md#cpu-beta-installation).
 Optional `hyso[deployment]` supplies pinned ONNX/ONNX Runtime packages, not a
 general deployment converter or automatic CUDA runtime installation.
 
