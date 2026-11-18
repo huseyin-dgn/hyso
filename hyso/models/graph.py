@@ -456,6 +456,461 @@ class GraphModelBuilder:
                         if type(value) in (list,tuple) else value)
         self._config=dict(format='hyso.model_config',schema_version=3,kind='graph',inputs=_inputs(_plain(specs)),nodes=[],outputs={})
 
+    def conv2d(
+        self, node_id: str, inputs: list[str],
+        *,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int | tuple[int, int] | list[int] = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        padding: int | tuple[int, int] | list[int] = 1,
+        groups: int = 1,
+        bias: bool = True,
+        dilation: int | tuple[int, int] | list[int] = 1,
+    ) -> GraphModelBuilder:
+        """Append a registered 2D convolution.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a node without building or training a model.
+
+        Args:
+            node_id: Unique stable node name; never generated automatically.
+            inputs: Ordered graph input/node references; topology is explicit.
+            in_channels: Expected input channel count. Required.
+            out_channels: Output channel count. Required.
+            kernel_size: Positive spatial filter/window size, as an integer or H/W pair. Default: 3.
+            stride: Positive spatial sampling step. Default: 1.
+            padding: Nonnegative spatial padding. Default: 1.
+            groups: Group count; input and output channels must be divisible by it. Default: 1.
+            bias: Include the convolution bias. Default: True.
+            dilation: Positive spacing between filter/window taps. Default: 1.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.conv2d("node", ["image"], in_channels=1, out_channels=4)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        Graph topology: hyso docs show models.graph-builder --lang en
+        """
+        return self.add(
+            node_id,
+            'conv2d',
+            inputs,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            groups=groups,
+            bias=bias,
+            dilation=dilation,
+        )
+
+    def conv_norm_act(
+        self, node_id: str, inputs: list[str],
+        *,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int | tuple[int, int] | list[int] = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        padding: int | tuple[int, int] | list[int] = 1,
+        groups: int = 1,
+        norm: _typing.Literal['batch', 'group', None] = 'batch',
+        activation: _typing.Literal['silu', 'relu', None] = 'silu',
+    ) -> GraphModelBuilder:
+        """Append convolution, optional normalization and activation.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a node without building or training a model.
+
+        Args:
+            node_id: Unique stable node name; never generated automatically.
+            inputs: Ordered graph input/node references; topology is explicit.
+            in_channels: Expected input channel count. Required.
+            out_channels: Output channel count. Required.
+            kernel_size: Positive spatial filter/window size, as an integer or H/W pair. Default: 3.
+            stride: Positive spatial sampling step. Default: 1.
+            padding: Nonnegative spatial padding. Default: 1.
+            groups: Group count; input and output channels must be divisible by it. Default: 1.
+            norm: Convolution normalization: batch, group, or None. Default: 'batch'.
+            activation: Convolution activation: silu, relu, or None. Default: 'silu'.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.conv_norm_act("node", ["image"], in_channels=1, out_channels=4)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        Graph topology: hyso docs show models.graph-builder --lang en
+        """
+        return self.add(
+            node_id,
+            'conv_norm_act',
+            inputs,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            groups=groups,
+            norm=norm,
+            activation=activation,
+        )
+
+    def relu(self, node_id: str, inputs: list[str]) -> GraphModelBuilder:
+        """Append out-of-place ReLU activation.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a node without building or training a model.
+
+        Args:
+            node_id: Unique stable node name; never generated automatically.
+            inputs: Ordered graph input/node references; topology is explicit.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.relu("node", ["image"])
+
+        HYSo Guide: components.activation
+        Offline: hyso docs show components.activation --lang en
+        Open: hyso docs open components.activation --lang en
+        Graph topology: hyso docs show models.graph-builder --lang en
+        """
+        return self.add(node_id, 'relu', inputs)
+
+    def silu(self, node_id: str, inputs: list[str]) -> GraphModelBuilder:
+        """Append out-of-place SiLU activation.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a node without building or training a model.
+
+        Args:
+            node_id: Unique stable node name; never generated automatically.
+            inputs: Ordered graph input/node references; topology is explicit.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.silu("node", ["image"])
+
+        HYSo Guide: components.activation
+        Offline: hyso docs show components.activation --lang en
+        Open: hyso docs open components.activation --lang en
+        Graph topology: hyso docs show models.graph-builder --lang en
+        """
+        return self.add(node_id, 'silu', inputs)
+
+    def gelu(
+        self, node_id: str, inputs: list[str],
+        *,
+        approximate: _typing.Literal['none', 'tanh'] = 'none',
+    ) -> GraphModelBuilder:
+        """Append GELU activation with the selected approximation.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a node without building or training a model.
+
+        Args:
+            node_id: Unique stable node name; never generated automatically.
+            inputs: Ordered graph input/node references; topology is explicit.
+            approximate: GELU approximation: none (exact) or tanh. Default: 'none'.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.gelu("node", ["image"])
+
+        HYSo Guide: components.activation
+        Offline: hyso docs show components.activation --lang en
+        Open: hyso docs open components.activation --lang en
+        Graph topology: hyso docs show models.graph-builder --lang en
+        """
+        return self.add(node_id, 'gelu', inputs, approximate=approximate)
+
+    def batch_norm(
+        self, node_id: str, inputs: list[str],
+        *,
+        num_features: int,
+        eps: float = 1e-05,
+        momentum: float | None = 0.1,
+        affine: bool = True,
+        track_running_stats: bool = True,
+    ) -> GraphModelBuilder:
+        """Append registered 2D batch normalization.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a node without building or training a model.
+
+        Args:
+            node_id: Unique stable node name; never generated automatically.
+            inputs: Ordered graph input/node references; topology is explicit.
+            num_features: Expected feature-channel count. Required.
+            eps: Positive normalization stabilizer. Default: 1e-05.
+            momentum: Running-statistic factor in [0, 1]; None uses the cumulative average. Default: 0.1.
+            affine: Learn normalization scale and offset. Default: True.
+            track_running_stats: Keep running mean/variance for evaluation. Default: True.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.batch_norm("node", ["image"], num_features=4)
+
+        HYSo Guide: components.normalization
+        Offline: hyso docs show components.normalization --lang en
+        Open: hyso docs open components.normalization --lang en
+        Graph topology: hyso docs show models.graph-builder --lang en
+        """
+        return self.add(
+            node_id,
+            'batch_norm',
+            inputs,
+            num_features=num_features,
+            eps=eps,
+            momentum=momentum,
+            affine=affine,
+            track_running_stats=track_running_stats,
+        )
+
+    def group_norm(
+        self, node_id: str, inputs: list[str],
+        *,
+        num_groups: int,
+        num_channels: int,
+        eps: float = 1e-05,
+        affine: bool = True,
+    ) -> GraphModelBuilder:
+        """Append normalization across explicit channel groups.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a node without building or training a model.
+
+        Args:
+            node_id: Unique stable node name; never generated automatically.
+            inputs: Ordered graph input/node references; topology is explicit.
+            num_groups: Positive normalization group count dividing num_channels. Required.
+            num_channels: Expected channel count for group normalization. Required.
+            eps: Positive normalization stabilizer. Default: 1e-05.
+            affine: Learn normalization scale and offset. Default: True.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.group_norm("node", ["image"], num_groups=1, num_channels=4)
+
+        HYSo Guide: components.normalization
+        Offline: hyso docs show components.normalization --lang en
+        Open: hyso docs open components.normalization --lang en
+        Graph topology: hyso docs show models.graph-builder --lang en
+        """
+        return self.add(
+            node_id,
+            'group_norm',
+            inputs,
+            num_groups=num_groups,
+            num_channels=num_channels,
+            eps=eps,
+            affine=affine,
+        )
+
+    def max_pool2d(
+        self, node_id: str, inputs: list[str],
+        *,
+        kernel_size: int | tuple[int, int] | list[int],
+        stride: int | tuple[int, int] | list[int] | None = None,
+        padding: int | tuple[int, int] | list[int] = 0,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        ceil_mode: bool = False,
+    ) -> GraphModelBuilder:
+        """Append spatial maximum pooling.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a node without building or training a model.
+
+        Args:
+            node_id: Unique stable node name; never generated automatically.
+            inputs: Ordered graph input/node references; topology is explicit.
+            kernel_size: Positive spatial filter/window size, as an integer or H/W pair. Required.
+            stride: Spatial sampling step; None in pooling uses the kernel size. Default: None.
+            padding: Nonnegative spatial padding; pooling limits still apply. Default: 0.
+            dilation: Positive spacing between filter/window taps. Default: 1.
+            ceil_mode: Use the native ceil-window pooling rule instead of floor. Default: False.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.max_pool2d("node", ["image"], kernel_size=2)
+
+        HYSo Guide: components.pooling
+        Offline: hyso docs show components.pooling --lang en
+        Open: hyso docs open components.pooling --lang en
+        Graph topology: hyso docs show models.graph-builder --lang en
+        """
+        return self.add(
+            node_id,
+            'max_pool2d',
+            inputs,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            ceil_mode=ceil_mode,
+        )
+
+    def avg_pool2d(
+        self, node_id: str, inputs: list[str],
+        *,
+        kernel_size: int | tuple[int, int] | list[int],
+        stride: int | tuple[int, int] | list[int] | None = None,
+        padding: int | tuple[int, int] | list[int] = 0,
+        ceil_mode: bool = False,
+        count_include_pad: bool = True,
+    ) -> GraphModelBuilder:
+        """Append spatial average pooling.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a node without building or training a model.
+
+        Args:
+            node_id: Unique stable node name; never generated automatically.
+            inputs: Ordered graph input/node references; topology is explicit.
+            kernel_size: Positive spatial filter/window size, as an integer or H/W pair. Required.
+            stride: Spatial sampling step; None in pooling uses the kernel size. Default: None.
+            padding: Nonnegative spatial padding; pooling limits still apply. Default: 0.
+            ceil_mode: Use the native ceil-window pooling rule instead of floor. Default: False.
+            count_include_pad: Include padded positions in the average divisor. Default: True.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.avg_pool2d("node", ["image"], kernel_size=2)
+
+        HYSo Guide: components.pooling
+        Offline: hyso docs show components.pooling --lang en
+        Open: hyso docs open components.pooling --lang en
+        Graph topology: hyso docs show models.graph-builder --lang en
+        """
+        return self.add(
+            node_id,
+            'avg_pool2d',
+            inputs,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            ceil_mode=ceil_mode,
+            count_include_pad=count_include_pad,
+        )
+
+    def adaptive_avg_pool2d(
+        self, node_id: str, inputs: list[str],
+        *,
+        output_size: int | tuple[int, int] | list[int],
+    ) -> GraphModelBuilder:
+        """Append average pooling to a fixed spatial size.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a node without building or training a model.
+
+        Args:
+            node_id: Unique stable node name; never generated automatically.
+            inputs: Ordered graph input/node references; topology is explicit.
+            output_size: Positive target spatial H/W size. Required.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.adaptive_avg_pool2d("node", ["image"], output_size=2)
+
+        HYSo Guide: components.pooling
+        Offline: hyso docs show components.pooling --lang en
+        Open: hyso docs open components.pooling --lang en
+        Graph topology: hyso docs show models.graph-builder --lang en
+        """
+        return self.add(node_id, 'adaptive_avg_pool2d', inputs, output_size=output_size)
+
+    def dropout(self, node_id: str, inputs: list[str], *, p: float = 0.5) -> GraphModelBuilder:
+        """Append elementwise dropout; evaluation leaves values unchanged.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a node without building or training a model.
+
+        Args:
+            node_id: Unique stable node name; never generated automatically.
+            inputs: Ordered graph input/node references; topology is explicit.
+            p: Element drop probability in [0, 1]; active only during training. Default: 0.5.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.dropout("node", ["image"])
+
+        HYSo Guide: components.regularization
+        Offline: hyso docs show components.regularization --lang en
+        Open: hyso docs open components.regularization --lang en
+        Graph topology: hyso docs show models.graph-builder --lang en
+        """
+        return self.add(node_id, 'dropout', inputs, p=p)
+
     def add(self,node_id: 'str',component: 'str',inputs: 'list[str]',**params: '_typing.Any') -> 'GraphModelBuilder':
         """Append a validated component and its ordered input references to the graph.
 

@@ -776,6 +776,398 @@ class ModelBuilder:
         report['activation_estimate']['summed_tensor_elements'] = sum(elements)
         return report
 
+    def conv2d(
+        self,
+        *,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int | tuple[int, int] | list[int] = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        padding: int | tuple[int, int] | list[int] = 1,
+        groups: int = 1,
+        bias: bool = True,
+        dilation: int | tuple[int, int] | list[int] = 1,
+    ) -> ModelBuilder:
+        """Append a registered 2D convolution.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a block without building or training a model.
+
+        Args:
+            in_channels: Expected input channel count. Required.
+            out_channels: Output channel count. Required.
+            kernel_size: Positive spatial filter/window size, as an integer or H/W pair. Default: 3.
+            stride: Positive spatial sampling step. Default: 1.
+            padding: Nonnegative spatial padding. Default: 1.
+            groups: Group count; input and output channels must be divisible by it. Default: 1.
+            bias: Include the convolution bias. Default: True.
+            dilation: Positive spacing between filter/window taps. Default: 1.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.conv2d(in_channels=1, out_channels=4)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
+        return self.add(
+            'conv2d',
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            groups=groups,
+            bias=bias,
+            dilation=dilation,
+        )
+
+    def conv_norm_act(
+        self,
+        *,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int | tuple[int, int] | list[int] = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        padding: int | tuple[int, int] | list[int] = 1,
+        groups: int = 1,
+        norm: _typing.Literal['batch', 'group', None] = 'batch',
+        activation: _typing.Literal['silu', 'relu', None] = 'silu',
+    ) -> ModelBuilder:
+        """Append convolution, optional normalization and activation.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a block without building or training a model.
+
+        Args:
+            in_channels: Expected input channel count. Required.
+            out_channels: Output channel count. Required.
+            kernel_size: Positive spatial filter/window size, as an integer or H/W pair. Default: 3.
+            stride: Positive spatial sampling step. Default: 1.
+            padding: Nonnegative spatial padding. Default: 1.
+            groups: Group count; input and output channels must be divisible by it. Default: 1.
+            norm: Convolution normalization: batch, group, or None. Default: 'batch'.
+            activation: Convolution activation: silu, relu, or None. Default: 'silu'.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.conv_norm_act(in_channels=1, out_channels=4)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
+        return self.add(
+            'conv_norm_act',
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            groups=groups,
+            norm=norm,
+            activation=activation,
+        )
+
+    def relu(self) -> ModelBuilder:
+        """Append out-of-place ReLU activation.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a block without building or training a model.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.relu()
+
+        HYSo Guide: components.activation
+        Offline: hyso docs show components.activation --lang en
+        Open: hyso docs open components.activation --lang en
+        """
+        return self.add('relu')
+
+    def silu(self) -> ModelBuilder:
+        """Append out-of-place SiLU activation.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a block without building or training a model.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.silu()
+
+        HYSo Guide: components.activation
+        Offline: hyso docs show components.activation --lang en
+        Open: hyso docs open components.activation --lang en
+        """
+        return self.add('silu')
+
+    def gelu(self, *, approximate: _typing.Literal['none', 'tanh'] = 'none') -> ModelBuilder:
+        """Append GELU activation with the selected approximation.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a block without building or training a model.
+
+        Args:
+            approximate: GELU approximation: none (exact) or tanh. Default: 'none'.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.gelu()
+
+        HYSo Guide: components.activation
+        Offline: hyso docs show components.activation --lang en
+        Open: hyso docs open components.activation --lang en
+        """
+        return self.add('gelu', approximate=approximate)
+
+    def batch_norm(
+        self,
+        *,
+        num_features: int,
+        eps: float = 1e-05,
+        momentum: float | None = 0.1,
+        affine: bool = True,
+        track_running_stats: bool = True,
+    ) -> ModelBuilder:
+        """Append registered 2D batch normalization.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a block without building or training a model.
+
+        Args:
+            num_features: Expected feature-channel count. Required.
+            eps: Positive normalization stabilizer. Default: 1e-05.
+            momentum: Running-statistic factor in [0, 1]; None uses the cumulative average. Default: 0.1.
+            affine: Learn normalization scale and offset. Default: True.
+            track_running_stats: Keep running mean/variance for evaluation. Default: True.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.batch_norm(num_features=4)
+
+        HYSo Guide: components.normalization
+        Offline: hyso docs show components.normalization --lang en
+        Open: hyso docs open components.normalization --lang en
+        """
+        return self.add(
+            'batch_norm',
+            num_features=num_features,
+            eps=eps,
+            momentum=momentum,
+            affine=affine,
+            track_running_stats=track_running_stats,
+        )
+
+    def group_norm(
+        self,
+        *,
+        num_groups: int,
+        num_channels: int,
+        eps: float = 1e-05,
+        affine: bool = True,
+    ) -> ModelBuilder:
+        """Append normalization across explicit channel groups.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a block without building or training a model.
+
+        Args:
+            num_groups: Positive normalization group count dividing num_channels. Required.
+            num_channels: Expected channel count for group normalization. Required.
+            eps: Positive normalization stabilizer. Default: 1e-05.
+            affine: Learn normalization scale and offset. Default: True.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.group_norm(num_groups=1, num_channels=4)
+
+        HYSo Guide: components.normalization
+        Offline: hyso docs show components.normalization --lang en
+        Open: hyso docs open components.normalization --lang en
+        """
+        return self.add('group_norm', num_groups=num_groups, num_channels=num_channels, eps=eps, affine=affine)
+
+    def max_pool2d(
+        self,
+        *,
+        kernel_size: int | tuple[int, int] | list[int],
+        stride: int | tuple[int, int] | list[int] | None = None,
+        padding: int | tuple[int, int] | list[int] = 0,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        ceil_mode: bool = False,
+    ) -> ModelBuilder:
+        """Append spatial maximum pooling.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a block without building or training a model.
+
+        Args:
+            kernel_size: Positive spatial filter/window size, as an integer or H/W pair. Required.
+            stride: Spatial sampling step; None in pooling uses the kernel size. Default: None.
+            padding: Nonnegative spatial padding; pooling limits still apply. Default: 0.
+            dilation: Positive spacing between filter/window taps. Default: 1.
+            ceil_mode: Use the native ceil-window pooling rule instead of floor. Default: False.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.max_pool2d(kernel_size=2)
+
+        HYSo Guide: components.pooling
+        Offline: hyso docs show components.pooling --lang en
+        Open: hyso docs open components.pooling --lang en
+        """
+        return self.add(
+            'max_pool2d',
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            ceil_mode=ceil_mode,
+        )
+
+    def avg_pool2d(
+        self,
+        *,
+        kernel_size: int | tuple[int, int] | list[int],
+        stride: int | tuple[int, int] | list[int] | None = None,
+        padding: int | tuple[int, int] | list[int] = 0,
+        ceil_mode: bool = False,
+        count_include_pad: bool = True,
+    ) -> ModelBuilder:
+        """Append spatial average pooling.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a block without building or training a model.
+
+        Args:
+            kernel_size: Positive spatial filter/window size, as an integer or H/W pair. Required.
+            stride: Spatial sampling step; None in pooling uses the kernel size. Default: None.
+            padding: Nonnegative spatial padding; pooling limits still apply. Default: 0.
+            ceil_mode: Use the native ceil-window pooling rule instead of floor. Default: False.
+            count_include_pad: Include padded positions in the average divisor. Default: True.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.avg_pool2d(kernel_size=2)
+
+        HYSo Guide: components.pooling
+        Offline: hyso docs show components.pooling --lang en
+        Open: hyso docs open components.pooling --lang en
+        """
+        return self.add(
+            'avg_pool2d',
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            ceil_mode=ceil_mode,
+            count_include_pad=count_include_pad,
+        )
+
+    def adaptive_avg_pool2d(self, *, output_size: int | tuple[int, int] | list[int]) -> ModelBuilder:
+        """Append average pooling to a fixed spatial size.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a block without building or training a model.
+
+        Args:
+            output_size: Positive target spatial H/W size. Required.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.adaptive_avg_pool2d(output_size=2)
+
+        HYSo Guide: components.pooling
+        Offline: hyso docs show components.pooling --lang en
+        Open: hyso docs open components.pooling --lang en
+        """
+        return self.add('adaptive_avg_pool2d', output_size=output_size)
+
+    def dropout(self, *, p: float = 0.5) -> ModelBuilder:
+        """Append elementwise dropout; evaluation leaves values unchanged.
+
+        Delegates to add(); Registry defaults and native validation are unchanged.
+        This configures a block without building or training a model.
+
+        Args:
+            p: Element drop probability in [0, 1]; active only during training. Default: 0.5.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: The existing Registry or builder rejects a value or configuration.
+            TypeError: A required argument is missing or an unsupported keyword is supplied.
+
+        Example:
+            builder.dropout()
+
+        HYSo Guide: components.regularization
+        Offline: hyso docs show components.regularization --lang en
+        Open: hyso docs open components.regularization --lang en
+        """
+        return self.add('dropout', p=p)
+
     def add(self, name: str, **params: Any) -> ModelBuilder:
         """Append a registered block transactionally; return self for chaining.
 

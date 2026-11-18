@@ -1,4 +1,67 @@
-# M3 CPU examples
+# Pythonic builder examples
+
+After installing HYSo, `python examples/models/pythonic_builders.py` builds a small CNN, builds a graph,
+and prepares a CPU training session. It never calls `fit()`. The three functions
+can also be imported and called separately.
+
+```python
+import torch
+from torch.utils.data import TensorDataset
+from hyso import ModelBuilder, GraphModelBuilder, TrainingConfig
+
+# 1. A CNN: new methods delegate to the existing add() implementation.
+model = (ModelBuilder((1, 8, 8), 2)
+         .conv2d(in_channels=1, out_channels=4, kernel_size=3, padding=1)
+         .relu()
+         .max_pool2d(kernel_size=2)
+         .build())
+
+# 2. A graph: names, connections and outputs stay explicit.
+graph = (GraphModelBuilder({'image': [1, 8, 8]})
+         .conv_norm_act('stem', ['image'], in_channels=1, out_channels=4,
+                        norm=None, activation='relu')
+         .max_pool2d('pool', ['stem'], kernel_size=2)
+         .add('head', 'classification_head', ['pool'], in_features=4, num_classes=2)
+         .outputs(logits='head')
+         .build())
+
+# 3. Prepare training with a tiny CPU Dataset; no fit() is called.
+train_dataset = TensorDataset(torch.zeros(4, 1, 8, 8, device='cpu'),
+                              torch.tensor([0, 1, 0, 1], device='cpu'))
+session = TrainingConfig(epochs=1, batch_size=2).prepare_datasets(model, train_dataset)
+```
+
+The complete executable file supplies tiny synthetic CPU data for the third
+example. No task-quality result is implied. Building initializes weights; it does
+not run a forward pass or train. Graph classification output adapters and other
+existing task restrictions are unchanged.
+
+Both builders offer `conv2d`, `conv_norm_act`, `relu`, `silu`, `gelu`, `batch_norm`,
+`group_norm`, `max_pool2d`, `avg_pool2d`, `adaptive_avg_pool2d`, and `dropout`.
+Component options are explicit keyword parameters. Graph methods first take
+`node_id` and `inputs`. All other registered components and fusion operations
+remain available through the unchanged `.add(...)` API.
+
+Defaults come from HYSo's Registry: for example, `conv2d` defaults to
+`kernel_size=3, padding=1`, while pooling requires a kernel and defaults to
+`stride=None, padding=0`. `conv_norm_act.norm` suggests `'batch'`, `'group'`, or
+`None`; its activation suggests `'silu'`, `'relu'`, or `None`. `gelu.approximate`
+accepts `'none'` or `'tanh'`. The wrappers do not expose unsupported PyTorch
+options such as `relu(inplace=...)`, `max_pool2d(return_indices=...)`, or
+`avg_pool2d(divisor_override=...)`.
+
+Docstrings and [`api-topics.json`](../../hyso/data/api-topics.json) point to the
+same four-language offline guide: `components.convolution`,
+`components.activation`, `components.normalization`, `components.pooling`, and
+`components.regularization`. For builder structure and training preparation use:
+
+```console
+hyso docs show models.model-builder --lang tr
+hyso docs show models.graph-builder --lang tr
+hyso docs show training.configuration --lang tr
+```
+
+## M3 CPU examples
 
 Install HYSo first (`python -m pip install -e .`). From the checkout root:
 

@@ -315,6 +315,14 @@
       "path": "hyso/models/graph.py",
       "qualname": "GraphModelBuilder.__init__"
     },
+    "hyso.GraphModelBuilder.adaptive_avg_pool2d": {
+      "topic": "components.pooling",
+      "canonical": "hyso.models.graph.GraphModelBuilder.adaptive_avg_pool2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.adaptive_avg_pool2d"
+    },
     "hyso.GraphModelBuilder.add": {
       "topic": "models.graph-builder",
       "canonical": "hyso.models.graph.GraphModelBuilder.add",
@@ -323,6 +331,22 @@
       "path": "hyso/models/graph.py",
       "qualname": "GraphModelBuilder.add"
     },
+    "hyso.GraphModelBuilder.avg_pool2d": {
+      "topic": "components.pooling",
+      "canonical": "hyso.models.graph.GraphModelBuilder.avg_pool2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.avg_pool2d"
+    },
+    "hyso.GraphModelBuilder.batch_norm": {
+      "topic": "components.normalization",
+      "canonical": "hyso.models.graph.GraphModelBuilder.batch_norm",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.batch_norm"
+    },
     "hyso.GraphModelBuilder.build": {
       "topic": "models.graph-builder",
       "canonical": "hyso.models.graph.GraphModelBuilder.build",
@@ -330,6 +354,30 @@
       "origin": "hyso",
       "path": "hyso/models/graph.py",
       "qualname": "GraphModelBuilder.build"
+    },
+    "hyso.GraphModelBuilder.conv2d": {
+      "topic": "components.convolution",
+      "canonical": "hyso.models.graph.GraphModelBuilder.conv2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.conv2d"
+    },
+    "hyso.GraphModelBuilder.conv_norm_act": {
+      "topic": "components.convolution",
+      "canonical": "hyso.models.graph.GraphModelBuilder.conv_norm_act",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.conv_norm_act"
+    },
+    "hyso.GraphModelBuilder.dropout": {
+      "topic": "components.regularization",
+      "canonical": "hyso.models.graph.GraphModelBuilder.dropout",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.dropout"
     },
     "hyso.GraphModelBuilder.from_config": {
       "topic": "models.graph-builder",
@@ -346,6 +394,30 @@
       "origin": "hyso",
       "path": "hyso/models/graph.py",
       "qualname": "GraphModelBuilder.from_json"
+    },
+    "hyso.GraphModelBuilder.gelu": {
+      "topic": "components.activation",
+      "canonical": "hyso.models.graph.GraphModelBuilder.gelu",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.gelu"
+    },
+    "hyso.GraphModelBuilder.group_norm": {
+      "topic": "components.normalization",
+      "canonical": "hyso.models.graph.GraphModelBuilder.group_norm",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.group_norm"
+    },
+    "hyso.GraphModelBuilder.max_pool2d": {
+      "topic": "components.pooling",
+      "canonical": "hyso.models.graph.GraphModelBuilder.max_pool2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.max_pool2d"
     },
     "hyso.GraphModelBuilder.outputs": {
       "topic": "models.graph-builder",
@@ -370,6 +442,22 @@
       "origin": "hyso",
       "path": "hyso/models/graph.py",
       "qualname": "GraphModelBuilder.preview"
+    },
+    "hyso.GraphModelBuilder.relu": {
+      "topic": "components.activation",
+      "canonical": "hyso.models.graph.GraphModelBuilder.relu",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.relu"
+    },
+    "hyso.GraphModelBuilder.silu": {
+      "topic": "components.activation",
+      "canonical": "hyso.models.graph.GraphModelBuilder.silu",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.silu"
     },
     "hyso.GraphModelBuilder.to_config": {
       "topic": "models.graph-builder",
@@ -547,6 +635,14 @@
       "path": "hyso/models/builder.py",
       "qualname": "ModelBuilder.__init__"
     },
+    "hyso.ModelBuilder.adaptive_avg_pool2d": {
+      "topic": "components.pooling",
+      "canonical": "hyso.models.builder.ModelBuilder.adaptive_avg_pool2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.adaptive_avg_pool2d"
+    },
     "hyso.ModelBuilder.add": {
       "topic": "models.model-builder",
       "canonical": "hyso.models.builder.ModelBuilder.add",
@@ -555,6 +651,22 @@
       "path": "hyso/models/builder.py",
       "qualname": "ModelBuilder.add"
     },
+    "hyso.ModelBuilder.avg_pool2d": {
+      "topic": "components.pooling",
+      "canonical": "hyso.models.builder.ModelBuilder.avg_pool2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.avg_pool2d"
+    },
+    "hyso.ModelBuilder.batch_norm": {
+      "topic": "components.normalization",
+      "canonical": "hyso.models.builder.ModelBuilder.batch_norm",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.batch_norm"
+    },
     "hyso.ModelBuilder.build": {
       "topic": "models.model-builder",
       "canonical": "hyso.models.builder.ModelBuilder.build",
@@ -562,6 +674,30 @@
       "origin": "hyso",
       "path": "hyso/models/builder.py",
       "qualname": "ModelBuilder.build"
+    },
+    "hyso.ModelBuilder.conv2d": {
+      "topic": "components.convolution",
+      "canonical": "hyso.models.builder.ModelBuilder.conv2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.conv2d"
+    },
+    "hyso.ModelBuilder.conv_norm_act": {
+      "topic": "components.convolution",
+      "canonical": "hyso.models.builder.ModelBuilder.conv_norm_act",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.conv_norm_act"
+    },
+    "hyso.ModelBuilder.dropout": {
+      "topic": "components.regularization",
+      "canonical": "hyso.models.builder.ModelBuilder.dropout",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.dropout"
     },
     "hyso.ModelBuilder.from_config": {
       "topic": "models.model-builder",
@@ -578,6 +714,30 @@
       "origin": "hyso",
       "path": "hyso/models/builder.py",
       "qualname": "ModelBuilder.from_json"
+    },
+    "hyso.ModelBuilder.gelu": {
+      "topic": "components.activation",
+      "canonical": "hyso.models.builder.ModelBuilder.gelu",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.gelu"
+    },
+    "hyso.ModelBuilder.group_norm": {
+      "topic": "components.normalization",
+      "canonical": "hyso.models.builder.ModelBuilder.group_norm",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.group_norm"
+    },
+    "hyso.ModelBuilder.max_pool2d": {
+      "topic": "components.pooling",
+      "canonical": "hyso.models.builder.ModelBuilder.max_pool2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.max_pool2d"
     },
     "hyso.ModelBuilder.modular": {
       "topic": "models.model-builder",
@@ -603,6 +763,14 @@
       "path": "hyso/models/builder.py",
       "qualname": "ModelBuilder.preflight"
     },
+    "hyso.ModelBuilder.relu": {
+      "topic": "components.activation",
+      "canonical": "hyso.models.builder.ModelBuilder.relu",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.relu"
+    },
     "hyso.ModelBuilder.sequential": {
       "topic": "models.model-builder",
       "canonical": "hyso.models.builder.ModelBuilder.sequential",
@@ -610,6 +778,14 @@
       "origin": "hyso",
       "path": "hyso/models/builder.py",
       "qualname": "ModelBuilder.sequential"
+    },
+    "hyso.ModelBuilder.silu": {
+      "topic": "components.activation",
+      "canonical": "hyso.models.builder.ModelBuilder.silu",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.silu"
     },
     "hyso.ModelBuilder.to_config": {
       "topic": "models.model-builder",
@@ -5919,6 +6095,14 @@
       "path": "hyso/models/graph.py",
       "qualname": "GraphModelBuilder.__init__"
     },
+    "hyso.models.GraphModelBuilder.adaptive_avg_pool2d": {
+      "topic": "components.pooling",
+      "canonical": "hyso.models.graph.GraphModelBuilder.adaptive_avg_pool2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.adaptive_avg_pool2d"
+    },
     "hyso.models.GraphModelBuilder.add": {
       "topic": "models.graph-builder",
       "canonical": "hyso.models.graph.GraphModelBuilder.add",
@@ -5927,6 +6111,22 @@
       "path": "hyso/models/graph.py",
       "qualname": "GraphModelBuilder.add"
     },
+    "hyso.models.GraphModelBuilder.avg_pool2d": {
+      "topic": "components.pooling",
+      "canonical": "hyso.models.graph.GraphModelBuilder.avg_pool2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.avg_pool2d"
+    },
+    "hyso.models.GraphModelBuilder.batch_norm": {
+      "topic": "components.normalization",
+      "canonical": "hyso.models.graph.GraphModelBuilder.batch_norm",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.batch_norm"
+    },
     "hyso.models.GraphModelBuilder.build": {
       "topic": "models.graph-builder",
       "canonical": "hyso.models.graph.GraphModelBuilder.build",
@@ -5934,6 +6134,30 @@
       "origin": "hyso",
       "path": "hyso/models/graph.py",
       "qualname": "GraphModelBuilder.build"
+    },
+    "hyso.models.GraphModelBuilder.conv2d": {
+      "topic": "components.convolution",
+      "canonical": "hyso.models.graph.GraphModelBuilder.conv2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.conv2d"
+    },
+    "hyso.models.GraphModelBuilder.conv_norm_act": {
+      "topic": "components.convolution",
+      "canonical": "hyso.models.graph.GraphModelBuilder.conv_norm_act",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.conv_norm_act"
+    },
+    "hyso.models.GraphModelBuilder.dropout": {
+      "topic": "components.regularization",
+      "canonical": "hyso.models.graph.GraphModelBuilder.dropout",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.dropout"
     },
     "hyso.models.GraphModelBuilder.from_config": {
       "topic": "models.graph-builder",
@@ -5950,6 +6174,30 @@
       "origin": "hyso",
       "path": "hyso/models/graph.py",
       "qualname": "GraphModelBuilder.from_json"
+    },
+    "hyso.models.GraphModelBuilder.gelu": {
+      "topic": "components.activation",
+      "canonical": "hyso.models.graph.GraphModelBuilder.gelu",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.gelu"
+    },
+    "hyso.models.GraphModelBuilder.group_norm": {
+      "topic": "components.normalization",
+      "canonical": "hyso.models.graph.GraphModelBuilder.group_norm",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.group_norm"
+    },
+    "hyso.models.GraphModelBuilder.max_pool2d": {
+      "topic": "components.pooling",
+      "canonical": "hyso.models.graph.GraphModelBuilder.max_pool2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.max_pool2d"
     },
     "hyso.models.GraphModelBuilder.outputs": {
       "topic": "models.graph-builder",
@@ -5974,6 +6222,22 @@
       "origin": "hyso",
       "path": "hyso/models/graph.py",
       "qualname": "GraphModelBuilder.preview"
+    },
+    "hyso.models.GraphModelBuilder.relu": {
+      "topic": "components.activation",
+      "canonical": "hyso.models.graph.GraphModelBuilder.relu",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.relu"
+    },
+    "hyso.models.GraphModelBuilder.silu": {
+      "topic": "components.activation",
+      "canonical": "hyso.models.graph.GraphModelBuilder.silu",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.silu"
     },
     "hyso.models.GraphModelBuilder.to_config": {
       "topic": "models.graph-builder",
@@ -6119,6 +6383,14 @@
       "path": "hyso/models/builder.py",
       "qualname": "ModelBuilder.__init__"
     },
+    "hyso.models.ModelBuilder.adaptive_avg_pool2d": {
+      "topic": "components.pooling",
+      "canonical": "hyso.models.builder.ModelBuilder.adaptive_avg_pool2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.adaptive_avg_pool2d"
+    },
     "hyso.models.ModelBuilder.add": {
       "topic": "models.model-builder",
       "canonical": "hyso.models.builder.ModelBuilder.add",
@@ -6127,6 +6399,22 @@
       "path": "hyso/models/builder.py",
       "qualname": "ModelBuilder.add"
     },
+    "hyso.models.ModelBuilder.avg_pool2d": {
+      "topic": "components.pooling",
+      "canonical": "hyso.models.builder.ModelBuilder.avg_pool2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.avg_pool2d"
+    },
+    "hyso.models.ModelBuilder.batch_norm": {
+      "topic": "components.normalization",
+      "canonical": "hyso.models.builder.ModelBuilder.batch_norm",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.batch_norm"
+    },
     "hyso.models.ModelBuilder.build": {
       "topic": "models.model-builder",
       "canonical": "hyso.models.builder.ModelBuilder.build",
@@ -6134,6 +6422,30 @@
       "origin": "hyso",
       "path": "hyso/models/builder.py",
       "qualname": "ModelBuilder.build"
+    },
+    "hyso.models.ModelBuilder.conv2d": {
+      "topic": "components.convolution",
+      "canonical": "hyso.models.builder.ModelBuilder.conv2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.conv2d"
+    },
+    "hyso.models.ModelBuilder.conv_norm_act": {
+      "topic": "components.convolution",
+      "canonical": "hyso.models.builder.ModelBuilder.conv_norm_act",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.conv_norm_act"
+    },
+    "hyso.models.ModelBuilder.dropout": {
+      "topic": "components.regularization",
+      "canonical": "hyso.models.builder.ModelBuilder.dropout",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.dropout"
     },
     "hyso.models.ModelBuilder.from_config": {
       "topic": "models.model-builder",
@@ -6150,6 +6462,30 @@
       "origin": "hyso",
       "path": "hyso/models/builder.py",
       "qualname": "ModelBuilder.from_json"
+    },
+    "hyso.models.ModelBuilder.gelu": {
+      "topic": "components.activation",
+      "canonical": "hyso.models.builder.ModelBuilder.gelu",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.gelu"
+    },
+    "hyso.models.ModelBuilder.group_norm": {
+      "topic": "components.normalization",
+      "canonical": "hyso.models.builder.ModelBuilder.group_norm",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.group_norm"
+    },
+    "hyso.models.ModelBuilder.max_pool2d": {
+      "topic": "components.pooling",
+      "canonical": "hyso.models.builder.ModelBuilder.max_pool2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.max_pool2d"
     },
     "hyso.models.ModelBuilder.modular": {
       "topic": "models.model-builder",
@@ -6175,6 +6511,14 @@
       "path": "hyso/models/builder.py",
       "qualname": "ModelBuilder.preflight"
     },
+    "hyso.models.ModelBuilder.relu": {
+      "topic": "components.activation",
+      "canonical": "hyso.models.builder.ModelBuilder.relu",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.relu"
+    },
     "hyso.models.ModelBuilder.sequential": {
       "topic": "models.model-builder",
       "canonical": "hyso.models.builder.ModelBuilder.sequential",
@@ -6182,6 +6526,14 @@
       "origin": "hyso",
       "path": "hyso/models/builder.py",
       "qualname": "ModelBuilder.sequential"
+    },
+    "hyso.models.ModelBuilder.silu": {
+      "topic": "components.activation",
+      "canonical": "hyso.models.builder.ModelBuilder.silu",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.silu"
     },
     "hyso.models.ModelBuilder.to_config": {
       "topic": "models.model-builder",
@@ -7263,6 +7615,14 @@
       "path": "hyso/models/builder.py",
       "qualname": "ModelBuilder.__init__"
     },
+    "hyso.models.builder.ModelBuilder.adaptive_avg_pool2d": {
+      "topic": "components.pooling",
+      "canonical": "hyso.models.builder.ModelBuilder.adaptive_avg_pool2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.adaptive_avg_pool2d"
+    },
     "hyso.models.builder.ModelBuilder.add": {
       "topic": "models.model-builder",
       "canonical": "hyso.models.builder.ModelBuilder.add",
@@ -7271,6 +7631,22 @@
       "path": "hyso/models/builder.py",
       "qualname": "ModelBuilder.add"
     },
+    "hyso.models.builder.ModelBuilder.avg_pool2d": {
+      "topic": "components.pooling",
+      "canonical": "hyso.models.builder.ModelBuilder.avg_pool2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.avg_pool2d"
+    },
+    "hyso.models.builder.ModelBuilder.batch_norm": {
+      "topic": "components.normalization",
+      "canonical": "hyso.models.builder.ModelBuilder.batch_norm",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.batch_norm"
+    },
     "hyso.models.builder.ModelBuilder.build": {
       "topic": "models.model-builder",
       "canonical": "hyso.models.builder.ModelBuilder.build",
@@ -7278,6 +7654,30 @@
       "origin": "hyso",
       "path": "hyso/models/builder.py",
       "qualname": "ModelBuilder.build"
+    },
+    "hyso.models.builder.ModelBuilder.conv2d": {
+      "topic": "components.convolution",
+      "canonical": "hyso.models.builder.ModelBuilder.conv2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.conv2d"
+    },
+    "hyso.models.builder.ModelBuilder.conv_norm_act": {
+      "topic": "components.convolution",
+      "canonical": "hyso.models.builder.ModelBuilder.conv_norm_act",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.conv_norm_act"
+    },
+    "hyso.models.builder.ModelBuilder.dropout": {
+      "topic": "components.regularization",
+      "canonical": "hyso.models.builder.ModelBuilder.dropout",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.dropout"
     },
     "hyso.models.builder.ModelBuilder.from_config": {
       "topic": "models.model-builder",
@@ -7294,6 +7694,30 @@
       "origin": "hyso",
       "path": "hyso/models/builder.py",
       "qualname": "ModelBuilder.from_json"
+    },
+    "hyso.models.builder.ModelBuilder.gelu": {
+      "topic": "components.activation",
+      "canonical": "hyso.models.builder.ModelBuilder.gelu",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.gelu"
+    },
+    "hyso.models.builder.ModelBuilder.group_norm": {
+      "topic": "components.normalization",
+      "canonical": "hyso.models.builder.ModelBuilder.group_norm",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.group_norm"
+    },
+    "hyso.models.builder.ModelBuilder.max_pool2d": {
+      "topic": "components.pooling",
+      "canonical": "hyso.models.builder.ModelBuilder.max_pool2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.max_pool2d"
     },
     "hyso.models.builder.ModelBuilder.modular": {
       "topic": "models.model-builder",
@@ -7319,6 +7743,14 @@
       "path": "hyso/models/builder.py",
       "qualname": "ModelBuilder.preflight"
     },
+    "hyso.models.builder.ModelBuilder.relu": {
+      "topic": "components.activation",
+      "canonical": "hyso.models.builder.ModelBuilder.relu",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.relu"
+    },
     "hyso.models.builder.ModelBuilder.sequential": {
       "topic": "models.model-builder",
       "canonical": "hyso.models.builder.ModelBuilder.sequential",
@@ -7326,6 +7758,14 @@
       "origin": "hyso",
       "path": "hyso/models/builder.py",
       "qualname": "ModelBuilder.sequential"
+    },
+    "hyso.models.builder.ModelBuilder.silu": {
+      "topic": "components.activation",
+      "canonical": "hyso.models.builder.ModelBuilder.silu",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.silu"
     },
     "hyso.models.builder.ModelBuilder.to_config": {
       "topic": "models.model-builder",
@@ -7591,6 +8031,14 @@
       "path": "hyso/models/graph.py",
       "qualname": "GraphModelBuilder.__init__"
     },
+    "hyso.models.graph.GraphModelBuilder.adaptive_avg_pool2d": {
+      "topic": "components.pooling",
+      "canonical": "hyso.models.graph.GraphModelBuilder.adaptive_avg_pool2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.adaptive_avg_pool2d"
+    },
     "hyso.models.graph.GraphModelBuilder.add": {
       "topic": "models.graph-builder",
       "canonical": "hyso.models.graph.GraphModelBuilder.add",
@@ -7599,6 +8047,22 @@
       "path": "hyso/models/graph.py",
       "qualname": "GraphModelBuilder.add"
     },
+    "hyso.models.graph.GraphModelBuilder.avg_pool2d": {
+      "topic": "components.pooling",
+      "canonical": "hyso.models.graph.GraphModelBuilder.avg_pool2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.avg_pool2d"
+    },
+    "hyso.models.graph.GraphModelBuilder.batch_norm": {
+      "topic": "components.normalization",
+      "canonical": "hyso.models.graph.GraphModelBuilder.batch_norm",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.batch_norm"
+    },
     "hyso.models.graph.GraphModelBuilder.build": {
       "topic": "models.graph-builder",
       "canonical": "hyso.models.graph.GraphModelBuilder.build",
@@ -7606,6 +8070,30 @@
       "origin": "hyso",
       "path": "hyso/models/graph.py",
       "qualname": "GraphModelBuilder.build"
+    },
+    "hyso.models.graph.GraphModelBuilder.conv2d": {
+      "topic": "components.convolution",
+      "canonical": "hyso.models.graph.GraphModelBuilder.conv2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.conv2d"
+    },
+    "hyso.models.graph.GraphModelBuilder.conv_norm_act": {
+      "topic": "components.convolution",
+      "canonical": "hyso.models.graph.GraphModelBuilder.conv_norm_act",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.conv_norm_act"
+    },
+    "hyso.models.graph.GraphModelBuilder.dropout": {
+      "topic": "components.regularization",
+      "canonical": "hyso.models.graph.GraphModelBuilder.dropout",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.dropout"
     },
     "hyso.models.graph.GraphModelBuilder.from_config": {
       "topic": "models.graph-builder",
@@ -7622,6 +8110,30 @@
       "origin": "hyso",
       "path": "hyso/models/graph.py",
       "qualname": "GraphModelBuilder.from_json"
+    },
+    "hyso.models.graph.GraphModelBuilder.gelu": {
+      "topic": "components.activation",
+      "canonical": "hyso.models.graph.GraphModelBuilder.gelu",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.gelu"
+    },
+    "hyso.models.graph.GraphModelBuilder.group_norm": {
+      "topic": "components.normalization",
+      "canonical": "hyso.models.graph.GraphModelBuilder.group_norm",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.group_norm"
+    },
+    "hyso.models.graph.GraphModelBuilder.max_pool2d": {
+      "topic": "components.pooling",
+      "canonical": "hyso.models.graph.GraphModelBuilder.max_pool2d",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.max_pool2d"
     },
     "hyso.models.graph.GraphModelBuilder.outputs": {
       "topic": "models.graph-builder",
@@ -7646,6 +8158,22 @@
       "origin": "hyso",
       "path": "hyso/models/graph.py",
       "qualname": "GraphModelBuilder.preview"
+    },
+    "hyso.models.graph.GraphModelBuilder.relu": {
+      "topic": "components.activation",
+      "canonical": "hyso.models.graph.GraphModelBuilder.relu",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.relu"
+    },
+    "hyso.models.graph.GraphModelBuilder.silu": {
+      "topic": "components.activation",
+      "canonical": "hyso.models.graph.GraphModelBuilder.silu",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/graph.py",
+      "qualname": "GraphModelBuilder.silu"
     },
     "hyso.models.graph.GraphModelBuilder.to_config": {
       "topic": "models.graph-builder",
