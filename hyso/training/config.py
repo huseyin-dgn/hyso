@@ -17,6 +17,10 @@ if TYPE_CHECKING:
 class TrainingConfigError(ValueError):
     """Invalid/unsupported settings or a preparation contract mismatch."""
 
+    def __init__(self, *messages, suggestion=None):
+        super().__init__(*messages)
+        self.suggestion = suggestion
+
 
 def _plain(v, depth=0):
     if depth > 8: raise TrainingConfigError('settings nesting exceeds 8')
@@ -225,4 +229,18 @@ class TrainingConfig:
         """
         from .session import TrainingSession
         return TrainingSession(self,model,train_loader,val_loader,model_config=model_config,
+            loss_fn=loss_fn,loss_weights=loss_weights,on_epoch=on_epoch)
+
+    def prepare_datasets(self, model: nn.Module, train_dataset: Dataset, val_dataset: Dataset | None=None, *,
+                         model_config: dict[str,Any] | None=None, loss_fn=None,
+                         loss_weights: dict[str,float] | None=None,
+                         on_epoch: Callable[[dict[str,Any]],None] | None=None) -> TrainingSession:
+        """Make matching loaders and prepare one session; never call fit().
+
+        Uses the existing make_loaders/prepare contracts and defaults. Validation
+        must still be explicitly configured. No model movement, cast or seed.
+        Supply existing loaders to prepare() when custom loader control is needed.
+        """
+        train_loader,val_loader=self.make_loaders(train_dataset,val_dataset)
+        return self.prepare(model,train_loader,val_loader,model_config=model_config,
             loss_fn=loss_fn,loss_weights=loss_weights,on_epoch=on_epoch)

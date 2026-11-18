@@ -1,7 +1,7 @@
 """Registry metadata and explicit CPU model inspection."""
 from pathlib import Path
 import json
-from .common import Outcome, command, output_check, require, export_text, json_text
+from .common import Outcome, command, output_check, require, export_text, json_text, execution_options
 
 
 def register(sub):
@@ -20,7 +20,7 @@ def register(sub):
         if name == 'preview':
             q.add_argument('--batch-size', type=int, help='Positive batch-size assumption for GraphModelBuilder preview only; no allocation or forward.')
         if name == 'inspect':
-            q.add_argument('--execute', action='store_true', help='Explicitly authorize new CPU model allocation for inspection.')
+            execution_options(q, help='Explicitly authorize new CPU model allocation for inspection.')
 
 
 def run(args):
@@ -55,6 +55,10 @@ def run(args):
                 data['summary'].update(nodes=data['validation']['nodes'],outputs=data['validation']['outputs'],
                                        topological_order=data['validation']['topological_order'])
         if args.action == 'inspect':
+            if getattr(args, 'dry_run', False):
+                data['validation'] = builder.preflight(config)
+                export_text(args, json_text(data))
+                return Outcome(data, status='dry_run')
             require(args.execute, 'models inspect requires --execute to allocate a new CPU model. Use models summary for metadata only.', code=3)
             model = builder.build()
             data.update(model_constructed=True, device='cpu', forward_executed=False,

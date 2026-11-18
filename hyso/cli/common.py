@@ -7,9 +7,10 @@ import re
 
 
 class CLIError(ValueError):
-    def __init__(self, message, code=2):
+    def __init__(self, message, code=2, *, suggestion=None):
         super().__init__(message)
         self.code = code
+        self.suggestion = suggestion
 
 
 @dataclass
@@ -94,6 +95,14 @@ def factory_options(parser):
     parser.add_argument('--factory', help='Trusted installed module:callable; never imported during dry-run.')
     parser.add_argument('--factory-args', type=Path, help='Bounded plain JSON object passed as keyword arguments to the factory.')
     parser.add_argument('--trust-factory', action='store_true', help='Authorize trusted Python import/call during execution. This is not a sandbox.')
+
+
+def execution_options(parser, *, help):
+    """Explicit preview and execution cannot be combined, in either order."""
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--execute', action='store_true', help=help)
+    group.add_argument('--dry-run', action='store_true',
+                       help='Validate/preview only; never execute or import a factory. Missing evidence can still block analysis.')
 
 
 def factory_kwargs(args):

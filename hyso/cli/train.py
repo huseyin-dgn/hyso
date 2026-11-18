@@ -1,7 +1,7 @@
 """TrainingConfig validation and explicit caller-owned TrainingSession execution."""
 from pathlib import Path
 from .common import (CLIError, Outcome, command, output_check, export_text, json_text,
-                     require, factory_options, factory_kwargs, load_factory)
+                     require, factory_options, factory_kwargs, load_factory, execution_options)
 
 
 def register(sub):
@@ -13,8 +13,8 @@ def register(sub):
     q = command(s, 'run', 'Default: validate and review only. Execution calls factory(config, **kwargs) -> prepared TrainingSession.', run)
     q.add_argument('config', type=Path)
     factory_options(q)
-    for flag, help in [('execute', 'Authorize this run (also requires --allow-training and --trust-factory).'),
-                       ('allow-training', 'Authorize one TrainingSession.fit; no implicit retry.'),
+    execution_options(q, help='Authorize this run (also requires --allow-training and --trust-factory).')
+    for flag, help in [('allow-training', 'Authorize one TrainingSession.fit; no implicit retry.'),
                        ('allow-cuda', 'Separately authorize the explicit TrainingConfig CUDA device.'),
                        ('allow-file-writes', 'Authorize TrainingConfig save_last_to checkpoint writes.')]:
         q.add_argument('--' + flag, action='store_true', help=help)
@@ -48,7 +48,8 @@ def run(args):
                         source_contract='factory(config: TrainingConfig, **kwargs) -> prepared TrainingSession with actual model/loaders')
             if not args.execute:
                 export_text(args, json_text(data))
-                return Outcome(data, 3 if missing else 0, 'blocked' if missing else 'dry_run')
+                preview = getattr(args, 'dry_run', False)
+                return Outcome(data, 3 if missing and not preview else 0, 'blocked' if missing and not preview else 'dry_run')
             require(not missing, 'Execution blocked. Add: ' + ', '.join(missing) + '.', code=3)
             if settings['save_last_to'] is not None:
                 destination = Path(settings['save_last_to'])

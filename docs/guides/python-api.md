@@ -1,5 +1,8 @@
 # Python API discovery and help
 
+[Kısa Python/CLI tarifleri](ux-01-quickstart.md), `prepare_datasets`, açık
+`--dry-run`, hata önerileri ve v0.2.0 uyumluluk sınırlarını gösterir.
+
 The current [Python-first workflow](python-first-workflow.md) covers graph output
 selection, isolated model checks and architecture comparison. The web product
 is retired; the Python API and seven existing CLI groups are the product interfaces.

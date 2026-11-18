@@ -118,11 +118,14 @@ class TrainingSession:
             outputs=model.classifier.out_features
             if (c['task']=='multiclass' and outputs<2) or (c['task']=='binary' and outputs!=1):
                 raise TrainingConfigError('known classifier head does not match requested task')
-            for loader in (train_loader,val_loader):
+            for label,loader in (('train_loader',train_loader),('val_loader',val_loader)):
                 if loader is not None and type(loader.dataset) is TensorDataset:
                     shape=tuple(loader.dataset.tensors[0].shape[1:])
                     if len(shape)!=3 or (type(model) is ModularCNN and shape[0]!=model.input_channels) or (type(model) in (BuiltClassifier,BuiltSequential) and shape!=model.input_shape):
-                        raise TrainingConfigError('TensorDataset input shape does not match the known model contract')
+                        expected = ('CHW with C='+str(model.input_channels)) if type(model) is ModularCNN else str(tuple(model.input_shape))
+                        raise TrainingConfigError(
+                            f'TensorDataset input shape does not match the known model contract: {label} supplies {shape}; expected {expected} (batch dimension excluded).',
+                            suggestion='Match the dataset sample shape to the model input contract, or explicitly rebuild the model for that shape. No resizing or model change was applied.')
         checkpoint_mode=c['save_last_to'] is not None or c['resume_from'] is not None
         if checkpoint_mode and type(model) is GraphTensorOutput and len(model.graph.to_config()['inputs']) != 1:
             if any(loader is not None and type(loader.dataset) is not NamedTensorDataset for loader in (train_loader,val_loader)):

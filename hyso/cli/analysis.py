@@ -3,7 +3,7 @@ from dataclasses import replace
 import os
 from pathlib import Path
 from .common import (Outcome, command, output_check, read_json, export_text, json_text,
-                     require, factory_options, factory_kwargs, load_factory)
+                     require, factory_options, factory_kwargs, load_factory, execution_options)
 
 
 def register(sub):
@@ -32,7 +32,7 @@ def register(sub):
             q.add_argument('--companions', type=Path, help='JSON array of {path,sha256} pinned P21 companion files; paths relative to this manifest.')
             q.add_argument('--factory-args', type=Path, help='Plain JSON factory keyword object. No executable JSON source descriptors.')
             q.add_argument('--trust-factory', action='store_true', help='Authorize trusted Python import/call during execution only; arbitrary code is not sandboxed.')
-            q.add_argument('--execute', action='store_true', help='Authorize execution after native metadata preflight (default: dry-run).')
+            execution_options(q, help='Authorize execution after native metadata preflight (default: dry-run).')
             q.add_argument('--authorize', nargs='+', help='Exact selected feature subset to execute. Required with --execute; never inferred from --features.')
             for flag, desc in [('capture', 'new measurement/capture'), ('training', 'training episodes'),
                                ('cuda', 'CUDA access'), ('camera', 'camera access'), ('long-run', 'long-running work'),
