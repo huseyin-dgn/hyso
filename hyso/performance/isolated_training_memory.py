@@ -167,9 +167,10 @@ def _activation():return dict(value=None,status="unsupported",reason="no_validat
 
 class _IsolatedRecorder(_MemoryRecorder):
     """Single reset owner, constructed only after OS admission in this worker."""
-    def __init__(self,trainer,timing_protocol,protocol,token,activation=None):
+    def __init__(self,trainer,timing_protocol,protocol,token,activation=None,_phase_trace=None):
         self.isolated_protocol=protocol;self.token=token;self.windows=[];self.window=None
         self.activation=activation
+        self._phase_trace=_phase_trace
         super().__init__(trainer,timing_protocol,protocol.memory_protocol)
 
     def sample(self):
@@ -217,6 +218,8 @@ class _IsolatedRecorder(_MemoryRecorder):
             self.activation.context=dict(epoch_id=self.epoch["epoch_id"],microbatch_id=microbatch_id,window_id=self.window_id)
 
     def stage_begin(self,name):
+        if self._phase_trace is not None and name in ("forward","loss_metrics","backward","scaler_step_attempt"):
+            self._phase_trace.emit(name,"begin")
         super().stage_begin(name)
         if self.activation is not None:self.activation.stage=name
 
@@ -224,6 +227,16 @@ class _IsolatedRecorder(_MemoryRecorder):
         try:super().stage_end(name)
         finally:
             if self.activation is not None:self.activation.stage=None
+        if self._phase_trace is not None and name in ("forward","loss_metrics","backward","scaler_step_attempt"):
+            self._phase_trace.emit(name,"end")
+
+    def training_end(self,validation):
+        super().training_end(validation)
+        if self._phase_trace is not None:self._phase_trace.emit("validation","begin" if validation else "skipped")
+
+    def validation_end(self,validation):
+        super().validation_end(validation)
+        if self._phase_trace is not None:self._phase_trace.emit("validation","end" if validation else "skipped")
 
     def attempt_end(self,updates,samples):
         row=self.window
@@ -244,18 +257,27 @@ class _IsolatedRecorder(_MemoryRecorder):
         super().attempt_end(updates,samples)
 
     def close(self):
-        try:super().close()
+        if self._phase_trace is not None:self._phase_trace.emit("recorder_cleanup","begin")
+        try:
+            super().close()
+        except BaseException:
+            if self._phase_trace is not None:self._phase_trace.emit("recorder_cleanup","error")
+            raise
+        else:
+            if self._phase_trace is not None:self._phase_trace.emit("recorder_cleanup","end")
         finally:self.window=None
 
 
-def _run_recipe(request):
+def _run_recipe(request,*,_phase_trace=None):
     """Called only by admitted stdlib bootstrap. Imports/allocations stay child-owned."""
     recipe=TrainingMemoryRecipe(**request["recipe"]).to_dict();protocol=_protocol(request["protocol"])
+    from ._training_memory_worker import _phase, _trace_hooks
     if recipe["device"] != protocol.memory_protocol.device:
         raise ValueError("recipe/protocol device mismatch before worker setup")
     if str(torch.__version__)!=request["torch_version"]:raise RuntimeError("worker runtime Torch mismatch")
     if torch.cuda.is_initialized():raise RuntimeError("CUDA initialized before owned allocator setup")
     device=torch.device(recipe["device"])
+    _phase(_phase_trace,"cuda_setup","begin" if device.type=="cuda" else "skipped")
     if protocol.saved_activation_lifetime and device.type=="cuda":
         raise NotImplementedError("CUDA saved-activation adapter disabled: P23 R1 native-crash gate unresolved (0xC0000409)")
     if device.type=="cuda":
@@ -264,6 +286,7 @@ def _run_recipe(request):
         if protocol.cuda_memory_fraction is not None:
             torch.cuda.set_per_process_memory_fraction(protocol.cuda_memory_fraction,device)
         if torch.cuda.get_allocator_backend()!="native":raise NotImplementedError("only native CUDA allocator is validated")
+        _phase(_phase_trace,"cuda_setup","end")
     torch.set_num_threads(1)
     if protocol.deterministic:
         torch.use_deterministic_algorithms(True);torch.backends.cudnn.benchmark=False
@@ -272,7 +295,9 @@ def _run_recipe(request):
     if recipe["factory_search_path"]:sys_path_append(recipe["factory_search_path"])
     module,name=recipe["factory"].split(":");factory=importlib.import_module(module)
     for part in name.split("."):factory=getattr(factory,part)
+    _phase(_phase_trace,"factory","begin")
     workload=factory(device=recipe["device"],**recipe["kwargs"])
+    _phase(_phase_trace,"factory","end")
     if type(workload) is not dict or not {"trainer","train_loader","val_loader"}<=set(workload) or set(workload)-{"trainer","train_loader","val_loader","stream"}:
         raise TypeError("factory must return trainer/train_loader/val_loader and optional stream")
     trainer=workload["trainer"]
@@ -290,10 +315,11 @@ def _run_recipe(request):
     activation=_SavedActivationRecorder(trainer.model,protocol.max_saved_tensors,protocol.max_saved_tensor_events) if protocol.saved_activation_lifetime else None
     captured=[]
     def factory_recorder(t,p):
-        recorder=_IsolatedRecorder(t,p,protocol,request["token"],activation);captured.append(recorder);return recorder
+        recorder=_IsolatedRecorder(t,p,protocol,request["token"],activation,_phase_trace);captured.append(recorder);return recorder
     try:
         from contextlib import nullcontext
-        with (torch.cuda.stream(stream) if stream is not None else nullcontext()), (activation.hooks() if activation is not None else nullcontext()):
+        with (torch.cuda.stream(stream) if stream is not None else nullcontext()), _trace_hooks(
+                _phase_trace,activation.hooks() if activation is not None else nullcontext(),activation is not None):
             timing=_measure_training(trainer,workload["train_loader"],workload["val_loader"],epochs=recipe["epochs"],
                 protocol=protocol.timing_protocol,save_last_to=recipe["save_last_to"],resume_from=recipe["resume_from"],
                 recorder_factory=factory_recorder)
@@ -302,6 +328,8 @@ def _run_recipe(request):
         projection=timing._export_data()
         projection["limitations"][1]="P19 projection of isolated P23 memory capture; no P20 stage timing"
         projection["instrumentation"]["event_policy"]="P19 bounded event pairs; memory queries do not record events"
+        if _phase_trace is not None:
+            projection["limitations"].append("Private diagnostic phase trace perturbs timing; no measurement authority.")
         timing=TrainingPerformanceResult(projection)
         source,digest=_source(timing)
         return dict(source_p19=source,source_sha256=digest,source_segment_id=source["segment_id"],
@@ -319,7 +347,14 @@ def _run_recipe(request):
         try:
             for recorder in captured:recorder.close()
         finally:
-            if activation is not None:activation.close()
+            _phase(_phase_trace,"activation_cleanup","begin" if activation is not None else "skipped")
+            try:
+                if activation is not None:activation.close()
+            except BaseException:
+                _phase(_phase_trace,"activation_cleanup","error")
+                raise
+            else:
+                _phase(_phase_trace,"activation_cleanup","end" if activation is not None else "skipped")
             captured.clear();workload.clear()
 
 
