@@ -1,5 +1,6 @@
 """Bilingual views of two-model observations; reuse existing Advisor presentation."""
 from __future__ import annotations
+import typing as _typing
 
 from typing import Any
 from ._json import AdvisorError
@@ -9,7 +10,7 @@ from .engine import advise
 from ..analysis._codec import export
 
 
-def to_display_dict(result, *, language: str = 'en') -> dict[str,Any]:
+def to_display_dict(result, *, language: _typing.Literal['tr', 'en'] = 'en') -> dict[str,Any]:
     """Translate presentation only; never change eligibility, evidence or policy."""
     from ..analysis.model_comparison import ModelComparisonResult, ModelComparisonSource, _selected_report
     if type(result) is not ModelComparisonResult:
@@ -97,7 +98,7 @@ def to_display_dict(result, *, language: str = 'en') -> dict[str,Any]:
         limitations=data['limitations'])
 
 
-def to_markdown(result, path=None, *, language: str = 'en', overwrite: bool = False) -> str:
+def to_markdown(result, path=None, *, language: _typing.Literal['tr', 'en'] = 'en', overwrite: bool = False) -> str:
     """Render native differences and existing per-model Advisor observations."""
     view = to_display_dict(result,language=language); tr = language=='tr'
     words = (('HYSo iki model karşılaştırması','Özellik / metrik','Durum','Mutlak fark B−A','Göreli değişim (%)','Açıklama') if tr else

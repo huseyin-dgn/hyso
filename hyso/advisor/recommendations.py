@@ -5,6 +5,7 @@ authoritative; explanations, coverage reviews and candidate plans are not proof
 of an improvement. Serialized recommendations are rederived on import.
 """
 from __future__ import annotations
+import typing as _typing
 
 from dataclasses import dataclass
 import json
@@ -282,7 +283,7 @@ class RecommendationReport:
         data, _, _ = read_json(path, max_bytes=_MAX_BYTES)
         return cls(data)
 
-    def to_display_dict(self, *, language: str = "tr", level: str = "technical") -> dict[str, Any]:
+    def to_display_dict(self, *, language: _typing.Literal['tr', 'en'] = "tr", level: _typing.Literal['beginner', 'technical', 'expert'] = "technical") -> dict[str, Any]:
         """Explain decisions in tr/en at beginner/technical/expert detail levels.
 
         Native numbers, units, protocol bindings and original rule text remain
@@ -361,8 +362,8 @@ class RecommendationReport:
                         "Kapsam kaydı optimizasyon uygunluğu değildir. Resolver v1 yalnız P01/P02/P03/P08/P10/P11/P26'yı destekler.",
                         "Kaynak doğrulaması dış artifact dosyalarını yeniden okumaz ve bağımsız iyileşme kanıtı oluşturmaz."])
 
-    def to_markdown(self, path: str | Path | None = None, *, language: str = "tr",
-                    level: str = "technical", overwrite: bool = False) -> str:
+    def to_markdown(self, path: str | Path | None = None, *, language: _typing.Literal['tr', 'en'] = "tr",
+                    level: _typing.Literal['beginner', 'technical', 'expert'] = "technical", overwrite: bool = False) -> str:
         """Render through the existing Stage 8 presentation contract.
 
         Args:
@@ -389,8 +390,8 @@ class RecommendationReport:
         from ..reporting import create_report
         return create_report(self, language=language, level=level).to_markdown(path, overwrite=overwrite)
 
-    def to_html(self, path: str | Path | None = None, *, language: str = "tr",
-                level: str = "technical", overwrite: bool = False) -> str:
+    def to_html(self, path: str | Path | None = None, *, language: _typing.Literal['tr', 'en'] = "tr",
+                level: _typing.Literal['beginner', 'technical', 'expert'] = "technical", overwrite: bool = False) -> str:
         """Export portable HTML with source evidence and manual verification links.
 
         Args:

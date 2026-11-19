@@ -5,7 +5,7 @@ namespaces expose measurement, evidence and advisory APIs; importing them never
 requests a training run or benchmark. Legacy canonical import paths are retained.
 See README.md and docs/guides/python-api.md for CPU-first examples and limits.
 """
-from typing import TYPE_CHECKING as _TYPE_CHECKING
+from typing import TYPE_CHECKING as _TYPE_CHECKING, Literal as _Literal
 from importlib import import_module as _import_module
 
 from . import models, callbacks, augmentation
@@ -15,6 +15,60 @@ from .quality import (EvaluationCohort, QualityExperimentResult, measure_time_to
 from .structure import ModelStructureSnapshot, ModelStructureError, capture_model_structure
 from .structure_comparison import ModelStructureComparison, ModelStructureComparisonError, compare_model_structures
 from .architecture_audit import ModelArchitectureAudit, ModelArchitectureAuditError, audit_model_architecture
+
+class Device:
+    """Discover plain device selectors without querying or allocating hardware.
+
+    Returns:
+        Strings accepted by existing device validators and JSON serialization.
+    Raises:
+        ValueError: A CUDA index is not a nonnegative integer.
+    Example:
+        config = TrainingConfig(device=Device.cpu())
+
+    HYSo Guide: training.configuration
+    Offline: hyso docs show training.configuration --lang en
+    Open: hyso docs open training.configuration --lang en
+    """
+
+    @staticmethod
+    def cpu() -> _Literal['cpu']:
+        """Return the CPU selector without inspecting the runtime.
+
+        Returns:
+            The plain string 'cpu'.
+        Raises:
+            No additional validation or hardware access.
+        Example:
+            Device.cpu()
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
+        """
+        return 'cpu'
+
+    @staticmethod
+    def cuda(index: int = 0) -> str:
+        """Format an indexed CUDA selector; execution still requires native admission.
+
+        Args:
+            index: Nonnegative CUDA device index; bool is not an index.
+        Returns:
+            A plain 'cuda:index' string without hardware queries or allocation.
+        Raises:
+            ValueError: index is not a nonnegative integer.
+        Example:
+            selector = Device.cuda(1)
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
+        """
+        if type(index) is not int or index < 0:
+            raise ValueError('CUDA index must be a nonnegative integer')
+        return f'cuda:{index}'
+
 
 if _TYPE_CHECKING:
     from .training import TrainingConfig as TrainingConfig, TrainingConfigError as TrainingConfigError

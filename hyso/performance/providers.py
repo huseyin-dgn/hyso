@@ -81,7 +81,7 @@ class ProviderProtocol:
             raise ValueError('job memory must cover one process')
 
 
-def profile_execution_providers(recipe: '_typing.Any', directory: '_typing.Any', *, providers: '_typing.Any'=None, expected: '_typing.Any'=None, optimization: 'str'='all',
+def profile_execution_providers(recipe: '_typing.Any', directory: '_typing.Any', *, providers: '_typing.Any'=None, expected: '_typing.Any'=None, optimization: _typing.Literal['disabled', 'all']='all',
                                 protocol: '_typing.Any'=ProviderProtocol(), runtime_search_path: '_typing.Any'=None, provider_options: '_typing.Any'=None) -> '_typing.Any':
     """Factory returns (self-contained ONNX bytes, numpy input-feed dictionary).
 

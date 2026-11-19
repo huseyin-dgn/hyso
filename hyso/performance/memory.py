@@ -350,7 +350,7 @@ def _serialize(model, destination, verify, overwrite):
         if temporary is not None: temporary.unlink(missing_ok=True)
 
 
-def measure_footprint(model: '_typing.Any', *, artifact_path: '_typing.Any'=None, serialize_to: '_typing.Any'=None, artifact_format: '_typing.Any'=None,
+def measure_footprint(model: '_typing.Any', *, artifact_path: '_typing.Any'=None, serialize_to: '_typing.Any'=None, artifact_format: _typing.Literal['pytorch.state_dict']=None,
                       verify_roundtrip: 'bool'=False, expected_sha256: '_typing.Any'=None, overwrite: 'bool'=False) -> 'FootprintResult':
     """Logical dense CPU model bytes plus an optional real artifact.
 

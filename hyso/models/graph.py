@@ -3823,11 +3823,12 @@ class GraphModelBuilder:
         """
         return _analyze(config,batch_size,activation_limit)[0]
 
-    def preview(self,**options: '_typing.Any') -> 'dict[str, _typing.Any]':
+    def preview(self, *, batch_size: int = 1, activation_limit: int = 16777216) -> 'dict[str, _typing.Any]':
         """Inspect this graph using the allocation-free preflight checks.
 
         Args:
-            options (_typing.Any): Existing keyword options of the delegated API; unknown options are not silently inferred. Required.
+            batch_size (int): Positive metadata preview batch size. Default: 1.
+            activation_limit (int): Native preflight activation element limit. Default: 16777216.
 
         Returns:
             Allocation-free Graph metadata preview, preserving unknown/unsupported conditions.
@@ -3844,7 +3845,7 @@ class GraphModelBuilder:
         Offline: hyso docs show models.graph-builder --lang en
         Open: hyso docs open models.graph-builder --lang en
         """
-        return self.preflight(self.to_config(),**options)
+        return self.preflight(self.to_config(), batch_size=batch_size, activation_limit=activation_limit)
 
     def build(self) -> 'GraphModel':
         """Construct the validated graph on CPU without running a forward pass.

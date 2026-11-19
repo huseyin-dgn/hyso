@@ -55,7 +55,7 @@ class ColdStartRecipe:
     __slots__=('_payload',)
     _payload: str
 
-    def __init__(self,factory: '_typing.Any',*,model_kwargs: '_typing.Any'=None,input_shape: '_typing.Sequence[int]'=(1,1,5,7),device: 'str'='cpu',precision: 'str'='fp32',
+    def __init__(self,factory: '_typing.Any',*,model_kwargs: '_typing.Any'=None,input_shape: '_typing.Sequence[int]'=(1,1,5,7),device: 'str'='cpu',precision: _typing.Literal['fp32', 'fp64', 'amp_fp16']='fp32',
                  artifact_path: '_typing.Any'=None,artifact_sha256: '_typing.Any'=None,factory_search_path: '_typing.Any'=None,seed: 'int'=0) -> 'None':
         """Initialize ColdStartRecipe with the supplied settings.
 

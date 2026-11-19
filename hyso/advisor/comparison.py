@@ -69,7 +69,7 @@ class ComparisonContract(Contract):
     Open: hyso docs open comparison.models --lang en
     """
     metric: NativeMetric = NativeMetric.FORWARD_P95
-    allowed_changes: tuple = ()
+    allowed_changes: tuple[_typing.Literal['model', 'batch', 'precision'], ...] = ()
     min_samples: int = 1000
     min_tail_samples: int = 10
 
@@ -112,9 +112,9 @@ class P26QualityComparisonContract(Contract):
     Open: hyso docs open comparison.models --lang en
     """
     metric: NativeMetric = NativeMetric.TEST_ACCURACY
-    allowed_changes: tuple = ()
+    allowed_changes: tuple[_typing.Literal['model'], ...] = ()
     min_samples: int = 1
-    policy: str = 'p26_exact_observed_stream_v1'
+    policy: _typing.Literal['p26_exact_observed_stream_v1'] = 'p26_exact_observed_stream_v1'
 
     def __post_init__(self):
         _enum(self, 'metric', NativeMetric)
@@ -158,9 +158,9 @@ class P26BoundQualityComparisonContract(Contract):
     Open: hyso docs open comparison.models --lang en
     """
     metric: NativeMetric = NativeMetric.TEST_ACCURACY
-    allowed_changes: tuple = ()
+    allowed_changes: tuple[_typing.Literal['model'], ...] = ()
     min_samples: int = 1
-    policy: str = 'p26_bound_exact_observed_stream_v1'
+    policy: _typing.Literal['p26_bound_exact_observed_stream_v1'] = 'p26_bound_exact_observed_stream_v1'
 
     def __post_init__(self):
         # Reuse the closed schema-2 requirements, without changing its policy.
@@ -197,7 +197,7 @@ class ComparisonReason(Contract):
     """
     code: str
     field: str
-    side: str = 'pair'
+    side: _typing.Literal['left', 'right', 'pair'] = 'pair'
 
     def __post_init__(self):
         _text(self.code, 'reason_code'); _text(self.field, 'reason_field')
@@ -238,8 +238,8 @@ class ComparisonResult(Contract):
     reasons: tuple
     left: EvidenceRef | None = None
     right: EvidenceRef | None = None
-    performance_effect: str = 'not_computed'
-    statistical_independence: str = 'not_certified'
+    performance_effect: _typing.Literal['not_computed'] = 'not_computed'
+    statistical_independence: _typing.Literal['not_certified'] = 'not_certified'
 
     def __post_init__(self):
         _enum(self, 'status', ComparisonStatus); _sha(self.contract_sha256, 'contract_sha256')

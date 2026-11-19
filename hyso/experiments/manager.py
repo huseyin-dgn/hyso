@@ -596,8 +596,8 @@ class ExperimentManager:
         with self._access("get_experiment") as db:
             return self._experiment(self._row(db, "experiments", identity))
 
-    def list_experiments(self, *, name: str | None = None, kind: str | None = None,
-                         status: str | None = None, after_seq: int | None = None,
+    def list_experiments(self, *, name: str | None = None, kind: _typing.Literal['training', 'evaluation', 'benchmark'] | None = None,
+                         status: _typing.Literal['created', 'running', 'completed', 'failed', 'interrupted'] | None = None, after_seq: int | None = None,
                          limit: int = 100) -> list[dict[str, _typing.Any]]:
         """List experiments by exact name and matching run kind/status, with a seq cursor.
 
@@ -645,7 +645,7 @@ class ExperimentManager:
                               " ORDER BY e.seq LIMIT ?", (*values, limit)).fetchall()
             return [self._experiment(row) for row in rows]
 
-    def create_workflow_run(self, experiment_id: str, stage: str, *, model_ids: _typing.Sequence[str],
+    def create_workflow_run(self, experiment_id: str, stage: _typing.Literal['model', 'training', 'analysis', 'comparison'], *, model_ids: _typing.Sequence[str],
                             architectures: dict[str, ModelBuilder | GraphModelBuilder] | None = None,
                             training_config: TrainingConfig | None = None,
                             analysis: AnalysisDryRun | None = None,
@@ -804,7 +804,7 @@ class ExperimentManager:
         from .workflow import open_result
         return open_result(self, artifact_id, path)
 
-    def create_run(self, experiment_id: 'str', kind: 'str', config: 'dict[str, _typing.Any]', provenance: '_typing.Any'=None, *, redact_paths: '_typing.Sequence[str]'=(),
+    def create_run(self, experiment_id: 'str', kind: _typing.Literal['training', 'evaluation', 'benchmark'], config: 'dict[str, _typing.Any]', provenance: '_typing.Any'=None, *, redact_paths: '_typing.Sequence[str]'=(),
                    retry_of_run_id: 'str | None'=None, resume_artifact_id: 'str | None'=None, request_id: 'str | None'=None) -> 'ExperimentRun':
         """Persist a new run and return its lifecycle handle; no training is started.
 
@@ -1152,7 +1152,7 @@ class ExperimentManager:
         return dict(db.execute("SELECT * FROM run_artifacts WHERE run_id=? AND artifact_id=? AND role=?",
                               (run_id, artifact_id, role)).fetchone())
 
-    def link_artifact(self, run_id: 'str', artifact_id: 'str', *, role: 'str'="input") -> 'dict[str, _typing.Any]':
+    def link_artifact(self, run_id: 'str', artifact_id: 'str', *, role: _typing.Literal['input', 'output', 'report']="input") -> 'dict[str, _typing.Any]':
         """Attach an existing artifact to a run with an explicit input/output/report role.
 
         Args:
@@ -1518,7 +1518,7 @@ class ExperimentManager:
         record["writer_liveness"] = "unknown" if row["status"] == "running" else "not_applicable"
         return record
 
-    def list_runs(self, experiment_id: 'str | None'=None, *, kind: 'str | None'=None, status: 'str | None'=None, after_seq: 'int | None'=None, limit: 'int'=100) -> 'list[dict[str, _typing.Any]]':
+    def list_runs(self, experiment_id: 'str | None'=None, *, kind: _typing.Literal['training', 'evaluation', 'benchmark'] | None=None, status: _typing.Literal['created', 'running', 'completed', 'failed', 'interrupted'] | None=None, after_seq: 'int | None'=None, limit: 'int'=100) -> 'list[dict[str, _typing.Any]]':
         """Read a bounded page of run records using the optional filters.
 
         Args:
@@ -1684,7 +1684,7 @@ class ExperimentRun:
                        (request_id, digest, self.id, revision, row["status"], target, now, reason_json))
         return json.loads(reason_json)
 
-    def add_artifact(self, path: '_typing.Any', *, kind: 'str'="checkpoint", ownership: 'str'="reference", role: 'str'="output",
+    def add_artifact(self, path: '_typing.Any', *, kind: 'str'="checkpoint", ownership: _typing.Literal['reference', 'copy']="reference", role: _typing.Literal['input', 'output', 'report']="output",
                      request_id: 'str | None'=None, metadata: '_typing.Any'=None, retain_locator: 'bool'=False,
                      max_size_bytes: '_typing.Any'=1024**3) -> 'dict[str, _typing.Any]':
         """Register a file by reference or managed copy under the store ownership rules.
@@ -1796,7 +1796,7 @@ class ExperimentRun:
         """
         return self._transition("completed", {"reason": _label(reason, 256)}, request_id)
 
-    def fail(self, code: 'str', *, failure_domain: 'str'="workload", workload_outcome: 'str'="failed", request_id: 'str | None'=None) -> 'dict[str, _typing.Any]':
+    def fail(self, code: 'str', *, failure_domain: _typing.Literal['workload', 'tracking', 'artifact']="workload", workload_outcome: _typing.Literal['failed', 'succeeded', 'unknown']="failed", request_id: 'str | None'=None) -> 'dict[str, _typing.Any]':
         """Record a failed run with the supplied code, failure domain and outcome.
 
         Args:
@@ -1891,7 +1891,7 @@ class ExperimentRun:
         return result, _json(result), None if event is None else _id(event)
 
     def log_metric(self, *, name: 'str', value: 'int | float', unit: 'str', source: 'str', epoch: 'int | None'=None, step: 'int | None'=None,
-                   step_kind: '_typing.Any'=None, event_id: 'str | None'=None, observed_at_utc: '_typing.Any'=None) -> 'dict[str, _typing.Any]':
+                   step_kind: _typing.Literal['applied_update', 'optimizer_attempt', 'microbatch', 'observation']=None, event_id: 'str | None'=None, observed_at_utc: '_typing.Any'=None) -> 'dict[str, _typing.Any]':
         """Persist one metric observation on an explicit epoch/update/observation axis.
 
         Args:

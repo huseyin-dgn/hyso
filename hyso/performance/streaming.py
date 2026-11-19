@@ -38,7 +38,7 @@ class StreamSource:
     Offline: hyso docs show analysis.p30 --lang en
     Open: hyso docs open analysis.p30 --lang en
     """
-    kind: str
+    kind: _typing.Literal['video_file', 'camera']
     location: str | int
     provenance: str
     camera_binding: dict | None = None
@@ -89,7 +89,7 @@ class StreamProtocol:
     """
     max_frames: int = 16
     queue_capacity: int = 2
-    queue_policy: str = 'block'
+    queue_policy: _typing.Literal['block', 'drop_newest'] = 'block'
     late_after_seconds: float = .1
     pace_video: bool = False
     startup_timeout_seconds: float = 45.

@@ -501,7 +501,7 @@ class ModelBuilder:
         return c, tuple(shape)
 
     @classmethod
-    def sequential(cls, input_shape: '_typing.Sequence[int]', *, head: 'str'='classification', **head_params: '_typing.Any') -> 'ModelBuilder':
+    def sequential(cls, input_shape: '_typing.Sequence[int]', *, head: _typing.Literal['classification', 'regression', 'embedding']='classification', **head_params: '_typing.Any') -> 'ModelBuilder':
         """Create an opt-in schema2 chain with an explicit terminal head.
 
         Args:
@@ -526,6 +526,79 @@ class ModelBuilder:
         """
         return cls.from_config(dict(format='hyso.model_config',schema_version=2,kind='sequential',
                                     input_shape=input_shape,blocks=[],head=dict(name=f'{head}_head',params=head_params)))
+
+    @classmethod
+    def classification(cls, input_shape: _typing.Sequence[int], *, num_classes: int,
+                       pooling: _typing.Literal['avg', 'max', 'none'] = 'avg',
+                       dropout: float = 0) -> ModelBuilder:
+        """Start the existing schema2 sequential classifier with an explicit head.
+
+        Args:
+            input_shape: Per-sample (C, H, W) shape.
+            num_classes: Positive output class count.
+            pooling: Existing head pooling; none flattens the inferred feature shape.
+            dropout: Existing classification-head dropout probability.
+        Returns:
+            An architecture-only builder; model construction and training are explicit.
+        Raises:
+            ModelConfigError: The existing schema2 head/shape validator rejects options.
+        Example:
+            builder = ModelBuilder.classification((1, 8, 8), num_classes=2)
+
+        HYSo Guide: components.heads
+        Offline: hyso docs show components.heads --lang en
+        Open: hyso docs open components.heads --lang en
+        """
+        return cls.sequential(input_shape, head='classification', num_classes=num_classes,
+                              pooling=pooling, dropout=dropout)
+
+    @classmethod
+    def regression(cls, input_shape: _typing.Sequence[int], *, output_features: int,
+                   pooling: _typing.Literal['avg', 'max', 'none'] = 'avg') -> ModelBuilder:
+        """Start the existing schema2 sequential regressor with an explicit head.
+
+        Args:
+            input_shape: Per-sample (C, H, W) shape.
+            output_features: Positive number of output values.
+            pooling: Existing head pooling strategy.
+        Returns:
+            An architecture-only builder with inferred head input features.
+        Raises:
+            ModelConfigError: The existing schema2 head/shape validator rejects options.
+        Example:
+            builder = ModelBuilder.regression((1, 8, 8), output_features=1)
+
+        HYSo Guide: components.heads
+        Offline: hyso docs show components.heads --lang en
+        Open: hyso docs open components.heads --lang en
+        """
+        return cls.sequential(input_shape, head='regression', output_features=output_features, pooling=pooling)
+
+    @classmethod
+    def embedding(cls, input_shape: _typing.Sequence[int], *, embedding_dim: int,
+                  pooling: _typing.Literal['avg', 'max', 'none'] = 'avg',
+                  normalize: bool = False, eps: float = 1e-12) -> ModelBuilder:
+        """Start the existing schema2 embedding model with explicit normalization options.
+
+        Args:
+            input_shape: Per-sample (C, H, W) shape.
+            embedding_dim: Positive embedding output width.
+            pooling: Existing head pooling strategy.
+            normalize: Apply the existing output L2 normalization.
+            eps: Positive native normalization epsilon.
+        Returns:
+            An architecture-only builder with inferred head input features.
+        Raises:
+            ModelConfigError: The existing schema2 head/shape validator rejects options.
+        Example:
+            builder = ModelBuilder.embedding((1, 8, 8), embedding_dim=4, normalize=True)
+
+        HYSo Guide: components.heads
+        Offline: hyso docs show components.heads --lang en
+        Open: hyso docs open components.heads --lang en
+        """
+        return cls.sequential(input_shape, head='embedding', embedding_dim=embedding_dim,
+                              pooling=pooling, normalize=normalize, eps=eps)
 
     @classmethod
     def named(cls, name: str, **params: Any) -> ModelBuilder:

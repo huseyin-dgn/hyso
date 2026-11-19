@@ -62,12 +62,12 @@ class TransferProtocol:
     Open: hyso docs open analysis.p15 --lang en
     """
     shape: tuple[int, ...] = (262144,)
-    dtype: str = 'float32'
-    directions: tuple[str, ...] = ('H2D', 'D2H')
+    dtype: _typing.Literal['float16', 'float32', 'float64', 'int32', 'int64', 'uint8'] = 'float32'
+    directions: tuple[_typing.Literal['H2D', 'D2H'], ...] = ('H2D', 'D2H')
     pinned: bool = False
     non_blocking: bool = False
     device: str = 'cuda:0'
-    layout: str = 'contiguous_dense'
+    layout: _typing.Literal['contiguous_dense'] = 'contiguous_dense'
     warmup_iterations: int = 2
     measure_iterations: int = 5
     repeats: int = 2

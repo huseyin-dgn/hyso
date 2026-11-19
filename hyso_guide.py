@@ -1,4 +1,7 @@
 """Locate HYSo's installed four-language offline guide using only the stdlib."""
+import typing as _typing
+
+_TopicId = _typing.Literal['about.overview', 'getting-started.installation', 'getting-started.first-run', 'models.support', 'models.legacy', 'models.development-families', 'models.model-builder', 'models.graph-builder', 'models.checks', 'components.convolution', 'components.normalization', 'components.activation', 'components.pooling', 'components.residual', 'components.attention', 'components.regularization', 'components.sampling', 'components.heads', 'components.fusion', 'components.mobile', 'training.configuration', 'training.trainer', 'training.checkpoints', 'analysis.overview', 'metrics.interpretation', 'analyzer.workflow', 'comparison.models', 'comparison.architecture', 'advisor.recommendations', 'reporting.outputs', 'experiments.manager', 'api.python-cli', 'troubleshooting.common', 'support.cpu-gpu', 'compatibility.versions', 'analysis.p01', 'analysis.p02', 'analysis.p03', 'analysis.p04', 'analysis.p05', 'analysis.p06', 'analysis.p07', 'analysis.p08', 'analysis.p09', 'analysis.p10', 'analysis.p11', 'analysis.p12', 'analysis.p13', 'analysis.p14', 'analysis.p15', 'analysis.p16', 'analysis.p17', 'analysis.p18', 'analysis.p19', 'analysis.p20', 'analysis.p21', 'analysis.p22', 'analysis.p23', 'analysis.p24', 'analysis.p25', 'analysis.p26', 'analysis.p27', 'analysis.p28', 'analysis.p29', 'analysis.p30', 'analysis.p31', 'analysis.p32', 'analysis.p33', 'analysis.p34', 'analysis.p35']
 import argparse
 from html.parser import HTMLParser
 import json
@@ -16,7 +19,7 @@ def _resources() -> tuple[Path, dict]:
     return guide, registry
 
 
-def _topic(topic_id: str, lang: str) -> tuple[Path, dict, dict]:
+def _topic(topic_id: _TopicId, lang: str) -> tuple[Path, dict, dict]:
     if lang not in ('tr','en','de','es'):
         raise ValueError('Unsupported guide language. Choose tr, en, de or es.')
     guide,registry = _resources()
@@ -26,7 +29,7 @@ def _topic(topic_id: str, lang: str) -> tuple[Path, dict, dict]:
     raise ValueError('Unknown topic ID: '+str(topic_id)+'. Use hyso docs list.')
 
 
-def list_topics(lang: str = 'tr') -> list[dict[str,str]]:
+def list_topics(lang: _typing.Literal['tr', 'en', 'de', 'es'] = 'tr') -> list[dict[str,str]]:
     """List installed guide topic IDs and localized titles without opening a browser.
 
     Args:
@@ -45,7 +48,7 @@ def list_topics(lang: str = 'tr') -> list[dict[str,str]]:
     return [dict(id=t['id'],title=t['titles'][lang]) for t in registry['topics']]
 
 
-def guide_uri(topic_id: str, lang: str = 'tr') -> str:
+def guide_uri(topic_id: _TopicId, lang: _typing.Literal['tr', 'en', 'de', 'es'] = 'tr') -> str:
     """Resolve an installed topic to a local file URI; never open it implicitly.
 
     Args:
@@ -96,7 +99,7 @@ class _TopicText(HTMLParser):
         if self.active and self.capture is not None:self.parts.append(data)
 
 
-def show_topic(topic_id: str, lang: str = 'tr') -> dict:
+def show_topic(topic_id: _TopicId, lang: _typing.Literal['tr', 'en', 'de', 'es'] = 'tr') -> dict:
     """Read one localized topic from the same installed HTML, without executing it.
 
     Args:

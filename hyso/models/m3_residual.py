@@ -1,4 +1,5 @@
 """Canonical torchvision block adapters and full-preactivation residual blocks."""
+import typing as _typing
 import math
 import torch
 from torch import nn
@@ -6,7 +7,7 @@ from torchvision.models.resnet import BasicBlock, Bottleneck as TVBottleneck
 from .blocks import _positive_int
 
 
-def normalization(norm: str | None):
+def normalization(norm: _typing.Literal['batch', 'group', None]):
     """Resolve a closed normalization choice, without allocating tensors."""
     if norm == 'batch': return nn.BatchNorm2d
     if norm == 'group':
@@ -47,7 +48,7 @@ class BasicResidualBlock(BasicBlock):
     Offline: hyso docs show components.residual --lang en
     Open: hyso docs open components.residual --lang en
     """
-    def __init__(self, in_channels: int, out_channels: int, stride: int = 1, norm: str | None = 'batch') -> None:
+    def __init__(self, in_channels: int, out_channels: int, stride: int = 1, norm: _typing.Literal['batch', 'group', None] = 'batch') -> None:
         """Initialize BasicResidualBlock with the supplied settings.
 
         Args:
@@ -104,7 +105,7 @@ class Bottleneck(TVBottleneck):
     Open: hyso docs open components.residual --lang en
     """
     def __init__(self, in_channels: int, out_channels: int, stride: int = 1,
-                 norm: str | None = 'batch', groups: int = 1, width_per_group: int = 64) -> None:
+                 norm: _typing.Literal['batch', 'group', None] = 'batch', groups: int = 1, width_per_group: int = 64) -> None:
         """Initialize Bottleneck with the supplied settings.
 
         Args:
@@ -166,7 +167,7 @@ class ResNeXtBottleneck(Bottleneck):
     Open: hyso docs open components.residual --lang en
     """
     def __init__(self, in_channels: int, out_channels: int, stride: int = 1,
-                 norm: str | None = 'batch', groups: int = 32, width_per_group: int = 4) -> None:
+                 norm: _typing.Literal['batch', 'group', None] = 'batch', groups: int = 32, width_per_group: int = 4) -> None:
         """Initialize ResNeXtBottleneck with the supplied settings.
 
         Args:
@@ -225,7 +226,7 @@ class PreActivationBlock(nn.Module):
     Open: hyso docs open components.residual --lang en
     """
     def __init__(self, in_channels: int, out_channels: int, stride: int = 1,
-                 norm: str | None = 'batch', bottleneck: bool = False, dropout: float = 0.) -> None:
+                 norm: _typing.Literal['batch', 'group', None] = 'batch', bottleneck: bool = False, dropout: float = 0.) -> None:
         """Initialize PreActivationBlock with the supplied settings.
 
         Args:
@@ -318,7 +319,7 @@ class WideResidualBlock(PreActivationBlock):
     Open: hyso docs open components.residual --lang en
     """
     def __init__(self, in_channels: int, out_channels: int, stride: int = 1,
-                 norm: str | None = 'batch', dropout: float = 0.) -> None:
+                 norm: _typing.Literal['batch', 'group', None] = 'batch', dropout: float = 0.) -> None:
         """Initialize WideResidualBlock with the supplied settings.
 
         Args:

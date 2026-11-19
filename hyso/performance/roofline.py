@@ -41,7 +41,7 @@ class RooflineProtocol:
     Offline: hyso docs show analysis.p18 --lang en
     Open: hyso docs open analysis.p18 --lang en
     """
-    traffic: str = 'dispatch_payload_estimate'
+    traffic: _typing.Literal['dispatch_payload_estimate', 'unsupported'] = 'dispatch_payload_estimate'
 
     def __post_init__(self):
         if self.traffic not in ('dispatch_payload_estimate','unsupported'):

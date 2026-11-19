@@ -1,5 +1,6 @@
 """Bilingual explanation metadata for the existing P01–P35 catalog."""
 from __future__ import annotations
+import typing as _typing
 
 from typing import Any
 from ..analysis.catalog import feature_catalog
@@ -116,7 +117,7 @@ _ROWS = (
 )
 
 
-def feature_explanations(*, language: str = "tr") -> list[dict[str, Any]]:
+def feature_explanations(*, language: _typing.Literal['tr', 'en'] = "tr") -> list[dict[str, Any]]:
     """Return detached bilingual metadata for every existing feature, without execution.
 
     Args:

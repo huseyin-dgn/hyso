@@ -62,7 +62,7 @@ class ConvNormAct(nn.Module):
     """
 
     def __init__(self, in_channels: 'int', out_channels: 'int', kernel_size: 'int | tuple[int, int] | list[int]'=3, stride: 'int | tuple[int, int] | list[int]'=1,
-                 padding: 'int | tuple[int, int] | list[int]'=1, groups: 'int'=1, norm: 'str'="batch", activation: 'str'="silu") -> 'None':
+                 padding: 'int | tuple[int, int] | list[int]'=1, groups: 'int'=1, norm: _typing.Literal['batch', 'group', None]="batch", activation: _typing.Literal['silu', 'relu', None]="silu") -> 'None':
         """Initialize ConvNormAct with the supplied settings.
 
         Args:
@@ -178,7 +178,7 @@ class ResidualBlock(nn.Module):
     Open: hyso docs open components.residual --lang en
     """
 
-    def __init__(self, in_channels: 'int', out_channels: 'int', stride: 'int | tuple[int, int] | list[int]'=1, norm: 'str'="batch",
+    def __init__(self, in_channels: 'int', out_channels: 'int', stride: 'int | tuple[int, int] | list[int]'=1, norm: _typing.Literal['batch', 'group', None]="batch",
                  attention: '_typing.Any'=None) -> 'None':
         """Initialize ResidualBlock with the supplied settings.
 

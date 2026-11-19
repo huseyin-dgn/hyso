@@ -51,6 +51,30 @@
       "path": "hyso/benchmark/runner.py",
       "qualname": "BenchmarkRunner.run"
     },
+    "hyso.Device": {
+      "topic": "training.configuration",
+      "canonical": "hyso.Device",
+      "kind": "class",
+      "origin": "hyso",
+      "path": "hyso/__init__.py",
+      "qualname": "Device"
+    },
+    "hyso.Device.cpu": {
+      "topic": "training.configuration",
+      "canonical": "hyso.Device.cpu",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/__init__.py",
+      "qualname": "Device.cpu"
+    },
+    "hyso.Device.cuda": {
+      "topic": "training.configuration",
+      "canonical": "hyso.Device.cuda",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/__init__.py",
+      "qualname": "Device.cuda"
+    },
     "hyso.EvaluationCohort": {
       "topic": "analysis.p26",
       "canonical": "hyso.quality.EvaluationCohort",
@@ -1533,6 +1557,14 @@
         "development"
       ]
     },
+    "hyso.ModelBuilder.classification": {
+      "topic": "components.heads",
+      "canonical": "hyso.models.builder.ModelBuilder.classification",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.classification"
+    },
     "hyso.ModelBuilder.conv2d": {
       "topic": "components.convolution",
       "canonical": "hyso.models.builder.ModelBuilder.conv2d",
@@ -1674,6 +1706,14 @@
       "profiles": [
         "development"
       ]
+    },
+    "hyso.ModelBuilder.embedding": {
+      "topic": "components.heads",
+      "canonical": "hyso.models.builder.ModelBuilder.embedding",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.embedding"
     },
     "hyso.ModelBuilder.factorized_conv2d": {
       "topic": "components.convolution",
@@ -2122,6 +2162,14 @@
         "commercial",
         "development"
       ]
+    },
+    "hyso.ModelBuilder.regression": {
+      "topic": "components.heads",
+      "canonical": "hyso.models.builder.ModelBuilder.regression",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.regression"
     },
     "hyso.ModelBuilder.relu": {
       "topic": "components.activation",
@@ -2902,6 +2950,70 @@
       "origin": "hyso",
       "path": "hyso/training/config.py",
       "qualname": "TrainingConfig.to_json"
+    },
+    "hyso.TrainingConfig.with_adam": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_adam",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_adam"
+    },
+    "hyso.TrainingConfig.with_adamw": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_adamw",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_adamw"
+    },
+    "hyso.TrainingConfig.with_cosine_scheduler": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_cosine_scheduler",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_cosine_scheduler"
+    },
+    "hyso.TrainingConfig.with_early_stopping": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_early_stopping",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_early_stopping"
+    },
+    "hyso.TrainingConfig.with_onecycle_scheduler": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_onecycle_scheduler",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_onecycle_scheduler"
+    },
+    "hyso.TrainingConfig.with_plateau_scheduler": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_plateau_scheduler",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_plateau_scheduler"
+    },
+    "hyso.TrainingConfig.with_sgd": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_sgd",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_sgd"
+    },
+    "hyso.TrainingConfig.with_step_scheduler": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_step_scheduler",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_step_scheduler"
     },
     "hyso.TrainingResult": {
       "topic": "training.configuration",
@@ -4883,6 +4995,14 @@
       "path": "hyso/analysis/feature_plan.py",
       "qualname": "FeaturePlanRequest"
     },
+    "hyso.analysis.GraphHeadSpec": {
+      "topic": "analysis.p26",
+      "canonical": "hyso.analysis.graph_heads.GraphHeadSpec",
+      "kind": "class",
+      "origin": "hyso",
+      "path": "hyso/analysis/graph_heads.py",
+      "qualname": "GraphHeadSpec"
+    },
     "hyso.analysis.InferenceSource": {
       "topic": "analyzer.workflow",
       "canonical": "hyso.analysis.sources.InferenceSource",
@@ -5698,6 +5818,14 @@
       "origin": "hyso",
       "path": "hyso/analysis/feature_plan.py",
       "qualname": "plan_features"
+    },
+    "hyso.analysis.graph_heads.GraphHeadSpec": {
+      "topic": "analysis.p26",
+      "canonical": "hyso.analysis.graph_heads.GraphHeadSpec",
+      "kind": "class",
+      "origin": "hyso",
+      "path": "hyso/analysis/graph_heads.py",
+      "qualname": "GraphHeadSpec"
     },
     "hyso.analysis.graph_heads.MultiHeadGraphEvaluationResult": {
       "topic": "analysis.p26",
@@ -8869,6 +8997,14 @@
         "development"
       ]
     },
+    "hyso.models.ModelBuilder.classification": {
+      "topic": "components.heads",
+      "canonical": "hyso.models.builder.ModelBuilder.classification",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.classification"
+    },
     "hyso.models.ModelBuilder.conv2d": {
       "topic": "components.convolution",
       "canonical": "hyso.models.builder.ModelBuilder.conv2d",
@@ -9010,6 +9146,14 @@
       "profiles": [
         "development"
       ]
+    },
+    "hyso.models.ModelBuilder.embedding": {
+      "topic": "components.heads",
+      "canonical": "hyso.models.builder.ModelBuilder.embedding",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.embedding"
     },
     "hyso.models.ModelBuilder.factorized_conv2d": {
       "topic": "components.convolution",
@@ -9458,6 +9602,14 @@
         "commercial",
         "development"
       ]
+    },
+    "hyso.models.ModelBuilder.regression": {
+      "topic": "components.heads",
+      "canonical": "hyso.models.builder.ModelBuilder.regression",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.regression"
     },
     "hyso.models.ModelBuilder.relu": {
       "topic": "components.activation",
@@ -10319,6 +10471,14 @@
       "path": "hyso/models/advanced.py",
       "qualname": "GatedResidual"
     },
+    "hyso.models.advanced.GatedResidual.__init__": {
+      "topic": "components.residual",
+      "canonical": "hyso.models.advanced.GatedResidual.__init__",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/advanced.py",
+      "qualname": "GatedResidual.__init__"
+    },
     "hyso.models.advanced.GaussianNoise": {
       "topic": "components.regularization",
       "canonical": "hyso.models.advanced.GaussianNoise",
@@ -10351,6 +10511,14 @@
       "path": "hyso/models/advanced.py",
       "qualname": "GroupedBottleneck"
     },
+    "hyso.models.advanced.GroupedBottleneck.__init__": {
+      "topic": "components.residual",
+      "canonical": "hyso.models.advanced.GroupedBottleneck.__init__",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/advanced.py",
+      "qualname": "GroupedBottleneck.__init__"
+    },
     "hyso.models.advanced.InvertedBottleneck": {
       "topic": "components.residual",
       "canonical": "hyso.models.advanced.InvertedBottleneck",
@@ -10358,6 +10526,14 @@
       "origin": "hyso",
       "path": "hyso/models/advanced.py",
       "qualname": "InvertedBottleneck"
+    },
+    "hyso.models.advanced.InvertedBottleneck.__init__": {
+      "topic": "components.residual",
+      "canonical": "hyso.models.advanced.InvertedBottleneck.__init__",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/advanced.py",
+      "qualname": "InvertedBottleneck.__init__"
     },
     "hyso.models.advanced.MultiHeadSpatialAttention": {
       "topic": "components.attention",
@@ -10367,6 +10543,14 @@
       "path": "hyso/models/advanced.py",
       "qualname": "MultiHeadSpatialAttention"
     },
+    "hyso.models.advanced.MultiHeadSpatialAttention.__init__": {
+      "topic": "components.attention",
+      "canonical": "hyso.models.advanced.MultiHeadSpatialAttention.__init__",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/advanced.py",
+      "qualname": "MultiHeadSpatialAttention.__init__"
+    },
     "hyso.models.advanced.PreActivationResidual": {
       "topic": "components.residual",
       "canonical": "hyso.models.advanced.PreActivationResidual",
@@ -10374,6 +10558,14 @@
       "origin": "hyso",
       "path": "hyso/models/advanced.py",
       "qualname": "PreActivationResidual"
+    },
+    "hyso.models.advanced.PreActivationResidual.__init__": {
+      "topic": "components.residual",
+      "canonical": "hyso.models.advanced.PreActivationResidual.__init__",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/advanced.py",
+      "qualname": "PreActivationResidual.__init__"
     },
     "hyso.models.advanced.SpatialAttention": {
       "topic": "components.attention",
@@ -10430,6 +10622,14 @@
       "origin": "hyso",
       "path": "hyso/models/advanced.py",
       "qualname": "WideResidual"
+    },
+    "hyso.models.advanced.WideResidual.__init__": {
+      "topic": "components.residual",
+      "canonical": "hyso.models.advanced.WideResidual.__init__",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/advanced.py",
+      "qualname": "WideResidual.__init__"
     },
     "hyso.models.architectures.DenseNet": {
       "topic": "models.development-families",
@@ -10925,6 +11125,14 @@
         "development"
       ]
     },
+    "hyso.models.builder.ModelBuilder.classification": {
+      "topic": "components.heads",
+      "canonical": "hyso.models.builder.ModelBuilder.classification",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.classification"
+    },
     "hyso.models.builder.ModelBuilder.conv2d": {
       "topic": "components.convolution",
       "canonical": "hyso.models.builder.ModelBuilder.conv2d",
@@ -11066,6 +11274,14 @@
       "profiles": [
         "development"
       ]
+    },
+    "hyso.models.builder.ModelBuilder.embedding": {
+      "topic": "components.heads",
+      "canonical": "hyso.models.builder.ModelBuilder.embedding",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.embedding"
     },
     "hyso.models.builder.ModelBuilder.factorized_conv2d": {
       "topic": "components.convolution",
@@ -11514,6 +11730,14 @@
         "commercial",
         "development"
       ]
+    },
+    "hyso.models.builder.ModelBuilder.regression": {
+      "topic": "components.heads",
+      "canonical": "hyso.models.builder.ModelBuilder.regression",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/builder.py",
+      "qualname": "ModelBuilder.regression"
     },
     "hyso.models.builder.ModelBuilder.relu": {
       "topic": "components.activation",
@@ -13595,6 +13819,14 @@
       "path": "hyso/models/sampling.py",
       "qualname": "EmbeddingHead"
     },
+    "hyso.models.sampling.EmbeddingHead.__init__": {
+      "topic": "components.heads",
+      "canonical": "hyso.models.sampling.EmbeddingHead.__init__",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/sampling.py",
+      "qualname": "EmbeddingHead.__init__"
+    },
     "hyso.models.sampling.Flatten": {
       "topic": "components.sampling",
       "canonical": "hyso.models.sampling.Flatten",
@@ -13674,6 +13906,14 @@
       "origin": "hyso",
       "path": "hyso/models/sampling.py",
       "qualname": "RegressionHead"
+    },
+    "hyso.models.sampling.RegressionHead.__init__": {
+      "topic": "components.heads",
+      "canonical": "hyso.models.sampling.RegressionHead.__init__",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/models/sampling.py",
+      "qualname": "RegressionHead.__init__"
     },
     "hyso.models.sampling.Reshape": {
       "topic": "components.sampling",
@@ -17295,6 +17535,70 @@
       "path": "hyso/training/config.py",
       "qualname": "TrainingConfig.to_json"
     },
+    "hyso.training.TrainingConfig.with_adam": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_adam",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_adam"
+    },
+    "hyso.training.TrainingConfig.with_adamw": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_adamw",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_adamw"
+    },
+    "hyso.training.TrainingConfig.with_cosine_scheduler": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_cosine_scheduler",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_cosine_scheduler"
+    },
+    "hyso.training.TrainingConfig.with_early_stopping": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_early_stopping",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_early_stopping"
+    },
+    "hyso.training.TrainingConfig.with_onecycle_scheduler": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_onecycle_scheduler",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_onecycle_scheduler"
+    },
+    "hyso.training.TrainingConfig.with_plateau_scheduler": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_plateau_scheduler",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_plateau_scheduler"
+    },
+    "hyso.training.TrainingConfig.with_sgd": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_sgd",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_sgd"
+    },
+    "hyso.training.TrainingConfig.with_step_scheduler": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_step_scheduler",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_step_scheduler"
+    },
     "hyso.training.TrainingResult": {
       "topic": "training.configuration",
       "canonical": "hyso.training.session.TrainingResult",
@@ -17438,6 +17742,70 @@
       "origin": "hyso",
       "path": "hyso/training/config.py",
       "qualname": "TrainingConfig.to_json"
+    },
+    "hyso.training.config.TrainingConfig.with_adam": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_adam",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_adam"
+    },
+    "hyso.training.config.TrainingConfig.with_adamw": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_adamw",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_adamw"
+    },
+    "hyso.training.config.TrainingConfig.with_cosine_scheduler": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_cosine_scheduler",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_cosine_scheduler"
+    },
+    "hyso.training.config.TrainingConfig.with_early_stopping": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_early_stopping",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_early_stopping"
+    },
+    "hyso.training.config.TrainingConfig.with_onecycle_scheduler": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_onecycle_scheduler",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_onecycle_scheduler"
+    },
+    "hyso.training.config.TrainingConfig.with_plateau_scheduler": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_plateau_scheduler",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_plateau_scheduler"
+    },
+    "hyso.training.config.TrainingConfig.with_sgd": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_sgd",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_sgd"
+    },
+    "hyso.training.config.TrainingConfig.with_step_scheduler": {
+      "topic": "training.configuration",
+      "canonical": "hyso.training.config.TrainingConfig.with_step_scheduler",
+      "kind": "method",
+      "origin": "hyso",
+      "path": "hyso/training/config.py",
+      "qualname": "TrainingConfig.with_step_scheduler"
     },
     "hyso.training.session.TrainingResult": {
       "topic": "training.configuration",

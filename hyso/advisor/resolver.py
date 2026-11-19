@@ -90,7 +90,7 @@ class ResolvedMetric(Contract):
     record_scope_json: str
     protocol_json: str
     native_context_json: str
-    origin: str
+    origin: _typing.Literal['new', 'reused']
     limitations: tuple = ()
     resolver_version: str = RESOLVER_VERSION
 
@@ -197,7 +197,7 @@ class MetricResolution(Contract):
     Offline: hyso docs show metrics.interpretation --lang en
     Open: hyso docs open metrics.interpretation --lang en
     """
-    status: str
+    status: _typing.Literal['supported', 'unsupported_metric', 'insufficient_evidence']
     resolved: ResolvedMetric | None = None
     reasons: tuple = ()
 
@@ -268,7 +268,7 @@ class EvidenceEligibility(Contract):
     Open: hyso docs open advisor.recommendations --lang en
     """
     status: EvidenceSupport
-    claim: str
+    claim: _typing.Literal['observation', 'comparison']
     reasons: tuple = ()
 
     def __post_init__(self):
@@ -408,7 +408,7 @@ class NativeMetricResolver:
                 return json.loads(raw)
         return None
 
-    def resolve(self, record_id: '_typing.Any', metric: '_typing.Any', *, point_id: '_typing.Any'=None) -> '_typing.Any':
+    def resolve(self, record_id: '_typing.Any', metric: NativeMetric, *, point_id: '_typing.Any'=None) -> '_typing.Any':
         """Resolve the requested metric from retained native evidence without guessing a missing value.
 
         Args:
@@ -571,7 +571,7 @@ class NativeMetricResolver:
         return MetricResolution('supported', ResolvedMetric(metric, value, ref, canonical(r['scope']),
                                 canonical(p), canonical(context), r['origin'], tuple(notes)))
 
-    def check_reference(self, reference: '_typing.Any', metric: '_typing.Any', *, required_native: '_typing.Sequence[str]'=(), artifact_bytes: '_typing.Any'=None) -> '_typing.Any':
+    def check_reference(self, reference: '_typing.Any', metric: NativeMetric, *, required_native: '_typing.Sequence[str]'=(), artifact_bytes: '_typing.Any'=None) -> '_typing.Any':
         """Check the entire reference against a regenerated native resolution.
 
         Original artifact bytes are optional explicit input, never read by path.

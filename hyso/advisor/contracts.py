@@ -320,7 +320,7 @@ class MetricScope(Contract):
     Offline: hyso docs show metrics.interpretation --lang en
     Open: hyso docs open metrics.interpretation --lang en
     """
-    phase: str
+    phase: _typing.Literal['inference', 'training', 'evaluation', 'process', 'static']
     device: str | None = None
     backend: str | None = None
     precision: str | None = None
@@ -446,13 +446,13 @@ class UserGoal(Contract):
     """
     goal_id: str
     metric: Metric
-    operator: str
+    operator: _typing.Literal['<=', '>=', '<', '>', '==']
     target: float
-    unit: str
-    constraint: str = 'hard'
+    unit: _typing.Literal['byte', 'GB', 'GiB', 's', 'ms', 'images/s', 'frames/s', 'fraction', 'percentage_point', 'J/inference', 'W']
+    constraint: _typing.Literal['hard', 'soft'] = 'hard'
     scope: MetricScope | None = None
     protocol: EvaluationProtocol | None = None
-    value_basis: str = 'measured'
+    value_basis: _typing.Literal['measured', 'estimated'] = 'measured'
     baseline_id: str | None = None
 
     def __post_init__(self):
@@ -569,16 +569,16 @@ class ResourceBudget(Contract):
     Open: hyso docs open advisor.recommendations --lang en
     """
     budget_id: str
-    purpose: str
-    domain: str
+    purpose: _typing.Literal['deployment', 'experiment']
+    domain: _typing.Literal['process_rss', 'cuda_allocated', 'cuda_reserved', 'device_memory', 'logical_tensor_bytes', 'wall_time', 'energy', 'power', 'trial_count']
     limit: float
-    unit: str
+    unit: _typing.Literal['byte', 'GB', 'GiB', 's', 'J', 'W', 'count']
     allowed_devices: tuple = ()
     allowed_backends: tuple = ()
     allowed_precisions: tuple = ()
     window_seconds: float | None = None
-    enforcement: str = 'not_evaluated'
-    applicability: str = 'not_evaluated'
+    enforcement: _typing.Literal['not_evaluated', 'unavailable', 'advisory_only'] = 'not_evaluated'
+    applicability: _typing.Literal['not_evaluated', 'unavailable', 'unsupported_capability'] = 'not_evaluated'
 
     def __post_init__(self):
         _text(self.budget_id, 'budget_id')
@@ -701,7 +701,7 @@ class EvidenceBinding(Contract):
     Open: hyso docs open advisor.recommendations --lang en
     """
     field: str
-    authority: str
+    authority: _typing.Literal['native', 'declared', 'missing']
 
     def __post_init__(self):
         _text(self.field, 'binding_field')
@@ -748,7 +748,7 @@ class EvidenceRef(Contract):
     payload_sha256: str
     domain: str
     unit: str
-    status: str
+    status: _typing.Literal['measured', 'derived', 'estimated', 'unknown', 'unsupported', 'not_run', 'invalid', 'insufficient_samples']
     bindings: tuple
     sample_ref: str | None = None
     point_ref: str | None = None
@@ -807,7 +807,7 @@ class Finding(Contract):
     rule_id: str | None = None
     rule_version: str | None = None
     evidence_support: EvidenceSupport | None = None
-    verification: str = 'not_evaluated'
+    verification: _typing.Literal['not_evaluated', 'unavailable', 'not_verified'] = 'not_evaluated'
 
     def __post_init__(self):
         _text(self.finding_id, 'finding_id')
@@ -997,7 +997,7 @@ class AdvisorReport(Contract):
     risks: tuple = ()
     rule_versions: tuple = ()
     evidence_status: EvidenceSupport | None = None
-    evaluation_status: str = 'not_evaluated'
+    evaluation_status: _typing.Literal['not_evaluated', 'unavailable', 'caller_supplied', 'observations_only', 'goals_evaluated', 'planning_only'] = 'not_evaluated'
     request_validation: RequestValidation | None = None
     request_id: str = field(init=False)
     request_sha256: str = field(init=False)
@@ -1092,7 +1092,7 @@ class AdvisorReport(Contract):
         """
         return self.content_sha256
 
-    def to_markdown(self, path: '_typing.Any'=None, *, language: 'str | None'=None, audience: '_typing.Any'=None) -> '_typing.Any':
+    def to_markdown(self, path: '_typing.Any'=None, *, language: _typing.Literal['tr', 'en'] | None=None, audience: _typing.Literal['summary', 'technical']=None) -> '_typing.Any':
         """Explicit readable export of this same report; never run analysis.
 
         Args:
@@ -1122,7 +1122,7 @@ class AdvisorReport(Contract):
         from .render import render_markdown
         return render_markdown(self, path)
 
-    def to_display_dict(self, *, language: 'str'='en', audience: 'str'='summary') -> 'dict[str, _typing.Any]':
+    def to_display_dict(self, *, language: _typing.Literal['tr', 'en']='en', audience: _typing.Literal['summary', 'technical']='summary') -> 'dict[str, _typing.Any]':
         """Presentation-only localized JSON data; never canonical evidence.
 
         Args:
@@ -1147,7 +1147,7 @@ class AdvisorReport(Contract):
         from .presentation import to_display_dict
         return to_display_dict(self, language=language, audience=audience)
 
-    def to_display_json(self, path: '_typing.Any'=None, *, language: 'str'='en', audience: 'str'='summary') -> 'str':
+    def to_display_json(self, path: '_typing.Any'=None, *, language: _typing.Literal['tr', 'en']='en', audience: _typing.Literal['summary', 'technical']='summary') -> 'str':
         """Serialize localized display text while preserving the retained canonical data.
 
         Args:

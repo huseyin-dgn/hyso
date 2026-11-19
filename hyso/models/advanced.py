@@ -337,7 +337,9 @@ class SpatialSelfAttention(nn.Module):
     """NCHW -> H*W tokens -> scaled dot-product attention -> projected NCHW.
 
     Args:
-        **params (_typing.Any): Component keyword parameters; registered defaults apply to omitted optional keys.
+        channels: channels. Required.
+        embedding_dim: embedding dim. Default: None.
+        dropout: dropout. Default: 0.0.
 
     Returns:
         An instance of SpatialSelfAttention with the documented native validation and defaults.
@@ -348,7 +350,7 @@ class SpatialSelfAttention(nn.Module):
 
     Example:
         # Caller-supplied values; explicitly requested operations only.
-        SpatialSelfAttention()
+        SpatialSelfAttention(channels=4)
 
     HYSo Guide: components.attention
     Offline: hyso docs show components.attention --lang en
@@ -356,7 +358,27 @@ class SpatialSelfAttention(nn.Module):
     """
     registry_name = 'spatial_self_attention'
 
-    def __init__(self, **params: '_typing.Any') -> 'None':
+    def __init__(self, *, channels: int, embedding_dim: int | None=None, dropout: float=0.0) -> None:
+        """Construct SpatialSelfAttention through its existing registry validator.
+
+        Args:
+            channels: channels.
+            embedding_dim: embedding dim.
+            dropout: dropout.
+        Returns:
+            None; initializes the existing native module with the supplied options.
+        Raises:
+            ValueError, TypeError: Native component parameter validation fails.
+        Example:
+            model = SpatialSelfAttention(channels=4)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
+        self._initialize(dict(channels=channels, embedding_dim=embedding_dim, dropout=dropout))
+
+    def _initialize(self, params: dict[str, _typing.Any]) -> None:
         """Initialize SpatialSelfAttention with the supplied settings.
 
         Args:
@@ -432,13 +454,34 @@ class MultiHeadSpatialAttention(SpatialSelfAttention):
 
     Example:
         # Caller-supplied values; explicitly requested operations only.
-        MultiHeadSpatialAttention()
+        MultiHeadSpatialAttention(channels=4)
 
     HYSo Guide: components.attention
     Offline: hyso docs show components.attention --lang en
     Open: hyso docs open components.attention --lang en
     """
     registry_name = 'multihead_spatial_attention'
+
+    def __init__(self, *, channels: int, embedding_dim: int | None=None, num_heads: int=4, dropout: float=0.0) -> None:
+        """Construct MultiHeadSpatialAttention through its existing registry validator.
+
+        Args:
+            channels: channels.
+            embedding_dim: embedding dim.
+            num_heads: num heads.
+            dropout: dropout.
+        Returns:
+            None; initializes the existing native module with the supplied options.
+        Raises:
+            ValueError, TypeError: Native component parameter validation fails.
+        Example:
+            model = MultiHeadSpatialAttention(channels=4)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
+        self._initialize(dict(channels=channels, embedding_dim=embedding_dim, num_heads=num_heads, dropout=dropout))
 
 
 def residual_plan(name, p):
@@ -478,7 +521,17 @@ class AdvancedResidual(nn.Module):
     """Explicit main branch plus raw-input identity or 1x1 projection shortcut.
 
     Args:
-        **params (_typing.Any): Component keyword parameters; registered defaults apply to omitted optional keys.
+        in_channels: in channels. Required.
+        out_channels: out channels. Required.
+        intermediate_channels: intermediate channels. Required.
+        kernel_size: kernel size. Default: 3.
+        stride: stride. Default: 1.
+        dilation: dilation. Default: 1.
+        normalization: normalization. Default: 'batch'.
+        activation: activation. Default: 'silu'.
+        attention: attention. Default: 'none'.
+        dropout: dropout. Default: 0.0.
+        drop_path: drop path. Default: 0.0.
 
     Returns:
         An instance of AdvancedResidual with the documented native validation and defaults.
@@ -489,7 +542,7 @@ class AdvancedResidual(nn.Module):
 
     Example:
         # Caller-supplied values; explicitly requested operations only.
-        AdvancedResidual()
+        AdvancedResidual(in_channels=4, out_channels=4, intermediate_channels=4)
 
     HYSo Guide: components.residual
     Offline: hyso docs show components.residual --lang en
@@ -497,7 +550,35 @@ class AdvancedResidual(nn.Module):
     """
     registry_name = 'bottleneck_residual'
 
-    def __init__(self, **params: '_typing.Any') -> 'None':
+    def __init__(self, *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int=3, stride: int | tuple[int, int] | list[int]=1, dilation: int | tuple[int, int] | list[int]=1, normalization: _typing.Literal['batch', 'group', None]='batch', activation: _typing.Literal['relu', 'silu', 'gelu']='silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']='none', dropout: float=0.0, drop_path: float=0.0) -> None:
+        """Construct AdvancedResidual through its existing registry validator.
+
+        Args:
+            in_channels: in channels.
+            out_channels: out channels.
+            intermediate_channels: intermediate channels.
+            kernel_size: kernel size.
+            stride: stride.
+            dilation: dilation.
+            normalization: normalization.
+            activation: activation.
+            attention: attention.
+            dropout: dropout.
+            drop_path: drop path.
+        Returns:
+            None; initializes the existing native module with the supplied options.
+        Raises:
+            ValueError, TypeError: Native component parameter validation fails.
+        Example:
+            model = AdvancedResidual(in_channels=4, out_channels=4, intermediate_channels=4)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
+        self._initialize(dict(in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels, kernel_size=kernel_size, stride=stride, dilation=dilation, normalization=normalization, activation=activation, attention=attention, dropout=dropout, drop_path=drop_path))
+
+    def _initialize(self, params: dict[str, _typing.Any]) -> None:
         """Initialize AdvancedResidual with the supplied settings.
 
         Args:
@@ -586,13 +667,41 @@ class PreActivationResidual(AdvancedResidual):
 
     Example:
         # Caller-supplied values; explicitly requested operations only.
-        PreActivationResidual()
+        PreActivationResidual(in_channels=4, out_channels=4, intermediate_channels=4)
 
     HYSo Guide: components.residual
     Offline: hyso docs show components.residual --lang en
     Open: hyso docs open components.residual --lang en
     """
     registry_name = 'preactivation_residual'
+
+    def __init__(self, *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int=3, stride: int | tuple[int, int] | list[int]=1, dilation: int | tuple[int, int] | list[int]=1, normalization: _typing.Literal['batch', 'group', None]='batch', activation: _typing.Literal['relu', 'silu', 'gelu']='silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']='none', dropout: float=0.0, drop_path: float=0.0) -> None:
+        """Construct PreActivationResidual through its existing registry validator.
+
+        Args:
+            in_channels: in channels.
+            out_channels: out channels.
+            intermediate_channels: intermediate channels.
+            kernel_size: kernel size.
+            stride: stride.
+            dilation: dilation.
+            normalization: normalization.
+            activation: activation.
+            attention: attention.
+            dropout: dropout.
+            drop_path: drop path.
+        Returns:
+            None; initializes the existing native module with the supplied options.
+        Raises:
+            ValueError, TypeError: Native component parameter validation fails.
+        Example:
+            model = PreActivationResidual(in_channels=4, out_channels=4, intermediate_channels=4)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
+        self._initialize(dict(in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels, kernel_size=kernel_size, stride=stride, dilation=dilation, normalization=normalization, activation=activation, attention=attention, dropout=dropout, drop_path=drop_path))
 
 
 class WideResidual(AdvancedResidual):
@@ -607,13 +716,41 @@ class WideResidual(AdvancedResidual):
 
     Example:
         # Caller-supplied values; explicitly requested operations only.
-        WideResidual()
+        WideResidual(in_channels=4, out_channels=4, intermediate_channels=4)
 
     HYSo Guide: components.residual
     Offline: hyso docs show components.residual --lang en
     Open: hyso docs open components.residual --lang en
     """
     registry_name = 'wide_residual_block'
+
+    def __init__(self, *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int=3, stride: int | tuple[int, int] | list[int]=1, dilation: int | tuple[int, int] | list[int]=1, normalization: _typing.Literal['batch', 'group', None]='batch', activation: _typing.Literal['relu', 'silu', 'gelu']='silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']='none', dropout: float=0.0, drop_path: float=0.0) -> None:
+        """Construct WideResidual through its existing registry validator.
+
+        Args:
+            in_channels: in channels.
+            out_channels: out channels.
+            intermediate_channels: intermediate channels.
+            kernel_size: kernel size.
+            stride: stride.
+            dilation: dilation.
+            normalization: normalization.
+            activation: activation.
+            attention: attention.
+            dropout: dropout.
+            drop_path: drop path.
+        Returns:
+            None; initializes the existing native module with the supplied options.
+        Raises:
+            ValueError, TypeError: Native component parameter validation fails.
+        Example:
+            model = WideResidual(in_channels=4, out_channels=4, intermediate_channels=4)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
+        self._initialize(dict(in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels, kernel_size=kernel_size, stride=stride, dilation=dilation, normalization=normalization, activation=activation, attention=attention, dropout=dropout, drop_path=drop_path))
 
 
 class GroupedBottleneck(AdvancedResidual):
@@ -628,13 +765,42 @@ class GroupedBottleneck(AdvancedResidual):
 
     Example:
         # Caller-supplied values; explicitly requested operations only.
-        GroupedBottleneck()
+        GroupedBottleneck(in_channels=4, out_channels=4, intermediate_channels=4)
 
     HYSo Guide: components.residual
     Offline: hyso docs show components.residual --lang en
     Open: hyso docs open components.residual --lang en
     """
     registry_name = 'grouped_bottleneck'
+
+    def __init__(self, *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int=3, stride: int | tuple[int, int] | list[int]=1, dilation: int | tuple[int, int] | list[int]=1, normalization: _typing.Literal['batch', 'group', None]='batch', activation: _typing.Literal['relu', 'silu', 'gelu']='silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']='none', dropout: float=0.0, drop_path: float=0.0, groups: int=1) -> None:
+        """Construct GroupedBottleneck through its existing registry validator.
+
+        Args:
+            in_channels: in channels.
+            out_channels: out channels.
+            intermediate_channels: intermediate channels.
+            kernel_size: kernel size.
+            stride: stride.
+            dilation: dilation.
+            normalization: normalization.
+            activation: activation.
+            attention: attention.
+            dropout: dropout.
+            drop_path: drop path.
+            groups: groups.
+        Returns:
+            None; initializes the existing native module with the supplied options.
+        Raises:
+            ValueError, TypeError: Native component parameter validation fails.
+        Example:
+            model = GroupedBottleneck(in_channels=4, out_channels=4, intermediate_channels=4)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
+        self._initialize(dict(in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels, kernel_size=kernel_size, stride=stride, dilation=dilation, normalization=normalization, activation=activation, attention=attention, dropout=dropout, drop_path=drop_path, groups=groups))
 
 
 class InvertedBottleneck(AdvancedResidual):
@@ -649,13 +815,41 @@ class InvertedBottleneck(AdvancedResidual):
 
     Example:
         # Caller-supplied values; explicitly requested operations only.
-        InvertedBottleneck()
+        InvertedBottleneck(in_channels=4, out_channels=4)
 
     HYSo Guide: components.residual
     Offline: hyso docs show components.residual --lang en
     Open: hyso docs open components.residual --lang en
     """
     registry_name = 'inverted_bottleneck'
+
+    def __init__(self, *, in_channels: int, out_channels: int, expansion_ratio: int=2, kernel_size: int=3, stride: int | tuple[int, int] | list[int]=1, dilation: int | tuple[int, int] | list[int]=1, normalization: _typing.Literal['batch', 'group', None]='batch', activation: _typing.Literal['relu', 'silu', 'gelu']='silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']='none', dropout: float=0.0, drop_path: float=0.0) -> None:
+        """Construct InvertedBottleneck through its existing registry validator.
+
+        Args:
+            in_channels: in channels.
+            out_channels: out channels.
+            expansion_ratio: expansion ratio.
+            kernel_size: kernel size.
+            stride: stride.
+            dilation: dilation.
+            normalization: normalization.
+            activation: activation.
+            attention: attention.
+            dropout: dropout.
+            drop_path: drop path.
+        Returns:
+            None; initializes the existing native module with the supplied options.
+        Raises:
+            ValueError, TypeError: Native component parameter validation fails.
+        Example:
+            model = InvertedBottleneck(in_channels=4, out_channels=4)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
+        self._initialize(dict(in_channels=in_channels, out_channels=out_channels, expansion_ratio=expansion_ratio, kernel_size=kernel_size, stride=stride, dilation=dilation, normalization=normalization, activation=activation, attention=attention, dropout=dropout, drop_path=drop_path))
 
 
 class GatedResidual(AdvancedResidual):
@@ -670,13 +864,43 @@ class GatedResidual(AdvancedResidual):
 
     Example:
         # Caller-supplied values; explicitly requested operations only.
-        GatedResidual()
+        GatedResidual(in_channels=4, out_channels=4, intermediate_channels=4)
 
     HYSo Guide: components.residual
     Offline: hyso docs show components.residual --lang en
     Open: hyso docs open components.residual --lang en
     """
     registry_name = 'gated_residual'
+
+    def __init__(self, *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int=3, stride: int | tuple[int, int] | list[int]=1, dilation: int | tuple[int, int] | list[int]=1, normalization: _typing.Literal['batch', 'group', None]='batch', activation: _typing.Literal['relu', 'silu', 'gelu']='silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']='none', dropout: float=0.0, drop_path: float=0.0, gate_init: float=1.0, learnable_gate: bool=True) -> None:
+        """Construct GatedResidual through its existing registry validator.
+
+        Args:
+            in_channels: in channels.
+            out_channels: out channels.
+            intermediate_channels: intermediate channels.
+            kernel_size: kernel size.
+            stride: stride.
+            dilation: dilation.
+            normalization: normalization.
+            activation: activation.
+            attention: attention.
+            dropout: dropout.
+            drop_path: drop path.
+            gate_init: gate init.
+            learnable_gate: learnable gate.
+        Returns:
+            None; initializes the existing native module with the supplied options.
+        Raises:
+            ValueError, TypeError: Native component parameter validation fails.
+        Example:
+            model = GatedResidual(in_channels=4, out_channels=4, intermediate_channels=4)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
+        self._initialize(dict(in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels, kernel_size=kernel_size, stride=stride, dilation=dilation, normalization=normalization, activation=activation, attention=attention, dropout=dropout, drop_path=drop_path, gate_init=gate_init, learnable_gate=learnable_gate))
 
 
 def specifications(p):

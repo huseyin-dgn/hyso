@@ -169,14 +169,14 @@ class TrainingConfig:
     """
     _payload: str
 
-    def __init__(self, *, epochs: int=5, batch_size: int=32, optimizer: str='adamw',
+    def __init__(self, *, epochs: int=5, batch_size: int=32, optimizer: _typing.Literal['sgd', 'adam', 'adamw']='adamw',
                  learning_rate: float=1e-3, optimizer_params: dict[str,Any] | None=None,
-                 scheduler: str | None=None, scheduler_params: dict[str,Any] | None=None,
-                 device: str='cpu', precision: str='fp32', accum_steps: int=1,
+                 scheduler: _typing.Literal['step', 'cosine', 'onecycle', 'plateau', None]=None, scheduler_params: dict[str,Any] | None=None,
+                 device: str='cpu', precision: _typing.Literal['fp32', 'fp64', 'amp_fp16']='fp32', accum_steps: int=1,
                  grad_clip: float | None=None, ema_decay: float | None=None,
                  early_stopping: dict[str,Any] | None=None, validation: bool=False,
                  shuffle: bool=False, drop_last: bool=False, num_workers: int=0,
-                 task: str='multiclass', save_last_to: str | None=None, resume_from: str | None=None) -> None:
+                 task: _typing.Literal['multiclass', 'binary']='multiclass', save_last_to: str | None=None, resume_from: str | None=None) -> None:
         """Initialize TrainingConfig with the supplied settings.
 
         Args:
@@ -223,6 +223,180 @@ class TrainingConfig:
             num_workers=num_workers,task=task,save_last_to=save_last_to,resume_from=resume_from))
         _resolved(c)
         object.__setattr__(self,'_payload',json.dumps(dict(format='hyso.training_config',schema_version=1,**c),sort_keys=True,allow_nan=False))
+
+    def _updated(self, **settings: Any) -> TrainingConfig:
+        """Return a new configuration through the original schema validator."""
+        return type(self).from_dict(dict(self.to_dict(), **settings))
+
+    def with_sgd(self, *, learning_rate: float | None = None, momentum: float = 0, dampening: float = 0, weight_decay: float = 0, nesterov: bool = False) -> TrainingConfig:
+        """Select native SGD with explicit optimizer options; retain the LR if omitted.
+
+        Args:
+            learning_rate: Optimizer construction LR; None retains this configuration value.
+            momentum: SGD momentum; zero disables it.
+            dampening: SGD momentum dampening.
+            weight_decay: Native optimizer weight decay.
+            nesterov: SGD Nesterov option; native momentum/dampening rules apply.
+        Returns:
+            A new validated immutable configuration; no workload is prepared or started.
+        Raises:
+            TrainingConfigError: The existing native settings/validation contract fails.
+        Example:
+            config = TrainingConfig().with_sgd(momentum=0.9, nesterov=True)
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
+        """
+        return self._updated(optimizer='sgd', learning_rate=self.to_dict()['learning_rate'] if learning_rate is None else learning_rate, optimizer_params=dict(momentum=momentum, dampening=dampening, weight_decay=weight_decay, nesterov=nesterov))
+
+    def with_adam(self, *, learning_rate: float | None = None, betas: tuple[float, float] = (0.9, 0.999), eps: float = 1e-8, weight_decay: float = 0) -> TrainingConfig:
+        """Select native Adam with explicit beta, epsilon and decay options; retain omitted LR.
+
+        Args:
+            learning_rate: Optimizer construction LR; None retains this configuration value.
+            betas: Two Adam/AdamW beta coefficients, each in [0, 1).
+            eps: Native positive optimizer or nonnegative scheduler epsilon.
+            weight_decay: Native optimizer weight decay.
+        Returns:
+            A new validated immutable configuration; no workload is prepared or started.
+        Raises:
+            TrainingConfigError: The existing native settings/validation contract fails.
+        Example:
+            config = TrainingConfig().with_adam(eps=1e-7)
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
+        """
+        return self._updated(optimizer='adam', learning_rate=self.to_dict()['learning_rate'] if learning_rate is None else learning_rate, optimizer_params=dict(betas=betas, eps=eps, weight_decay=weight_decay))
+
+    def with_adamw(self, *, learning_rate: float | None = None, betas: tuple[float, float] = (0.9, 0.999), eps: float = 1e-8, weight_decay: float = 0) -> TrainingConfig:
+        """Select native AdamW with explicit beta, epsilon and decay options; retain omitted LR.
+
+        Args:
+            learning_rate: Optimizer construction LR; None retains this configuration value.
+            betas: Two Adam/AdamW beta coefficients, each in [0, 1).
+            eps: Native positive optimizer or nonnegative scheduler epsilon.
+            weight_decay: Native optimizer weight decay.
+        Returns:
+            A new validated immutable configuration; no workload is prepared or started.
+        Raises:
+            TrainingConfigError: The existing native settings/validation contract fails.
+        Example:
+            config = TrainingConfig().with_adamw(weight_decay=0.01)
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
+        """
+        return self._updated(optimizer='adamw', learning_rate=self.to_dict()['learning_rate'] if learning_rate is None else learning_rate, optimizer_params=dict(betas=betas, eps=eps, weight_decay=weight_decay))
+
+    def with_step_scheduler(self, *, step_size: int = 1, gamma: float = 0.1) -> TrainingConfig:
+        """Select native StepLR with explicit step size and decay factor.
+
+        Args:
+            step_size: Positive StepLR epoch interval.
+            gamma: Nonnegative StepLR decay factor.
+        Returns:
+            A new validated immutable configuration; no workload is prepared or started.
+        Raises:
+            TrainingConfigError: The existing native settings/validation contract fails.
+        Example:
+            config = TrainingConfig().with_step_scheduler(step_size=2)
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
+        """
+        return self._updated(scheduler='step', scheduler_params=dict(step_size=step_size, gamma=gamma))
+
+    def with_cosine_scheduler(self, *, t_max: int | None = None, eta_min: float = 0) -> TrainingConfig:
+        """Select native cosine annealing, using the epoch budget when t_max is omitted.
+
+        Args:
+            t_max: Positive cosine period; None uses the current epoch budget.
+            eta_min: Nonnegative cosine minimum LR.
+        Returns:
+            A new validated immutable configuration; no workload is prepared or started.
+        Raises:
+            TrainingConfigError: The existing native settings/validation contract fails.
+        Example:
+            config = TrainingConfig().with_cosine_scheduler(eta_min=1e-6)
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
+        """
+        options = dict(eta_min=eta_min)
+        if t_max is not None:
+            options['t_max'] = t_max
+        return self._updated(scheduler='cosine', scheduler_params=options)
+
+    def with_onecycle_scheduler(self, *, max_lr: float, pct_start: float = 0.3, div_factor: float = 25, final_div_factor: float = 1e4, cycle_momentum: bool = False) -> TrainingConfig:
+        """Select native OneCycleLR with an explicit maximum learning rate.
+
+        Args:
+            max_lr: Required positive OneCycle maximum LR.
+            pct_start: OneCycle rising-phase fraction in (0, 1).
+            div_factor: Positive OneCycle initial LR divisor.
+            final_div_factor: Positive OneCycle final LR divisor.
+            cycle_momentum: Native OneCycle momentum cycling option.
+        Returns:
+            A new validated immutable configuration; no workload is prepared or started.
+        Raises:
+            TrainingConfigError: The existing native settings/validation contract fails.
+        Example:
+            config = TrainingConfig().with_onecycle_scheduler(max_lr=0.01)
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
+        """
+        return self._updated(scheduler='onecycle', scheduler_params=dict(max_lr=max_lr, pct_start=pct_start, div_factor=div_factor, final_div_factor=final_div_factor, cycle_momentum=cycle_momentum))
+
+    def with_plateau_scheduler(self, *, factor: float = 0.1, patience: int = 10, threshold: float = 1e-4, cooldown: int = 0, min_lr: float = 0, eps: float = 1e-8) -> TrainingConfig:
+        """Select native validation-loss ReduceLROnPlateau; validation must be enabled.
+
+        Args:
+            factor: Plateau reduction factor in [0, 1).
+            patience: Native nonnegative plateau patience or positive early-stopping patience.
+            threshold: Nonnegative plateau threshold.
+            cooldown: Nonnegative plateau cooldown epochs.
+            min_lr: Nonnegative plateau minimum LR.
+            eps: Native positive optimizer or nonnegative scheduler epsilon.
+        Returns:
+            A new validated immutable configuration; no workload is prepared or started.
+        Raises:
+            TrainingConfigError: The existing native settings/validation contract fails.
+        Example:
+            config = TrainingConfig(validation=True).with_plateau_scheduler(patience=3)
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
+        """
+        return self._updated(scheduler='plateau', scheduler_params=dict(factor=factor, patience=patience, threshold=threshold, cooldown=cooldown, min_lr=min_lr, eps=eps))
+
+    def with_early_stopping(self, *, patience: int = 7, delta: float = 0, restore_best_weights: bool = True) -> TrainingConfig:
+        """Configure existing validation-loss early stopping with explicit options.
+
+        Args:
+            patience: Native nonnegative plateau patience or positive early-stopping patience.
+            delta: Nonnegative early-stopping loss improvement.
+            restore_best_weights: Restore the existing early-stopping best weights when stopping.
+        Returns:
+            A new validated immutable configuration; no workload is prepared or started.
+        Raises:
+            TrainingConfigError: The existing native settings/validation contract fails.
+        Example:
+            config = TrainingConfig(validation=True).with_early_stopping(patience=3)
+
+        HYSo Guide: training.configuration
+        Offline: hyso docs show training.configuration --lang en
+        Open: hyso docs open training.configuration --lang en
+        """
+        return self._updated(early_stopping=dict(patience=patience, delta=delta, restore_best_weights=restore_best_weights))
 
     def to_dict(self) -> dict[str,Any]:
         """Return a detached request, including user-supplied option dictionaries.

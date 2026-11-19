@@ -345,7 +345,7 @@ class BenchmarkRunner:
     """
     def __init__(self, model: nn.Module, *, device: str | torch.device = "cpu",
                  input_shape: tuple[int, ...] | list[int] | None = None,
-                 example_input: torch.Tensor | None = None, precision: str = "fp32",
+                 example_input: torch.Tensor | None = None, precision: _typing.Literal['fp32', 'fp64', 'amp_fp16'] = "fp32",
                  warmup_iterations: int = 10, measure_iterations: int = 50, repeats: int = 3,
                  seed: int = 0, model_name: str | None = None,
                  model_config: _typing.Any = None, measure_cuda_memory: bool = False) -> None:

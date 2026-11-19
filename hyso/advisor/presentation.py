@@ -209,7 +209,7 @@ def _localized(data, language, audience):
                 kind_labels={k:v[index] for k,v in _KIND.items()})
 
 
-def to_display_dict(report: '_typing.Any', *, language: 'str'='en', audience: 'str'='summary') -> 'dict[str, _typing.Any]':
+def to_display_dict(report: '_typing.Any', *, language: _typing.Literal['tr', 'en']='en', audience: _typing.Literal['summary', 'technical']='summary') -> 'dict[str, _typing.Any]':
     """Return localized display text while preserving canonical comparison data.
 
     Args:
@@ -253,7 +253,7 @@ def _export(path,raw):
     return raw
 
 
-def to_display_json(report: '_typing.Any',path: '_typing.Any'=None,*,language: 'str'='en',audience: 'str'='summary') -> 'str':
+def to_display_json(report: '_typing.Any',path: '_typing.Any'=None,*,language: _typing.Literal['tr', 'en']='en',audience: _typing.Literal['summary', 'technical']='summary') -> 'str':
     """Serialize localized display text while preserving the retained canonical data.
 
     Args:
@@ -285,7 +285,7 @@ def _esc(value):
     return re.sub(r'([\\`*_\[\]()!#|])',r'\\\1',text)
 
 
-def to_markdown(report: '_typing.Any',path: '_typing.Any'=None,*,language: 'str'='en',audience: 'str'='summary') -> 'str':
+def to_markdown(report: '_typing.Any',path: '_typing.Any'=None,*,language: _typing.Literal['tr', 'en']='en',audience: _typing.Literal['summary', 'technical']='summary') -> 'str':
     """Format retained comparison findings as Markdown without rerunning models.
 
     Args:

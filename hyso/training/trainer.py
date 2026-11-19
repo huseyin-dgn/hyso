@@ -80,7 +80,7 @@ class Trainer:
     """
 
     def __init__(self, model: nn.Module, *, optimizer: torch.optim.Optimizer,
-                 loss_fn: nn.Module | dict[str, nn.Module], device: str | torch.device = "cpu", task: str = "multiclass",
+                 loss_fn: nn.Module | dict[str, nn.Module], device: str | torch.device = "cpu", task: _typing.Literal['multiclass', 'binary'] = "multiclass",
                  scheduler: _typing.Any = None, amp: bool = False, accum_steps: int = 1,
                  grad_clip: float | None = None, ema_decay: float | None = None,
                  early_stopping: EarlyStopping | None = None,

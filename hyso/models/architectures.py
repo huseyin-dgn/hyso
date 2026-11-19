@@ -1,5 +1,6 @@
 """Closed, untrained classifier families. No pretrained downloads or implicit casts."""
 from __future__ import annotations
+import typing as _typing
 import math
 import torch
 from torch import nn
@@ -90,7 +91,7 @@ class ResNet(TVResNet):
     Open: hyso docs open models.development-families --lang en
     """
     def __init__(self, depth: int = 18, input_channels: int = 3, num_classes: int = 1000,
-                 norm: str | None = 'batch') -> None:
+                 norm: _typing.Literal['batch', 'group', None] = 'batch') -> None:
         """Initialize ResNet with the supplied settings.
 
         Args:
@@ -148,7 +149,7 @@ class ResNeXt(TVResNet):
     Open: hyso docs open models.development-families --lang en
     """
     def __init__(self, depth: int = 50, input_channels: int = 3, num_classes: int = 1000,
-                 groups: int = 32, width_per_group: int = 4, norm: str | None = 'batch') -> None:
+                 groups: int = 32, width_per_group: int = 4, norm: _typing.Literal['batch', 'group', None] = 'batch') -> None:
         """Initialize ResNeXt with the supplied settings.
 
         Args:
@@ -268,7 +269,7 @@ class PreActResNet(nn.Module):
     Open: hyso docs open models.development-families --lang en
     """
     def __init__(self, depth: int = 18, input_channels: int = 3, num_classes: int = 1000,
-                 base_channels: int = 64, norm: str | None = 'batch') -> None:
+                 base_channels: int = 64, norm: _typing.Literal['batch', 'group', None] = 'batch') -> None:
         """Initialize PreActResNet with the supplied settings.
 
         Args:
@@ -360,7 +361,7 @@ class WideResNet(nn.Module):
     Open: hyso docs open models.development-families --lang en
     """
     def __init__(self, depth: int = 28, input_channels: int = 3, num_classes: int = 10,
-                 widen_factor: int = 10, dropout: float = 0., norm: str | None = 'batch') -> None:
+                 widen_factor: int = 10, dropout: float = 0., norm: _typing.Literal['batch', 'group', None] = 'batch') -> None:
         """Initialize WideResNet with the supplied settings.
 
         Args:

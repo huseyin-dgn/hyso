@@ -4,6 +4,7 @@
 # Full upstream licenses and notices are retained in THIRD_PARTY_NOTICES.md.
 """RepVGG A0/A1 and MobileOne s0/s1/s2 classifiers with explicit deploy topology."""
 from __future__ import annotations
+import typing as _typing
 
 import torch
 from torch import nn
@@ -41,7 +42,7 @@ class RepVGG(ReparameterizableModel, MobileArchitectureConfig, nn.Module):
     Offline: hyso docs show models.development-families --lang en
     Open: hyso docs open models.development-families --lang en
     """
-    def __init__(self, variant: str = 'a0', input_channels: int = 3, num_classes: int = 1000,
+    def __init__(self, variant: _typing.Literal['a0', 'a1'] = 'a0', input_channels: int = 3, num_classes: int = 1000,
                  width_mult: float = 1., depth_mult: float = 1., deploy: bool = False) -> None:
         """Initialize RepVGG with the supplied settings.
 
@@ -142,7 +143,7 @@ class MobileOne(ReparameterizableModel, MobileArchitectureConfig, nn.Module):
     Offline: hyso docs show models.development-families --lang en
     Open: hyso docs open models.development-families --lang en
     """
-    def __init__(self, variant: str = 's0', input_channels: int = 3, num_classes: int = 1000,
+    def __init__(self, variant: _typing.Literal['s0', 's1', 's2'] = 's0', input_channels: int = 3, num_classes: int = 1000,
                  width_mult: float = 1., depth_mult: float = 1., deploy: bool = False) -> None:
         """Initialize MobileOne with the supplied settings.
 

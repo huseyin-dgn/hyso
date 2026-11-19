@@ -57,7 +57,7 @@ def measure_stage(
         return operation(value)
 
 
-def trace_data_stage(stage: '_typing.Any', operation: '_typing.Any', value: '_typing.Any', *, sample_id: '_typing.Any'=None) -> '_typing.Any':
+def trace_data_stage(stage: _typing.Literal['load', 'decode', 'transform'], operation: '_typing.Any', value: '_typing.Any', *, sample_id: '_typing.Any'=None) -> '_typing.Any':
     """Run once; collect worker-local wall timing only in an active trace.
 
     A normal Dataset/DataLoader can call this without a profiler or custom

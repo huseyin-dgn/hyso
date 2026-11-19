@@ -61,7 +61,7 @@ class P26ModelProfileComparisonContract(Contract):
     """
     allowed_changes: tuple = ()
     min_samples: int = 1
-    policy: str = 'p26_bound_model_profiles_v1'
+    policy: _typing.Literal['p26_bound_model_profiles_v1'] = 'p26_bound_model_profiles_v1'
 
     def __post_init__(self):
         quality = P26BoundQualityComparisonContract(

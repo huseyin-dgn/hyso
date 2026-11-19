@@ -1,4 +1,5 @@
 """Public descriptive catalog, profiles and executor coverage; no hardware queries."""
+import typing as _typing
 from dataclasses import asdict, dataclass
 from types import MappingProxyType
 from typing import Any
@@ -101,7 +102,7 @@ class AnalysisFeature:
         return asdict(self)
 
 
-def feature_catalog(feature_id: str | None = None) -> tuple[AnalysisFeature, ...] | AnalysisFeature:
+def feature_catalog(feature_id: _typing.Literal['P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P08', 'P09', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20', 'P21', 'P22', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P31', 'P32', 'P33', 'P34', 'P35'] | None = None) -> tuple[AnalysisFeature, ...] | AnalysisFeature:
     """Describe all 35 features, or one ID. Does not load models or probe devices.
 
     Args:

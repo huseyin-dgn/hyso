@@ -362,8 +362,8 @@ def _result(raw, config, source, accounting, evidence=None, structure=None):
         status="complete" if metrics["sample_count"] else "empty"))
 
 
-def evaluate_predictions(targets: '_typing.Any', predictions: '_typing.Any', *, class_names: '_typing.Any', split: '_typing.Any', task: 'str'="multiclass",
-                         prediction_type: 'str'="labels", zero_division: 'int'=0, source_id: '_typing.Any'=None) -> '_typing.Any':
+def evaluate_predictions(targets: '_typing.Any', predictions: '_typing.Any', *, class_names: '_typing.Any', split: '_typing.Any', task: _typing.Literal['multiclass', 'binary']="multiclass",
+                         prediction_type: _typing.Literal['labels', 'logits']="labels", zero_division: 'int'=0, source_id: '_typing.Any'=None) -> '_typing.Any':
     """Evaluate hard labels or finite logits; class_names order defines 0..C-1.
 
     Empty evaluation has null metrics and status empty. For nonempty data,
@@ -427,7 +427,7 @@ def _model_hash(model,*,allow_device=False):
     return digest.hexdigest()
 
 
-def evaluate_classification(model: '_typing.Any', loader: '_typing.Any', *, class_names: '_typing.Any', split: '_typing.Any', task: 'str'="multiclass", zero_division: 'int'=0,
+def evaluate_classification(model: '_typing.Any', loader: '_typing.Any', *, class_names: '_typing.Any', split: '_typing.Any', task: _typing.Literal['multiclass', 'binary']="multiclass", zero_division: 'int'=0,
                             source_id: '_typing.Any'=None, max_samples: 'int'=1000000, capture_evidence: 'bool'=False, capture_structure: 'bool'=False,device: 'str'='cpu',
                             capture_receiver_runtime: 'bool'=False) -> '_typing.Any':
     """Inference on an isolated deepcopy; default CPU, explicit device opt-in.

@@ -1,6 +1,7 @@
 """Standalone CNN composition from existing blocks; no training wrapper."""
 
 from __future__ import annotations
+import typing as _typing
 
 import torch
 from torch import nn
@@ -82,7 +83,7 @@ class ModularCNN(nn.Module):
                  widths: tuple[int, ...] | list[int] = (32, 64, 128),
                  repeats: tuple[int, ...] | list[int] = (1, 1, 1),
                  strides: tuple[int, ...] | list[int] = (1, 2, 2),
-                 attention: str = "none", norm: str | None = "batch") -> None:
+                 attention: _typing.Literal['none', 'se', 'cbam', 'eca', 'coordinate'] = "none", norm: _typing.Literal['batch', 'group', None] = "batch") -> None:
         """Build a classification CNN without choosing a device or training it.
 
         Args:

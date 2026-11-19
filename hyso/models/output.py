@@ -43,7 +43,7 @@ class GraphTensorOutput(nn.Module):
     Open: hyso docs open models.graph-builder --lang en
     """
 
-    def __init__(self, graph: '_typing.Any', output_name: '_typing.Any', *, task: 'str | None'=None, named_inputs: 'bool'=False) -> 'None':
+    def __init__(self, graph: '_typing.Any', output_name: '_typing.Any', *, task: _typing.Literal['multiclass', 'binary'] | None=None, named_inputs: 'bool'=False) -> 'None':
         """Initialize GraphTensorOutput with the supplied settings.
 
         Args:

@@ -1,4 +1,5 @@
 """Manual guidance attached to existing rule decisions and evidence reviews."""
+import typing as _typing
 
 AREAS = {
     "inference": ("Çıkarım", "Inference"),
@@ -138,7 +139,7 @@ RECIPES = {
 }
 
 
-def recipe_text(code, language, level):
+def recipe_text(code, language: _typing.Literal['tr', 'en'], level: _typing.Literal['beginner', 'technical', 'expert']):
     """Return bilingual manual steps without altering the originating rule decision."""
     index = 0 if language == "tr" else 1
     recipe = RECIPES[code]

@@ -69,9 +69,9 @@ class PipelineStage:
     Offline: hyso docs show analysis.p04 --lang en
     Open: hyso docs open analysis.p04 --lang en
     """
-    name: str
+    name: _typing.Literal['preprocess', 'transfer', 'postprocess', 'deliver']
     function: object
-    device: str = 'cpu'
+    device: _typing.Literal['cpu', 'cuda'] = 'cpu'
 
     def __post_init__(self):
         if self.name not in ('preprocess','transfer','postprocess','deliver'):
@@ -114,7 +114,7 @@ class PipelineProtocol:
     Open: hyso docs open analysis.p03 --lang en
     """
     device: str = 'cpu'
-    precision: str = 'fp32'
+    precision: _typing.Literal['fp32', 'fp64', 'amp_fp16'] = 'fp32'
     samples: int = 10
     repeats: int = 1
     warmup_samples: int = 1
@@ -371,13 +371,17 @@ def analyze_stages(pipeline_result: '_typing.Any') -> 'StageTimingResult':
     return StageTimingResult(data)
 
 
-def measure_stages(model: '_typing.Any', source: '_typing.Any', **kwargs: '_typing.Any') -> 'StageTimingResult':
+def measure_stages(model: '_typing.Any', source: '_typing.Any', *, preprocess: PipelineStage | None = None, transfer: PipelineStage | None = None, postprocess: PipelineStage | None = None, deliver: PipelineStage | None = None, protocol: PipelineProtocol = PipelineProtocol()) -> 'StageTimingResult':
     """Measure caller-declared pipeline stages using the measure_pipeline contract.
 
     Args:
         model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
         source (_typing.Any): Typed native/retained source required by this API, not a declaration of producer authority. Required.
-        kwargs (_typing.Any): Keyword options forwarded only to the native target documented by this API. Required.
+        preprocess (PipelineStage | None): Explicit preprocessing stage. Default: None.
+        transfer (PipelineStage | None): Explicit transfer stage. Default: None.
+        postprocess (PipelineStage | None): Explicit postprocessing stage. Default: None.
+        deliver (PipelineStage | None): Explicit delivery stage. Default: None.
+        protocol (PipelineProtocol): Existing bounded pipeline measurement settings.
 
     Returns:
         The retained measure stages value, without recomputing measurements.
@@ -394,7 +398,7 @@ def measure_stages(model: '_typing.Any', source: '_typing.Any', **kwargs: '_typi
     Offline: hyso docs show analysis.p04 --lang en
     Open: hyso docs open analysis.p04 --lang en
     """
-    return analyze_stages(measure_pipeline(model,source,**kwargs))
+    return analyze_stages(measure_pipeline(model,source,preprocess=preprocess, transfer=transfer, postprocess=postprocess, deliver=deliver, protocol=protocol))
 
 
 def _stage_metrics(rows,names):

@@ -1,5 +1,6 @@
 """One presentation contract over existing result, evidence and Advisor APIs."""
 from __future__ import annotations
+import typing as _typing
 
 from dataclasses import dataclass
 import json
@@ -550,7 +551,7 @@ class PresentationReport:
         return raw
 
 
-def create_report(*results: Any, language: str = "tr", level: str = "technical",
+def create_report(*results: Any, language: _typing.Literal['tr', 'en'] = "tr", level: _typing.Literal['beginner', 'technical', 'expert'] = "technical",
                   title: str = "HYSo", context: AnalysisContext | None = None) -> PresentationReport:
     """Present retained Training/Analysis/Comparison/Advisor results without execution.
 
@@ -615,8 +616,8 @@ def create_report(*results: Any, language: str = "tr", level: str = "technical",
     return PresentationReport(body)
 
 
-def report_experiment(manager: ExperimentManager, experiment_id: str, *, language: str = "tr",
-                      level: str = "technical", title: str = "HYSo") -> PresentationReport:
+def report_experiment(manager: ExperimentManager, experiment_id: str, *, language: _typing.Literal['tr', 'en'] = "tr",
+                      level: _typing.Literal['beginner', 'technical', 'expert'] = "technical", title: str = "HYSo") -> PresentationReport:
     """Read all history pages and verified workflow results using the existing Manager.
 
     Unavailable/invalid artifacts stay explicit. No database state is changed.

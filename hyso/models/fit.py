@@ -35,7 +35,13 @@ class CNNSENormalWithFit(CEMO):
 
     Args:
         args (_typing.Any): Positional arguments forwarded to this native operation. Required.
-        kwargs (_typing.Any): Keyword options forwarded only to the native target documented by this API. Required.
+        residuals_per_stage (int): CEMO residual block count. Default: 2.
+            se_reduction (int): SE reduction factor. Default: 8.
+            p_drop (float): Residual drop probability. Default: 0.1.
+            dropout_fc (float): Classifier dropout. Default: 0.3.
+            use_ema (bool): Existing EMA option. Default: False.
+            ema_decay (float): EMA decay. Default: 0.999.
+            device (str | None): Explicit device; None retains the legacy device policy.
 
     Returns:
         An instance of CNNSENormalWithFit with the documented native validation and defaults.
@@ -52,12 +58,18 @@ class CNNSENormalWithFit(CEMO):
     Offline: hyso docs show models.legacy --lang en
     Open: hyso docs open models.legacy --lang en
     """
-    def __init__(self, *args: '_typing.Any', **kwargs: '_typing.Any') -> 'None':
+    def __init__(self, input_channels: int=3, num_classes: int=10, conv_channels: '_typing.Sequence[int]'=[64, 128, 256], residuals_per_stage: int=2, se_reduction: int=8, p_drop: float=0.1, dropout_fc: float=0.3, use_ema: bool=False, ema_decay: float=0.999, device: str=None) -> None:
         """Initialize CNNSENormalWithFit with the supplied settings.
 
         Args:
             args (_typing.Any): Positional arguments forwarded to this native operation. Required.
-            kwargs (_typing.Any): Keyword options forwarded only to the native target documented by this API. Required.
+            residuals_per_stage (int): CEMO residual block count. Default: 2.
+            se_reduction (int): SE reduction factor. Default: 8.
+            p_drop (float): Residual drop probability. Default: 0.1.
+            dropout_fc (float): Classifier dropout. Default: 0.3.
+            use_ema (bool): Existing EMA option. Default: False.
+            ema_decay (float): EMA decay. Default: 0.999.
+            device (str | None): Explicit device; None retains the legacy device policy.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
@@ -74,7 +86,7 @@ class CNNSENormalWithFit(CEMO):
         Offline: hyso docs show models.legacy --lang en
         Open: hyso docs open models.legacy --lang en
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(input_channels=input_channels, num_classes=num_classes, conv_channels=conv_channels, residuals_per_stage=residuals_per_stage, se_reduction=se_reduction, p_drop=p_drop, dropout_fc=dropout_fc, use_ema=use_ema, ema_decay=ema_decay, device=device)
         self.optimizer = None
         self.early_stopping = None
         self.model_checkpoint = None
@@ -86,8 +98,8 @@ class CNNSENormalWithFit(CEMO):
     # -------------------------
     # Callbacks & Optimizer
     # -------------------------
-    def callbacks(self, optimizer: 'str'="Adam", optimizer_params: 'dict[str, _typing.Any] | None'=None,
-                  scheduler: '_typing.Any'=None, scheduler_params: 'dict[str, _typing.Any] | None'=None,
+    def callbacks(self, optimizer: _typing.Literal['Adam', 'SGD']="Adam", optimizer_params: 'dict[str, _typing.Any] | None'=None,
+                  scheduler: _typing.Literal['StepLR', 'ReduceLROnPlateau', 'CosineAnnealingLR', None]=None, scheduler_params: 'dict[str, _typing.Any] | None'=None,
                   model_checkpoint: 'bool'=False, earlystop: '_typing.Any'=None,
                   lr: 'float'=1e-3, weight_decay: 'float'=1e-4) -> 'None':
 

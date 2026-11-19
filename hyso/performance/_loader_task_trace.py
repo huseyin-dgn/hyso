@@ -248,7 +248,7 @@ class WorkerTaskDataLoader(DataLoader):
         if self.trace_channel.trace_counters() != dict(attempted=0, accepted=0, rejected=0):
             raise RuntimeError("task trace channel must be fresh")
 
-    def begin_trace_epoch(self, epoch_id: '_typing.Any', phase: '_typing.Any') -> 'None':
+    def begin_trace_epoch(self, epoch_id: '_typing.Any', phase: _typing.Literal['training']) -> 'None':
         """Set the epoch and phase identity for subsequent worker-task trace records.
 
         Args:

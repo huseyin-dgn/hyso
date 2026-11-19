@@ -99,7 +99,7 @@ class Resize(nn.Module):
     Offline: hyso docs show components.sampling --lang en
     Open: hyso docs open components.sampling --lang en
     """
-    def __init__(self,output_size: 'int | tuple[int, int] | list[int] | None'=None,scale_factor: '_typing.Any'=None,mode: 'str'='nearest',align_corners: '_typing.Any'=None) -> 'None':
+    def __init__(self,output_size: 'int | tuple[int, int] | list[int] | None'=None,scale_factor: '_typing.Any'=None,mode: _typing.Literal['nearest', 'bilinear', 'bicubic', 'area']='nearest',align_corners: '_typing.Any'=None) -> 'None':
         """Initialize Resize with the supplied settings.
 
         Args:
@@ -381,7 +381,10 @@ class PredictionHead(nn.Module):
     """Project pooled features to the declared output width; training task support is separate.
 
     Args:
-        **params (_typing.Any): Component keyword parameters; registered defaults apply to omitted optional keys.
+        in_features: in features. Required.
+        pooling: pooling. Default: 'avg'.
+        num_classes: num classes. Required.
+        dropout: dropout. Default: 0.0.
 
     Returns:
         An instance of PredictionHead with the documented native validation and defaults.
@@ -392,14 +395,35 @@ class PredictionHead(nn.Module):
 
     Example:
         # Caller-supplied values; explicitly requested operations only.
-        PredictionHead()
+        PredictionHead(in_features=4, num_classes=2)
 
     HYSo Guide: components.heads
     Offline: hyso docs show components.heads --lang en
     Open: hyso docs open components.heads --lang en
     """
     registry_name='classification_head'
-    def __init__(self,**params: '_typing.Any') -> 'None':
+
+    def __init__(self, *, in_features: int, pooling: _typing.Literal['avg', 'max', 'none']='avg', num_classes: int, dropout: float=0.0) -> None:
+        """Construct PredictionHead through its existing registry validator.
+
+        Args:
+            in_features: in features.
+            pooling: pooling.
+            num_classes: num classes.
+            dropout: dropout.
+        Returns:
+            None; initializes the existing native module with the supplied options.
+        Raises:
+            ValueError, TypeError: Native component parameter validation fails.
+        Example:
+            model = PredictionHead(in_features=4, num_classes=2)
+
+        HYSo Guide: components.heads
+        Offline: hyso docs show components.heads --lang en
+        Open: hyso docs open components.heads --lang en
+        """
+        self._initialize(dict(in_features=in_features, pooling=pooling, num_classes=num_classes, dropout=dropout))
+    def _initialize(self, params: dict[str, _typing.Any]) -> None:
         """Initialize PredictionHead with the supplied settings.
 
         Args:
@@ -473,13 +497,33 @@ class RegressionHead(PredictionHead):
 
     Example:
         # Caller-supplied values; explicitly requested operations only.
-        RegressionHead()
+        RegressionHead(in_features=4, output_features=4)
 
     HYSo Guide: components.heads
     Offline: hyso docs show components.heads --lang en
     Open: hyso docs open components.heads --lang en
     """
     registry_name='regression_head'
+
+    def __init__(self, *, in_features: int, pooling: _typing.Literal['avg', 'max', 'none']='avg', output_features: int) -> None:
+        """Construct RegressionHead through its existing registry validator.
+
+        Args:
+            in_features: in features.
+            pooling: pooling.
+            output_features: output features.
+        Returns:
+            None; initializes the existing native module with the supplied options.
+        Raises:
+            ValueError, TypeError: Native component parameter validation fails.
+        Example:
+            model = RegressionHead(in_features=4, output_features=4)
+
+        HYSo Guide: components.heads
+        Offline: hyso docs show components.heads --lang en
+        Open: hyso docs open components.heads --lang en
+        """
+        self._initialize(dict(in_features=in_features, pooling=pooling, output_features=output_features))
 
 
 class EmbeddingHead(PredictionHead):
@@ -494,13 +538,35 @@ class EmbeddingHead(PredictionHead):
 
     Example:
         # Caller-supplied values; explicitly requested operations only.
-        EmbeddingHead()
+        EmbeddingHead(in_features=4, embedding_dim=2)
 
     HYSo Guide: components.heads
     Offline: hyso docs show components.heads --lang en
     Open: hyso docs open components.heads --lang en
     """
     registry_name='embedding_head'
+
+    def __init__(self, *, in_features: int, pooling: _typing.Literal['avg', 'max', 'none']='avg', embedding_dim: int, normalize: bool=False, eps: float=1e-12) -> None:
+        """Construct EmbeddingHead through its existing registry validator.
+
+        Args:
+            in_features: in features.
+            pooling: pooling.
+            embedding_dim: embedding dim.
+            normalize: normalize.
+            eps: eps.
+        Returns:
+            None; initializes the existing native module with the supplied options.
+        Raises:
+            ValueError, TypeError: Native component parameter validation fails.
+        Example:
+            model = EmbeddingHead(in_features=4, embedding_dim=2)
+
+        HYSo Guide: components.heads
+        Offline: hyso docs show components.heads --lang en
+        Open: hyso docs open components.heads --lang en
+        """
+        self._initialize(dict(in_features=in_features, pooling=pooling, embedding_dim=embedding_dim, normalize=normalize, eps=eps))
 
 
 def specifications(p):

@@ -140,7 +140,7 @@ class AnalysisPlan:
     """
     request: FeaturePlanRequest
     device: str
-    execution_mode: str
+    execution_mode: _typing.Literal['trusted_cpu', 'isolated_cpu', 'native']
     policy: CPUAnalysisPolicy
 
     def __post_init__(self) -> None:
@@ -207,9 +207,9 @@ class AnalysisPlan:
 
 
 def plan_analysis(models: ModelContext | Sequence[ModelContext] | FeaturePlanRequest,
-                  features: str | Sequence[str] | None = None, *, profile: str | None = None,
-                  capabilities: Sequence[str] = (), device: str = 'cpu',
-                  execution_mode: str = 'trusted_cpu', policy: CPUAnalysisPolicy = CPUAnalysisPolicy()) -> AnalysisPlan:
+                  features: _typing.Literal['P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P08', 'P09', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20', 'P21', 'P22', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P31', 'P32', 'P33', 'P34', 'P35'] | _typing.Sequence[_typing.Literal['P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P08', 'P09', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20', 'P21', 'P22', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P31', 'P32', 'P33', 'P34', 'P35']] | None = None, *, profile: _typing.Literal['basic', 'inference', 'training', 'memory', 'comparison', 'full', None] = None,
+                  capabilities: _typing.Sequence[_typing.Literal['gpu', 'ncu', 'power_sensor', 'multiple_devices', 'ort_cpu', 'ort_cuda']] = (), device: str = 'cpu',
+                  execution_mode: _typing.Literal['trusted_cpu', 'isolated_cpu', 'native'] = 'trusted_cpu', policy: CPUAnalysisPolicy = CPUAnalysisPolicy()) -> AnalysisPlan:
     """Select a feature, list, profile or existing G1 request; never run/probe anything.
 
     Exactly one of features/profile is required unless a FeaturePlanRequest is
@@ -785,7 +785,7 @@ class AnalysisExecutionResult:
         return self.to_evidence_index().analyze(context=context,risks=risks)
 
 
-def execute_analysis(dry_run: AnalysisDryRun, *, authorized_features: Sequence[str],
+def execute_analysis(dry_run: AnalysisDryRun, *, authorized_features: _typing.Sequence[_typing.Literal['P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P08', 'P09', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20', 'P21', 'P22', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P31', 'P32', 'P33', 'P34', 'P35']],
                      explicit_authorization: bool = False) -> AnalysisExecutionResult:
     """Run only explicitly selected AND authorized supported rows, once.
 

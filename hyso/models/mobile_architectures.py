@@ -4,6 +4,7 @@
 # Full upstream licenses and notices are retained in THIRD_PARTY_NOTICES.md.
 """MobileNet, EfficientNetV2, GhostNetV1, ShuffleNetV2 families."""
 from __future__ import annotations
+import typing as _typing
 
 import copy
 from functools import partial
@@ -134,7 +135,7 @@ class MobileNetV3(MobileArchitectureConfig, TVMobileNetV3):
     Offline: hyso docs show models.development-families --lang en
     Open: hyso docs open models.development-families --lang en
     """
-    def __init__(self, variant: str = 'large', input_channels: int = 3,
+    def __init__(self, variant: _typing.Literal['small', 'large'] = 'large', input_channels: int = 3,
                  num_classes: int = 1000, width_mult: float = 1., dropout: float = .2) -> None:
         """Initialize MobileNetV3 with the supplied settings.
 
@@ -200,7 +201,7 @@ class EfficientNetV2(MobileArchitectureConfig, TVEfficientNet):
     Offline: hyso docs show models.development-families --lang en
     Open: hyso docs open models.development-families --lang en
     """
-    def __init__(self, variant: str = 's', input_channels: int = 3, num_classes: int = 1000,
+    def __init__(self, variant: _typing.Literal['s', 'm', 'l'] = 's', input_channels: int = 3, num_classes: int = 1000,
                  width_mult: float = 1., depth_mult: float = 1.,
                  dropout: float | None = None, stochastic_depth: float = .2) -> None:
         """Initialize EfficientNetV2 with the supplied settings.
@@ -264,7 +265,7 @@ class ShuffleNetV2(MobileArchitectureConfig, TVShuffleNetV2):
     Offline: hyso docs show models.development-families --lang en
     Open: hyso docs open models.development-families --lang en
     """
-    def __init__(self, variant: str = 'x1_0', input_channels: int = 3, num_classes: int = 1000) -> None:
+    def __init__(self, variant: _typing.Literal['x0_5', 'x1_0', 'x1_5', 'x2_0'] = 'x1_0', input_channels: int = 3, num_classes: int = 1000) -> None:
         """Initialize ShuffleNetV2 with the supplied settings.
 
         Args:

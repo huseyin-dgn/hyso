@@ -1,4 +1,5 @@
 """Versioned, read-only decision plans. No execution or comparative certification."""
+import typing as _typing
 from dataclasses import dataclass, replace
 import hashlib
 
@@ -55,12 +56,12 @@ class DecisionPlan(Contract):
     Offline: hyso docs show advisor.recommendations --lang en
     Open: hyso docs open advisor.recommendations --lang en
     """
-    domain: str
-    stage: str
+    domain: _typing.Literal['latency', 'throughput', 'precision', 'memory', 'quality', 'provenance']
+    stage: _typing.Literal['retained_review', 'association_validation', 'new_measurement', 'conditional_experiment']
     decision: str
     rationale: str
-    change_parameter: str | None = None
-    changed_variables: tuple = ()
+    change_parameter: _typing.Literal['batch_size', None] = None
+    changed_variables: tuple[_typing.Literal['input.batch_size'], ...] = ()
     fixed_conditions: tuple = ()
     remeasure_metrics: tuple = ()
     missing_evidence: tuple = ()
@@ -69,11 +70,11 @@ class DecisionPlan(Contract):
     goal_ids: tuple = ()
     budget_ids: tuple = ()
     capture_records: tuple = ()
-    authorization: str = 'not_authorized'
-    readiness: str = 'blocked'
-    cost: str = 'unknown'
-    expected_effect: str = 'unknown'
-    verified_effect: str = 'not_measured'
+    authorization: _typing.Literal['not_authorized'] = 'not_authorized'
+    readiness: _typing.Literal['blocked'] = 'blocked'
+    cost: _typing.Literal['unknown'] = 'unknown'
+    expected_effect: _typing.Literal['unknown'] = 'unknown'
+    verified_effect: _typing.Literal['not_measured'] = 'not_measured'
 
     def __post_init__(self):
         _choice(self, 'domain', ('latency', 'throughput', 'precision', 'memory', 'quality', 'provenance'))

@@ -236,8 +236,8 @@ class EvidenceRecord:
         object.__setattr__(self, '_payload', canonical(d))
 
     @classmethod
-    def from_native(cls, payload: dict, *, feature_id: str, scope: EvidenceScope | None = None,
-                    origin: str = 'new') -> 'EvidenceRecord':
+    def from_native(cls, payload: dict, *, feature_id: _typing.Literal['P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P08', 'P09', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20', 'P21', 'P22', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P31', 'P32', 'P33', 'P34', 'P35'], scope: EvidenceScope | None = None,
+                    origin: _typing.Literal['new', 'reused'] = 'new') -> 'EvidenceRecord':
         """Validate an in-memory native result using the existing reader contracts.
 
         Artifact identity describes canonical JSON bytes retained in this record;
@@ -280,7 +280,7 @@ class EvidenceRecord:
                            datetime.now(timezone.utc).isoformat()))
 
     @classmethod
-    def from_json(cls, path: '_typing.Any', *, feature_id: '_typing.Any', expected_sha256: '_typing.Any', scope: '_typing.Any'=None, origin: 'str'='new', max_bytes: '_typing.Any'=64*1024**2) -> 'EvidenceRecord':
+    def from_json(cls, path: '_typing.Any', *, feature_id: _typing.Literal['P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P08', 'P09', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20', 'P21', 'P22', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P31', 'P32', 'P33', 'P34', 'P35'], expected_sha256: '_typing.Any', scope: '_typing.Any'=None, origin: _typing.Literal['new', 'reused']='new', max_bytes: '_typing.Any'=64*1024**2) -> 'EvidenceRecord':
         """Read and validate this type from a local JSON file.
 
         Args:
@@ -315,7 +315,7 @@ class EvidenceRecord:
                            datetime.now(timezone.utc).isoformat()))
 
     @classmethod
-    def unavailable(cls, feature_id: '_typing.Any', *, reason: '_typing.Any', status: 'str'='not_run', scope: '_typing.Any'=None) -> 'EvidenceRecord':
+    def unavailable(cls, feature_id: _typing.Literal['P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P08', 'P09', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20', 'P21', 'P22', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P31', 'P32', 'P33', 'P34', 'P35'], *, reason: '_typing.Any', status: _typing.Literal['not_run', 'unsupported', 'invalid', 'unknown']='not_run', scope: '_typing.Any'=None) -> 'EvidenceRecord':
         """Create an explicit unavailable evidence record with its reason and scope.
 
         Args:

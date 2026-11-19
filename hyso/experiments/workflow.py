@@ -1,5 +1,6 @@
 """Adapters for the existing Manager snapshots, artifact store and result readers."""
 from __future__ import annotations
+import typing as _typing
 
 import hashlib
 import json
@@ -27,7 +28,7 @@ _REASONS = {
 _MAX_RESULT_BYTES = 128 * 1024**2
 
 
-def workflow_config(stage, model_ids, architectures, training_config, analysis, comparison,
+def workflow_config(stage: _typing.Literal['model', 'training', 'analysis', 'comparison'], model_ids, architectures, training_config, analysis, comparison,
                     dataset, device, precision, protocol):
     from ..models.builder import ModelBuilder
     from ..models.graph import GraphModelBuilder

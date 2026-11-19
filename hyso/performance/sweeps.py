@@ -59,7 +59,7 @@ class SweepProtocol:
     Open: hyso docs open analysis.p06 --lang en
     """
     device: str = 'cpu'
-    precision: str = 'fp32'
+    precision: _typing.Literal['fp32', 'fp64', 'amp_fp16', 'bf16', 'int8_dynamic'] = 'fp32'
     warmup_iterations: int = 2
     measure_iterations: int = 10
     repeats: int = 1
@@ -261,7 +261,7 @@ def _point_metrics(raw,batch):
                 batch_cardinality=batch)
 
 
-def run_sweep(model: '_typing.Any', input_factory: '_typing.Any', *, axis: '_typing.Any', points: '_typing.Any', input_shape: '_typing.Sequence[int]'=(1,1,5,7), protocol: '_typing.Any'=SweepProtocol()) -> 'SweepResult':
+def run_sweep(model: '_typing.Any', input_factory: '_typing.Any', *, axis: _typing.Literal['batch', 'precision', 'resolution'], points: _typing.Sequence[int | tuple[int, int] | list[int] | _typing.Literal['fp32', 'fp64', 'amp_fp16', 'bf16', 'int8_dynamic']], input_shape: '_typing.Sequence[int]'=(1,1,5,7), protocol: '_typing.Any'=SweepProtocol()) -> 'SweepResult':
     """Finite ordered batch/resolution/precision points; CPU FP32 master is copied.
 
     input_factory(shape, dtype, device) must return exact resident NCHW input.

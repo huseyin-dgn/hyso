@@ -72,8 +72,8 @@ class ModelContext:
     """
 
     model_id: str
-    task: str = 'classification'
-    backend: str = 'pytorch'
+    task: _typing.Literal['classification', 'detection', 'segmentation', 'other'] = 'classification'
+    backend: _typing.Literal['pytorch', 'onnx'] = 'pytorch'
     input_contract: bool = False
     adapter_contract: bool = False
     labeled_evaluation: bool = False
@@ -205,11 +205,11 @@ class FeaturePlanRequest:
     Offline: hyso docs show analyzer.workflow --lang en
     Open: hyso docs open analyzer.workflow --lang en
     """
-    mode: str
-    models: tuple
-    features: tuple = ()
-    goals: tuple = ()
-    capabilities: tuple = ()
+    mode: _typing.Literal['single', 'selected', 'automatic', 'full']
+    models: tuple[ModelContext, ...]
+    features: tuple[_typing.Literal['P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P08', 'P09', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20', 'P21', 'P22', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P31', 'P32', 'P33', 'P34', 'P35'], ...] = ()
+    goals: tuple[_typing.Literal['latency', 'throughput', 'memory', 'bottleneck', 'quality', 'training', 'stability', 'energy', 'providers', 'comparison', 'streaming'], ...] = ()
+    capabilities: tuple[_typing.Literal['gpu', 'ncu', 'power_sensor', 'multiple_devices', 'ort_cpu', 'ort_cuda'], ...] = ()
 
     def __post_init__(self):
         if type(self.mode) is not str or self.mode not in _MODES:

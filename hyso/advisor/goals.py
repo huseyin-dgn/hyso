@@ -64,7 +64,7 @@ def _context(resolver, resolved, metric):
     return request_scope, request_protocol
 
 
-def goal_context(resolver: '_typing.Any', record_id: '_typing.Any', metric: '_typing.Any') -> '_typing.Any':
+def goal_context(resolver: '_typing.Any', record_id: '_typing.Any', metric: Metric) -> '_typing.Any':
     """Explicitly request a retained record's scope/protocol selectors.
 
     This convenience call adds no target and leaves missing fields missing.

@@ -50,7 +50,7 @@ class DeviceProtocol:
     """
     warmup: int = 3
     samples: int = 20
-    precision: str = 'float32'
+    precision: _typing.Literal['float32', 'float64'] = 'float32'
     seed: int = 0
     startup_timeout_seconds: float = 45.
     step_timeout_seconds: float = 10.

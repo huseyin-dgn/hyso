@@ -582,7 +582,7 @@ class ModelComparisonResult:
         data,_,_ = read_json(path,max_bytes=_MAX_BYTES)
         return cls(data)
 
-    def to_display_dict(self, *, language: str = 'en') -> dict[str,Any]:
+    def to_display_dict(self, *, language: _typing.Literal['tr', 'en'] = 'en') -> dict[str,Any]:
         """Return localized display text while preserving canonical comparison data.
 
         Args:
@@ -606,7 +606,7 @@ class ModelComparisonResult:
         from ..advisor.model_comparison_presentation import to_display_dict
         return to_display_dict(self,language=language)
 
-    def to_markdown(self, path: '_typing.Any'=None, *, language: str = 'en', overwrite: bool = False) -> str:
+    def to_markdown(self, path: '_typing.Any'=None, *, language: _typing.Literal['tr', 'en'] = 'en', overwrite: bool = False) -> str:
         """Format retained comparison findings as Markdown without rerunning models.
 
         Args:
@@ -655,8 +655,8 @@ class ModelComparisonResult:
 
 
 def compare_models(baseline: ModelComparisonSource, candidate: ModelComparisonSource, *,
-                   features: str | Sequence[str], include_structure: bool = False,
-                   context_policy: str = 'legacy') -> ModelComparisonResult:
+                   features: _typing.Literal['P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P08', 'P09', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20', 'P21', 'P22', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P31', 'P32', 'P33', 'P34', 'P35'] | _typing.Sequence[_typing.Literal['P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P08', 'P09', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20', 'P21', 'P22', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P31', 'P32', 'P33', 'P34', 'P35']], include_structure: bool = False,
+                   context_policy: _typing.Literal['legacy', 'strict'] = 'legacy') -> ModelComparisonResult:
     """Compare exactly two existing sources, only explicit feature IDs.
 
     Uses compare_performance/P26 policies and optional original benchmark/structure

@@ -98,7 +98,7 @@ def _source_expected(receipt):
 
 
 def read_ncu_counters(csv_path: '_typing.Any', *, receipt_path: '_typing.Any', session_id: '_typing.Any', role: '_typing.Any', kernel_name: '_typing.Any',
-                      number_format: 'str'='decimal_point', source_paths: '_typing.Any'=None, sensor_paths: '_typing.Any'=None, report_path: '_typing.Any'=None) -> '_typing.Any':
+                      number_format: _typing.Literal['decimal_point', 'decimal_comma']='decimal_point', source_paths: '_typing.Any'=None, sensor_paths: '_typing.Any'=None, report_path: '_typing.Any'=None) -> '_typing.Any':
     """Read an existing ``--page raw --csv --print-units base`` export + receipt.
 
     No binary report decoding, Nsight import, subprocess, driver or GPU query.

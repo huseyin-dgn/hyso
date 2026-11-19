@@ -357,7 +357,7 @@ def stochastic_depth(x, drop_prob: float, training: bool):
 class BottleneckResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels, stride=1,
                  use_projection=False, bottleneck_ratio=0.25,
-                 p_drop=0.0, att_reduction=16, norm_type='auto',
+                 p_drop=0.0, att_reduction=16, norm_type: _typing.Literal['auto', 'batch', 'group']='auto',
                  use_depthwise=False):
         """
         use_depthwise: if True, use depthwise separable conv for the 3x3 conv path (faster, less params)
@@ -456,7 +456,7 @@ class ELO(nn.Module):
     """
     def __init__(self, input_channels: 'int'=3, num_classes: 'int'=10,
                  conv_channels: '_typing.Sequence[int]'=[64,128,256,512], residual_per_block: 'int'=2,
-                 p_drop: 'float'=0.0, att_reduction: 'int'=16, norm_type: 'str'='auto',
+                 p_drop: 'float'=0.0, att_reduction: 'int'=16, norm_type: _typing.Literal['auto', 'batch', 'group']='auto',
                  use_depthwise: 'bool'=False) -> 'None':
         """Initialize ELO with the supplied settings.
 
@@ -578,7 +578,7 @@ class EBO(nn.Module):
     """
     def __init__(self, input_channels: 'int'=3, num_classes: 'int'=10,
                  conv_channels: '_typing.Sequence[int]'=[32,64,128,256], residual_per_block: 'int'=2,
-                 p_drop: 'float'=0.0, att_reduction: 'int'=16, norm_type: 'str'='auto', device: 'str | None'=None,
+                 p_drop: 'float'=0.0, att_reduction: 'int'=16, norm_type: _typing.Literal['auto', 'batch', 'group']='auto', device: 'str | None'=None,
                  use_depthwise: 'bool'=False) -> 'None':
         """Initialize EBO with the supplied settings.
 
@@ -652,8 +652,8 @@ class EBO(nn.Module):
 
     # Callbacks & Optimizer
 
-    def callbacks(self, optimizer: 'str'="Adam", optimizer_params: 'dict[str, _typing.Any] | None'=None,
-                  scheduler: '_typing.Any'=None, scheduler_params: 'dict[str, _typing.Any] | None'=None,
+    def callbacks(self, optimizer: _typing.Literal['adam', 'sgd', 'adamw', 'Adam', 'SGD', 'AdamW']="Adam", optimizer_params: 'dict[str, _typing.Any] | None'=None,
+                  scheduler: _typing.Literal['steplr', 'reduceonplateau', 'cosineannealinglr', 'onecycle', None]=None, scheduler_params: 'dict[str, _typing.Any] | None'=None,
                   model_checkpoint: 'bool'=False, earlystop: '_typing.Any'=None,
                   lr: 'float'=1e-3, weight_decay: 'float'=1e-4) -> 'None':
         # ensure model on device
@@ -740,9 +740,9 @@ class EBO(nn.Module):
     # Improved Fit Fonksiyonu (AMP, AdamW, OneCycle, grad_clip, accum_steps)
 
     def fit(self, train_loader: '_typing.Any', val_loader: '_typing.Any'=None, epochs: 'int'=10, lr: 'float'=1e-3,
-            optimizer_name: 'str'="adamw", weight_decay: 'float'=1e-4, use_ema: 'bool'=False,
+            optimizer_name: _typing.Literal['adamw', 'adam', 'sgd']="adamw", weight_decay: 'float'=1e-4, use_ema: 'bool'=False,
             use_amp: 'bool'=True, grad_clip: '_typing.Any'=None, accum_steps: 'int'=1,
-            scheduler_name: '_typing.Any'=None, scheduler_params: 'dict[str, _typing.Any] | None'=None, max_lr: '_typing.Any'=None, *,
+            scheduler_name: _typing.Literal['steplr', 'reduceonplateau', 'cosine', 'onecycle', None]=None, scheduler_params: 'dict[str, _typing.Any] | None'=None, max_lr: '_typing.Any'=None, *,
             resume_from: '_typing.Any'=None, save_last_to: '_typing.Any'=None) -> '_typing.Any':
         """optimizer_name: 'adamw' | 'adam' | 'sgd'
         scheduler_name: 'onecycle' | 'steplr' | 'reduceonplateau' | 'cosine'

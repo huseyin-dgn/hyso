@@ -70,8 +70,8 @@ class TrainingMemoryProtocol:
     Open: hyso docs open analysis.p23 --lang en
     """
     device: str = "cpu"
-    scope: str = "in_process_fit"
-    peak_reset_policy: str = "never"
+    scope: _typing.Literal['in_process_fit'] = "in_process_fit"
+    peak_reset_policy: _typing.Literal['never'] = "never"
     interval_seconds: float = .01
     max_samples: int = 10000
     max_boundaries: int = 10000

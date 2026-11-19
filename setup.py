@@ -15,13 +15,13 @@ SOURCE_FILES = MODULES | frozenset(PROFILE['support_files'])
 
 
 def commercial_payload(name, payload):
-    """Omit only labeled development convenience methods and their new index rows.
+    """Omit labeled development methods, registry selector types and their index rows.
 
     Removing their definitions also keeps installed IDE completion profile-correct.
     Original algorithms, generic add/named APIs and pre-existing guide rows remain.
     The transform is idempotent for rebuilding a wheel from the commercial sdist.
     """
-    if name in ('hyso/models/builder.py', 'hyso/models/graph.py'):
+    if name in ('hyso/models/builder.py', 'hyso/models/graph.py', 'hyso/models/registry.py'):
         lines=payload.splitlines(keepends=True)
         starts=[i for i,line in enumerate(lines) if line.strip()==b'# BEGIN DEVELOPMENT REGISTRY WRAPPERS']
         ends=[i for i,line in enumerate(lines) if line.strip()==b'# END DEVELOPMENT REGISTRY WRAPPERS']
@@ -65,7 +65,7 @@ class CommercialBuild(build_py):
         result=super().build_module(module,module_file,package)
         parts=package.split('.') if isinstance(package,str) else package
         name='/'.join([*parts,module])+'.py'
-        if name in ('hyso/models/builder.py','hyso/models/graph.py'):
+        if name in ('hyso/models/builder.py','hyso/models/graph.py','hyso/models/registry.py'):
             write_commercial(Path(result[0]),name)
         return result
 
@@ -83,7 +83,7 @@ class CommercialSource(sdist):
                    if Path(name).as_posix() in SOURCE_FILES
                    or Path(name).as_posix().startswith('hyso.egg-info/')]
         super().make_release_tree(base_dir, allowed)
-        for name in ('hyso/models/builder.py','hyso/models/graph.py','hyso/data/api-topics.json'):
+        for name in ('hyso/models/builder.py','hyso/models/graph.py','hyso/models/registry.py','hyso/data/api-topics.json'):
             write_commercial(Path(base_dir)/name,name)
 
 

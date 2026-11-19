@@ -23,6 +23,37 @@ from ..models.output import GraphTensorOutput
 from ..training.data import NamedTargetDataset, NamedTensorDataset
 
 
+class _RequiredGraphHeadSpec(_typing.TypedDict):
+    target: str
+    task: _typing.Literal['multiclass', 'binary']
+    class_names: _typing.Sequence[str]
+    split: str
+    dataset_id: str
+    preprocessing_id: str
+
+
+class GraphHeadSpec(_RequiredGraphHeadSpec, total=False):
+    """Typed plain dictionary for one existing named P26 classification head.
+
+    target, split, dataset_id and preprocessing_id are caller-owned identifiers.
+    task and class_names must satisfy the existing evaluator's label contract.
+    zero_division is optional and defaults to zero in the native validator.
+
+    Returns:
+        A plain dictionary; creating it does not evaluate or modify a graph.
+    Raises:
+        No runtime validation here; evaluate_graph_heads validates the supplied data.
+    Example:
+        head = GraphHeadSpec(target='label', task='multiclass', class_names=['a', 'b'],
+                             split='test', dataset_id='sample', preprocessing_id='v1')
+
+    HYSo Guide: analysis.p26
+    Offline: hyso docs show analysis.p26 --lang en
+    Open: hyso docs open analysis.p26 --lang en
+    """
+    zero_division: int
+
+
 def _spec(value):
     value = plain(value)
     fields = {'target', 'task', 'class_names', 'split', 'dataset_id', 'preprocessing_id', 'zero_division'}
@@ -197,7 +228,7 @@ class MultiHeadGraphEvaluationResult(_Export):
         return self.head(head).analysis_source(model_id)
 
 
-def evaluate_graph_heads(model: '_typing.Any', loader: '_typing.Any', *, heads: '_typing.Any', capture_structure: 'bool'=False,
+def evaluate_graph_heads(model: '_typing.Any', loader: '_typing.Any', *, heads: dict[str, GraphHeadSpec], capture_structure: 'bool'=False,
                          expected_checkpoint_sha256: '_typing.Any'=None) -> '_typing.Any':
     """Explicit two-head CPU fp32 evaluation, using the original evaluator twice.
 
@@ -286,7 +317,7 @@ def evaluate_graph_heads(model: '_typing.Any', loader: '_typing.Any', *, heads: 
 
 
 def compare_graph_heads(baseline: '_typing.Any', candidate: '_typing.Any', *, head_pairs: '_typing.Any', model_ids: '_typing.Any'=('A','B'),
-                        features: '_typing.Any'=('P26','P12'), include_structure: 'bool'=True) -> '_typing.Any':
+                        features: _typing.Literal['P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P08', 'P09', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20', 'P21', 'P22', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P31', 'P32', 'P33', 'P34', 'P35'] | _typing.Sequence[_typing.Literal['P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P08', 'P09', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20', 'P21', 'P22', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P31', 'P32', 'P33', 'P34', 'P35']]=('P26','P12'), include_structure: 'bool'=True) -> '_typing.Any':
     """Compare only explicitly paired equal output names through compare_models.
 
     This bounded adapter does not infer semantic equivalence or rename heads.
@@ -331,7 +362,7 @@ def compare_graph_heads(baseline: '_typing.Any', candidate: '_typing.Any', *, he
         include_structure=include_structure,context_policy='strict') for a,b in head_pairs.items()}
 
 
-def report_section(result, language, level, catalog):
+def report_section(result, language: _typing.Literal['tr', 'en'], level, catalog):
     """Use existing P26 presentation and rendering with explicit per-head labels."""
     from .graph_evidence import report_section as single_section, _LIMITS
     from ..reporting.report import _metric

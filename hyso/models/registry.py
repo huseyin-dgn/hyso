@@ -4,6 +4,7 @@ No plugin loading or global registration. Schema/shape restrictions describe thi
 builder profile, not every option supported by the original standalone classes.
 """
 from __future__ import annotations
+import typing as _typing
 
 from dataclasses import dataclass
 import math
@@ -71,6 +72,16 @@ def _diagnostic_value(value, depth=0):
         return {k[:256]: _diagnostic_value(v, depth+1)
                 for k, v in list(value.items())[:64] if type(k) is str}
     return {'type': type(value).__name__}
+
+_ComponentName = _typing.Literal['conv_norm_act', 'conv2d', 'residual', 'se', 'cbam', 'eca', 'coordinate', 'batch_norm', 'group_norm', 'relu', 'silu', 'hardswish', 'identity', 'modular_cnn', 'channel_shuffle', 'dropblock2d', 'pointwise_conv2d', 'depthwise_conv2d', 'depthwise_separable_conv2d', 'spatial_separable_conv2d', 'factorized_conv2d', 'conv_transpose2d', 'channel_layer_norm', 'instance_norm', 'leaky_relu', 'prelu', 'gelu', 'mish', 'hardsigmoid', 'max_pool2d', 'avg_pool2d', 'adaptive_avg_pool2d', 'adaptive_max_pool2d', 'global_avg_pool2d', 'bottleneck_residual', 'preactivation_residual', 'wide_residual_block', 'grouped_bottleneck', 'inverted_bottleneck', 'gated_residual', 'spatial_attention', 'channel_attention', 'spatial_self_attention', 'multihead_spatial_attention', 'dropout', 'dropout2d', 'drop_path', 'gaussian_noise', 'resize', 'pixel_shuffle', 'pixel_unshuffle', 'flatten', 'permute', 'reshape', 'classification_head', 'regression_head', 'embedding_head']
+_ComponentCategory = _typing.Literal['activation', 'attention', 'channel_mixing', 'convolution', 'identity', 'model', 'normalization', 'pooling', 'prediction_head', 'regularization', 'residual', 'sampling', 'tensor_utility']
+
+# BEGIN DEVELOPMENT REGISTRY WRAPPERS
+if DEVELOPMENT:
+    _ComponentName = _typing.Literal['conv_norm_act', 'conv2d', 'residual', 'se', 'cbam', 'eca', 'coordinate', 'batch_norm', 'group_norm', 'relu', 'silu', 'hardswish', 'identity', 'modular_cnn', 'channel_shuffle', 'dropblock2d', 'pointwise_conv2d', 'depthwise_conv2d', 'depthwise_separable_conv2d', 'spatial_separable_conv2d', 'factorized_conv2d', 'conv_transpose2d', 'channel_layer_norm', 'instance_norm', 'leaky_relu', 'prelu', 'gelu', 'mish', 'hardsigmoid', 'max_pool2d', 'avg_pool2d', 'adaptive_avg_pool2d', 'adaptive_max_pool2d', 'global_avg_pool2d', 'bottleneck_residual', 'preactivation_residual', 'wide_residual_block', 'grouped_bottleneck', 'inverted_bottleneck', 'gated_residual', 'spatial_attention', 'channel_attention', 'spatial_self_attention', 'multihead_spatial_attention', 'dropout', 'dropout2d', 'drop_path', 'gaussian_noise', 'resize', 'pixel_shuffle', 'pixel_unshuffle', 'flatten', 'permute', 'reshape', 'classification_head', 'regression_head', 'embedding_head', 'simam', 'triplet', 'selective_kernel', 'basic_residual', 'bottleneck', 'preactivation', 'wide_residual', 'resnext_bottleneck', 'resnet', 'preact_resnet', 'wide_resnet', 'resnext', 'densenet', 'inverted_residual', 'mbconv', 'fused_mbconv', 'ghost_conv', 'ghost_bottleneck', 'shuffle_unit', 'repvgg_block', 'mobileone_block', 'mobilenet_v2', 'mobilenet_v3', 'efficientnet_v2', 'ghostnet', 'shufflenet_v2', 'repvgg', 'mobileone']
+    _ComponentCategory = _typing.Literal['activation', 'attention', 'channel_mixing', 'convolution', 'identity', 'mobile', 'model', 'normalization', 'pooling', 'prediction_head', 'regularization', 'residual', 'sampling', 'tensor_utility']
+# END DEVELOPMENT REGISTRY WRAPPERS
+
 
 
 class ModelConfigError(ValueError):
@@ -442,7 +453,7 @@ class ModelRegistry:
              'Serialization saves architecture only, not trained weights or optimizer state.'))
             for name, category, description, ctor, params in _SPECS})
 
-    def list(self, category: str | None = None) -> tuple[ComponentSpec, ...]:
+    def list(self, category: _ComponentCategory | None = None) -> tuple[ComponentSpec, ...]:
         """Return immutable metadata in stable catalog order, optionally filtered.
 
         Args:
@@ -467,7 +478,7 @@ class ModelRegistry:
             raise ModelConfigError(f'unknown category: {category!r}')
         return tuple(s for s in self._entries.values() if category is None or s.category == category)
 
-    def get(self, name: str) -> ComponentSpec:
+    def get(self, name: _ComponentName) -> ComponentSpec:
         """Return schema, constructor, shape conditions and compatibility notes.
 
         Args:
@@ -493,7 +504,7 @@ class ModelRegistry:
                                    expected='registered component name', actual=name)
         return self._entries[name]
 
-    def validate(self, name: str, params: dict[str, Any]) -> dict[str, Any]:
+    def validate(self, name: _ComponentName, params: dict[str, Any]) -> dict[str, Any]:
         """Validate plain parameters without constructing a module; return a copy.
 
         Args:
@@ -615,7 +626,7 @@ class ModelRegistry:
             raise ModelConfigError(str(exc)) from exc
         return result
 
-    def create(self, name: str, **params: Any) -> nn.Module:
+    def create(self, name: _ComponentName, **params: Any) -> nn.Module:
         """Construct a whitelisted existing module on CPU after full validation.
 
         For a chain with channel/spatial validation and an aggregate size budget,

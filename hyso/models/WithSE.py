@@ -429,8 +429,8 @@ class CEMO(nn.Module):
 
     # Model-level callbacks (so CEMO.callbacks(...) works)
 
-    def callbacks(self, optimizer: 'str'="Adam", lr: 'float'=1e-3, weight_decay: 'float'=1e-4,
-                  model_checkpoint: 'bool'=False, earlystop: '_typing.Any'=None, scheduler: '_typing.Any'=None, scheduler_params: 'dict[str, _typing.Any] | None'=None) -> 'None':
+    def callbacks(self, optimizer: _typing.Literal['adam', 'sgd', 'Adam', 'SGD']="Adam", lr: 'float'=1e-3, weight_decay: 'float'=1e-4,
+                  model_checkpoint: 'bool'=False, earlystop: '_typing.Any'=None, scheduler: _typing.Literal['steplr', 'reduceonplateau', None]=None, scheduler_params: 'dict[str, _typing.Any] | None'=None) -> 'None':
         # ensure model & submodules moved to desired device BEFORE creating optimizer
         """Install the supported callback configuration for subsequent fit calls.
 

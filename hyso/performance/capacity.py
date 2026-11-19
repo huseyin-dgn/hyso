@@ -52,7 +52,7 @@ class BatchSearchProtocol:
     cpu_memory_limit_bytes: int
     input_limit_bytes: int
     timeout_seconds: float
-    stop_policy: str = 'exhaust_candidates'
+    stop_policy: _typing.Literal['exhaust_candidates', 'first_infeasible'] = 'exhaust_candidates'
     warmup_iterations: int = 2
     measure_iterations: int = 10
     repeats: int = 1

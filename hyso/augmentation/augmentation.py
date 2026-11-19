@@ -1,3 +1,4 @@
+import typing as _typing
 # augmentation.py
 from hyso.models.fit import CEMO
 from torchvision import datasets, transforms
@@ -9,7 +10,7 @@ import os
 
 # Transform builder
 
-def build_transforms(img_size=(224,224), augment="basic", extra_ops=None, channels=3):
+def build_transforms(img_size=(224,224), augment: _typing.Literal['basic', 'advanced', None]="basic", extra_ops=None, channels=3):
     """
     img_size: tuple (H, W)
     augment: 'basic' veya 'advanced'
@@ -87,7 +88,7 @@ def _validation_transform(img_size, channels):
     return transforms.Compose(ops)
 
 
-def get_loaders(train_path, val_path=None, batch_size=32, img_size=(224,224), augment="basic", extra_ops=None, num_workers=0, channels=3):
+def get_loaders(train_path, val_path=None, batch_size=32, img_size=(224,224), augment: _typing.Literal['basic', 'advanced', None]="basic", extra_ops=None, num_workers=0, channels=3):
     """
     train_path: training klasörü (class subfolders olmalı)
     val_path: validation/test klasörü (opsiyonel, yoksa train içerisinden split yapılır)

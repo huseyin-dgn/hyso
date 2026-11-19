@@ -1,4 +1,6 @@
 """Evidence, pure selection and separately authorized native CPU execution."""
+from typing import TYPE_CHECKING as _TYPE_CHECKING
+
 from ._codec import EvidenceError
 from .evidence import EvidenceScope, EvidenceRecord, EvidenceIndex, compare_evidence
 from .report import AnalysisContext, UnifiedAnalysisReport
@@ -26,12 +28,19 @@ __all__ += ['ArtifactSource', 'OperationPolicy', 'NativeBinding', 'RetainedSourc
             'InferenceSource', 'PipelineSource', 'RecipeSource', 'EvaluationSource',
             'QualitySource', 'TrainingSource', 'ProtocolSource', 'RooflineSource', 'RuntimeSource']
 
-__all__ += ['MultiHeadGraphEvaluationResult', 'evaluate_graph_heads', 'compare_graph_heads']
+__all__ += ['MultiHeadGraphEvaluationResult', 'evaluate_graph_heads', 'compare_graph_heads', 'GraphHeadSpec']
+
+if _TYPE_CHECKING:
+    from .graph_heads import GraphHeadSpec as GraphHeadSpec
+
+
+def __dir__():
+    return sorted(set(globals()) | set(__all__))
 
 
 def __getattr__(name):
     # evaluation imports analysis._codec while its public types initialize.
-    if name in ('MultiHeadGraphEvaluationResult', 'evaluate_graph_heads', 'compare_graph_heads'):
+    if name in ('MultiHeadGraphEvaluationResult', 'evaluate_graph_heads', 'compare_graph_heads', 'GraphHeadSpec'):
         from importlib import import_module
         value = getattr(import_module('.graph_heads', __name__), name)
         globals()[name] = value

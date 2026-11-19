@@ -81,7 +81,7 @@ class ThroughputProtocol:
     Open: hyso docs open analysis.p02 --lang en
     """
     device: str = "cpu"
-    precision: str = "fp32"
+    precision: _typing.Literal['fp32', 'fp64', 'amp_fp16'] = "fp32"
     warmup_iterations: int = 10
     batch_count: int | None = 100
     duration_seconds: float | None = None

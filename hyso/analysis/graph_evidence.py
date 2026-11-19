@@ -4,6 +4,7 @@ The isolated inference receiver has no transferred source receipt. Matching name
 state is a limited association, never a verified inference-runtime contract.
 Imported statements and presentation/artifact hashes cannot restore live trust.
 """
+import typing as _typing
 from dataclasses import dataclass
 import json
 import weakref
@@ -203,7 +204,7 @@ class GraphEvaluationResult(_Export):
 
 
 def evaluate_graph_classification(model, loader, *, class_names, split, source_id=None, context=None,
-        task="multiclass", zero_division=0, max_samples=1000000, capture_structure=False,
+        task: _typing.Literal['multiclass', 'binary']="multiclass", zero_division=0, max_samples=1000000, capture_structure=False,
         expected_checkpoint_sha256=None, expected_model_state_sha256=None, capture_receiver_runtime=False):
     """Call the existing evaluator once; default is the legacy LIMITED association.
 
@@ -321,7 +322,7 @@ class GraphComparisonResult(_Export):
         return d
 
 
-def compare_graph_evaluations(baseline, candidate, *, context_policy='legacy'):
+def compare_graph_evaluations(baseline, candidate, *, context_policy: _typing.Literal['legacy', 'strict']='legacy'):
     """Retained P26 comparison plus explicit v2 scope; no architecture/performance inference."""
     if type(baseline) is not GraphEvaluationResult or type(candidate) is not GraphEvaluationResult:
         raise GraphEvidenceError("typed_graph_associations_required")
@@ -339,7 +340,7 @@ def compare_graph_evaluations(baseline, candidate, *, context_policy='legacy'):
     return result
 
 
-def report_section(result, language, level, catalog):
+def report_section(result, language: _typing.Literal['tr', 'en'], level, catalog):
     """Use the existing reporting renderer and Advisor; never project v2 as legacy P26."""
     from ..reporting.report import _analysis_section, _comparison_section, _metric
     d = result.to_dict()

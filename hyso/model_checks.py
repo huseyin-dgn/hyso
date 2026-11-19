@@ -167,7 +167,7 @@ def run_model_checks(
     config: 'dict[str, _typing.Any]',
     *,
     model: '_typing.Any'=None,
-    tests: '_typing.Any'=("structure", "forward", "backward", "serialization"),
+    tests: _typing.Sequence[_typing.Literal['structure', 'forward', 'backward', 'serialization', 'parameters']]=("structure", "forward", "backward", "serialization"),
     model_id: '_typing.Any'=None,
 ) -> '_typing.Any':
     """Run selected checks on a fresh model or isolated copy of supplied weights.

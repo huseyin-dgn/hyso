@@ -5,6 +5,7 @@ called by the executor after the dry-run and explicit feature authorization.
 Live resources remain caller-owned. Recipe resources use the native launcher.
 """
 from __future__ import annotations
+import typing as _typing
 
 from dataclasses import dataclass, field, fields, is_dataclass
 import hashlib
@@ -459,7 +460,7 @@ class RooflineSource:
     Offline: hyso docs show analyzer.workflow --lang en
     Open: hyso docs open analyzer.workflow --lang en
     """
-    kind: str
+    kind: _typing.Literal['counter', 'nsys_operators', 'nsys_modules']
     source: Any
     options: dict[str, Any] = field(default_factory=dict)
 
@@ -540,7 +541,7 @@ class NativeBinding:
     """
     operation_id: str
     model_ids: tuple[str, ...]
-    features: tuple[str, ...]
+    features: tuple[_typing.Literal['P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P08', 'P09', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20', 'P21', 'P22', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P31', 'P32', 'P33', 'P34', 'P35'], ...]
     source: Source
     device: str = 'cpu'
     policy: OperationPolicy = OperationPolicy()
