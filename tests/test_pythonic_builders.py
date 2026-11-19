@@ -66,7 +66,8 @@ def test_explicit_signature_defaults_and_config_equivalence(cls,name,monkeypatch
     assert set(component_params)==set(expected)
     for n,p in component_params.items():
         assert p.kind is p.KEYWORD_ONLY
-        assert p.default==(inspect.Parameter.empty if expected[n].required else expected[n].default)
+        inferred = n == {'conv2d':'in_channels', 'batch_norm':'num_features'}.get(name)
+        assert p.default==(None if inferred else inspect.Parameter.empty if expected[n].required else expected[n].default)
     assert all(p.kind not in (p.VAR_KEYWORD,p.VAR_POSITIONAL) for p in sig.parameters.values())
     hints=typing.get_type_hints(method)
     assert hints['return'] is cls

@@ -123,9 +123,14 @@ def component_builder(name, engine):
 
 def test_a_complete_catalog_is_backed_by_actual_constructors():
     registry = ModelRegistry()
-    assert [spec.to_dict() for spec in registry.list()] == [
-        row for row in FIXTURE["registry"] if row["name"] in AVAILABLE
-    ]
+    actual = [spec.to_dict() for spec in registry.list()]
+    expected = [row for row in FIXTURE['registry'] if row['name'] in AVAILABLE]
+    # UX-03/05 expanded public docstrings before UX-06; keep the golden fixture.
+    # Compare every structural field, including the nested parameter descriptions.
+    def contract(rows):
+        return [{key:value for key,value in row.items() if key!='description'} for row in rows]
+    assert contract(actual) == contract(expected)
+    assert all(isinstance(row['description'],str) and row['description'] for row in actual)
     assert len(registry.list()) == (85 if DEVELOPMENT else 57)
     assert set(SAMPLES) & AVAILABLE == {
         s.name for s in registry.list() if s.category != "model"

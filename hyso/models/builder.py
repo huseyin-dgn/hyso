@@ -849,10 +849,21 @@ class ModelBuilder:
         report['activation_estimate']['summed_tensor_elements'] = sum(elements)
         return report
 
+    def _infer_channels(self, parameter: str) -> int:
+        """Read exact current CHW metadata through the existing validator."""
+        if self._config['kind'] not in ('sequential_classifier', 'sequential'):
+            raise ModelConfigError('add is unavailable for fixed complete-model profiles', code='INVALID_BLOCK_ORDER')
+        _, shape = self._validate(self._config)
+        if len(shape) != 3:
+            raise ModelConfigError(f'Cannot infer {parameter}: current features are not NCHW; provide an explicit value and a compatible shape',
+                                   code='SHAPE_INFERENCE_UNAVAILABLE', expected='known CHW features', actual=list(shape),
+                                   suggestion=f'Use an explicit {parameter} after restoring a compatible NCHW shape.')
+        return shape[0]
+
     def conv2d(
         self,
         *,
-        in_channels: int,
+        in_channels: int | None = None,
         out_channels: int,
         kernel_size: int | tuple[int, int] | list[int] = 3,
         stride: int | tuple[int, int] | list[int] = 1,
@@ -890,6 +901,8 @@ class ModelBuilder:
         Offline: hyso docs show components.convolution --lang en
         Open: hyso docs open components.convolution --lang en
         """
+        if in_channels is None:
+            in_channels = self._infer_channels('in_channels')
         return self.add(
             'conv2d',
             in_channels=in_channels,
@@ -1027,7 +1040,7 @@ class ModelBuilder:
     def batch_norm(
         self,
         *,
-        num_features: int,
+        num_features: int | None = None,
         eps: float = 1e-05,
         momentum: float | None = 0.1,
         affine: bool = True,
@@ -1059,6 +1072,8 @@ class ModelBuilder:
         Offline: hyso docs show components.normalization --lang en
         Open: hyso docs open components.normalization --lang en
         """
+        if num_features is None:
+            num_features = self._infer_channels('num_features')
         return self.add(
             'batch_norm',
             num_features=num_features,

@@ -175,3 +175,10 @@ FasterNet and PartialConv were excluded following the
 license scope remains unresolved. Existing M3 examples remain available above.
 The [M4 architecture guide](../../docs/guides/mobile-edge-architectures.md)
 documents canonical variants, constructor ranges, fusion and serialization.
+
+## Smart Builder (UX-06)
+
+Run `python -m examples.models.smart_builder` for a short CPU CNN using
+`conv2d(out_channels=...)`, `batch_norm()` and the existing schema2 classification
+head. See [inference rules and graph limits](../../docs/guides/ux-06-smart-builder.md).
+Explicit size arguments in the existing examples remain supported.

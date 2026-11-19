@@ -457,10 +457,76 @@ class GraphModelBuilder:
                         if type(value) in (list,tuple) else value)
         self._config=dict(format='hyso.model_config',schema_version=3,kind='graph',inputs=_inputs(_plain(specs)),nodes=[],outputs={})
 
+    def _inference_shape(self, node_id: str, inputs: list[str], parameter: str) -> tuple[int, ...]:
+        """Analyze only the selected source's ancestors, without building modules."""
+        if type(inputs) is not list or len(inputs) != 1 or type(inputs[0]) is not str:
+            raise ModelConfigError(f'Cannot infer {parameter}: exactly one explicit source reference is required',
+                                   code='SHAPE_INFERENCE_UNAVAILABLE', layer_id=node_id,
+                                   expected='one named source', actual=inputs,
+                                   suggestion=f'Keep node connections explicit and supply {parameter} when source shape is unavailable.')
+        candidate = self.to_config()
+        rows = {row['id']: row for row in candidate['nodes']}
+        needed = set()
+        pending = list(inputs)
+        while pending:
+            reference = pending.pop()
+            if reference in needed:
+                continue
+            needed.add(reference)
+            if reference in rows:
+                pending.extend(rows[reference]['inputs'])
+        candidate['nodes'] = [row for row in candidate['nodes'] if row['id'] in needed]
+        candidate['outputs'] = {'inference_source': inputs[0]}
+        report, _ = _analyze(candidate)
+        if not report['valid']:
+            detail = report['diagnostics'][0]['message_en'] if report['diagnostics'] else 'source shape is unavailable'
+            raise ModelConfigError(f'Cannot infer {parameter} from {inputs[0]!r}: {detail}',
+                                   code='SHAPE_INFERENCE_UNAVAILABLE', layer_id=node_id,
+                                   expected='a validated source shape', actual=inputs[0],
+                                   suggestion=f'Resolve source references/shapes or supply an explicit {parameter}; native graph validation still applies.')
+        source = inputs[0]
+        shape = (report['inputs'][source]['shape'] if source in report['inputs']
+                 else report['nodes'][source]['output_shape'])
+        return tuple(shape[1:])
+
+    def _add_with_inference(self, node_id: str, component: str, inputs: list[str],
+                            parameter: str, value: int | None, params: dict[str, _typing.Any]) -> GraphModelBuilder:
+        """Resolve one omitted size, then retain native scalar and shape checks."""
+        registry = ModelRegistry()
+        if value is not None:
+            # Explicit values are never corrected, including bool/zero/string inputs.
+            params = registry.validate(component, dict(params, **{parameter: value}))
+        try:
+            shape = self._inference_shape(node_id, inputs, parameter)
+        except ModelConfigError:
+            if value is None:
+                raise
+            # Preserve the existing explicit forward-reference/deferred-validation API.
+            return self.add(node_id, component, inputs, **params)
+        if value is None:
+            if component == 'classification_head':
+                value = math.prod(shape) if params['pooling'] == 'none' else shape[0]
+            elif len(shape) == 3:
+                value = shape[0]
+            else:
+                raise ModelConfigError(f'Cannot infer {parameter}: source is not NCHW; provide an explicit value and a compatible shape',
+                                       code='SHAPE_INFERENCE_UNAVAILABLE', layer_id=node_id,
+                                       expected='known CHW features', actual=list(shape),
+                                       suggestion=f'Restore a compatible NCHW source or supply {parameter} explicitly.')
+            params = registry.validate(component, dict(params, **{parameter: value}))
+        try:
+            _describe(component, params, [shape], 1)
+        except ModelConfigError as error:
+            diagnostic = _node_error(error, node_id)
+            raise ModelConfigError(diagnostic['message_en'], code=diagnostic['code'], layer_id=node_id,
+                                   expected=diagnostic['expected'], actual=diagnostic['actual'],
+                                   suggestion=diagnostic['suggestion']) from error
+        return self.add(node_id, component, inputs, **params)
+
     def conv2d(
         self, node_id: str, inputs: list[str],
         *,
-        in_channels: int,
+        in_channels: int | None = None,
         out_channels: int,
         kernel_size: int | tuple[int, int] | list[int] = 3,
         stride: int | tuple[int, int] | list[int] = 1,
@@ -501,19 +567,7 @@ class GraphModelBuilder:
         Open: hyso docs open components.convolution --lang en
         Graph topology: hyso docs show models.graph-builder --lang en
         """
-        return self.add(
-            node_id,
-            'conv2d',
-            inputs,
-            in_channels=in_channels,
-            out_channels=out_channels,
-            kernel_size=kernel_size,
-            stride=stride,
-            padding=padding,
-            groups=groups,
-            bias=bias,
-            dilation=dilation,
-        )
+        return self._add_with_inference(node_id, 'conv2d', inputs, 'in_channels', in_channels, dict(out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding, groups=groups, bias=bias, dilation=dilation))
 
     def conv_norm_act(
         self, node_id: str, inputs: list[str],
@@ -662,7 +716,7 @@ class GraphModelBuilder:
     def batch_norm(
         self, node_id: str, inputs: list[str],
         *,
-        num_features: int,
+        num_features: int | None = None,
         eps: float = 1e-05,
         momentum: float | None = 0.1,
         affine: bool = True,
@@ -697,16 +751,7 @@ class GraphModelBuilder:
         Open: hyso docs open components.normalization --lang en
         Graph topology: hyso docs show models.graph-builder --lang en
         """
-        return self.add(
-            node_id,
-            'batch_norm',
-            inputs,
-            num_features=num_features,
-            eps=eps,
-            momentum=momentum,
-            affine=affine,
-            track_running_stats=track_running_stats,
-        )
+        return self._add_with_inference(node_id, 'batch_norm', inputs, 'num_features', num_features, dict(eps=eps, momentum=momentum, affine=affine, track_running_stats=track_running_stats))
 
     def group_norm(
         self, node_id: str, inputs: list[str],
@@ -2678,7 +2723,7 @@ class GraphModelBuilder:
         node_id: str,
         inputs: list[str],
         *,
-        in_features: int,
+        in_features: int | None = None,
         pooling: _typing.Literal['avg', 'max', 'none'] = 'avg',
         num_classes: int,
         dropout: float = 0.0,
@@ -2710,15 +2755,7 @@ class GraphModelBuilder:
         Offline: hyso docs show components.heads --lang en
         Open: hyso docs open components.heads --lang en
         """
-        return self.add(
-            node_id,
-            'classification_head',
-            inputs,
-            in_features=in_features,
-            pooling=pooling,
-            num_classes=num_classes,
-            dropout=dropout,
-        )
+        return self._add_with_inference(node_id, 'classification_head', inputs, 'in_features', in_features, dict(pooling=pooling, num_classes=num_classes, dropout=dropout))
 
     def regression_head(
         self,

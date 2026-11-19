@@ -256,6 +256,12 @@ def test_existing_native_function_bodies_are_preserved():
     checked=0
     exceptions={('hyso/models/graph.py','GraphModelBuilder.preview'),('hyso/performance/pipeline.py','measure_stages'),
                 ('hyso/analysis/__init__.py','__getattr__'),('hyso/models/fit.py','CNNSENormalWithFit.__init__')}
+    # UX-06 adds metadata-only inference in these delegates; native geometry stays protected.
+    exceptions.update({('hyso/models/builder.py','ModelBuilder.conv2d'),
+                       ('hyso/models/builder.py','ModelBuilder.batch_norm'),
+                       ('hyso/models/graph.py','GraphModelBuilder.conv2d'),
+                       ('hyso/models/graph.py','GraphModelBuilder.batch_norm'),
+                       ('hyso/models/graph.py','GraphModelBuilder.classification_head')})
     engines={'SpatialSelfAttention','AdvancedResidual','PredictionHead'}
     for filename in changed:
         if not filename.endswith('.py'):continue

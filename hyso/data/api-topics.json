@@ -18737,12 +18737,26 @@
         "sequential": {
           "method": "conv2d",
           "route": "add",
-          "restriction": null
+          "restriction": null,
+          "inferred_parameters": {
+            "in_channels": {
+              "default": null,
+              "source": "validated current NCHW features",
+              "serialization": "resolved integer; native schema unchanged"
+            }
+          }
         },
         "graph": {
           "method": "conv2d",
           "route": "add",
-          "restriction": null
+          "restriction": null,
+          "inferred_parameters": {
+            "in_channels": {
+              "default": null,
+              "source": "one explicit, validated source reference",
+              "serialization": "resolved integer; native schema unchanged"
+            }
+          }
         }
       },
       "residual": {
@@ -18994,12 +19008,26 @@
         "sequential": {
           "method": "batch_norm",
           "route": "add",
-          "restriction": null
+          "restriction": null,
+          "inferred_parameters": {
+            "num_features": {
+              "default": null,
+              "source": "validated current NCHW features",
+              "serialization": "resolved integer; native schema unchanged"
+            }
+          }
         },
         "graph": {
           "method": "batch_norm",
           "route": "add",
-          "restriction": null
+          "restriction": null,
+          "inferred_parameters": {
+            "num_features": {
+              "default": null,
+              "source": "one explicit, validated source reference",
+              "serialization": "resolved integer; native schema unchanged"
+            }
+          }
         }
       },
       "group_norm": {
@@ -21293,7 +21321,14 @@
         "graph": {
           "method": "classification_head",
           "route": "add",
-          "restriction": null
+          "restriction": null,
+          "inferred_parameters": {
+            "in_features": {
+              "default": null,
+              "source": "one explicit, validated source reference",
+              "serialization": "resolved integer; native schema unchanged"
+            }
+          }
         }
       },
       "regression_head": {

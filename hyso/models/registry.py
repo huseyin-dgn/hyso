@@ -35,6 +35,8 @@ from .modular import ModularCNN
 
 
 _DIAGNOSTICS = {
+    'SHAPE_INFERENCE_UNAVAILABLE': ('Şekil bilgisi bu boyutu güvenilir biçimde çıkarmaya yeterli değil.',
+                                    'Kaynak bağlantılarını ve şekli doğrulayın veya ilgili boyutu açıkça belirtin.'),
     'GRAPH_STRUCTURE_ERROR': ('Graph yapısı geçersiz.', 'Düğüm kimliklerini, bağlantıları, çıktı referanslarını ve döngüleri kontrol edin.'),
     'GRAPH_SHAPE_ERROR': ('Graph tensor şekli veya düzeni uyuşmuyor.', 'Rank/layout ve boyutları eşleştirin. Projection ve resize işlemlerini açık düğümlerle uygulayın.'),
     'GRAPH_LIMIT_ERROR': ('Graph kaynak veya bağlantı sınırı aşıldı.', 'Düğüm, bağlantı, fan-out veya tensor boyutunu belgelenen sınırlara indirin.'),

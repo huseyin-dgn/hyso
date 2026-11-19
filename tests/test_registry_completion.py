@@ -78,13 +78,18 @@ def test_every_applicable_signature_and_real_config_equivalence(cls,name,monkeyp
     assert set(actual)=={p.name for p in spec.parameters}
     for param in spec.parameters:
         assert actual[param.name].kind is inspect.Parameter.KEYWORD_ONLY
-        assert actual[param.name].default==(inspect.Parameter.empty if param.required else param.default)
+        inferred = param.name == {'conv2d':'in_channels', 'batch_norm':'num_features',
+                                 **({'classification_head':'in_features'} if cls is GraphModelBuilder else {})}.get(name)
+        assert actual[param.name].default==(None if inferred else inspect.Parameter.empty if param.required else param.default)
     assert not any(p.kind in (p.VAR_KEYWORD,p.VAR_POSITIONAL) for p in signature.parameters.values())
     hints=typing.get_type_hints(method);assert hints['return'] is cls
     assert set(hints)==set(signature.parameters)-{'self'}|{'return'}
     for param in spec.parameters:
         if param.kind=='choice':assert set(typing.get_args(hints[param.name]))==set(param.choices)
-        elif param.kind in ('positive_int','odd_int'):assert hints[param.name] is int
+        elif param.kind in ('positive_int','odd_int'):
+            inferred = param.name == {'conv2d':'in_channels', 'batch_norm':'num_features',
+                                     **({'classification_head':'in_features'} if cls is GraphModelBuilder else {})}.get(name)
+            assert hints[param.name] == (int | None if inferred else int)
     new,old=configurations(cls,name,arguments(name));assert new.to_config()==old.to_config()
     assert cls.from_config(new.to_config()).to_config()==old.to_config()
 
