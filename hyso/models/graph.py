@@ -10,6 +10,7 @@ import re
 import torch
 from torch import nn
 from .registry import ModelRegistry,ModelConfigError,_plain
+from ._profile import DEVELOPMENT
 from .builder import _shape,_cost,_pairs
 from . import advanced,components,sampling,graph_ops
 
@@ -910,6 +911,2784 @@ class GraphModelBuilder:
         Graph topology: hyso docs show models.graph-builder --lang en
         """
         return self.add(node_id, 'dropout', inputs, p=p)
+
+    def residual(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        in_channels: int,
+        out_channels: int,
+        stride: int | tuple[int, int] | list[int] = 1,
+        norm: _typing.Literal['batch', 'group', None] = 'batch',
+        attention: dict[str, _typing.Any] | None = None,
+    ) -> GraphModelBuilder:
+        """Append the registered residual node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            stride: stride Default: 1.
+            norm: Convolution normalization; group uses largest divisor <=8. Default: 'batch'.
+            attention: None or {name, params} for a registered attention with matching output channels. Default: None.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.residual("node", ["image"], in_channels=in_channels, out_channels=out_channels)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
+        return self.add(
+            node_id,
+            'residual',
+            inputs,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            stride=stride,
+            norm=norm,
+            attention=attention,
+        )
+
+    def se(self, node_id: str, inputs: list[str], *, channels: int, reduction: int = 8) -> GraphModelBuilder:
+        """Append the registered se node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            channels: channels Required.
+            reduction: reduction Default: 8.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.se("node", ["image"], channels=channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
+        return self.add(node_id, 'se', inputs, channels=channels, reduction=reduction)
+
+    def cbam(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        channels: int,
+        reduction: int = 16,
+        kernel_size: int = 7,
+    ) -> GraphModelBuilder:
+        """Append the registered cbam node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            channels: channels Required.
+            reduction: reduction Default: 16.
+            kernel_size: kernel size Default: 7.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.cbam("node", ["image"], channels=channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
+        return self.add(
+            node_id,
+            'cbam',
+            inputs,
+            channels=channels,
+            reduction=reduction,
+            kernel_size=kernel_size,
+        )
+
+    def eca(self, node_id: str, inputs: list[str], *, channels: int, kernel_size: int = 3) -> GraphModelBuilder:
+        """Append the registered eca node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            channels: channels Required.
+            kernel_size: kernel size Default: 3.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.eca("node", ["image"], channels=channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
+        return self.add(node_id, 'eca', inputs, channels=channels, kernel_size=kernel_size)
+
+    def coordinate(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        channels: int,
+        reduction: int = 32,
+    ) -> GraphModelBuilder:
+        """Append the registered coordinate node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            channels: channels Required.
+            reduction: reduction Default: 32.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.coordinate("node", ["image"], channels=channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
+        return self.add(node_id, 'coordinate', inputs, channels=channels, reduction=reduction)
+
+    def hardswish(self, node_id: str, inputs: list[str]) -> GraphModelBuilder:
+        """Append the registered hardswish node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.hardswish("node", ["image"])
+
+        HYSo Guide: components.activation
+        Offline: hyso docs show components.activation --lang en
+        Open: hyso docs open components.activation --lang en
+        """
+        return self.add(node_id, 'hardswish', inputs)
+
+    def identity(self, node_id: str, inputs: list[str]) -> GraphModelBuilder:
+        """Append the registered identity node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.identity("node", ["image"])
+
+        HYSo Guide: components.activation
+        Offline: hyso docs show components.activation --lang en
+        Open: hyso docs open components.activation --lang en
+        """
+        return self.add(node_id, 'identity', inputs)
+
+    def channel_shuffle(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        channels: int,
+        groups: int = 2,
+    ) -> GraphModelBuilder:
+        """Append the registered channel_shuffle node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            channels: channels Required.
+            groups: groups Default: 2.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.channel_shuffle("node", ["image"], channels=channels)
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
+        return self.add(node_id, 'channel_shuffle', inputs, channels=channels, groups=groups)
+
+    def dropblock2d(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        p: float = 0.1,
+        block_size: int = 3,
+    ) -> GraphModelBuilder:
+        """Append the registered dropblock2d node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            p: Probability of dropping an element/path during training. Default: 0.1.
+            block_size: Spatial side length of the dropped block. Default: 3.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.dropblock2d("node", ["image"])
+
+        HYSo Guide: components.regularization
+        Offline: hyso docs show components.regularization --lang en
+        Open: hyso docs open components.regularization --lang en
+        """
+        return self.add(node_id, 'dropblock2d', inputs, p=p, block_size=block_size)
+
+    def pointwise_conv2d(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        in_channels: int,
+        out_channels: int,
+        stride: int | tuple[int, int] | list[int] = 1,
+        bias: bool = True,
+    ) -> GraphModelBuilder:
+        """Append the registered pointwise_conv2d node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            stride: stride Default: 1.
+            bias: bias Default: True.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.pointwise_conv2d("node", ["image"], in_channels=in_channels, out_channels=out_channels)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
+        return self.add(
+            node_id,
+            'pointwise_conv2d',
+            inputs,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            stride=stride,
+            bias=bias,
+        )
+
+    def depthwise_conv2d(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        in_channels: int,
+        depth_multiplier: int = 1,
+        kernel_size: int | tuple[int, int] | list[int] = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        padding: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        bias: bool = True,
+    ) -> GraphModelBuilder:
+        """Append the registered depthwise_conv2d node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            in_channels: in channels Required.
+            depth_multiplier: Depthwise filters per input channel. Default: 1.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            padding: padding Default: 1.
+            dilation: dilation Default: 1.
+            bias: bias Default: True.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.depthwise_conv2d("node", ["image"], in_channels=in_channels)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
+        return self.add(
+            node_id,
+            'depthwise_conv2d',
+            inputs,
+            in_channels=in_channels,
+            depth_multiplier=depth_multiplier,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=bias,
+        )
+
+    def depthwise_separable_conv2d(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        in_channels: int,
+        out_channels: int,
+        depth_multiplier: int = 1,
+        kernel_size: int | tuple[int, int] | list[int] = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        padding: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        bias: bool = True,
+    ) -> GraphModelBuilder:
+        """Append the registered depthwise_separable_conv2d node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            depth_multiplier: Depthwise filters per input channel. Default: 1.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            padding: padding Default: 1.
+            dilation: dilation Default: 1.
+            bias: bias Default: True.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.depthwise_separable_conv2d("node", ["image"], in_channels=in_channels, out_channels=out_channels)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
+        return self.add(
+            node_id,
+            'depthwise_separable_conv2d',
+            inputs,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            depth_multiplier=depth_multiplier,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=bias,
+        )
+
+    def spatial_separable_conv2d(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        in_channels: int,
+        out_channels: int,
+        intermediate_channels: int,
+        kernel_size: int | tuple[int, int] | list[int] = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        padding: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        bias: bool = True,
+    ) -> GraphModelBuilder:
+        """Append the registered spatial_separable_conv2d node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            intermediate_channels: Internal feature width between projections. Required.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            padding: padding Default: 1.
+            dilation: dilation Default: 1.
+            bias: bias Default: True.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.spatial_separable_conv2d("node", ["image"], in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
+        return self.add(
+            node_id,
+            'spatial_separable_conv2d',
+            inputs,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            intermediate_channels=intermediate_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=bias,
+        )
+
+    def factorized_conv2d(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        in_channels: int,
+        out_channels: int,
+        intermediate_channels: int,
+        kernel_size: int | tuple[int, int] | list[int] = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        padding: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        bias: bool = True,
+    ) -> GraphModelBuilder:
+        """Append the registered factorized_conv2d node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            intermediate_channels: Internal feature width between projections. Required.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            padding: padding Default: 1.
+            dilation: dilation Default: 1.
+            bias: bias Default: True.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.factorized_conv2d("node", ["image"], in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
+        return self.add(
+            node_id,
+            'factorized_conv2d',
+            inputs,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            intermediate_channels=intermediate_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=bias,
+        )
+
+    def conv_transpose2d(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int | tuple[int, int] | list[int] = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        padding: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        bias: bool = True,
+        groups: int = 1,
+        output_padding: int | tuple[int, int] | list[int] = 0,
+    ) -> GraphModelBuilder:
+        """Append the registered conv_transpose2d node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            padding: padding Default: 1.
+            dilation: dilation Default: 1.
+            bias: bias Default: True.
+            groups: groups Default: 1.
+            output_padding: Extra output size on one side of each transposed-convolution axis. Default: 0.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.conv_transpose2d("node", ["image"], in_channels=in_channels, out_channels=out_channels)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
+        return self.add(
+            node_id,
+            'conv_transpose2d',
+            inputs,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=bias,
+            groups=groups,
+            output_padding=output_padding,
+        )
+
+    def channel_layer_norm(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        channels: int,
+        eps: float = 1e-05,
+        affine: bool = True,
+    ) -> GraphModelBuilder:
+        """Append the registered channel_layer_norm node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            channels: channels Required.
+            eps: Small numerical stabilizer for normalization. Default: 1e-05.
+            affine: Learn a normalization scale and offset. Default: True.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.channel_layer_norm("node", ["image"], channels=channels)
+
+        HYSo Guide: components.normalization
+        Offline: hyso docs show components.normalization --lang en
+        Open: hyso docs open components.normalization --lang en
+        """
+        return self.add(node_id, 'channel_layer_norm', inputs, channels=channels, eps=eps, affine=affine)
+
+    def instance_norm(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        num_features: int,
+        eps: float = 1e-05,
+        momentum: float = 0.1,
+        affine: bool = False,
+        track_running_stats: bool = False,
+    ) -> GraphModelBuilder:
+        """Append the registered instance_norm node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            num_features: num features Required.
+            eps: Small numerical stabilizer for normalization. Default: 1e-05.
+            momentum: Running-statistic update factor in normalization. Default: 0.1.
+            affine: Learn a normalization scale and offset. Default: False.
+            track_running_stats: Maintain running mean/variance for evaluation. Default: False.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.instance_norm("node", ["image"], num_features=num_features)
+
+        HYSo Guide: components.normalization
+        Offline: hyso docs show components.normalization --lang en
+        Open: hyso docs open components.normalization --lang en
+        """
+        return self.add(
+            node_id,
+            'instance_norm',
+            inputs,
+            num_features=num_features,
+            eps=eps,
+            momentum=momentum,
+            affine=affine,
+            track_running_stats=track_running_stats,
+        )
+
+    def leaky_relu(self, node_id: str, inputs: list[str], *, negative_slope: float = 0.01) -> GraphModelBuilder:
+        """Append the registered leaky_relu node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            negative_slope: negative slope Default: 0.01.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.leaky_relu("node", ["image"])
+
+        HYSo Guide: components.activation
+        Offline: hyso docs show components.activation --lang en
+        Open: hyso docs open components.activation --lang en
+        """
+        return self.add(node_id, 'leaky_relu', inputs, negative_slope=negative_slope)
+
+    def prelu(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        num_parameters: int = 1,
+        init: float = 0.25,
+    ) -> GraphModelBuilder:
+        """Append the registered prelu node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            num_parameters: num parameters Default: 1.
+            init: init Default: 0.25.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.prelu("node", ["image"])
+
+        HYSo Guide: components.activation
+        Offline: hyso docs show components.activation --lang en
+        Open: hyso docs open components.activation --lang en
+        """
+        return self.add(node_id, 'prelu', inputs, num_parameters=num_parameters, init=init)
+
+    def mish(self, node_id: str, inputs: list[str]) -> GraphModelBuilder:
+        """Append the registered mish node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.mish("node", ["image"])
+
+        HYSo Guide: components.activation
+        Offline: hyso docs show components.activation --lang en
+        Open: hyso docs open components.activation --lang en
+        """
+        return self.add(node_id, 'mish', inputs)
+
+    def hardsigmoid(self, node_id: str, inputs: list[str]) -> GraphModelBuilder:
+        """Append the registered hardsigmoid node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.hardsigmoid("node", ["image"])
+
+        HYSo Guide: components.activation
+        Offline: hyso docs show components.activation --lang en
+        Open: hyso docs open components.activation --lang en
+        """
+        return self.add(node_id, 'hardsigmoid', inputs)
+
+    def adaptive_max_pool2d(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        output_size: int | tuple[int, int] | list[int],
+    ) -> GraphModelBuilder:
+        """Append the registered adaptive_max_pool2d node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            output_size: output size Required.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.adaptive_max_pool2d("node", ["image"], output_size=output_size)
+
+        HYSo Guide: components.pooling
+        Offline: hyso docs show components.pooling --lang en
+        Open: hyso docs open components.pooling --lang en
+        """
+        return self.add(node_id, 'adaptive_max_pool2d', inputs, output_size=output_size)
+
+    def global_avg_pool2d(self, node_id: str, inputs: list[str]) -> GraphModelBuilder:
+        """Append the registered global_avg_pool2d node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.global_avg_pool2d("node", ["image"])
+
+        HYSo Guide: components.pooling
+        Offline: hyso docs show components.pooling --lang en
+        Open: hyso docs open components.pooling --lang en
+        """
+        return self.add(node_id, 'global_avg_pool2d', inputs)
+
+    def bottleneck_residual(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        in_channels: int,
+        out_channels: int,
+        intermediate_channels: int,
+        kernel_size: int = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        normalization: _typing.Literal['batch', 'group', None] = 'batch',
+        activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu',
+        attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none',
+        dropout: float = 0.0,
+        drop_path: float = 0.0,
+    ) -> GraphModelBuilder:
+        """Append the registered bottleneck_residual node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            intermediate_channels: Internal feature width between projections. Required.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            dilation: dilation Default: 1.
+            normalization: Closed normalization choice for the residual path. Default: 'batch'.
+            activation: Supported activation family. Default: 'silu'.
+            attention: attention Default: 'none'.
+            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+            drop_path: drop path Default: 0.0.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.bottleneck_residual("node", ["image"], in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
+        return self.add(
+            node_id,
+            'bottleneck_residual',
+            inputs,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            intermediate_channels=intermediate_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            dilation=dilation,
+            normalization=normalization,
+            activation=activation,
+            attention=attention,
+            dropout=dropout,
+            drop_path=drop_path,
+        )
+
+    def preactivation_residual(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        in_channels: int,
+        out_channels: int,
+        intermediate_channels: int,
+        kernel_size: int = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        normalization: _typing.Literal['batch', 'group', None] = 'batch',
+        activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu',
+        attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none',
+        dropout: float = 0.0,
+        drop_path: float = 0.0,
+    ) -> GraphModelBuilder:
+        """Append the registered preactivation_residual node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            intermediate_channels: Internal feature width between projections. Required.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            dilation: dilation Default: 1.
+            normalization: Closed normalization choice for the residual path. Default: 'batch'.
+            activation: Supported activation family. Default: 'silu'.
+            attention: attention Default: 'none'.
+            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+            drop_path: drop path Default: 0.0.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.preactivation_residual("node", ["image"], in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
+        return self.add(
+            node_id,
+            'preactivation_residual',
+            inputs,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            intermediate_channels=intermediate_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            dilation=dilation,
+            normalization=normalization,
+            activation=activation,
+            attention=attention,
+            dropout=dropout,
+            drop_path=drop_path,
+        )
+
+    def wide_residual_block(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        in_channels: int,
+        out_channels: int,
+        intermediate_channels: int,
+        kernel_size: int = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        normalization: _typing.Literal['batch', 'group', None] = 'batch',
+        activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu',
+        attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none',
+        dropout: float = 0.0,
+        drop_path: float = 0.0,
+    ) -> GraphModelBuilder:
+        """Append the registered wide_residual_block node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            intermediate_channels: Internal feature width between projections. Required.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            dilation: dilation Default: 1.
+            normalization: Closed normalization choice for the residual path. Default: 'batch'.
+            activation: Supported activation family. Default: 'silu'.
+            attention: attention Default: 'none'.
+            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+            drop_path: drop path Default: 0.0.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.wide_residual_block("node", ["image"], in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
+        return self.add(
+            node_id,
+            'wide_residual_block',
+            inputs,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            intermediate_channels=intermediate_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            dilation=dilation,
+            normalization=normalization,
+            activation=activation,
+            attention=attention,
+            dropout=dropout,
+            drop_path=drop_path,
+        )
+
+    def grouped_bottleneck(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        in_channels: int,
+        out_channels: int,
+        intermediate_channels: int,
+        kernel_size: int = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        normalization: _typing.Literal['batch', 'group', None] = 'batch',
+        activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu',
+        attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none',
+        dropout: float = 0.0,
+        drop_path: float = 0.0,
+        groups: int = 1,
+    ) -> GraphModelBuilder:
+        """Append the registered grouped_bottleneck node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            intermediate_channels: Internal feature width between projections. Required.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            dilation: dilation Default: 1.
+            normalization: Closed normalization choice for the residual path. Default: 'batch'.
+            activation: Supported activation family. Default: 'silu'.
+            attention: attention Default: 'none'.
+            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+            drop_path: drop path Default: 0.0.
+            groups: groups Default: 1.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.grouped_bottleneck("node", ["image"], in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
+        return self.add(
+            node_id,
+            'grouped_bottleneck',
+            inputs,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            intermediate_channels=intermediate_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            dilation=dilation,
+            normalization=normalization,
+            activation=activation,
+            attention=attention,
+            dropout=dropout,
+            drop_path=drop_path,
+            groups=groups,
+        )
+
+    def inverted_bottleneck(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        in_channels: int,
+        out_channels: int,
+        expansion_ratio: int = 2,
+        kernel_size: int = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        normalization: _typing.Literal['batch', 'group', None] = 'batch',
+        activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu',
+        attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none',
+        dropout: float = 0.0,
+        drop_path: float = 0.0,
+    ) -> GraphModelBuilder:
+        """Append the registered inverted_bottleneck node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            expansion_ratio: Internal positive integer channel expansion factor. Default: 2.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            dilation: dilation Default: 1.
+            normalization: Closed normalization choice for the residual path. Default: 'batch'.
+            activation: Supported activation family. Default: 'silu'.
+            attention: attention Default: 'none'.
+            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+            drop_path: drop path Default: 0.0.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.inverted_bottleneck("node", ["image"], in_channels=in_channels, out_channels=out_channels)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
+        return self.add(
+            node_id,
+            'inverted_bottleneck',
+            inputs,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            expansion_ratio=expansion_ratio,
+            kernel_size=kernel_size,
+            stride=stride,
+            dilation=dilation,
+            normalization=normalization,
+            activation=activation,
+            attention=attention,
+            dropout=dropout,
+            drop_path=drop_path,
+        )
+
+    def gated_residual(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        in_channels: int,
+        out_channels: int,
+        intermediate_channels: int,
+        kernel_size: int = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        normalization: _typing.Literal['batch', 'group', None] = 'batch',
+        activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu',
+        attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none',
+        dropout: float = 0.0,
+        drop_path: float = 0.0,
+        gate_init: float = 1.0,
+        learnable_gate: bool = True,
+    ) -> GraphModelBuilder:
+        """Append the registered gated_residual node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            intermediate_channels: Internal feature width between projections. Required.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            dilation: dilation Default: 1.
+            normalization: Closed normalization choice for the residual path. Default: 'batch'.
+            activation: Supported activation family. Default: 'silu'.
+            attention: attention Default: 'none'.
+            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+            drop_path: drop path Default: 0.0.
+            gate_init: Initial residual gate value in [0, 1]. Default: 1.0.
+            learnable_gate: Make the residual gate trainable. Default: True.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.gated_residual("node", ["image"], in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
+        return self.add(
+            node_id,
+            'gated_residual',
+            inputs,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            intermediate_channels=intermediate_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            dilation=dilation,
+            normalization=normalization,
+            activation=activation,
+            attention=attention,
+            dropout=dropout,
+            drop_path=drop_path,
+            gate_init=gate_init,
+            learnable_gate=learnable_gate,
+        )
+
+    def spatial_attention(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        channels: int,
+        kernel_size: int = 7,
+    ) -> GraphModelBuilder:
+        """Append the registered spatial_attention node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            channels: channels Required.
+            kernel_size: kernel size Default: 7.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.spatial_attention("node", ["image"], channels=channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
+        return self.add(node_id, 'spatial_attention', inputs, channels=channels, kernel_size=kernel_size)
+
+    def channel_attention(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        channels: int,
+        reduction: int = 8,
+    ) -> GraphModelBuilder:
+        """Append the registered channel_attention node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            channels: channels Required.
+            reduction: reduction Default: 8.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.channel_attention("node", ["image"], channels=channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
+        return self.add(node_id, 'channel_attention', inputs, channels=channels, reduction=reduction)
+
+    def spatial_self_attention(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        channels: int,
+        embedding_dim: int | None = None,
+        dropout: float = 0.0,
+    ) -> GraphModelBuilder:
+        """Append the registered spatial_self_attention node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            channels: channels Required.
+            embedding_dim: embedding dim Default: None.
+            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.spatial_self_attention("node", ["image"], channels=channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
+        return self.add(
+            node_id,
+            'spatial_self_attention',
+            inputs,
+            channels=channels,
+            embedding_dim=embedding_dim,
+            dropout=dropout,
+        )
+
+    def multihead_spatial_attention(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        channels: int,
+        embedding_dim: int | None = None,
+        num_heads: int = 4,
+        dropout: float = 0.0,
+    ) -> GraphModelBuilder:
+        """Append the registered multihead_spatial_attention node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            channels: channels Required.
+            embedding_dim: embedding dim Default: None.
+            num_heads: num heads Default: 4.
+            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.multihead_spatial_attention("node", ["image"], channels=channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
+        return self.add(
+            node_id,
+            'multihead_spatial_attention',
+            inputs,
+            channels=channels,
+            embedding_dim=embedding_dim,
+            num_heads=num_heads,
+            dropout=dropout,
+        )
+
+    def dropout2d(self, node_id: str, inputs: list[str], *, p: float = 0.5) -> GraphModelBuilder:
+        """Append the registered dropout2d node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            p: Probability of dropping an element/path during training. Default: 0.5.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.dropout2d("node", ["image"])
+
+        HYSo Guide: components.regularization
+        Offline: hyso docs show components.regularization --lang en
+        Open: hyso docs open components.regularization --lang en
+        """
+        return self.add(node_id, 'dropout2d', inputs, p=p)
+
+    def drop_path(self, node_id: str, inputs: list[str], *, p: float = 0.0) -> GraphModelBuilder:
+        """Append the registered drop_path node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            p: Probability of dropping an element/path during training. Default: 0.0.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.drop_path("node", ["image"])
+
+        HYSo Guide: components.regularization
+        Offline: hyso docs show components.regularization --lang en
+        Open: hyso docs open components.regularization --lang en
+        """
+        return self.add(node_id, 'drop_path', inputs, p=p)
+
+    def gaussian_noise(self, node_id: str, inputs: list[str], *, std: float = 0.1) -> GraphModelBuilder:
+        """Append the registered gaussian_noise node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            std: Standard deviation of sampled noise. Default: 0.1.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.gaussian_noise("node", ["image"])
+
+        HYSo Guide: components.regularization
+        Offline: hyso docs show components.regularization --lang en
+        Open: hyso docs open components.regularization --lang en
+        """
+        return self.add(node_id, 'gaussian_noise', inputs, std=std)
+
+    def resize(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        output_size: int | tuple[int, int] | list[int] | None = None,
+        scale_factor: float | tuple[float, float] | list[float] | None = None,
+        mode: _typing.Literal['nearest', 'bilinear', 'bicubic', 'area'] = 'nearest',
+        align_corners: bool | None = None,
+    ) -> GraphModelBuilder:
+        """Append the registered resize node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            output_size: output size Default: None.
+            scale_factor: scale factor Default: None.
+            mode: mode Default: 'nearest'.
+            align_corners: align corners Default: None.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.resize("node", ["image"], output_size=(4, 4))
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
+        return self.add(
+            node_id,
+            'resize',
+            inputs,
+            output_size=output_size,
+            scale_factor=scale_factor,
+            mode=mode,
+            align_corners=align_corners,
+        )
+
+    def pixel_shuffle(self, node_id: str, inputs: list[str], *, upscale_factor: int) -> GraphModelBuilder:
+        """Append the registered pixel_shuffle node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            upscale_factor: Positive spatial upscaling factor; channels must be divisible by its square. Required.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.pixel_shuffle("node", ["image"], upscale_factor=upscale_factor)
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
+        return self.add(node_id, 'pixel_shuffle', inputs, upscale_factor=upscale_factor)
+
+    def pixel_unshuffle(self, node_id: str, inputs: list[str], *, downscale_factor: int) -> GraphModelBuilder:
+        """Append the registered pixel_unshuffle node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            downscale_factor: Positive spatial downscaling factor dividing both spatial dimensions. Required.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.pixel_unshuffle("node", ["image"], downscale_factor=downscale_factor)
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
+        return self.add(node_id, 'pixel_unshuffle', inputs, downscale_factor=downscale_factor)
+
+    def flatten(self, node_id: str, inputs: list[str]) -> GraphModelBuilder:
+        """Append the registered flatten node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.flatten("node", ["image"])
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
+        return self.add(node_id, 'flatten', inputs)
+
+    def permute(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        dims: tuple[int, ...] | list[int] = (0, 1, 3, 2),
+    ) -> GraphModelBuilder:
+        """Append the registered permute node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            dims: Explicit axis permutation/order. Default: (0, 1, 3, 2).
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.permute("node", ["image"])
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
+        return self.add(node_id, 'permute', inputs, dims=dims)
+
+    def reshape(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        shape: tuple[int, ...] | list[int],
+    ) -> GraphModelBuilder:
+        """Append the registered reshape node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            shape: shape Required.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.reshape("node", ["image"], shape=shape)
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
+        return self.add(node_id, 'reshape', inputs, shape=shape)
+
+    def classification_head(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        in_features: int,
+        pooling: _typing.Literal['avg', 'max', 'none'] = 'avg',
+        num_classes: int,
+        dropout: float = 0.0,
+    ) -> GraphModelBuilder:
+        """Append the registered classification_head node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            in_features: in features Required.
+            pooling: Head pooling: avg, max, or none; none requires compatible flat features. Default: 'avg'.
+            num_classes: num classes Required.
+            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.classification_head("node", ["image"], in_features=in_features, num_classes=num_classes)
+
+        HYSo Guide: components.heads
+        Offline: hyso docs show components.heads --lang en
+        Open: hyso docs open components.heads --lang en
+        """
+        return self.add(
+            node_id,
+            'classification_head',
+            inputs,
+            in_features=in_features,
+            pooling=pooling,
+            num_classes=num_classes,
+            dropout=dropout,
+        )
+
+    def regression_head(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        in_features: int,
+        pooling: _typing.Literal['avg', 'max', 'none'] = 'avg',
+        output_features: int,
+    ) -> GraphModelBuilder:
+        """Append the registered regression_head node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            in_features: in features Required.
+            pooling: Head pooling: avg, max, or none; none requires compatible flat features. Default: 'avg'.
+            output_features: output features Required.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.regression_head("node", ["image"], in_features=in_features, output_features=output_features)
+
+        HYSo Guide: components.heads
+        Offline: hyso docs show components.heads --lang en
+        Open: hyso docs open components.heads --lang en
+        """
+        return self.add(
+            node_id,
+            'regression_head',
+            inputs,
+            in_features=in_features,
+            pooling=pooling,
+            output_features=output_features,
+        )
+
+    def embedding_head(
+        self,
+        node_id: str,
+        inputs: list[str],
+        *,
+        in_features: int,
+        pooling: _typing.Literal['avg', 'max', 'none'] = 'avg',
+        embedding_dim: int,
+        normalize: bool = False,
+        eps: float = 1e-12,
+    ) -> GraphModelBuilder:
+        """Append the registered embedding_head node via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered explicit graph input/node references.
+            in_features: in features Required.
+            pooling: Head pooling: avg, max, or none; none requires compatible flat features. Default: 'avg'.
+            embedding_dim: embedding dim Required.
+            normalize: Apply the head's supported safe L2 embedding normalization. Default: False.
+            eps: Small numerical stabilizer for normalization. Default: 1e-12.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.embedding_head("node", ["image"], in_features=in_features, embedding_dim=embedding_dim)
+
+        HYSo Guide: components.heads
+        Offline: hyso docs show components.heads --lang en
+        Open: hyso docs open components.heads --lang en
+        """
+        return self.add(
+            node_id,
+            'embedding_head',
+            inputs,
+            in_features=in_features,
+            pooling=pooling,
+            embedding_dim=embedding_dim,
+            normalize=normalize,
+            eps=eps,
+        )
+
+    def add_inputs(self, node_id: str, inputs: list[str]) -> GraphModelBuilder:
+        """Append explicit graph 'add' fusion; no broadcasting or topology repair.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered references to 2..8 graph inputs/nodes.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native fusion parameters or graph validation reject the configuration.
+            TypeError: Missing required arguments or unsupported keywords.
+
+        Example:
+            graph.add_inputs("merge", ["left", "right"])
+
+        HYSo Guide: components.fusion
+        Offline: hyso docs show components.fusion --lang en
+        Open: hyso docs open components.fusion --lang en
+        """
+        return self.add(node_id, 'add', inputs)
+
+    def concat(self, node_id: str, inputs: list[str], *, axis: int = 1) -> GraphModelBuilder:
+        """Append explicit graph 'concat' fusion; no broadcasting or topology repair.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered references to 2..8 graph inputs/nodes.
+            axis: Non-batch concatenation axis in 1..3. Default: 1.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native fusion parameters or graph validation reject the configuration.
+            TypeError: Missing required arguments or unsupported keywords.
+
+        Example:
+            graph.concat("merge", ["left", "right"])
+
+        HYSo Guide: components.fusion
+        Offline: hyso docs show components.fusion --lang en
+        Open: hyso docs open components.fusion --lang en
+        """
+        return self.add(node_id, 'concat', inputs, axis=axis)
+
+    def multiply(self, node_id: str, inputs: list[str]) -> GraphModelBuilder:
+        """Append explicit graph 'multiply' fusion; no broadcasting or topology repair.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered references to 2..8 graph inputs/nodes.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native fusion parameters or graph validation reject the configuration.
+            TypeError: Missing required arguments or unsupported keywords.
+
+        Example:
+            graph.multiply("merge", ["left", "right"])
+
+        HYSo Guide: components.fusion
+        Offline: hyso docs show components.fusion --lang en
+        Open: hyso docs open components.fusion --lang en
+        """
+        return self.add(node_id, 'multiply', inputs)
+
+    def weighted_sum(self, node_id: str, inputs: list[str], *, weights: list[float] | tuple[float, ...], learnable: bool = False) -> GraphModelBuilder:
+        """Append explicit graph 'weighted_sum' fusion; no broadcasting or topology repair.
+
+        Args:
+            node_id: Unique node name.
+            inputs: Ordered references to 2..8 graph inputs/nodes.
+            weights: One finite weight per ordered input, each in [-1e6, 1e6].
+            learnable: Make the weights trainable. Default: False.
+
+        Returns:
+            This GraphModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native fusion parameters or graph validation reject the configuration.
+            TypeError: Missing required arguments or unsupported keywords.
+
+        Example:
+            graph.weighted_sum("merge", ["left", "right"], weights=[0.5, 0.5])
+
+        HYSo Guide: components.fusion
+        Offline: hyso docs show components.fusion --lang en
+        Open: hyso docs open components.fusion --lang en
+        """
+        return self.add(node_id, 'weighted_sum', inputs, weights=weights, learnable=learnable)
+
+    # BEGIN DEVELOPMENT REGISTRY WRAPPERS
+    if DEVELOPMENT:
+        def simam(
+            self,
+            node_id: str,
+            inputs: list[str],
+            *,
+            channels: int,
+            epsilon: float = 0.0001,
+        ) -> GraphModelBuilder:
+            """Append the registered simam node via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                node_id: Unique node name.
+                inputs: Ordered explicit graph input/node references.
+                channels: channels Required.
+                epsilon: Numerical tolerance/stabilizer used by this operation. Default: 0.0001.
+
+            Returns:
+                This GraphModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.simam("node", ["image"], channels=channels)
+
+            HYSo Guide: components.attention
+            Offline: hyso docs show components.attention --lang en
+            Open: hyso docs open components.attention --lang en
+            """
+            return self.add(node_id, 'simam', inputs, channels=channels, epsilon=epsilon)
+        def triplet(
+            self,
+            node_id: str,
+            inputs: list[str],
+            *,
+            channels: int,
+            kernel_size: int = 7,
+            spatial: bool = True,
+        ) -> GraphModelBuilder:
+            """Append the registered triplet node via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                node_id: Unique node name.
+                inputs: Ordered explicit graph input/node references.
+                channels: channels Required.
+                kernel_size: kernel size Default: 7.
+                spatial: Include spatial attention where supported. Default: True.
+
+            Returns:
+                This GraphModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.triplet("node", ["image"], channels=channels)
+
+            HYSo Guide: components.attention
+            Offline: hyso docs show components.attention --lang en
+            Open: hyso docs open components.attention --lang en
+            """
+            return self.add(node_id, 'triplet', inputs, channels=channels, kernel_size=kernel_size, spatial=spatial)
+        def selective_kernel(
+            self,
+            node_id: str,
+            inputs: list[str],
+            *,
+            channels: int,
+            branches: int = 2,
+            groups: int = 1,
+            reduction: int = 16,
+            minimum: int = 32,
+        ) -> GraphModelBuilder:
+            """Append the registered selective_kernel node via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                node_id: Unique node name.
+                inputs: Ordered explicit graph input/node references.
+                channels: channels Required.
+                branches: Explicit branch modules/configurations. Default: 2.
+                groups: groups Default: 1.
+                reduction: reduction Default: 16.
+                minimum: Lower bound applied by this operation. Default: 32.
+
+            Returns:
+                This GraphModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.selective_kernel("node", ["image"], channels=channels)
+
+            HYSo Guide: components.attention
+            Offline: hyso docs show components.attention --lang en
+            Open: hyso docs open components.attention --lang en
+            """
+            return self.add(
+                node_id,
+                'selective_kernel',
+                inputs,
+                channels=channels,
+                branches=branches,
+                groups=groups,
+                reduction=reduction,
+                minimum=minimum,
+            )
+        def basic_residual(
+            self,
+            node_id: str,
+            inputs: list[str],
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            norm: _typing.Literal['batch', 'group', None] = 'batch',
+        ) -> GraphModelBuilder:
+            """Append the registered basic_residual node via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                node_id: Unique node name.
+                inputs: Ordered explicit graph input/node references.
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                norm: M3 normalization; group uses gcd(8, channels). Default: 'batch'.
+
+            Returns:
+                This GraphModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.basic_residual("node", ["image"], in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.residual
+            Offline: hyso docs show components.residual --lang en
+            Open: hyso docs open components.residual --lang en
+            """
+            return self.add(
+                node_id,
+                'basic_residual',
+                inputs,
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                norm=norm,
+            )
+        def bottleneck(
+            self,
+            node_id: str,
+            inputs: list[str],
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            norm: _typing.Literal['batch', 'group', None] = 'batch',
+            groups: int = 1,
+            width_per_group: int = 64,
+        ) -> GraphModelBuilder:
+            """Append the registered bottleneck node via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                node_id: Unique node name.
+                inputs: Ordered explicit graph input/node references.
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                norm: M3 normalization; group uses gcd(8, channels). Default: 'batch'.
+                groups: groups Default: 1.
+                width_per_group: Feature width within each convolution group. Default: 64.
+
+            Returns:
+                This GraphModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.bottleneck("node", ["image"], in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.residual
+            Offline: hyso docs show components.residual --lang en
+            Open: hyso docs open components.residual --lang en
+            """
+            return self.add(
+                node_id,
+                'bottleneck',
+                inputs,
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                norm=norm,
+                groups=groups,
+                width_per_group=width_per_group,
+            )
+        def preactivation(
+            self,
+            node_id: str,
+            inputs: list[str],
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            norm: _typing.Literal['batch', 'group', None] = 'batch',
+            bottleneck: bool = False,
+            dropout: float = 0.0,
+        ) -> GraphModelBuilder:
+            """Append the registered preactivation node via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                node_id: Unique node name.
+                inputs: Ordered explicit graph input/node references.
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                norm: M3 normalization; group uses gcd(8, channels). Default: 'batch'.
+                bottleneck: Select the supported bottleneck block form. Default: False.
+                dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+
+            Returns:
+                This GraphModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.preactivation("node", ["image"], in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.residual
+            Offline: hyso docs show components.residual --lang en
+            Open: hyso docs open components.residual --lang en
+            """
+            return self.add(
+                node_id,
+                'preactivation',
+                inputs,
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                norm=norm,
+                bottleneck=bottleneck,
+                dropout=dropout,
+            )
+        def wide_residual(
+            self,
+            node_id: str,
+            inputs: list[str],
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            norm: _typing.Literal['batch', 'group', None] = 'batch',
+            dropout: float = 0.0,
+        ) -> GraphModelBuilder:
+            """Append the registered wide_residual node via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                node_id: Unique node name.
+                inputs: Ordered explicit graph input/node references.
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                norm: M3 normalization; group uses gcd(8, channels). Default: 'batch'.
+                dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+
+            Returns:
+                This GraphModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.wide_residual("node", ["image"], in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.residual
+            Offline: hyso docs show components.residual --lang en
+            Open: hyso docs open components.residual --lang en
+            """
+            return self.add(
+                node_id,
+                'wide_residual',
+                inputs,
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                norm=norm,
+                dropout=dropout,
+            )
+        def resnext_bottleneck(
+            self,
+            node_id: str,
+            inputs: list[str],
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            norm: _typing.Literal['batch', 'group', None] = 'batch',
+            groups: int = 32,
+            width_per_group: int = 4,
+        ) -> GraphModelBuilder:
+            """Append the registered resnext_bottleneck node via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                node_id: Unique node name.
+                inputs: Ordered explicit graph input/node references.
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                norm: M3 normalization; group uses gcd(8, channels). Default: 'batch'.
+                groups: groups Default: 32.
+                width_per_group: Feature width within each convolution group. Default: 4.
+
+            Returns:
+                This GraphModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.resnext_bottleneck("node", ["image"], in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.residual
+            Offline: hyso docs show components.residual --lang en
+            Open: hyso docs open components.residual --lang en
+            """
+            return self.add(
+                node_id,
+                'resnext_bottleneck',
+                inputs,
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                norm=norm,
+                groups=groups,
+                width_per_group=width_per_group,
+            )
+        def inverted_residual(
+            self,
+            node_id: str,
+            inputs: list[str],
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            expand_ratio: float = 6.0,
+        ) -> GraphModelBuilder:
+            """Append the registered inverted_residual node via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                node_id: Unique node name.
+                inputs: Ordered explicit graph input/node references.
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                expand_ratio: Internal channel expansion ratio. Default: 6.0.
+
+            Returns:
+                This GraphModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.inverted_residual("node", ["image"], in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.mobile
+            Offline: hyso docs show components.mobile --lang en
+            Open: hyso docs open components.mobile --lang en
+            """
+            return self.add(
+                node_id,
+                'inverted_residual',
+                inputs,
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                expand_ratio=expand_ratio,
+            )
+        def mbconv(
+            self,
+            node_id: str,
+            inputs: list[str],
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            expand_ratio: float = 6.0,
+            kernel_size: int = 3,
+            stochastic_depth: float = 0.0,
+        ) -> GraphModelBuilder:
+            """Append the registered mbconv node via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                node_id: Unique node name.
+                inputs: Ordered explicit graph input/node references.
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                expand_ratio: Internal channel expansion ratio. Default: 6.0.
+                kernel_size: kernel size Default: 3.
+                stochastic_depth: Probability/schedule for dropping residual paths during training. Default: 0.0.
+
+            Returns:
+                This GraphModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.mbconv("node", ["image"], in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.mobile
+            Offline: hyso docs show components.mobile --lang en
+            Open: hyso docs open components.mobile --lang en
+            """
+            return self.add(
+                node_id,
+                'mbconv',
+                inputs,
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                expand_ratio=expand_ratio,
+                kernel_size=kernel_size,
+                stochastic_depth=stochastic_depth,
+            )
+        def fused_mbconv(
+            self,
+            node_id: str,
+            inputs: list[str],
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            expand_ratio: float = 4.0,
+            kernel_size: int = 3,
+            stochastic_depth: float = 0.0,
+        ) -> GraphModelBuilder:
+            """Append the registered fused_mbconv node via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                node_id: Unique node name.
+                inputs: Ordered explicit graph input/node references.
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                expand_ratio: Internal channel expansion ratio. Default: 4.0.
+                kernel_size: kernel size Default: 3.
+                stochastic_depth: Probability/schedule for dropping residual paths during training. Default: 0.0.
+
+            Returns:
+                This GraphModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.fused_mbconv("node", ["image"], in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.mobile
+            Offline: hyso docs show components.mobile --lang en
+            Open: hyso docs open components.mobile --lang en
+            """
+            return self.add(
+                node_id,
+                'fused_mbconv',
+                inputs,
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                expand_ratio=expand_ratio,
+                kernel_size=kernel_size,
+                stochastic_depth=stochastic_depth,
+            )
+        def ghost_conv(
+            self,
+            node_id: str,
+            inputs: list[str],
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            kernel_size: int = 1,
+            ratio: int = 2,
+            cheap_kernel: int = 3,
+            relu: bool = True,
+        ) -> GraphModelBuilder:
+            """Append the registered ghost_conv node via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                node_id: Unique node name.
+                inputs: Ordered explicit graph input/node references.
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                kernel_size: kernel size Default: 1.
+                ratio: Feature expansion/split ratio used by this block. Default: 2.
+                cheap_kernel: Spatial kernel of the inexpensive feature-generation branch. Default: 3.
+                relu: Enable the block's ReLU activation. Default: True.
+
+            Returns:
+                This GraphModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.ghost_conv("node", ["image"], in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.mobile
+            Offline: hyso docs show components.mobile --lang en
+            Open: hyso docs open components.mobile --lang en
+            """
+            return self.add(
+                node_id,
+                'ghost_conv',
+                inputs,
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                kernel_size=kernel_size,
+                ratio=ratio,
+                cheap_kernel=cheap_kernel,
+                relu=relu,
+            )
+        def ghost_bottleneck(
+            self,
+            node_id: str,
+            inputs: list[str],
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            hidden_channels: int,
+            kernel_size: int = 3,
+            se_ratio: float = 0.0,
+        ) -> GraphModelBuilder:
+            """Append the registered ghost_bottleneck node via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                node_id: Unique node name.
+                inputs: Ordered explicit graph input/node references.
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                hidden_channels: Internal feature width. Required.
+                kernel_size: kernel size Default: 3.
+                se_ratio: Squeeze-and-excitation reduction setting. Default: 0.0.
+
+            Returns:
+                This GraphModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.ghost_bottleneck("node", ["image"], in_channels=in_channels, out_channels=out_channels, hidden_channels=hidden_channels)
+
+            HYSo Guide: components.mobile
+            Offline: hyso docs show components.mobile --lang en
+            Open: hyso docs open components.mobile --lang en
+            """
+            return self.add(
+                node_id,
+                'ghost_bottleneck',
+                inputs,
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                hidden_channels=hidden_channels,
+                kernel_size=kernel_size,
+                se_ratio=se_ratio,
+            )
+        def shuffle_unit(
+            self,
+            node_id: str,
+            inputs: list[str],
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+        ) -> GraphModelBuilder:
+            """Append the registered shuffle_unit node via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                node_id: Unique node name.
+                inputs: Ordered explicit graph input/node references.
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+
+            Returns:
+                This GraphModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.shuffle_unit("node", ["image"], in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.mobile
+            Offline: hyso docs show components.mobile --lang en
+            Open: hyso docs open components.mobile --lang en
+            """
+            return self.add(
+                node_id,
+                'shuffle_unit',
+                inputs,
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+            )
+        def repvgg_block(
+            self,
+            node_id: str,
+            inputs: list[str],
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            groups: int = 1,
+            deploy: bool = False,
+        ) -> GraphModelBuilder:
+            """Append the registered repvgg_block node via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                node_id: Unique node name.
+                inputs: Ordered explicit graph input/node references.
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                groups: groups Default: 1.
+                deploy: Use the deployment form of this reparameterized block; conversion support remains explicit. Default: False.
+
+            Returns:
+                This GraphModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.repvgg_block("node", ["image"], in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.mobile
+            Offline: hyso docs show components.mobile --lang en
+            Open: hyso docs open components.mobile --lang en
+            """
+            return self.add(
+                node_id,
+                'repvgg_block',
+                inputs,
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                groups=groups,
+                deploy=deploy,
+            )
+        def mobileone_block(
+            self,
+            node_id: str,
+            inputs: list[str],
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            kernel_size: int = 3,
+            groups: int = 1,
+            num_conv_branches: int = 1,
+            use_se: bool = False,
+            deploy: bool = False,
+        ) -> GraphModelBuilder:
+            """Append the registered mobileone_block node via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                node_id: Unique node name.
+                inputs: Ordered explicit graph input/node references.
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                kernel_size: kernel size Default: 3.
+                groups: groups Default: 1.
+                num_conv_branches: Parallel convolution branch count in the training form. Default: 1.
+                use_se: Enable squeeze-and-excitation attention. Default: False.
+                deploy: Use the deployment form of this reparameterized block; conversion support remains explicit. Default: False.
+
+            Returns:
+                This GraphModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.mobileone_block("node", ["image"], in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.mobile
+            Offline: hyso docs show components.mobile --lang en
+            Open: hyso docs open components.mobile --lang en
+            """
+            return self.add(
+                node_id,
+                'mobileone_block',
+                inputs,
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                kernel_size=kernel_size,
+                groups=groups,
+                num_conv_branches=num_conv_branches,
+                use_se=use_se,
+                deploy=deploy,
+            )
+    # END DEVELOPMENT REGISTRY WRAPPERS
 
     def add(self,node_id: 'str',component: 'str',inputs: 'list[str]',**params: '_typing.Any') -> 'GraphModelBuilder':
         """Append a validated component and its ordered input references to the graph.

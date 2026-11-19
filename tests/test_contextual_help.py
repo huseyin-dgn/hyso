@@ -88,8 +88,14 @@ def test_index_version_all_topics_and_source_docstrings():
         if entry['path'] not in trees:
             trees[entry['path']]=ast.parse((ROOT/entry['path']).read_text(encoding='utf-8'),feature_version=(3,10))
         body=trees[entry['path']].body
+        def declarations(nodes):
+            for declaration in nodes:
+                if isinstance(declaration,(ast.ClassDef,ast.FunctionDef)):yield declaration
+                elif isinstance(declaration,ast.If):
+                    yield from declarations(declaration.body)
+                    yield from declarations(declaration.orelse)
         for part in entry['qualname'].split('.'):
-            node=next(n for n in body if isinstance(n,(ast.ClassDef,ast.FunctionDef)) and n.name==part)
+            node=next(n for n in declarations(body) if n.name==part)
             body=node.body
         doc=ast.get_docstring(node) or ''
         assert 'HYSo Guide: '+entry['topic'] in doc,key

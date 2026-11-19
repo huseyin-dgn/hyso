@@ -1168,6 +1168,2769 @@ class ModelBuilder:
         """
         return self.add('dropout', p=p)
 
+    def residual(
+        self,
+        *,
+        in_channels: int,
+        out_channels: int,
+        stride: int | tuple[int, int] | list[int] = 1,
+        norm: _typing.Literal['batch', 'group', None] = 'batch',
+        attention: dict[str, _typing.Any] | None = None,
+    ) -> ModelBuilder:
+        """Append the registered residual block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            stride: stride Default: 1.
+            norm: Convolution normalization; group uses largest divisor <=8. Default: 'batch'.
+            attention: None or {name, params} for a registered attention with matching output channels. Default: None.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.residual(in_channels=in_channels, out_channels=out_channels)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
+        return self.add(
+            'residual',
+            in_channels=in_channels,
+            out_channels=out_channels,
+            stride=stride,
+            norm=norm,
+            attention=attention,
+        )
+
+    def se(self, *, channels: int, reduction: int = 8) -> ModelBuilder:
+        """Append the registered se block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            channels: channels Required.
+            reduction: reduction Default: 8.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.se(channels=channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
+        return self.add('se', channels=channels, reduction=reduction)
+
+    def cbam(self, *, channels: int, reduction: int = 16, kernel_size: int = 7) -> ModelBuilder:
+        """Append the registered cbam block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            channels: channels Required.
+            reduction: reduction Default: 16.
+            kernel_size: kernel size Default: 7.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.cbam(channels=channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
+        return self.add('cbam', channels=channels, reduction=reduction, kernel_size=kernel_size)
+
+    def eca(self, *, channels: int, kernel_size: int = 3) -> ModelBuilder:
+        """Append the registered eca block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            channels: channels Required.
+            kernel_size: kernel size Default: 3.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.eca(channels=channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
+        return self.add('eca', channels=channels, kernel_size=kernel_size)
+
+    def coordinate(self, *, channels: int, reduction: int = 32) -> ModelBuilder:
+        """Append the registered coordinate block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            channels: channels Required.
+            reduction: reduction Default: 32.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.coordinate(channels=channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
+        return self.add('coordinate', channels=channels, reduction=reduction)
+
+    def hardswish(self) -> ModelBuilder:
+        """Append the registered hardswish block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.hardswish()
+
+        HYSo Guide: components.activation
+        Offline: hyso docs show components.activation --lang en
+        Open: hyso docs open components.activation --lang en
+        """
+        return self.add('hardswish')
+
+    def identity(self) -> ModelBuilder:
+        """Append the registered identity block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.identity()
+
+        HYSo Guide: components.activation
+        Offline: hyso docs show components.activation --lang en
+        Open: hyso docs open components.activation --lang en
+        """
+        return self.add('identity')
+
+    @classmethod
+    def modular_cnn(
+        cls,
+        *,
+        input_channels: int = 3,
+        num_classes: int = 10,
+        widths: tuple[int, ...] | list[int] = (32, 64, 128),
+        repeats: tuple[int, ...] | list[int] = (1, 1, 1),
+        strides: tuple[int, ...] | list[int] = (1, 2, 2),
+        attention: _typing.Literal['none', 'se', 'cbam', 'eca', 'coordinate'] = 'none',
+        norm: _typing.Literal['batch', 'group', None] = 'batch',
+    ) -> ModelBuilder:
+        """Configure the complete modular_cnn model via the existing modular factory.
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            input_channels: Number of input image/feature channels. Default: 3.
+            num_classes: num classes Default: 10.
+            widths: Ordered feature widths for the architecture stages. Default: (32, 64, 128).
+            repeats: Number of independently recorded measurement windows/repeats. Default: (1, 1, 1).
+            strides: Ordered spatial sampling steps for the architecture stages. Default: (1, 2, 2).
+            attention: attention Default: 'none'.
+            norm: Convolution normalization; group uses largest divisor <=8. Default: 'batch'.
+
+        Returns:
+            A fresh ModelBuilder configuration.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            ModelBuilder.modular_cnn()
+
+        HYSo Guide: models.support
+        Offline: hyso docs show models.support --lang en
+        Open: hyso docs open models.support --lang en
+        """
+        return cls.modular(
+            input_channels=input_channels,
+            num_classes=num_classes,
+            widths=widths,
+            repeats=repeats,
+            strides=strides,
+            attention=attention,
+            norm=norm,
+        )
+
+    def channel_shuffle(self, *, channels: int, groups: int = 2) -> ModelBuilder:
+        """Append the registered channel_shuffle block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            channels: channels Required.
+            groups: groups Default: 2.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.channel_shuffle(channels=channels)
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
+        return self.add('channel_shuffle', channels=channels, groups=groups)
+
+    def dropblock2d(self, *, p: float = 0.1, block_size: int = 3) -> ModelBuilder:
+        """Append the registered dropblock2d block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            p: Probability of dropping an element/path during training. Default: 0.1.
+            block_size: Spatial side length of the dropped block. Default: 3.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.dropblock2d()
+
+        HYSo Guide: components.regularization
+        Offline: hyso docs show components.regularization --lang en
+        Open: hyso docs open components.regularization --lang en
+        """
+        return self.add('dropblock2d', p=p, block_size=block_size)
+
+    def pointwise_conv2d(
+        self,
+        *,
+        in_channels: int,
+        out_channels: int,
+        stride: int | tuple[int, int] | list[int] = 1,
+        bias: bool = True,
+    ) -> ModelBuilder:
+        """Append the registered pointwise_conv2d block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            stride: stride Default: 1.
+            bias: bias Default: True.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.pointwise_conv2d(in_channels=in_channels, out_channels=out_channels)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
+        return self.add(
+            'pointwise_conv2d',
+            in_channels=in_channels,
+            out_channels=out_channels,
+            stride=stride,
+            bias=bias,
+        )
+
+    def depthwise_conv2d(
+        self,
+        *,
+        in_channels: int,
+        depth_multiplier: int = 1,
+        kernel_size: int | tuple[int, int] | list[int] = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        padding: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        bias: bool = True,
+    ) -> ModelBuilder:
+        """Append the registered depthwise_conv2d block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            in_channels: in channels Required.
+            depth_multiplier: Depthwise filters per input channel. Default: 1.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            padding: padding Default: 1.
+            dilation: dilation Default: 1.
+            bias: bias Default: True.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.depthwise_conv2d(in_channels=in_channels)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
+        return self.add(
+            'depthwise_conv2d',
+            in_channels=in_channels,
+            depth_multiplier=depth_multiplier,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=bias,
+        )
+
+    def depthwise_separable_conv2d(
+        self,
+        *,
+        in_channels: int,
+        out_channels: int,
+        depth_multiplier: int = 1,
+        kernel_size: int | tuple[int, int] | list[int] = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        padding: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        bias: bool = True,
+    ) -> ModelBuilder:
+        """Append the registered depthwise_separable_conv2d block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            depth_multiplier: Depthwise filters per input channel. Default: 1.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            padding: padding Default: 1.
+            dilation: dilation Default: 1.
+            bias: bias Default: True.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.depthwise_separable_conv2d(in_channels=in_channels, out_channels=out_channels)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
+        return self.add(
+            'depthwise_separable_conv2d',
+            in_channels=in_channels,
+            out_channels=out_channels,
+            depth_multiplier=depth_multiplier,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=bias,
+        )
+
+    def spatial_separable_conv2d(
+        self,
+        *,
+        in_channels: int,
+        out_channels: int,
+        intermediate_channels: int,
+        kernel_size: int | tuple[int, int] | list[int] = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        padding: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        bias: bool = True,
+    ) -> ModelBuilder:
+        """Append the registered spatial_separable_conv2d block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            intermediate_channels: Internal feature width between projections. Required.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            padding: padding Default: 1.
+            dilation: dilation Default: 1.
+            bias: bias Default: True.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.spatial_separable_conv2d(in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
+        return self.add(
+            'spatial_separable_conv2d',
+            in_channels=in_channels,
+            out_channels=out_channels,
+            intermediate_channels=intermediate_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=bias,
+        )
+
+    def factorized_conv2d(
+        self,
+        *,
+        in_channels: int,
+        out_channels: int,
+        intermediate_channels: int,
+        kernel_size: int | tuple[int, int] | list[int] = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        padding: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        bias: bool = True,
+    ) -> ModelBuilder:
+        """Append the registered factorized_conv2d block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            intermediate_channels: Internal feature width between projections. Required.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            padding: padding Default: 1.
+            dilation: dilation Default: 1.
+            bias: bias Default: True.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.factorized_conv2d(in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
+        return self.add(
+            'factorized_conv2d',
+            in_channels=in_channels,
+            out_channels=out_channels,
+            intermediate_channels=intermediate_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=bias,
+        )
+
+    def conv_transpose2d(
+        self,
+        *,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int | tuple[int, int] | list[int] = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        padding: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        bias: bool = True,
+        groups: int = 1,
+        output_padding: int | tuple[int, int] | list[int] = 0,
+    ) -> ModelBuilder:
+        """Append the registered conv_transpose2d block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            padding: padding Default: 1.
+            dilation: dilation Default: 1.
+            bias: bias Default: True.
+            groups: groups Default: 1.
+            output_padding: Extra output size on one side of each transposed-convolution axis. Default: 0.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.conv_transpose2d(in_channels=in_channels, out_channels=out_channels)
+
+        HYSo Guide: components.convolution
+        Offline: hyso docs show components.convolution --lang en
+        Open: hyso docs open components.convolution --lang en
+        """
+        return self.add(
+            'conv_transpose2d',
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=bias,
+            groups=groups,
+            output_padding=output_padding,
+        )
+
+    def channel_layer_norm(self, *, channels: int, eps: float = 1e-05, affine: bool = True) -> ModelBuilder:
+        """Append the registered channel_layer_norm block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            channels: channels Required.
+            eps: Small numerical stabilizer for normalization. Default: 1e-05.
+            affine: Learn a normalization scale and offset. Default: True.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.channel_layer_norm(channels=channels)
+
+        HYSo Guide: components.normalization
+        Offline: hyso docs show components.normalization --lang en
+        Open: hyso docs open components.normalization --lang en
+        """
+        return self.add('channel_layer_norm', channels=channels, eps=eps, affine=affine)
+
+    def instance_norm(
+        self,
+        *,
+        num_features: int,
+        eps: float = 1e-05,
+        momentum: float = 0.1,
+        affine: bool = False,
+        track_running_stats: bool = False,
+    ) -> ModelBuilder:
+        """Append the registered instance_norm block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            num_features: num features Required.
+            eps: Small numerical stabilizer for normalization. Default: 1e-05.
+            momentum: Running-statistic update factor in normalization. Default: 0.1.
+            affine: Learn a normalization scale and offset. Default: False.
+            track_running_stats: Maintain running mean/variance for evaluation. Default: False.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.instance_norm(num_features=num_features)
+
+        HYSo Guide: components.normalization
+        Offline: hyso docs show components.normalization --lang en
+        Open: hyso docs open components.normalization --lang en
+        """
+        return self.add(
+            'instance_norm',
+            num_features=num_features,
+            eps=eps,
+            momentum=momentum,
+            affine=affine,
+            track_running_stats=track_running_stats,
+        )
+
+    def leaky_relu(self, *, negative_slope: float = 0.01) -> ModelBuilder:
+        """Append the registered leaky_relu block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            negative_slope: negative slope Default: 0.01.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.leaky_relu()
+
+        HYSo Guide: components.activation
+        Offline: hyso docs show components.activation --lang en
+        Open: hyso docs open components.activation --lang en
+        """
+        return self.add('leaky_relu', negative_slope=negative_slope)
+
+    def prelu(self, *, num_parameters: int = 1, init: float = 0.25) -> ModelBuilder:
+        """Append the registered prelu block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            num_parameters: num parameters Default: 1.
+            init: init Default: 0.25.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.prelu()
+
+        HYSo Guide: components.activation
+        Offline: hyso docs show components.activation --lang en
+        Open: hyso docs open components.activation --lang en
+        """
+        return self.add('prelu', num_parameters=num_parameters, init=init)
+
+    def mish(self) -> ModelBuilder:
+        """Append the registered mish block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.mish()
+
+        HYSo Guide: components.activation
+        Offline: hyso docs show components.activation --lang en
+        Open: hyso docs open components.activation --lang en
+        """
+        return self.add('mish')
+
+    def hardsigmoid(self) -> ModelBuilder:
+        """Append the registered hardsigmoid block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.hardsigmoid()
+
+        HYSo Guide: components.activation
+        Offline: hyso docs show components.activation --lang en
+        Open: hyso docs open components.activation --lang en
+        """
+        return self.add('hardsigmoid')
+
+    def adaptive_max_pool2d(self, *, output_size: int | tuple[int, int] | list[int]) -> ModelBuilder:
+        """Append the registered adaptive_max_pool2d block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            output_size: output size Required.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.adaptive_max_pool2d(output_size=output_size)
+
+        HYSo Guide: components.pooling
+        Offline: hyso docs show components.pooling --lang en
+        Open: hyso docs open components.pooling --lang en
+        """
+        return self.add('adaptive_max_pool2d', output_size=output_size)
+
+    def global_avg_pool2d(self) -> ModelBuilder:
+        """Append the registered global_avg_pool2d block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.global_avg_pool2d()
+
+        HYSo Guide: components.pooling
+        Offline: hyso docs show components.pooling --lang en
+        Open: hyso docs open components.pooling --lang en
+        """
+        return self.add('global_avg_pool2d')
+
+    def bottleneck_residual(
+        self,
+        *,
+        in_channels: int,
+        out_channels: int,
+        intermediate_channels: int,
+        kernel_size: int = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        normalization: _typing.Literal['batch', 'group', None] = 'batch',
+        activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu',
+        attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none',
+        dropout: float = 0.0,
+        drop_path: float = 0.0,
+    ) -> ModelBuilder:
+        """Append the registered bottleneck_residual block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            intermediate_channels: Internal feature width between projections. Required.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            dilation: dilation Default: 1.
+            normalization: Closed normalization choice for the residual path. Default: 'batch'.
+            activation: Supported activation family. Default: 'silu'.
+            attention: attention Default: 'none'.
+            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+            drop_path: drop path Default: 0.0.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.bottleneck_residual(in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
+        return self.add(
+            'bottleneck_residual',
+            in_channels=in_channels,
+            out_channels=out_channels,
+            intermediate_channels=intermediate_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            dilation=dilation,
+            normalization=normalization,
+            activation=activation,
+            attention=attention,
+            dropout=dropout,
+            drop_path=drop_path,
+        )
+
+    def preactivation_residual(
+        self,
+        *,
+        in_channels: int,
+        out_channels: int,
+        intermediate_channels: int,
+        kernel_size: int = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        normalization: _typing.Literal['batch', 'group', None] = 'batch',
+        activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu',
+        attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none',
+        dropout: float = 0.0,
+        drop_path: float = 0.0,
+    ) -> ModelBuilder:
+        """Append the registered preactivation_residual block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            intermediate_channels: Internal feature width between projections. Required.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            dilation: dilation Default: 1.
+            normalization: Closed normalization choice for the residual path. Default: 'batch'.
+            activation: Supported activation family. Default: 'silu'.
+            attention: attention Default: 'none'.
+            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+            drop_path: drop path Default: 0.0.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.preactivation_residual(in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
+        return self.add(
+            'preactivation_residual',
+            in_channels=in_channels,
+            out_channels=out_channels,
+            intermediate_channels=intermediate_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            dilation=dilation,
+            normalization=normalization,
+            activation=activation,
+            attention=attention,
+            dropout=dropout,
+            drop_path=drop_path,
+        )
+
+    def wide_residual_block(
+        self,
+        *,
+        in_channels: int,
+        out_channels: int,
+        intermediate_channels: int,
+        kernel_size: int = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        normalization: _typing.Literal['batch', 'group', None] = 'batch',
+        activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu',
+        attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none',
+        dropout: float = 0.0,
+        drop_path: float = 0.0,
+    ) -> ModelBuilder:
+        """Append the registered wide_residual_block block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            intermediate_channels: Internal feature width between projections. Required.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            dilation: dilation Default: 1.
+            normalization: Closed normalization choice for the residual path. Default: 'batch'.
+            activation: Supported activation family. Default: 'silu'.
+            attention: attention Default: 'none'.
+            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+            drop_path: drop path Default: 0.0.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.wide_residual_block(in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
+        return self.add(
+            'wide_residual_block',
+            in_channels=in_channels,
+            out_channels=out_channels,
+            intermediate_channels=intermediate_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            dilation=dilation,
+            normalization=normalization,
+            activation=activation,
+            attention=attention,
+            dropout=dropout,
+            drop_path=drop_path,
+        )
+
+    def grouped_bottleneck(
+        self,
+        *,
+        in_channels: int,
+        out_channels: int,
+        intermediate_channels: int,
+        kernel_size: int = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        normalization: _typing.Literal['batch', 'group', None] = 'batch',
+        activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu',
+        attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none',
+        dropout: float = 0.0,
+        drop_path: float = 0.0,
+        groups: int = 1,
+    ) -> ModelBuilder:
+        """Append the registered grouped_bottleneck block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            intermediate_channels: Internal feature width between projections. Required.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            dilation: dilation Default: 1.
+            normalization: Closed normalization choice for the residual path. Default: 'batch'.
+            activation: Supported activation family. Default: 'silu'.
+            attention: attention Default: 'none'.
+            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+            drop_path: drop path Default: 0.0.
+            groups: groups Default: 1.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.grouped_bottleneck(in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
+        return self.add(
+            'grouped_bottleneck',
+            in_channels=in_channels,
+            out_channels=out_channels,
+            intermediate_channels=intermediate_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            dilation=dilation,
+            normalization=normalization,
+            activation=activation,
+            attention=attention,
+            dropout=dropout,
+            drop_path=drop_path,
+            groups=groups,
+        )
+
+    def inverted_bottleneck(
+        self,
+        *,
+        in_channels: int,
+        out_channels: int,
+        expansion_ratio: int = 2,
+        kernel_size: int = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        normalization: _typing.Literal['batch', 'group', None] = 'batch',
+        activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu',
+        attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none',
+        dropout: float = 0.0,
+        drop_path: float = 0.0,
+    ) -> ModelBuilder:
+        """Append the registered inverted_bottleneck block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            expansion_ratio: Internal positive integer channel expansion factor. Default: 2.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            dilation: dilation Default: 1.
+            normalization: Closed normalization choice for the residual path. Default: 'batch'.
+            activation: Supported activation family. Default: 'silu'.
+            attention: attention Default: 'none'.
+            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+            drop_path: drop path Default: 0.0.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.inverted_bottleneck(in_channels=in_channels, out_channels=out_channels)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
+        return self.add(
+            'inverted_bottleneck',
+            in_channels=in_channels,
+            out_channels=out_channels,
+            expansion_ratio=expansion_ratio,
+            kernel_size=kernel_size,
+            stride=stride,
+            dilation=dilation,
+            normalization=normalization,
+            activation=activation,
+            attention=attention,
+            dropout=dropout,
+            drop_path=drop_path,
+        )
+
+    def gated_residual(
+        self,
+        *,
+        in_channels: int,
+        out_channels: int,
+        intermediate_channels: int,
+        kernel_size: int = 3,
+        stride: int | tuple[int, int] | list[int] = 1,
+        dilation: int | tuple[int, int] | list[int] = 1,
+        normalization: _typing.Literal['batch', 'group', None] = 'batch',
+        activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu',
+        attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none',
+        dropout: float = 0.0,
+        drop_path: float = 0.0,
+        gate_init: float = 1.0,
+        learnable_gate: bool = True,
+    ) -> ModelBuilder:
+        """Append the registered gated_residual block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            in_channels: in channels Required.
+            out_channels: out channels Required.
+            intermediate_channels: Internal feature width between projections. Required.
+            kernel_size: kernel size Default: 3.
+            stride: stride Default: 1.
+            dilation: dilation Default: 1.
+            normalization: Closed normalization choice for the residual path. Default: 'batch'.
+            activation: Supported activation family. Default: 'silu'.
+            attention: attention Default: 'none'.
+            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+            drop_path: drop path Default: 0.0.
+            gate_init: Initial residual gate value in [0, 1]. Default: 1.0.
+            learnable_gate: Make the residual gate trainable. Default: True.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.gated_residual(in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
+
+        HYSo Guide: components.residual
+        Offline: hyso docs show components.residual --lang en
+        Open: hyso docs open components.residual --lang en
+        """
+        return self.add(
+            'gated_residual',
+            in_channels=in_channels,
+            out_channels=out_channels,
+            intermediate_channels=intermediate_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            dilation=dilation,
+            normalization=normalization,
+            activation=activation,
+            attention=attention,
+            dropout=dropout,
+            drop_path=drop_path,
+            gate_init=gate_init,
+            learnable_gate=learnable_gate,
+        )
+
+    def spatial_attention(self, *, channels: int, kernel_size: int = 7) -> ModelBuilder:
+        """Append the registered spatial_attention block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            channels: channels Required.
+            kernel_size: kernel size Default: 7.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.spatial_attention(channels=channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
+        return self.add('spatial_attention', channels=channels, kernel_size=kernel_size)
+
+    def channel_attention(self, *, channels: int, reduction: int = 8) -> ModelBuilder:
+        """Append the registered channel_attention block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            channels: channels Required.
+            reduction: reduction Default: 8.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.channel_attention(channels=channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
+        return self.add('channel_attention', channels=channels, reduction=reduction)
+
+    def spatial_self_attention(
+        self,
+        *,
+        channels: int,
+        embedding_dim: int | None = None,
+        dropout: float = 0.0,
+    ) -> ModelBuilder:
+        """Append the registered spatial_self_attention block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            channels: channels Required.
+            embedding_dim: embedding dim Default: None.
+            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.spatial_self_attention(channels=channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
+        return self.add(
+            'spatial_self_attention',
+            channels=channels,
+            embedding_dim=embedding_dim,
+            dropout=dropout,
+        )
+
+    def multihead_spatial_attention(
+        self,
+        *,
+        channels: int,
+        embedding_dim: int | None = None,
+        num_heads: int = 4,
+        dropout: float = 0.0,
+    ) -> ModelBuilder:
+        """Append the registered multihead_spatial_attention block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            channels: channels Required.
+            embedding_dim: embedding dim Default: None.
+            num_heads: num heads Default: 4.
+            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.multihead_spatial_attention(channels=channels)
+
+        HYSo Guide: components.attention
+        Offline: hyso docs show components.attention --lang en
+        Open: hyso docs open components.attention --lang en
+        """
+        return self.add(
+            'multihead_spatial_attention',
+            channels=channels,
+            embedding_dim=embedding_dim,
+            num_heads=num_heads,
+            dropout=dropout,
+        )
+
+    def dropout2d(self, *, p: float = 0.5) -> ModelBuilder:
+        """Append the registered dropout2d block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            p: Probability of dropping an element/path during training. Default: 0.5.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.dropout2d()
+
+        HYSo Guide: components.regularization
+        Offline: hyso docs show components.regularization --lang en
+        Open: hyso docs open components.regularization --lang en
+        """
+        return self.add('dropout2d', p=p)
+
+    def drop_path(self, *, p: float = 0.0) -> ModelBuilder:
+        """Append the registered drop_path block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            p: Probability of dropping an element/path during training. Default: 0.0.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.drop_path()
+
+        HYSo Guide: components.regularization
+        Offline: hyso docs show components.regularization --lang en
+        Open: hyso docs open components.regularization --lang en
+        """
+        return self.add('drop_path', p=p)
+
+    def gaussian_noise(self, *, std: float = 0.1) -> ModelBuilder:
+        """Append the registered gaussian_noise block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            std: Standard deviation of sampled noise. Default: 0.1.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.gaussian_noise()
+
+        HYSo Guide: components.regularization
+        Offline: hyso docs show components.regularization --lang en
+        Open: hyso docs open components.regularization --lang en
+        """
+        return self.add('gaussian_noise', std=std)
+
+    def resize(
+        self,
+        *,
+        output_size: int | tuple[int, int] | list[int] | None = None,
+        scale_factor: float | tuple[float, float] | list[float] | None = None,
+        mode: _typing.Literal['nearest', 'bilinear', 'bicubic', 'area'] = 'nearest',
+        align_corners: bool | None = None,
+    ) -> ModelBuilder:
+        """Append the registered resize block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            output_size: output size Default: None.
+            scale_factor: scale factor Default: None.
+            mode: mode Default: 'nearest'.
+            align_corners: align corners Default: None.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.resize(output_size=(4, 4))
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
+        return self.add(
+            'resize',
+            output_size=output_size,
+            scale_factor=scale_factor,
+            mode=mode,
+            align_corners=align_corners,
+        )
+
+    def pixel_shuffle(self, *, upscale_factor: int) -> ModelBuilder:
+        """Append the registered pixel_shuffle block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            upscale_factor: Positive spatial upscaling factor; channels must be divisible by its square. Required.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.pixel_shuffle(upscale_factor=upscale_factor)
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
+        return self.add('pixel_shuffle', upscale_factor=upscale_factor)
+
+    def pixel_unshuffle(self, *, downscale_factor: int) -> ModelBuilder:
+        """Append the registered pixel_unshuffle block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            downscale_factor: Positive spatial downscaling factor dividing both spatial dimensions. Required.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.pixel_unshuffle(downscale_factor=downscale_factor)
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
+        return self.add('pixel_unshuffle', downscale_factor=downscale_factor)
+
+    def flatten(self) -> ModelBuilder:
+        """Append the registered flatten block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+        Requires schema2 and must remain the final feature block before its explicit head.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.flatten()
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
+        return self.add('flatten')
+
+    def permute(self, *, dims: tuple[int, ...] | list[int] = (0, 1, 3, 2)) -> ModelBuilder:
+        """Append the registered permute block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            dims: Explicit axis permutation/order. Default: (0, 1, 3, 2).
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.permute()
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
+        return self.add('permute', dims=dims)
+
+    def reshape(self, *, shape: tuple[int, ...] | list[int]) -> ModelBuilder:
+        """Append the registered reshape block via add().
+
+        Available in commercial and development profiles.
+        No weights, forward pass or training are requested.
+
+        Args:
+            shape: shape Required.
+
+        Returns:
+            This ModelBuilder for chaining.
+
+        Raises:
+            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+            TypeError: A required argument is missing or an unknown keyword is supplied.
+
+        Example:
+            builder.reshape(shape=shape)
+
+        HYSo Guide: components.sampling
+        Offline: hyso docs show components.sampling --lang en
+        Open: hyso docs open components.sampling --lang en
+        """
+        return self.add('reshape', shape=shape)
+
+    # BEGIN DEVELOPMENT REGISTRY WRAPPERS
+    if DEVELOPMENT:
+        def simam(self, *, channels: int, epsilon: float = 0.0001) -> ModelBuilder:
+            """Append the registered simam block via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                channels: channels Required.
+                epsilon: Numerical tolerance/stabilizer used by this operation. Default: 0.0001.
+
+            Returns:
+                This ModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.simam(channels=channels)
+
+            HYSo Guide: components.attention
+            Offline: hyso docs show components.attention --lang en
+            Open: hyso docs open components.attention --lang en
+            """
+            return self.add('simam', channels=channels, epsilon=epsilon)
+        def triplet(self, *, channels: int, kernel_size: int = 7, spatial: bool = True) -> ModelBuilder:
+            """Append the registered triplet block via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                channels: channels Required.
+                kernel_size: kernel size Default: 7.
+                spatial: Include spatial attention where supported. Default: True.
+
+            Returns:
+                This ModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.triplet(channels=channels)
+
+            HYSo Guide: components.attention
+            Offline: hyso docs show components.attention --lang en
+            Open: hyso docs open components.attention --lang en
+            """
+            return self.add('triplet', channels=channels, kernel_size=kernel_size, spatial=spatial)
+        def selective_kernel(
+            self,
+            *,
+            channels: int,
+            branches: int = 2,
+            groups: int = 1,
+            reduction: int = 16,
+            minimum: int = 32,
+        ) -> ModelBuilder:
+            """Append the registered selective_kernel block via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                channels: channels Required.
+                branches: Explicit branch modules/configurations. Default: 2.
+                groups: groups Default: 1.
+                reduction: reduction Default: 16.
+                minimum: Lower bound applied by this operation. Default: 32.
+
+            Returns:
+                This ModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.selective_kernel(channels=channels)
+
+            HYSo Guide: components.attention
+            Offline: hyso docs show components.attention --lang en
+            Open: hyso docs open components.attention --lang en
+            """
+            return self.add(
+                'selective_kernel',
+                channels=channels,
+                branches=branches,
+                groups=groups,
+                reduction=reduction,
+                minimum=minimum,
+            )
+        def basic_residual(
+            self,
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            norm: _typing.Literal['batch', 'group', None] = 'batch',
+        ) -> ModelBuilder:
+            """Append the registered basic_residual block via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                norm: M3 normalization; group uses gcd(8, channels). Default: 'batch'.
+
+            Returns:
+                This ModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.basic_residual(in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.residual
+            Offline: hyso docs show components.residual --lang en
+            Open: hyso docs open components.residual --lang en
+            """
+            return self.add(
+                'basic_residual',
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                norm=norm,
+            )
+        def bottleneck(
+            self,
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            norm: _typing.Literal['batch', 'group', None] = 'batch',
+            groups: int = 1,
+            width_per_group: int = 64,
+        ) -> ModelBuilder:
+            """Append the registered bottleneck block via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                norm: M3 normalization; group uses gcd(8, channels). Default: 'batch'.
+                groups: groups Default: 1.
+                width_per_group: Feature width within each convolution group. Default: 64.
+
+            Returns:
+                This ModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.bottleneck(in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.residual
+            Offline: hyso docs show components.residual --lang en
+            Open: hyso docs open components.residual --lang en
+            """
+            return self.add(
+                'bottleneck',
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                norm=norm,
+                groups=groups,
+                width_per_group=width_per_group,
+            )
+        def preactivation(
+            self,
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            norm: _typing.Literal['batch', 'group', None] = 'batch',
+            bottleneck: bool = False,
+            dropout: float = 0.0,
+        ) -> ModelBuilder:
+            """Append the registered preactivation block via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                norm: M3 normalization; group uses gcd(8, channels). Default: 'batch'.
+                bottleneck: Select the supported bottleneck block form. Default: False.
+                dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+
+            Returns:
+                This ModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.preactivation(in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.residual
+            Offline: hyso docs show components.residual --lang en
+            Open: hyso docs open components.residual --lang en
+            """
+            return self.add(
+                'preactivation',
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                norm=norm,
+                bottleneck=bottleneck,
+                dropout=dropout,
+            )
+        def wide_residual(
+            self,
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            norm: _typing.Literal['batch', 'group', None] = 'batch',
+            dropout: float = 0.0,
+        ) -> ModelBuilder:
+            """Append the registered wide_residual block via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                norm: M3 normalization; group uses gcd(8, channels). Default: 'batch'.
+                dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+
+            Returns:
+                This ModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.wide_residual(in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.residual
+            Offline: hyso docs show components.residual --lang en
+            Open: hyso docs open components.residual --lang en
+            """
+            return self.add(
+                'wide_residual',
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                norm=norm,
+                dropout=dropout,
+            )
+        def resnext_bottleneck(
+            self,
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            norm: _typing.Literal['batch', 'group', None] = 'batch',
+            groups: int = 32,
+            width_per_group: int = 4,
+        ) -> ModelBuilder:
+            """Append the registered resnext_bottleneck block via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                norm: M3 normalization; group uses gcd(8, channels). Default: 'batch'.
+                groups: groups Default: 32.
+                width_per_group: Feature width within each convolution group. Default: 4.
+
+            Returns:
+                This ModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.resnext_bottleneck(in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.residual
+            Offline: hyso docs show components.residual --lang en
+            Open: hyso docs open components.residual --lang en
+            """
+            return self.add(
+                'resnext_bottleneck',
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                norm=norm,
+                groups=groups,
+                width_per_group=width_per_group,
+            )
+        @classmethod
+        def resnet(
+            cls,
+            *,
+            depth: int = 18,
+            input_channels: int = 3,
+            num_classes: int = 1000,
+            norm: _typing.Literal['batch', 'group', None] = 'batch',
+        ) -> ModelBuilder:
+            """Configure the complete resnet model via the existing named factory.
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                depth: Declared architecture depth. Default: 18.
+                input_channels: Number of input image/feature channels. Default: 3.
+                num_classes: num classes Default: 1000.
+                norm: M3 normalization; group uses gcd(8, channels). Default: 'batch'.
+
+            Returns:
+                A fresh ModelBuilder configuration.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                ModelBuilder.resnet()
+
+            HYSo Guide: models.development-families
+            Offline: hyso docs show models.development-families --lang en
+            Open: hyso docs open models.development-families --lang en
+            """
+            return cls.named(
+                'resnet',
+                depth=depth,
+                input_channels=input_channels,
+                num_classes=num_classes,
+                norm=norm,
+            )
+        @classmethod
+        def preact_resnet(
+            cls,
+            *,
+            depth: int = 18,
+            input_channels: int = 3,
+            num_classes: int = 1000,
+            base_channels: int = 64,
+            norm: _typing.Literal['batch', 'group', None] = 'batch',
+        ) -> ModelBuilder:
+            """Configure the complete preact_resnet model via the existing named factory.
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                depth: Declared architecture depth. Default: 18.
+                input_channels: Number of input image/feature channels. Default: 3.
+                num_classes: num classes Default: 1000.
+                base_channels: Initial feature-channel width. Default: 64.
+                norm: M3 normalization; group uses gcd(8, channels). Default: 'batch'.
+
+            Returns:
+                A fresh ModelBuilder configuration.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                ModelBuilder.preact_resnet()
+
+            HYSo Guide: models.development-families
+            Offline: hyso docs show models.development-families --lang en
+            Open: hyso docs open models.development-families --lang en
+            """
+            return cls.named(
+                'preact_resnet',
+                depth=depth,
+                input_channels=input_channels,
+                num_classes=num_classes,
+                base_channels=base_channels,
+                norm=norm,
+            )
+        @classmethod
+        def wide_resnet(
+            cls,
+            *,
+            depth: int = 28,
+            input_channels: int = 3,
+            num_classes: int = 10,
+            widen_factor: int = 10,
+            dropout: float = 0.0,
+            norm: _typing.Literal['batch', 'group', None] = 'batch',
+        ) -> ModelBuilder:
+            """Configure the complete wide_resnet model via the existing named factory.
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                depth: Declared architecture depth. Default: 28.
+                input_channels: Number of input image/feature channels. Default: 3.
+                num_classes: num classes Default: 10.
+                widen_factor: Channel-width multiplier of the wide residual architecture. Default: 10.
+                dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+                norm: M3 normalization; group uses gcd(8, channels). Default: 'batch'.
+
+            Returns:
+                A fresh ModelBuilder configuration.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                ModelBuilder.wide_resnet()
+
+            HYSo Guide: models.development-families
+            Offline: hyso docs show models.development-families --lang en
+            Open: hyso docs open models.development-families --lang en
+            """
+            return cls.named(
+                'wide_resnet',
+                depth=depth,
+                input_channels=input_channels,
+                num_classes=num_classes,
+                widen_factor=widen_factor,
+                dropout=dropout,
+                norm=norm,
+            )
+        @classmethod
+        def resnext(
+            cls,
+            *,
+            depth: int = 50,
+            input_channels: int = 3,
+            num_classes: int = 1000,
+            groups: int = 32,
+            width_per_group: int = 4,
+            norm: _typing.Literal['batch', 'group', None] = 'batch',
+        ) -> ModelBuilder:
+            """Configure the complete resnext model via the existing named factory.
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                depth: Declared architecture depth. Default: 50.
+                input_channels: Number of input image/feature channels. Default: 3.
+                num_classes: num classes Default: 1000.
+                groups: groups Default: 32.
+                width_per_group: Feature width within each convolution group. Default: 4.
+                norm: M3 normalization; group uses gcd(8, channels). Default: 'batch'.
+
+            Returns:
+                A fresh ModelBuilder configuration.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                ModelBuilder.resnext()
+
+            HYSo Guide: models.development-families
+            Offline: hyso docs show models.development-families --lang en
+            Open: hyso docs open models.development-families --lang en
+            """
+            return cls.named(
+                'resnext',
+                depth=depth,
+                input_channels=input_channels,
+                num_classes=num_classes,
+                groups=groups,
+                width_per_group=width_per_group,
+                norm=norm,
+            )
+        @classmethod
+        def densenet(
+            cls,
+            *,
+            depth: int = 121,
+            input_channels: int = 3,
+            num_classes: int = 1000,
+            growth_rate: int = 32,
+            dropout: float = 0.0,
+        ) -> ModelBuilder:
+            """Configure the complete densenet model via the existing named factory.
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                depth: Declared architecture depth. Default: 121.
+                input_channels: Number of input image/feature channels. Default: 3.
+                num_classes: num classes Default: 1000.
+                growth_rate: Feature channels added by each dense unit. Default: 32.
+                dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+
+            Returns:
+                A fresh ModelBuilder configuration.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                ModelBuilder.densenet()
+
+            HYSo Guide: models.development-families
+            Offline: hyso docs show models.development-families --lang en
+            Open: hyso docs open models.development-families --lang en
+            """
+            return cls.named(
+                'densenet',
+                depth=depth,
+                input_channels=input_channels,
+                num_classes=num_classes,
+                growth_rate=growth_rate,
+                dropout=dropout,
+            )
+        def inverted_residual(
+            self,
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            expand_ratio: float = 6.0,
+        ) -> ModelBuilder:
+            """Append the registered inverted_residual block via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                expand_ratio: Internal channel expansion ratio. Default: 6.0.
+
+            Returns:
+                This ModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.inverted_residual(in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.mobile
+            Offline: hyso docs show components.mobile --lang en
+            Open: hyso docs open components.mobile --lang en
+            """
+            return self.add(
+                'inverted_residual',
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                expand_ratio=expand_ratio,
+            )
+        def mbconv(
+            self,
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            expand_ratio: float = 6.0,
+            kernel_size: int = 3,
+            stochastic_depth: float = 0.0,
+        ) -> ModelBuilder:
+            """Append the registered mbconv block via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                expand_ratio: Internal channel expansion ratio. Default: 6.0.
+                kernel_size: kernel size Default: 3.
+                stochastic_depth: Probability/schedule for dropping residual paths during training. Default: 0.0.
+
+            Returns:
+                This ModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.mbconv(in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.mobile
+            Offline: hyso docs show components.mobile --lang en
+            Open: hyso docs open components.mobile --lang en
+            """
+            return self.add(
+                'mbconv',
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                expand_ratio=expand_ratio,
+                kernel_size=kernel_size,
+                stochastic_depth=stochastic_depth,
+            )
+        def fused_mbconv(
+            self,
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            expand_ratio: float = 4.0,
+            kernel_size: int = 3,
+            stochastic_depth: float = 0.0,
+        ) -> ModelBuilder:
+            """Append the registered fused_mbconv block via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                expand_ratio: Internal channel expansion ratio. Default: 4.0.
+                kernel_size: kernel size Default: 3.
+                stochastic_depth: Probability/schedule for dropping residual paths during training. Default: 0.0.
+
+            Returns:
+                This ModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.fused_mbconv(in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.mobile
+            Offline: hyso docs show components.mobile --lang en
+            Open: hyso docs open components.mobile --lang en
+            """
+            return self.add(
+                'fused_mbconv',
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                expand_ratio=expand_ratio,
+                kernel_size=kernel_size,
+                stochastic_depth=stochastic_depth,
+            )
+        def ghost_conv(
+            self,
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            kernel_size: int = 1,
+            ratio: int = 2,
+            cheap_kernel: int = 3,
+            relu: bool = True,
+        ) -> ModelBuilder:
+            """Append the registered ghost_conv block via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                kernel_size: kernel size Default: 1.
+                ratio: Feature expansion/split ratio used by this block. Default: 2.
+                cheap_kernel: Spatial kernel of the inexpensive feature-generation branch. Default: 3.
+                relu: Enable the block's ReLU activation. Default: True.
+
+            Returns:
+                This ModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.ghost_conv(in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.mobile
+            Offline: hyso docs show components.mobile --lang en
+            Open: hyso docs open components.mobile --lang en
+            """
+            return self.add(
+                'ghost_conv',
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                kernel_size=kernel_size,
+                ratio=ratio,
+                cheap_kernel=cheap_kernel,
+                relu=relu,
+            )
+        def ghost_bottleneck(
+            self,
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            hidden_channels: int,
+            kernel_size: int = 3,
+            se_ratio: float = 0.0,
+        ) -> ModelBuilder:
+            """Append the registered ghost_bottleneck block via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                hidden_channels: Internal feature width. Required.
+                kernel_size: kernel size Default: 3.
+                se_ratio: Squeeze-and-excitation reduction setting. Default: 0.0.
+
+            Returns:
+                This ModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.ghost_bottleneck(in_channels=in_channels, out_channels=out_channels, hidden_channels=hidden_channels)
+
+            HYSo Guide: components.mobile
+            Offline: hyso docs show components.mobile --lang en
+            Open: hyso docs open components.mobile --lang en
+            """
+            return self.add(
+                'ghost_bottleneck',
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                hidden_channels=hidden_channels,
+                kernel_size=kernel_size,
+                se_ratio=se_ratio,
+            )
+        def shuffle_unit(self, *, in_channels: int, out_channels: int, stride: int = 1) -> ModelBuilder:
+            """Append the registered shuffle_unit block via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+
+            Returns:
+                This ModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.shuffle_unit(in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.mobile
+            Offline: hyso docs show components.mobile --lang en
+            Open: hyso docs open components.mobile --lang en
+            """
+            return self.add('shuffle_unit', in_channels=in_channels, out_channels=out_channels, stride=stride)
+        def repvgg_block(
+            self,
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            groups: int = 1,
+            deploy: bool = False,
+        ) -> ModelBuilder:
+            """Append the registered repvgg_block block via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                groups: groups Default: 1.
+                deploy: Use the deployment form of this reparameterized block; conversion support remains explicit. Default: False.
+
+            Returns:
+                This ModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.repvgg_block(in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.mobile
+            Offline: hyso docs show components.mobile --lang en
+            Open: hyso docs open components.mobile --lang en
+            """
+            return self.add(
+                'repvgg_block',
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                groups=groups,
+                deploy=deploy,
+            )
+        def mobileone_block(
+            self,
+            *,
+            in_channels: int,
+            out_channels: int,
+            stride: int = 1,
+            kernel_size: int = 3,
+            groups: int = 1,
+            num_conv_branches: int = 1,
+            use_se: bool = False,
+            deploy: bool = False,
+        ) -> ModelBuilder:
+            """Append the registered mobileone_block block via add().
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                in_channels: in channels Required.
+                out_channels: out channels Required.
+                stride: stride Default: 1.
+                kernel_size: kernel size Default: 3.
+                groups: groups Default: 1.
+                num_conv_branches: Parallel convolution branch count in the training form. Default: 1.
+                use_se: Enable squeeze-and-excitation attention. Default: False.
+                deploy: Use the deployment form of this reparameterized block; conversion support remains explicit. Default: False.
+
+            Returns:
+                This ModelBuilder for chaining.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                builder.mobileone_block(in_channels=in_channels, out_channels=out_channels)
+
+            HYSo Guide: components.mobile
+            Offline: hyso docs show components.mobile --lang en
+            Open: hyso docs open components.mobile --lang en
+            """
+            return self.add(
+                'mobileone_block',
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=stride,
+                kernel_size=kernel_size,
+                groups=groups,
+                num_conv_branches=num_conv_branches,
+                use_se=use_se,
+                deploy=deploy,
+            )
+        @classmethod
+        def mobilenet_v2(
+            cls,
+            *,
+            input_channels: int = 3,
+            num_classes: int = 1000,
+            width_mult: float = 1.0,
+            dropout: float = 0.2,
+        ) -> ModelBuilder:
+            """Configure the complete mobilenet_v2 model via the existing named factory.
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                input_channels: Number of input image/feature channels. Default: 3.
+                num_classes: num classes Default: 1000.
+                width_mult: Multiplier for architecture channel widths. Default: 1.0.
+                dropout: Drop probability; this regularization is active only in training mode. Default: 0.2.
+
+            Returns:
+                A fresh ModelBuilder configuration.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                ModelBuilder.mobilenet_v2()
+
+            HYSo Guide: models.development-families
+            Offline: hyso docs show models.development-families --lang en
+            Open: hyso docs open models.development-families --lang en
+            """
+            return cls.named(
+                'mobilenet_v2',
+                input_channels=input_channels,
+                num_classes=num_classes,
+                width_mult=width_mult,
+                dropout=dropout,
+            )
+        @classmethod
+        def mobilenet_v3(
+            cls,
+            *,
+            input_channels: int = 3,
+            num_classes: int = 1000,
+            variant: _typing.Literal['small', 'large'] = 'large',
+            width_mult: float = 1.0,
+            dropout: float = 0.2,
+        ) -> ModelBuilder:
+            """Configure the complete mobilenet_v3 model via the existing named factory.
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                input_channels: Number of input image/feature channels. Default: 3.
+                num_classes: num classes Default: 1000.
+                variant: Supported closed architecture variant. Default: 'large'.
+                width_mult: Multiplier for architecture channel widths. Default: 1.0.
+                dropout: Drop probability; this regularization is active only in training mode. Default: 0.2.
+
+            Returns:
+                A fresh ModelBuilder configuration.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                ModelBuilder.mobilenet_v3()
+
+            HYSo Guide: models.development-families
+            Offline: hyso docs show models.development-families --lang en
+            Open: hyso docs open models.development-families --lang en
+            """
+            return cls.named(
+                'mobilenet_v3',
+                input_channels=input_channels,
+                num_classes=num_classes,
+                variant=variant,
+                width_mult=width_mult,
+                dropout=dropout,
+            )
+        @classmethod
+        def efficientnet_v2(
+            cls,
+            *,
+            input_channels: int = 3,
+            num_classes: int = 1000,
+            variant: _typing.Literal['s', 'm', 'l'] = 's',
+            width_mult: float = 1.0,
+            depth_mult: float = 1.0,
+            dropout: float | None = None,
+            stochastic_depth: float = 0.2,
+        ) -> ModelBuilder:
+            """Configure the complete efficientnet_v2 model via the existing named factory.
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                input_channels: Number of input image/feature channels. Default: 3.
+                num_classes: num classes Default: 1000.
+                variant: Supported closed architecture variant. Default: 's'.
+                width_mult: Multiplier for architecture channel widths. Default: 1.0.
+                depth_mult: Multiplier for architecture stage depth. Default: 1.0.
+                dropout: Drop probability; this regularization is active only in training mode. Default: None.
+                stochastic_depth: Probability/schedule for dropping residual paths during training. Default: 0.2.
+
+            Returns:
+                A fresh ModelBuilder configuration.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                ModelBuilder.efficientnet_v2()
+
+            HYSo Guide: models.development-families
+            Offline: hyso docs show models.development-families --lang en
+            Open: hyso docs open models.development-families --lang en
+            """
+            return cls.named(
+                'efficientnet_v2',
+                input_channels=input_channels,
+                num_classes=num_classes,
+                variant=variant,
+                width_mult=width_mult,
+                depth_mult=depth_mult,
+                dropout=dropout,
+                stochastic_depth=stochastic_depth,
+            )
+        @classmethod
+        def ghostnet(
+            cls,
+            *,
+            input_channels: int = 3,
+            num_classes: int = 1000,
+            width_mult: float = 1.0,
+            dropout: float = 0.2,
+        ) -> ModelBuilder:
+            """Configure the complete ghostnet model via the existing named factory.
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                input_channels: Number of input image/feature channels. Default: 3.
+                num_classes: num classes Default: 1000.
+                width_mult: Multiplier for architecture channel widths. Default: 1.0.
+                dropout: Drop probability; this regularization is active only in training mode. Default: 0.2.
+
+            Returns:
+                A fresh ModelBuilder configuration.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                ModelBuilder.ghostnet()
+
+            HYSo Guide: models.development-families
+            Offline: hyso docs show models.development-families --lang en
+            Open: hyso docs open models.development-families --lang en
+            """
+            return cls.named(
+                'ghostnet',
+                input_channels=input_channels,
+                num_classes=num_classes,
+                width_mult=width_mult,
+                dropout=dropout,
+            )
+        @classmethod
+        def shufflenet_v2(
+            cls,
+            *,
+            input_channels: int = 3,
+            num_classes: int = 1000,
+            variant: _typing.Literal['x0_5', 'x1_0', 'x1_5', 'x2_0'] = 'x1_0',
+        ) -> ModelBuilder:
+            """Configure the complete shufflenet_v2 model via the existing named factory.
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                input_channels: Number of input image/feature channels. Default: 3.
+                num_classes: num classes Default: 1000.
+                variant: Supported closed architecture variant. Default: 'x1_0'.
+
+            Returns:
+                A fresh ModelBuilder configuration.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                ModelBuilder.shufflenet_v2()
+
+            HYSo Guide: models.development-families
+            Offline: hyso docs show models.development-families --lang en
+            Open: hyso docs open models.development-families --lang en
+            """
+            return cls.named(
+                'shufflenet_v2',
+                input_channels=input_channels,
+                num_classes=num_classes,
+                variant=variant,
+            )
+        @classmethod
+        def repvgg(
+            cls,
+            *,
+            input_channels: int = 3,
+            num_classes: int = 1000,
+            variant: _typing.Literal['a0', 'a1'] = 'a0',
+            width_mult: float = 1.0,
+            depth_mult: float = 1.0,
+            deploy: bool = False,
+        ) -> ModelBuilder:
+            """Configure the complete repvgg model via the existing named factory.
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                input_channels: Number of input image/feature channels. Default: 3.
+                num_classes: num classes Default: 1000.
+                variant: Supported closed architecture variant. Default: 'a0'.
+                width_mult: Multiplier for architecture channel widths. Default: 1.0.
+                depth_mult: Multiplier for architecture stage depth. Default: 1.0.
+                deploy: Use the deployment form of this reparameterized block; conversion support remains explicit. Default: False.
+
+            Returns:
+                A fresh ModelBuilder configuration.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                ModelBuilder.repvgg()
+
+            HYSo Guide: models.development-families
+            Offline: hyso docs show models.development-families --lang en
+            Open: hyso docs open models.development-families --lang en
+            """
+            return cls.named(
+                'repvgg',
+                input_channels=input_channels,
+                num_classes=num_classes,
+                variant=variant,
+                width_mult=width_mult,
+                depth_mult=depth_mult,
+                deploy=deploy,
+            )
+        @classmethod
+        def mobileone(
+            cls,
+            *,
+            input_channels: int = 3,
+            num_classes: int = 1000,
+            variant: _typing.Literal['s0', 's1', 's2'] = 's0',
+            width_mult: float = 1.0,
+            depth_mult: float = 1.0,
+            deploy: bool = False,
+        ) -> ModelBuilder:
+            """Configure the complete mobileone model via the existing named factory.
+
+            Development profile only; absent from commercial installations.
+            No weights, forward pass or training are requested.
+
+            Args:
+                input_channels: Number of input image/feature channels. Default: 3.
+                num_classes: num classes Default: 1000.
+                variant: Supported closed architecture variant. Default: 's0'.
+                width_mult: Multiplier for architecture channel widths. Default: 1.0.
+                depth_mult: Multiplier for architecture stage depth. Default: 1.0.
+                deploy: Use the deployment form of this reparameterized block; conversion support remains explicit. Default: False.
+
+            Returns:
+                A fresh ModelBuilder configuration.
+
+            Raises:
+                ModelConfigError: Native Registry, profile, shape or configuration validation fails.
+                TypeError: A required argument is missing or an unknown keyword is supplied.
+
+            Example:
+                ModelBuilder.mobileone()
+
+            HYSo Guide: models.development-families
+            Offline: hyso docs show models.development-families --lang en
+            Open: hyso docs open models.development-families --lang en
+            """
+            return cls.named(
+                'mobileone',
+                input_channels=input_channels,
+                num_classes=num_classes,
+                variant=variant,
+                width_mult=width_mult,
+                depth_mult=depth_mult,
+                deploy=deploy,
+            )
+    # END DEVELOPMENT REGISTRY WRAPPERS
+
     def add(self, name: str, **params: Any) -> ModelBuilder:
         """Append a registered block transactionally; return self for chaining.
 

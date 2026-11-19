@@ -37,6 +37,28 @@ def prepare_training() -> TrainingSession:
         simple_cnn(), dataset)
 
 
+def advanced_cnn() -> nn.Module:
+    """Commercial-compatible depthwise, attention and pixel-rearrangement example."""
+    return (ModelBuilder((16, 8, 8), 3)
+            .depthwise_conv2d(in_channels=16)
+            .pointwise_conv2d(in_channels=16, out_channels=16)
+            .cbam(channels=16, reduction=4)
+            .eca(channels=16)
+            .pixel_shuffle(upscale_factor=2)
+            .build())
+
+
+def fused_graph() -> GraphModel:
+    """Commercial-compatible explicit branches, weighted fusion and classifier head."""
+    return (GraphModelBuilder({'image': [16, 8, 8]})
+            .depthwise_conv2d('left', ['image'], in_channels=16)
+            .pointwise_conv2d('right', ['image'], in_channels=16, out_channels=16)
+            .weighted_sum('merge', ['left', 'right'], weights=[0.25, 0.75])
+            .classification_head('head', ['merge'], in_features=16, num_classes=3)
+            .outputs(logits='head')
+            .build())
+
+
 if __name__=='__main__':
     print(type(simple_cnn()).__name__)
     print(type(graph_model()).__name__)

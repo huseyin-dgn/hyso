@@ -61,6 +61,60 @@ hyso docs show models.graph-builder --lang tr
 hyso docs show training.configuration --lang tr
 ```
 
+## Complete Registry completion (UX-04B)
+
+The source/development Registry has 85 entries. The commercial distribution has
+57. Every entry has an explicit method on the builder that supports it:
+
+| Profile | Registry entries covered | ModelBuilder | GraphModelBuilder |
+| --- | --- | --- | --- |
+| Development/source | 85/85 | 69 blocks + 13 complete-model factories | 72 nodes + 4 fusions |
+| Commercial wheel/sdist | 57/57 | 53 blocks + 1 complete-model factory | 56 nodes + 4 fusions |
+
+These counts describe suitability, not 85 insertable blocks in each builder.
+Complete models cannot be graph nodes or sequential blocks: use typed factory
+methods such as `ModelBuilder.modular_cnn(input_channels=1, num_classes=2)`.
+Development factories such as `ModelBuilder.resnet(...)` are available only in
+the development/source profile. The three prediction heads are graph methods;
+for sequential heads use the existing `ModelBuilder.sequential(...)` factory,
+which infers `in_features`. `flatten()` remains restricted to the final feature
+block of a schema2 sequential model with a compatible explicit head.
+
+Graph arithmetic keeps node names and references explicit:
+
+```python
+# g is an existing GraphModelBuilder with nodes named left and right.
+g.add_inputs('sum', ['left', 'right'])
+g.concat('joined', ['left', 'right'], axis=1)
+g.multiply('product', ['left', 'right'])
+g.weighted_sum('blend', ['left', 'right'], weights=[0.25, 0.75], learnable=False)
+```
+
+`add_inputs` avoids colliding with the existing generic `.add(...)` method.
+Fusion rejects broadcasting; ranks/shapes, non-batch concat axes, weight counts
+and graph references retain their existing validation. Numeric axes and sizes
+remain Python numbers, not enums. `resize()` still requires an explicit
+`output_size` or `scale_factor`; two omitted `None` defaults are not a valid resize.
+
+`advanced_cnn()` and `fused_graph()` in
+[`pythonic_builders.py`](pythonic_builders.py) provide two small executable CPU
+examples. They use depthwise/pointwise convolutions, CBAM/ECA attention, pixel
+shuffle and weighted graph fusion. Calling them builds weights; it never starts
+training. The original three examples remain available unchanged.
+
+The full inventory, parameter kinds/defaults, profile labels and builder routes
+are in the existing [`api-topics.json`](../../hyso/data/api-topics.json), under
+`registry_completion`. New method docstrings use the existing `components.*`
+topics or the explicitly labeled `models.development-families` topic. The same
+central guide still has 70 topics and all four offline languages.
+
+Commercial archives physically omit the new development method definitions and
+their new help rows. This keeps runtime discovery and static IDE completion
+consistent with the installed profile; merely hiding methods at runtime would
+leave misleading completion suggestions. Packaging projects only labeled new
+wrapper sections and profile-tagged index rows, preserving original algorithms
+and the generic `.add()`, `.named()`, and `.modular()` contracts.
+
 ## M3 CPU examples
 
 Install HYSo first (`python -m pip install -e .`). From the checkout root:

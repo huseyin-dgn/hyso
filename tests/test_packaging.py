@@ -16,6 +16,15 @@ import pytest
 from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def commercial_bytes(name):
+    """Expected profile projection; runtime/IDE coverage is checked separately."""
+    function=next(n for n in ast.parse((ROOT/'setup.py').read_text(encoding='utf-8')).body
+                  if isinstance(n,ast.FunctionDef) and n.name=='commercial_payload')
+    namespace={'json':json}
+    exec(compile(ast.Module(body=[function],type_ignores=[]),'setup.py','exec'),namespace)
+    return namespace['commercial_payload'](name,(ROOT/name).read_bytes())
 DEVELOPMENT_MODULES = {
     "hyso/cli/docs.py",
     "hyso/_graph_receiver.py",
@@ -334,7 +343,7 @@ def test_wheel_and_sdist_content_and_metadata(distributions):
             archive.read(notices[0]) == (ROOT / "THIRD_PARTY_NOTICES.md").read_bytes()
         )
         for name in MODULES:
-            assert archive.read(name) == (ROOT / name).read_bytes()
+            assert archive.read(name) == commercial_bytes(name)
     with tarfile.open(sdist) as archive:
         names = {name.removeprefix("hyso-0.2.0/") for name in archive.getnames()}
         sdist_meta = email.message_from_bytes(
@@ -364,7 +373,7 @@ def test_wheel_and_sdist_content_and_metadata(distributions):
         ):
             assert (
                 archive.extractfile("hyso-0.2.0/" + name).read()
-                == (ROOT / name).read_bytes()
+                == commercial_bytes(name)
             )
     for name in wheel_names | names:
         assert "studio" not in Path(name).parts
