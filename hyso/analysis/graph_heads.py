@@ -22,6 +22,9 @@ from ..models.graph import GraphModel, GraphModelBuilder
 from ..models.output import GraphTensorOutput
 from ..training.data import NamedTargetDataset, NamedTensorDataset
 
+if _typing.TYPE_CHECKING:
+    from .model_comparison import ModelComparisonResult, ModelComparisonSource
+
 
 class _RequiredGraphHeadSpec(_typing.TypedDict):
     target: str
@@ -177,7 +180,7 @@ class MultiHeadGraphEvaluationResult(_Export):
         d['verification'] = GraphEvaluationResult._verification(self, d)
         return d
 
-    def head(self, output: '_typing.Any') -> '_typing.Any':
+    def head(self, output: '_typing.Any') -> 'GraphEvaluationResult':
         """Return this exact retained head; importing never restores live trust.
 
         Args:
@@ -203,7 +206,7 @@ class MultiHeadGraphEvaluationResult(_Export):
             raise GraphEvidenceError('selected_head_missing')
         return GraphEvaluationResult(d['heads'][output]['result'])
 
-    def analysis_source(self, model_id: '_typing.Any', *, head: '_typing.Any') -> '_typing.Any':
+    def analysis_source(self, model_id: '_typing.Any', *, head: '_typing.Any') -> 'ModelComparisonSource':
         """Create a typed retained source from this validated named-head evaluation result.
 
         Args:
@@ -229,7 +232,7 @@ class MultiHeadGraphEvaluationResult(_Export):
 
 
 def evaluate_graph_heads(model: '_typing.Any', loader: '_typing.Any', *, heads: dict[str, GraphHeadSpec], capture_structure: 'bool'=False,
-                         expected_checkpoint_sha256: '_typing.Any'=None) -> '_typing.Any':
+                         expected_checkpoint_sha256: '_typing.Any'=None) -> 'MultiHeadGraphEvaluationResult':
     """Explicit two-head CPU fp32 evaluation, using the original evaluator twice.
 
     Requires the closed one- or two-input NamedTargetDataset profile. Each head spec
@@ -317,7 +320,7 @@ def evaluate_graph_heads(model: '_typing.Any', loader: '_typing.Any', *, heads: 
 
 
 def compare_graph_heads(baseline: '_typing.Any', candidate: '_typing.Any', *, head_pairs: '_typing.Any', model_ids: '_typing.Any'=('A','B'),
-                        features: _typing.Literal['P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P08', 'P09', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20', 'P21', 'P22', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P31', 'P32', 'P33', 'P34', 'P35'] | _typing.Sequence[_typing.Literal['P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P08', 'P09', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20', 'P21', 'P22', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P31', 'P32', 'P33', 'P34', 'P35']]=('P26','P12'), include_structure: 'bool'=True) -> '_typing.Any':
+                        features: _typing.Literal['P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P08', 'P09', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20', 'P21', 'P22', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P31', 'P32', 'P33', 'P34', 'P35'] | _typing.Sequence[_typing.Literal['P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P08', 'P09', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20', 'P21', 'P22', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P31', 'P32', 'P33', 'P34', 'P35']]=('P26','P12'), include_structure: 'bool'=True) -> 'dict[str, ModelComparisonResult]':
     """Compare only explicitly paired equal output names through compare_models.
 
     This bounded adapter does not infer semantic equivalence or rename heads.

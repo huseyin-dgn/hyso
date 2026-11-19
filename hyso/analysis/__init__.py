@@ -31,7 +31,12 @@ __all__ += ['ArtifactSource', 'OperationPolicy', 'NativeBinding', 'RetainedSourc
 __all__ += ['MultiHeadGraphEvaluationResult', 'evaluate_graph_heads', 'compare_graph_heads', 'GraphHeadSpec']
 
 if _TYPE_CHECKING:
-    from .graph_heads import GraphHeadSpec as GraphHeadSpec
+    from .graph_heads import (
+        GraphHeadSpec as GraphHeadSpec,
+        MultiHeadGraphEvaluationResult as MultiHeadGraphEvaluationResult,
+        evaluate_graph_heads as evaluate_graph_heads,
+        compare_graph_heads as compare_graph_heads,
+    )
 
 
 def __dir__():

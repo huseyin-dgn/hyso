@@ -194,7 +194,7 @@ class GraphEvaluationResult(_Export):
                 scope="source_v2_and_actual_core_observed_receiver_same_evaluation")
         return d
 
-    def analysis_source(self, model_id):
+    def analysis_source(self, model_id) -> 'ModelComparisonSource':
         """Existing retained P26 source; never backfills checkpoint bindings."""
         d = json.loads(self._payload)
         record = EvidenceRecord(d["record"])
@@ -205,7 +205,7 @@ class GraphEvaluationResult(_Export):
 
 def evaluate_graph_classification(model, loader, *, class_names, split, source_id=None, context=None,
         task: _typing.Literal['multiclass', 'binary']="multiclass", zero_division=0, max_samples=1000000, capture_structure=False,
-        expected_checkpoint_sha256=None, expected_model_state_sha256=None, capture_receiver_runtime=False):
+        expected_checkpoint_sha256=None, expected_model_state_sha256=None, capture_receiver_runtime=False) -> 'GraphEvaluationResult':
     """Call the existing evaluator once; default is the legacy LIMITED association.
 
     Explicit capture_receiver_runtime=True creates association v2 from Core's
@@ -322,7 +322,7 @@ class GraphComparisonResult(_Export):
         return d
 
 
-def compare_graph_evaluations(baseline, candidate, *, context_policy: _typing.Literal['legacy', 'strict']='legacy'):
+def compare_graph_evaluations(baseline, candidate, *, context_policy: _typing.Literal['legacy', 'strict']='legacy') -> 'GraphComparisonResult':
     """Retained P26 comparison plus explicit v2 scope; no architecture/performance inference."""
     if type(baseline) is not GraphEvaluationResult or type(candidate) is not GraphEvaluationResult:
         raise GraphEvidenceError("typed_graph_associations_required")
