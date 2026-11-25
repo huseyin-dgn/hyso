@@ -366,7 +366,7 @@ def _derive(a, b, features, include_structure, context_policy='legacy', *, p12_c
                     captures=[(r.record(i)['native_payload'] or {}).get('provenance',{}).get('comparison_capture',{})
                               for r,i in ((ra,ia),(rb,ib))]
                     contract_type=(CapturedCPUComparisonContract if feature in ('P01','P02','P11')
-                                   and all(isinstance(c,dict) and c.get('schema_version')==2 for c in captures) else ComparisonContract)
+                                   and all(isinstance(c,dict) and c.get('schema_version') in (2,3) for c in captures) else ComparisonContract)
                     contract = contract_type(metric=metric,allowed_changes=('model',))
                 native = compare_performance(ra,ia,rb,ib,contract=contract)
                 row.update(status=native.eligibility.status.value,comparison=native.to_dict(),

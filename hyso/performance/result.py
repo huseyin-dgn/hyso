@@ -66,7 +66,7 @@ def _validate(data, kind):
         raise ValueError("associate experiment run externally; result identity is immutable")
     protocol = data["protocol"]
     capture = data.get('provenance', {}).get('comparison_capture')
-    if isinstance(capture, dict) and capture.get('schema_version') == 2:
+    if isinstance(capture, dict) and capture.get('schema_version') in (2, 3):
         from .comparison_capture import _validate_comparison_capture
         _validate_comparison_capture(data)
     for key in ("model", "input", "environment"):

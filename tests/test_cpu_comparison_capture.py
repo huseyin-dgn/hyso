@@ -158,6 +158,8 @@ def test_capture_readers_and_comparison_never_execute(pair,monkeypatch):
     import hyso.performance.comparison_capture as module
     def deny(*a,**kw):pytest.fail('retained comparison invoked live operation')
     monkeypatch.setattr(module,'_environment',deny)
+    monkeypatch.setattr(module,'_source_identity',deny)
+    monkeypatch.setattr(module,'_clock_identity',deny)
     monkeypatch.setattr(module,'capture_cpu_comparison',deny)
     monkeypatch.setattr(torch.nn.Module,'_call_impl',deny)
     result=compare_models(source('A',pair['A']),source('B',pair['B']),features=('P01','P02','P11')).to_dict()
@@ -191,3 +193,142 @@ def test_wrong_artifact_does_not_gain_checkpoint_association(tmp_path):
     b=capture_cpu_comparison(m,inputs(),features=('P11',),footprint_artifact_path=foreign)
     result=compare_models(source('A',a),source('B',b),features='P11').to_dict()
     assert result['metrics'][-1]['status']=='INSUFFICIENT_EVIDENCE'
+
+
+def test_observed_revision_clock_cohort_and_explicit_unknowns(pair):
+    import sys
+    from pathlib import Path
+    for values in pair.values():
+        for feature,value in values.items():
+            raw=value.to_dict();proof=raw['provenance']['comparison_capture'];o=proof['observation']
+            assert proof['schema_version']==3
+            for field in ('source','model_source'):
+                assert o[field]['status']=='observed'
+                for module,sha in o[field]['files'].items():
+                    assert hashlib.sha256(Path(sys.modules[module].__file__).read_bytes()).hexdigest()==sha
+                assert o[field]['revision_sha256']==_digest(o[field]['files'])
+            assert o['clock']['monotonic'] and o['clock']['name']=='perf_counter_ns'
+            assert o['hardware']['status']=='observed'
+            assert o['started_unix_ns']>0 and o['finished_unix_ns']>0
+            assert proof['end_ns']>=proof['start_ns']
+            assert o['cohort']['scope']=='ordered_resident_input_batch_only'
+            assert o['cohort']['input_sha256']==proof['bound_input']['sha256']
+            assert o['cohort']['role']==('bound_workload_context_only' if feature=='P11' else 'measured_resident_input')
+            assert o['precision']=='fp32' and o['protocol_sha256']==_digest(raw['protocol'])
+            assert o['missing_fields']==['dataset_origin','preprocessing']
+
+
+@pytest.mark.parametrize('field',['source','clock','hardware','cohort','protocol','precision',
+    'preprocessing','dataset_origin','missing_fields','timestamp'])
+def test_resigned_inconsistent_observation_is_rejected(pair,field):
+    value=pair['A']['P11'];raw=value.to_dict();proof=raw['provenance']['comparison_capture'];o=proof['observation']
+    if field=='source':o['source']['revision_sha256']='a'*64
+    elif field=='clock':o['clock']['identity_sha256']='b'*64
+    elif field=='hardware':o['hardware']['identity_sha256']='c'*64
+    elif field=='cohort':o['cohort']['input_sha256']='d'*64
+    elif field=='protocol':o['protocol_sha256']='e'*64
+    elif field=='precision':o['precision']='fp64'
+    elif field in ('preprocessing','dataset_origin'):o[field]={'status':'observed','sha256':'f'*64}
+    elif field=='missing_fields':o['missing_fields']=[]
+    else:o['started_unix_ns']=True
+    proof['receipt_sha256']=_digest({k:v for k,v in proof.items() if k!='receipt_sha256'})
+    with pytest.raises(ValueError):type(value)(raw)
+
+
+@pytest.mark.parametrize('field',['source','clock','hardware'])
+def test_recorded_source_clock_hardware_mismatch_is_incompatible(pair,field):
+    import hyso.performance.comparison_capture as module
+    original=pair['B']['P11'];raw=original.to_dict();proof=raw['provenance']['comparison_capture'];o=proof['observation']
+    if field=='source':
+        key=next(iter(o['source']['files']));o['source']['files'][key]='a'*64
+        o['source']['revision_sha256']=_digest(o['source']['files'])
+    elif field=='clock':
+        o['clock']['implementation']='other_monotonic_clock'
+        o['clock']['identity_sha256']=_digest({k:v for k,v in o['clock'].items() if k!='identity_sha256'})
+    else:
+        proof['environment']['host']='other-host'
+        o['hardware']=module._hardware_identity(proof['environment'])
+    proof['receipt_sha256']=_digest({k:v for k,v in proof.items() if k!='receipt_sha256'})
+    other=type(original)(raw)
+    result=compare_models(source('A',{'P11':pair['A']['P11']}),source('B',{'P11':other}),features='P11').to_dict()
+    assert all(r['status']=='INCOMPATIBLE' and r['difference'] is None for r in result['metrics'])
+
+
+def legacy_receipt(value):
+    """In-memory schema-2 fixture, never an upgrade or an edit to retained evidence."""
+    raw=value.to_dict();proof=raw['provenance']['comparison_capture'];proof.pop('observation')
+    proof.update(schema_version=2,producer='hyso.performance.capture_cpu_comparison.v1')
+    proof['receipt_sha256']=_digest({k:v for k,v in proof.items() if k!='receipt_sha256'})
+    return type(value)(raw)
+
+
+def test_schema2_reader_and_original_comparison_policy_remain_supported(pair):
+    a={k:legacy_receipt(v) for k,v in pair['A'].items()}
+    b={k:legacy_receipt(v) for k,v in pair['B'].items()}
+    result=compare_models(source('A',a),source('B',b),features=('P01','P02','P11')).to_dict()
+    assert all(r['status']=='COMPARABLE' for r in result['metrics'])
+
+
+@pytest.mark.parametrize('reverse',[False,True])
+def test_mixed_schema2_and_schema3_never_invent_new_evidence(pair,reverse):
+    a=source('A',{k:legacy_receipt(v) for k,v in pair['A'].items()});b=source('B',pair['B'])
+    result=compare_models(b,a,features=('P01','P02','P11')) if reverse else compare_models(a,b,features=('P01','P02','P11'))
+    assert all(r['status']!='COMPARABLE' and r['difference'] is None for r in result.to_dict()['metrics'])
+
+
+def test_unavailable_source_is_explicit_and_never_comparable(monkeypatch):
+    import hyso.performance.comparison_capture as module
+    def unavailable(modules):
+        files={name:None for name in sorted(set(modules))}
+        return dict(status='missing',scope='installed_file_snapshot_not_loaded_code_attestation',
+            files=files,revision_sha256=_digest(files))
+    monkeypatch.setattr(module,'_source_identity',unavailable)
+    a=capture_cpu_comparison(model(),inputs(),features=('P11',));b=capture_cpu_comparison(model(3),inputs(),features=('P11',))
+    o=a['P11'].to_dict()['provenance']['comparison_capture']['observation']
+    assert o['missing_fields']==['checkpoint','dataset_origin','model_source','preprocessing','source']
+    result=compare_models(source('A',a),source('B',b),features='P11').to_dict()
+    assert all(r['status']=='INSUFFICIENT_EVIDENCE' and r['difference'] is None for r in result['metrics'])
+
+
+@pytest.mark.parametrize('field',['source','clock'])
+def test_source_or_clock_change_during_capture_publishes_nothing(monkeypatch,field):
+    import hyso.performance.comparison_capture as module
+    from hyso.benchmark.runner import StateMutationError
+    name='_source_identity' if field=='source' else '_clock_identity';real=getattr(module,name);calls=0
+    def changed(*args):
+        nonlocal calls
+        calls+=1;value=real(*args)
+        if calls>(2 if field=='source' else 1):value=dict(value,changed=True)
+        return value
+    monkeypatch.setattr(module,name,changed)
+    with pytest.raises(StateMutationError,match='no result published'):
+        capture_cpu_comparison(model(),inputs(),features=('P11',))
+
+
+def test_all_new_CPU_producers_do_not_query_CUDA(monkeypatch):
+    def deny(*a,**kw):pytest.fail('CUDA query/initialization reached')
+    for name in ('is_available','_lazy_init','device_count','current_device'):
+        monkeypatch.setattr(torch.cuda,name,deny)
+    values=capture_cpu_comparison(model(),inputs(),latency_iterations=8,
+        throughput_protocol=ThroughputProtocol(batch_count=3,repeats=1))
+    assert set(values)=={'P01','P02','P11'}
+
+
+def test_missing_hardware_is_explicit_and_withholds_comparison(monkeypatch):
+    import hyso.performance.comparison_capture as module
+    real=module._environment
+    monkeypatch.setattr(module,'_environment',lambda:dict(real(),host=''))
+    a=capture_cpu_comparison(model(),inputs(),features=('P11',));b=capture_cpu_comparison(model(3),inputs(),features=('P11',))
+    o=a['P11'].to_dict()['provenance']['comparison_capture']['observation']
+    assert o['hardware']['status']=='missing' and 'hardware' in o['missing_fields']
+    result=compare_models(source('A',a),source('B',b),features='P11').to_dict()
+    assert all(r['status']=='INSUFFICIENT_EVIDENCE' and r['difference'] is None for r in result['metrics'])
+
+
+@pytest.mark.parametrize('feature',['P01','P02'])
+def test_both_short_captures_cannot_bypass_default_sample_requirement(feature):
+    kwargs=dict(features=(feature,),latency_iterations=999,
+        throughput_protocol=ThroughputProtocol(batch_count=999,repeats=1))
+    a=capture_cpu_comparison(model(),inputs(),**kwargs);b=capture_cpu_comparison(model(3),inputs(),**kwargs)
+    result=compare_models(source('A',a),source('B',b),features=feature).to_dict()
+    assert all(r['status']=='INSUFFICIENT_EVIDENCE' and r['difference'] is None for r in result['metrics'])

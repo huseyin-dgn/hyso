@@ -1,4 +1,4 @@
-"""Read-only eligibility over the explicit v2 CPU producer contract."""
+"""Read-only eligibility over retained v2/v3 CPU producer receipts."""
 from fractions import Fraction
 
 from hyso.performance.comparison_capture import _validate_comparison_capture,_digest
@@ -20,7 +20,7 @@ def capture_conditions(resolver,record_id,contract,side):
         reason('invalid_native_evidence','metric');return metric,None,reasons,True
     n=record['native_payload']
     capture=(n or {}).get('provenance',{}).get('comparison_capture')
-    if not isinstance(capture,dict) or capture.get('schema_version')!=2:
+    if not isinstance(capture,dict) or capture.get('schema_version') not in (2,3):
         reason('CPU_v2_capture_required','provenance.comparison_capture');return metric,None,reasons,False
     try:capture=_validate_comparison_capture(n)
     except (KeyError,TypeError,ValueError,AttributeError):
@@ -41,7 +41,11 @@ def capture_conditions(resolver,record_id,contract,side):
             reason('native_checkpoint_association_missing','artifact.sha256')
     config=p.get('configuration',n['protocol'].get('configuration',{}))
     native_environment={k:v for k,v in p['environment'].items() if k!='pid'}
-    conditions=dict(format=capture['format'],schema_version=2,authority=capture['authority'],
+    observation=capture.get('observation')
+    if observation is not None:
+        for field in ('source','model_source','hardware'):
+            if observation[field]['status']!='observed':reason('CPU_observation_missing',field)
+    conditions=dict(format=capture['format'],schema_version=capture['schema_version'],authority=capture['authority'],
         model=(capture['model_state_sha256'],capture['structure_sha256'],checkpoint['sha256']),
         batch=bound['shape'][0],nonbatch_shape=bound['shape'][1:],precision='fp64' if bound['dtype']=='torch.float64' else 'fp32',
         input_sha256=bound['sha256'],input_dtype=bound['dtype'],input_layout=bound['layout'],
@@ -51,5 +55,16 @@ def capture_conditions(resolver,record_id,contract,side):
         measurement_scope=metric.native_context['measurement_scope'],
         metric_context={k:v for k,v in metric.native_context.items() if k not in
             ('sample_count','effective_tail_count','elapsed_wall_seconds','batch','precision','model_state_sha256')},
-        producer=capture['producer'],input_role=bound['role'])
+        producer=capture['producer'],input_role=bound['role'],source_revision=None,
+        hardware_identity=None,clock_identity=None,cohort_scope=None,dataset_origin=None,preprocessing=None)
+    if observation is not None:
+        # Timestamps identify observations, not fixed conditions. Missing dataset
+        # and transform facts permit only the explicitly resident-input scope;
+        # caller dataset/split/workload declarations above remain insufficient.
+        conditions.update(source_revision=observation['source']['revision_sha256'],
+            hardware_identity=observation['hardware']['identity_sha256'],
+            clock_identity=observation['clock']['identity_sha256'],
+            cohort_scope=observation['cohort']['scope'],
+            dataset_origin=observation['dataset_origin'],preprocessing=observation['preprocessing'])
+        conditions['model']+=(observation['model_source']['revision_sha256'],)
     return metric,conditions,reasons,False

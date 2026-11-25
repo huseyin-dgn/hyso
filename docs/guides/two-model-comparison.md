@@ -194,15 +194,34 @@ rejected. P11 counts the actual logical inventory once, without fabricated timin
 samples or a forward call. Its bound input is workload context only. Request a
 subset with `features=("P11",)` when timing is unnecessary.
 
-The schema-2 `provenance.comparison_capture` receipt binds each new native payload,
+The schema-3 `provenance.comparison_capture` receipt binds each new native payload,
 run identity, input bytes/layout, registered model state before and after capture,
-actual protocol and observed CPU runtime/backend. It is an integrity record,
+actual protocol and observed CPU runtime/backend. It also records SHA-256 revisions
+of the installed measurement and model source files, an observed hardware descriptor
+and its hash, the monotonic clock implementation/resolution and identity, wall-clock
+timestamps, precision and the exact protocol hash. Source files, clock and runtime
+are checked again after each measurement; a change prevents publication. File
+revisions identify the observed installed files, not Git HEAD, a clean checkout or
+attested loaded bytecode. It is an integrity record,
 not a signature or physical host attestation. Import rechecks recorded consistency
 without executing user code or querying hardware. Matching declared dataset,
 split or workload labels cannot establish dataset/preprocessing provenance.
 
+`observation.cohort` means only the exact ordered resident input batch; timing
+iterations do not count additional dataset samples. For P11 that batch is context
+only, never an executed forward. Dataset origin and upstream preprocessing remain
+explicitly `missing`, with reasons in `observation.missing_fields`; the collector
+cannot observe transformations performed before it received the tensor. Comparison
+is limited to that resident-input scope, and caller dataset/split/workload claims
+remain insufficient. Missing source or hardware observations withhold eligibility;
+different recorded source revisions or clock identities are incompatible. A trusted
+checkpoint load receipt remains the sole checkpoint association; no pathname or
+caller hash can substitute for it.
+
 `compare_models` selects `CapturedCPUComparisonContract` only when both selected
-P01/P02/P11 records carry schema-2 receipts. At the lower-level `compare_records`
+P01/P02/P11 records carry schema-2 or schema-3 receipts. Retained schema-2 receipts
+remain readable with their original comparison policy; mixing receipt versions cannot supply
+the missing new observations. At the lower-level `compare_records`
 API, select that contract explicitly. Timing keeps the existing minimum sample
 and tail requirements. P11 uses the explicit
 `exact_logical_inventory_or_verified_checkpoint_size` policy, without applying a

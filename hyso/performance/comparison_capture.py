@@ -13,6 +13,97 @@ import time
 import uuid
 
 
+_PRODUCER_MODULES = ('hyso.performance.comparison_capture', 'hyso.performance.inference',
+    'hyso.performance.memory', 'hyso.performance.result', 'hyso.benchmark.runner',
+    'hyso.benchmark.result', 'hyso._evaluation_evidence')
+
+
+def _source_identity(modules):
+    """Bounded installed-file snapshots; neither Git labels nor code attestation."""
+    import sys
+    from pathlib import Path
+    files = {}
+    for name in sorted(set(modules)):
+        module = sys.modules.get(name)
+        path = getattr(module, '__file__', None)
+        try:
+            if not name.startswith(('hyso.', 'torch.nn.')) or path is None:
+                raise OSError('source_not_available')
+            with Path(path).open('rb') as stream:
+                payload = stream.read(1024 * 1024 + 1)
+            if len(payload) > 1024 * 1024:
+                raise OSError('source_budget')
+            files[name] = hashlib.sha256(payload).hexdigest()
+        except (OSError, ValueError, TypeError):
+            files[name] = None
+    return dict(status='observed' if files and all(files.values()) else 'missing',
+        scope='installed_file_snapshot_not_loaded_code_attestation', files=files,
+        revision_sha256=_digest(files))
+
+
+def _clock_identity():
+    info = time.get_clock_info('perf_counter')
+    descriptor = dict(name='perf_counter_ns', implementation=info.implementation,
+        monotonic=info.monotonic, adjustable=info.adjustable, resolution_seconds=info.resolution)
+    return dict(descriptor, identity_sha256=_digest(descriptor))
+
+
+def _hardware_identity(environment):
+    descriptor = {key: environment[key] for key in ('host', 'machine', 'processor', 'logical_cpus')}
+    return dict(status='observed' if descriptor['host'] and descriptor['machine']
+        and type(descriptor['logical_cpus']) is int and descriptor['logical_cpus'] > 0 else 'missing',
+        scope='observed_host_descriptor_not_physical_attestation', descriptor=descriptor,
+        identity_sha256=_digest(descriptor))
+
+
+def _missing_observation_fields(observation, checkpoint):
+    missing = ['dataset_origin', 'preprocessing']
+    if checkpoint['status'] != 'native': missing.append('checkpoint')
+    for field in ('source', 'model_source', 'hardware'):
+        if observation[field]['status'] != 'observed': missing.append(field)
+    return sorted(missing)
+
+
+def _validate_observation(capture, data, require, sha):
+    """All checks use retained bytes; readers never inspect the current host."""
+    o = capture['observation']; inp = capture['bound_input']
+    require(type(o) is dict and set(o) == {'source', 'model_source', 'hardware', 'clock',
+        'cohort', 'dataset_origin', 'preprocessing', 'precision', 'protocol_sha256',
+        'started_unix_ns', 'finished_unix_ns', 'missing_fields'})
+    for field in ('source', 'model_source'):
+        source = o[field]
+        require(type(source) is dict and set(source) == {'status', 'scope', 'files', 'revision_sha256'})
+        files = source['files']
+        require(type(files) is dict and 0 < len(files) <= 256
+            and all(type(k) is str and k.startswith(('hyso.', 'torch.nn.'))
+                and (v is None or sha(v)) for k, v in files.items()))
+        require(source['scope'] == 'installed_file_snapshot_not_loaded_code_attestation'
+            and source['revision_sha256'] == _digest(files)
+            and source['status'] == ('observed' if all(files.values()) else 'missing'))
+    require(set(o['source']['files']) == set(_PRODUCER_MODULES))
+    require(set(o['model_source']['files']) == {row['qualified_class'].rsplit('.', 1)[0]
+        for row in data['provenance']['model']['structural_descriptor']['modules']})
+    require(o['hardware'] == _hardware_identity(capture['environment']))
+    clock = o['clock']
+    require(type(clock) is dict and set(clock) == {'name', 'implementation', 'monotonic',
+        'adjustable', 'resolution_seconds', 'identity_sha256'})
+    require(clock['name'] == 'perf_counter_ns' and type(clock['implementation']) is str
+        and bool(clock['implementation']) and clock['monotonic'] is True
+        and type(clock['adjustable']) is bool and type(clock['resolution_seconds']) in (int, float)
+        and 0 < clock['resolution_seconds'] < float('inf')
+        and clock['identity_sha256'] == _digest({k:v for k,v in clock.items() if k != 'identity_sha256'}))
+    require(o['cohort'] == dict(status='observed', scope='ordered_resident_input_batch_only',
+        input_sha256=inp['sha256'], batch_size=inp['shape'][0], role=inp['role']))
+    require(o['dataset_origin'] == dict(status='missing', reason='resident_input_does_not_attest_dataset_origin'))
+    require(o['preprocessing'] == dict(status='missing', reason='upstream_transform_chain_not_observed'))
+    require(o['precision'] == ('fp64' if inp['dtype'] == 'torch.float64' else 'fp32')
+        and o['protocol_sha256'] == _digest(data['protocol']))
+    for key in ('started_unix_ns', 'finished_unix_ns'):
+        require(type(o[key]) is int and o[key] > 0)
+    # Wall-clock timestamps are context, not elapsed duration or an independence proof.
+    require(o['missing_fields'] == _missing_observation_fields(o, capture['checkpoint']))
+
+
 def _digest(value):
     return hashlib.sha256(json.dumps(value,sort_keys=True,ensure_ascii=False,
         allow_nan=False,separators=(',',':')).encode('utf-8')).hexdigest()
@@ -53,14 +144,17 @@ def _validate_comparison_capture(data):
     fields={'format','schema_version','authority','producer','capture_id','run_id','payload_sha256',
         'model_state_sha256','post_model_state_sha256','structure_sha256','bound_input','environment',
         'checkpoint','checkpoint_observed_state_sha256','start_ns','end_ns','receipt_sha256'}
+    if type(capture) is dict and capture.get('schema_version') == 3:
+        fields.add('observation')
     def require(ok):
         if not ok:raise ValueError('invalid_cpu_comparison_capture')
     def sha(v):return type(v) is str and len(v)==64 and all(c in '0123456789abcdef' for c in v)
     require(type(capture) is dict and set(capture)==fields)
     require(sha(capture['receipt_sha256']) and _digest({k:v for k,v in capture.items() if k!='receipt_sha256'})==capture['receipt_sha256'])
     require(capture['format']=='hyso.native_comparison_capture' and type(capture['schema_version']) is int
-        and capture['schema_version']==2 and capture['authority']=='native_capture'
-        and capture['producer']=='hyso.performance.capture_cpu_comparison.v1')
+        and capture['schema_version'] in (2,3) and capture['authority']=='native_capture'
+        and capture['producer']==('hyso.performance.capture_cpu_comparison.v2'
+            if capture['schema_version']==3 else 'hyso.performance.capture_cpu_comparison.v1'))
     require(data.get('feature_ids') in (['P01'],['P02'],['P11']))
     for key in ('capture_id','run_id'):
         try:uuid.UUID(capture[key])
@@ -104,6 +198,8 @@ def _validate_comparison_capture(data):
     else:
         require(checkpoint==dict(status='missing',sha256=None,model_state_sha256=None,
             source=None,reason='no_matching_trusted_load_receipt') and capture['checkpoint_observed_state_sha256'] is None)
+    if capture['schema_version'] == 3:
+        _validate_observation(capture, data, require, sha)
     return capture
 
 
@@ -120,7 +216,11 @@ def capture_cpu_comparison(model, example_input, *, features=('P01','P02','P11')
 
     Checkpoint identity comes only from a current capture_evidence=True trusted
     load receipt. Missing receipts remain missing; dataset/split/preprocessing
-    origin is not inferred. footprint_artifact_path measures an existing file;
+    origin is not inferred. Schema-3 receipts additionally bind installed producer
+    and model source-file revisions, observed hardware and monotonic clock identity,
+    wall timestamps, resident-batch cohort, precision and protocol hashes. Upstream
+    preprocessing and dataset origin remain explicitly missing, never caller proof.
+    footprint_artifact_path measures an existing file;
     artifact-size comparison additionally needs that matching load receipt.
     P11's bound input is context only: no forward is run to count its bytes.
 
@@ -154,12 +254,16 @@ def capture_cpu_comparison(model, example_input, *, features=('P01','P02','P11')
     if footprint_artifact_path is not None and 'P11' not in features:raise ValueError('artifact_requires_P11')
     descriptor,state,token,size=_registered_state(model,example_input)
     if size>256*1024**2:raise ValueError('comparison_model_budget')
-    environment=_environment();start=time.perf_counter_ns();capture_id=str(uuid.uuid4())
+    environment=_environment();capture_id=str(uuid.uuid4())
+    source=_source_identity(_PRODUCER_MODULES)
+    model_modules=tuple(row['qualified_class'].rsplit('.',1)[0] for row in descriptor['modules'])
+    model_source=_source_identity(model_modules);clock=_clock_identity()
     loaded_state=model_hash(model);checkpoint=checkpoint_evidence(model,loaded_state)
     bound_input=dict(shape=list(example_input.shape),stride=list(example_input.stride()),dtype=str(example_input.dtype),
         layout='torch.strided',sha256=token[-1])
     results={}
     for feature in features:
+        start=time.perf_counter_ns();started_unix_ns=time.time_ns()
         if feature=='P01':
             native=analyze_latency(BenchmarkRunner(model,device='cpu',example_input=example_input,precision=precision,
                 warmup_iterations=warmup_iterations,measure_iterations=latency_iterations,repeats=repeats).run(),quantiles=(.5,.95,.99))
@@ -167,10 +271,12 @@ def capture_cpu_comparison(model, example_input, *, features=('P01','P02','P11')
         else:native=measure_footprint(model,artifact_path=footprint_artifact_path,
             artifact_format='hyso.training_checkpoint' if footprint_artifact_path is not None else None)
         _,post_state,post_token,_=_registered_state(model,example_input)
-        if post_token!=token or _environment()!=environment:
+        if (post_token!=token or _environment()!=environment
+                or _source_identity(_PRODUCER_MODULES)!=source
+                or _source_identity(model_modules)!=model_source or _clock_identity()!=clock):
             raise StateMutationError('comparison_capture_state_or_environment_changed; no result published')
         data=native.to_dict();data['provenance']['comparison_capture']=dict(format='hyso.native_comparison_capture',
-            schema_version=2,authority='native_capture',producer='hyso.performance.capture_cpu_comparison.v1',
+            schema_version=3,authority='native_capture',producer='hyso.performance.capture_cpu_comparison.v2',
             capture_id=capture_id,run_id=data['raw_evidence']['source_result_id'] if feature=='P01' else data['result_id'],
             payload_sha256=_digest(data),model_state_sha256=state,post_model_state_sha256=post_state,
             structure_sha256=_digest(data['provenance']['model']['structural_descriptor']),
@@ -179,6 +285,15 @@ def capture_cpu_comparison(model, example_input, *, features=('P01','P02','P11')
             checkpoint_observed_state_sha256=loaded_state if checkpoint['status']=='native' else None,
             start_ns=start,end_ns=time.perf_counter_ns())
         proof=data['provenance']['comparison_capture']
+        observation=dict(source=source,model_source=model_source,hardware=_hardware_identity(environment),
+            clock=clock,cohort=dict(status='observed',scope='ordered_resident_input_batch_only',
+                input_sha256=bound_input['sha256'],batch_size=bound_input['shape'][0],role=proof['bound_input']['role']),
+            dataset_origin=dict(status='missing',reason='resident_input_does_not_attest_dataset_origin'),
+            preprocessing=dict(status='missing',reason='upstream_transform_chain_not_observed'),
+            precision=precision,protocol_sha256=_digest(data['protocol']),
+            started_unix_ns=started_unix_ns,finished_unix_ns=time.time_ns())
+        observation['missing_fields']=_missing_observation_fields(observation,checkpoint)
+        proof['observation']=observation
         proof['receipt_sha256']=_digest(proof)
         _validate_comparison_capture(data)
         results[feature]=type(native)(data)
