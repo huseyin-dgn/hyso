@@ -35,7 +35,7 @@ class _SavedActivationRecorder:
                ((max_records, 100000), (max_events, 400000))):
             raise ValueError("bounded saved tensor record/event budgets required")
         if any(t.device.type != "cpu" for t in (*model.parameters(), *model.buffers())):
-            raise NotImplementedError("saved-activation recorder is CPU-only; CUDA 0xC0000409 gate unresolved")
+            raise NotImplementedError("BLOCKED_B4_UNRESOLVED: saved-activation recorder is CPU-only; CUDA 0xC0000409 gate unresolved")
         if any(getattr(m,"inplace",False) for m in model.modules()):
             raise NotImplementedError("in-place modules are outside validated saved-payload coverage")
         self.max_records, self.max_events = max_records, max_events
@@ -65,7 +65,7 @@ class _SavedActivationRecorder:
 
     def pack(self, tensor):
         if tensor.device.type != "cpu":
-            raise NotImplementedError("saved-activation recorder is CPU-only; CUDA 0xC0000409 gate unresolved")
+            raise NotImplementedError("BLOCKED_B4_UNRESOLVED: saved-activation recorder is CPU-only; CUDA 0xC0000409 gate unresolved")
         start = time.perf_counter_ns()
         frame=sys._getframe(1)
         try:

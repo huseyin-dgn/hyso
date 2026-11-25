@@ -146,7 +146,8 @@ def final_admission(work, initial, reviewed, token, sha, manifest, *, cuda_initi
 
 
 def run(root, work, mode, token, sha, manifest):
-    from p23_forensic_runner import publish, digest, read, admission
+    from p23_forensic_runner import publish, digest, read, admission, require_safe_mode
+    require_safe_mode(mode)
     global _journal, _contract
     _journal = Journal(work/'worker-phases.jsonl', token, sha)
     _contract = manifest['input_contract']

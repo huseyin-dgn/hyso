@@ -1,5 +1,14 @@
 # P31 trained-model stability
 
+CPU inference stability uses its own owned runtime worker and does not install
+the P23 saved-tensor observer. Disabling CUDA saved-activation measurement for B4
+does not invalidate a previously verified CPU P31 journal. CPU and CUDA acceptance
+remain separate: a CPU completion window does not establish CUDA stability or
+resolve the B4 crash. Neither an existing journal nor a disabled observer grants
+permission for a new long run. A new 7200-second acceptance run requires explicit
+execution authorization, current source/workload/resource admission and one
+uninterrupted completed-work window; reopening or joining runs is not execution.
+
 P31 retains the existing `measure_stability`, owned Windows worker, Job cleanup
 and hash-chained journal. New workers write `stability_version=2` with exact
 successful step brackets `[start_ns, end_ns, completed_images]` in each observed

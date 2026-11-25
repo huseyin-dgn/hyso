@@ -28,15 +28,16 @@ class Contracts(unittest.TestCase):
         self.assertEqual(c.sizeof(windows.DumpExceptionInformation), 16)
         self.assertEqual(windows.DumpExceptionInformation.pointers.offset, 4)
 
-    def test_transform_keeps_version_and_ownership(self):
+    def test_transform_preserves_B4_gates_and_ownership(self):
         source = REPO/'hyso/performance/_saved_activation.py'
         text = source.read_text()
         candidate = runner.transform(source, 'saved')
         self.assertIn('payload.tensor._version != payload.version', candidate)
         self.assertIn('_Payload(tensor, self, saved_id, version)', candidate)
-        # Removing just the known two guards must produce the exact candidate.
+        # CPU diagnostic copies retain both guards, ownership and version checks.
         self.assertEqual(text.count('gate unresolved'), 2)
-        self.assertEqual(candidate.count('PRIVATE P23 diagnostic copy only'), 2)
+        self.assertEqual(candidate, text)
+        self.assertEqual(candidate.count('BLOCKED_B4_UNRESOLVED'), 2)
         self.assertIn('saved-activation recorder is CPU-only', source.read_text())
 
     def test_wrong_design_hash_rejected(self):

@@ -29,6 +29,8 @@ from .training_memory import _cuda, _validate_logical_storage, _validate_cuda_bo
 from ._training_process import _launch,_bounded_read
 from .training_memory import _basic_memory_report
 
+_B4_REASON = "BLOCKED_B4_UNRESOLVED: CUDA saved-activation adapter disabled; native-crash gate unresolved (0xC0000409)"
+
 
 def _activation_adapter():
     # Experimental CPU opt-in (or archived evidence validation) only. The basic
@@ -374,12 +376,12 @@ def _run_recipe(request,*,_phase_trace=None):
     from ._training_memory_worker import _phase, _trace_hooks
     if recipe["device"] != protocol.memory_protocol.device:
         raise ValueError("recipe/protocol device mismatch before worker setup")
+    if protocol.saved_activation_lifetime and recipe["device"] != "cpu":
+        raise NotImplementedError(_B4_REASON)
     if str(torch.__version__)!=request["torch_version"]:raise RuntimeError("worker runtime Torch mismatch")
     if torch.cuda.is_initialized():raise RuntimeError("CUDA initialized before owned allocator setup")
     device=torch.device(recipe["device"])
     _phase(_phase_trace,"cuda_setup","begin" if device.type=="cuda" else "skipped")
-    if protocol.saved_activation_lifetime and device.type=="cuda":
-        raise NotImplementedError("CUDA saved-activation adapter disabled: P23 R1 native-crash gate unresolved (0xC0000409)")
     if device.type=="cuda":
         if not torch.cuda.is_available() or device.index>=torch.cuda.device_count():raise NotImplementedError("requested CUDA device unavailable")
         torch.cuda.set_device(device)
@@ -830,7 +832,8 @@ def measure_training_memory_isolated(recipe: '_typing.Any',*,protocol: '_typing.
     if recipe_data["device"]!=protocol.memory_protocol.device:raise ValueError("recipe/protocol device mismatch")
     if protocol.allow_peak_reset and recipe_data["device"]=="cpu":raise ValueError("peak reset permission requires explicit CUDA device")
     token=str(uuid.uuid4());receipt=worker=measurement=None
-    if os.name!="nt":outcome,reason="unsupported","native isolated profile verified on Windows only"
+    if protocol.saved_activation_lifetime and recipe_data["device"] != "cpu":outcome,reason="unsupported",_B4_REASON
+    elif os.name!="nt":outcome,reason="unsupported","native isolated profile verified on Windows only"
     else:
         with tempfile.TemporaryDirectory(prefix="hyso-training-memory-") as directory:
             request=dict(token=token,recipe=recipe_data,protocol=asdict(protocol),

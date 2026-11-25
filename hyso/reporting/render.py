@@ -431,6 +431,13 @@ def markdown(data):
                 info = catalog[feature["feature_id"]]
                 lines.append("| " + feature["feature_id"] + " | " + _status(feature["status"], language) + " | " + _md(info["explanations"][data["level"]] + " " + feature["reason"], words) + " |")
             lines.append("")
+        if source.get("execution"):
+            lines += ["### " + words["execution"], "",
+                      "| Model | P | " + words["status"] + " | " + words["reason"] + " |", "|---|---|---|---|"]
+            for row in source["execution"]["features"]:
+                values = [row["model_id"], row["feature_id"], _status(row["status"], language), row["reasons"]]
+                lines.append("| " + " | ".join(_md(value, words) for value in values) + " |")
+            lines.append("")
         if not source.get("recommendations"):
             headers = _metric_headers(source, words)
             separator = "|" + "---|" * len(headers) if source['kind'] == 'comparison' else "|---|---:|---|---|---|"

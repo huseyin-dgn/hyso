@@ -1,5 +1,19 @@
 # P23 isolated training memory — R1 experimental scope
 
+Current containment policy (2026-11-25): CUDA with
+`saved_activation_lifetime=True` returns `outcome="unsupported"`,
+`reason="BLOCKED_B4_UNRESOLVED: ..."`, and `measurement=None` before a worker
+is launched. Worker and recorder checks also reject the same path. Analyzer/CLI
+admission reports `UNSUPPORTED` with `BLOCKED_B4_UNRESOLVED`; authorization flags
+and environment variables cannot enable it. Private forensic diagnostic copies
+preserve these guards and their native entry points are disabled.
+
+This policy isolates the CUDA saved-payload observer. Normal CUDA training,
+basic CUDA memory measurement with saved lifetime disabled, CPU logical/RSS
+analysis and the validated CPU saved-payload profile retain their contracts.
+Historical result readers remain available. An unavailable observation is null
+with its reason, never a measured zero. Saved-payload bytes are not physical VRAM.
+
 2026-10-21, Europe/Istanbul. **P23 PARTIAL; R1 release NO-GO.**
 The saved-activation CUDA diagnostic encountered an unexpected native worker
 exit `0xC0000409`. The B4 stop rule applies. CUDA saved-activation admission is

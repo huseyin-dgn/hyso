@@ -306,15 +306,17 @@ def _isolated_training_admission(binding):
     source, policy = binding.source, binding.policy
     if not set(binding.features).issubset({'P19', 'P22', 'P23'}) or type(source.recipe) is not perf.TrainingMemoryRecipe:
         return 'UNSUPPORTED', ['isolated_P23_recipe_and_compatible_projections_required']
+    protocol = source.options.get('protocol')
+    if type(protocol) is not perf.IsolatedTrainingMemoryProtocol:
+        return 'MISSING_PREREQUISITE', ['explicit_isolated_memory_protocol_required']
+    if protocol.saved_activation_lifetime and source.recipe.to_dict()['device'] != 'cpu':
+        return 'UNSUPPORTED', ['BLOCKED_B4_UNRESOLVED', 'Basic_only_saved_activation_lifetime_disabled']
     if not policy.allow_capture or not policy.allow_training:
         return 'MISSING_PREREQUISITE', ['explicit_training_episode_consent_required']
     if source.recipe.to_dict()['device'] != binding.device:
         return 'MISSING_PREREQUISITE', ['native_recipe_device_mismatch']
     if binding.device != 'cpu' and not policy.allow_cuda:
         return 'MISSING_PREREQUISITE', ['explicit_CUDA_training_consent_required']
-    protocol = source.options.get('protocol')
-    if type(protocol) is not perf.IsolatedTrainingMemoryProtocol:
-        return 'MISSING_PREREQUISITE', ['explicit_isolated_memory_protocol_required']
     if protocol.saved_activation_lifetime:
         return 'UNSUPPORTED', ['Basic_only_saved_activation_lifetime_disabled']
     if source.recipe.to_dict()['save_last_to'] is not None and not policy.allow_file_writes:

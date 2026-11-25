@@ -1,5 +1,12 @@
 # P23 safety closure and separate forensic plan — 2026-11-09
 
+2026-11-25 containment update: B4 root cause remains unresolved. Public CUDA
+saved-activation capture is rejected before worker creation with
+`BLOCKED_B4_UNRESOLVED`. The private forensic tool no longer removes production
+guards and rejects native mode even with a previously valid authorization.
+CPU observers and ordinary CUDA training/basic memory features remain available.
+The historical plans below do not bypass this current policy.
+
 P23 remains **PARTIAL** for the requested CUDA saved-activation scope. The
 historical `c-native-crash.json` reopens as native_crash, exit `0xC0000409`,
 no worker terminal receipt and no completed measurement; its owned Job reports

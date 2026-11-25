@@ -1,4 +1,4 @@
-"""One-shot P23 forensic harness. Native execution needs new exact-hash consent.
+"""One-shot P23 forensic harness. CUDA saved-payload execution is blocked by B4.
 
 Trusted diagnostic code, not a hostile-code sandbox. Production gates are never
 changed. CPU safety cases cannot select CUDA; native mode cannot select retries.
@@ -26,6 +26,12 @@ LIMITS = admission.policy.LIMITS
 SCENARIO = 'p23-tiny-saved-payload-forensic-v1'
 CPU_MODES = ('success', 'cpu-recipe', 'exception', 'failfast', 'timeout', 'memory', 'tree', 'logs',
              'collector-timeout', 'collector-limit', 'outer-timeout')
+B4_REASON = 'BLOCKED_B4_UNRESOLVED: CUDA saved-activation diagnostic execution is disabled (0xC0000409)'
+
+
+def require_safe_mode(mode):
+    if mode == 'native':
+        raise NotImplementedError(B4_REASON)
 digest, read = safety.digest, safety.read
 
 
@@ -42,32 +48,15 @@ def publish(path, value):
 
 
 def transform(source, target):
-    """Only three explicit device gates in PRIVATE generated diagnostic copies.
-
-    No detach/copy/sync/ownership or version-check change is proposed as a fix.
-    Original guarded files remain present and hash-pinned in the snapshot.
-    """
+    """Wire private CPU diagnostics without removing any B4 device guard."""
     text = source.read_text(encoding='utf-8')
     if target == 'recipe':
-        guard = ('    if protocol.saved_activation_lifetime and device.type=="cuda":\n'
-                 '        raise NotImplementedError("CUDA saved-activation adapter disabled: P23 R1 native-crash gate unresolved (0xC0000409)")\n')
-        if text.count(guard) != 1:
-            raise ValueError('recipe guard source drift')
-        text = text.replace(guard, '    # Explicitly authorized PRIVATE P23 diagnostic copy only.\n')
         old = 'from ._saved_activation import '
         if text.count(old) != 1:
             raise ValueError('recorder import source drift')
         text = text.replace(old, 'from ._p23_diagnostic_saved import ')
-    else:
-        guards = [
-            ('        if any(t.device.type != "cpu" for t in (*model.parameters(), *model.buffers())):\n'
-             '            raise NotImplementedError("saved-activation recorder is CPU-only; CUDA 0xC0000409 gate unresolved")\n'),
-            ('        if tensor.device.type != "cpu":\n'
-             '            raise NotImplementedError("saved-activation recorder is CPU-only; CUDA 0xC0000409 gate unresolved")\n')]
-        for guard in guards:
-            if text.count(guard) != 1:
-                raise ValueError('saved recorder guard source drift')
-            text = text.replace(guard, '        # Explicitly authorized PRIVATE P23 diagnostic copy only.\n')
+    elif target != 'saved':
+        raise ValueError('unknown diagnostic source target')
     compile(text, str(source), 'exec')
     return text
 
@@ -202,6 +191,7 @@ def pipes(process):
 
 
 def spawn(root, work, role, mode, token, sha, job, debug=False):
+    require_safe_mode(mode)
     process = subprocess.Popen([sys.executable, '-I', '-S', '-B', str(Path(root)/'source/p23_forensic_runner.py'),
         '--internal', role, '--root', str(root), '--work', str(work), '--mode', mode, '--token', token],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -293,6 +283,7 @@ def collect_dump(root, work, token, sha, worker, job, row, mode, remaining):
 
 
 def supervise(root, work, mode, token, sha, outer=False):
+    require_safe_mode(mode)
     kind, role = ('outer', 'parent') if outer else ('child', 'worker')
     Job = safety.job_class(root)
     job = Job(LIMITS[kind+'_job_private_commit'], LIMITS[kind+'_processes'])
@@ -384,6 +375,7 @@ def validate_dump_request(request, worker_admission, token, sha):
 
 
 def controller(root, work, mode, sha):
+    require_safe_mode(mode)
     root, work = Path(root), Path(work)
     if work.resolve().parent != root.resolve() or work.is_symlink():
         raise ValueError('work directory must be a direct, unlinked child of this seal')
@@ -425,6 +417,7 @@ def controller(root, work, mode, sha):
 
 
 def internal(args):
+    require_safe_mode(args.mode)
     root, work = Path(args.root), Path(args.work)
     gate(work, args.internal, args.token)
     sha = os.environ['HYSO_CANDIDATE_SHA']
@@ -464,6 +457,8 @@ def main():
     parser.add_argument('--internal', choices=('parent', 'worker', 'collector'))
     parser.add_argument('--token')
     args = parser.parse_args()
+    if args.mode == 'native':
+        parser.error(B4_REASON)
     if args.prepare:
         m = prepare(args.prepare, args.design)
         print(json.dumps(dict(run_id=m['run_id'], manifest_sha256=digest(args.prepare/'manifest.json'), cuda_started=False)))

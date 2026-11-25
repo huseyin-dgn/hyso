@@ -1,5 +1,13 @@
 # P23 post-import admission
 
+Current policy (2026-11-25): `--mode native` and the direct native controller,
+supervisor, spawn and worker entries reject `BLOCKED_B4_UNRESOLVED` before
+admission, file writes or process creation. A manifest, prior authorization or
+environment override cannot enable CUDA saved-activation diagnostics. Generated
+CPU diagnostic adapters retain every production device guard. The admission
+workflow below remains a reference for the previous design and supported CPU
+fixtures; it does not authorize or enable the disabled native mode.
+
 This changes only the private forensic harness. The production CUDA saved-payload
 gate stays disabled and P23 stays PARTIAL. No CUDA execution is authorized by a
 CPU test, preflight result, retained review, or previous manifest authorization.
