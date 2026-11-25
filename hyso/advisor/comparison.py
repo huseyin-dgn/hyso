@@ -264,7 +264,21 @@ class CapturedCPUComparisonContract(ComparisonContract):
     physical RAM, dataset provenance, independent samples or a speedup.
     V1 captures keep the original ComparisonContract unchanged.
 
+    Returns:
+        A validated CapturedCPUComparisonContract for retained
+        CPU comparison evidence.
+
+    Raises:
+        AdvisorError: An unsupported metric, footprint policy,
+            or inherited comparison constraint is supplied.
+
+    Example:
+        Use CapturedCPUComparisonContract with the inherited
+        ComparisonContract arguments and a supported CPU metric.
+
     HYSo Guide: comparison.models
+    Offline: hyso docs show comparison.models --lang en
+    Open: hyso docs open comparison.models --lang en
     """
     footprint_policy: str = 'exact_logical_inventory_or_verified_checkpoint_size'
 

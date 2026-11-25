@@ -3173,6 +3173,14 @@
       "path": "hyso/advisor/profiles.py",
       "qualname": "BoundEvaluationReference"
     },
+    "hyso.advisor.CapturedCPUComparisonContract": {
+      "topic": "comparison.models",
+      "canonical": "hyso.advisor.comparison.CapturedCPUComparisonContract",
+      "kind": "class",
+      "origin": "hyso",
+      "path": "hyso/advisor/comparison.py",
+      "qualname": "CapturedCPUComparisonContract"
+    },
     "hyso.advisor.ComparisonContract": {
       "topic": "comparison.models",
       "canonical": "hyso.advisor.comparison.ComparisonContract",
@@ -3780,6 +3788,14 @@
       "origin": "hyso",
       "path": "hyso/advisor/comparison.py",
       "qualname": "compare_records"
+    },
+    "hyso.advisor.comparison.CapturedCPUComparisonContract": {
+      "topic": "comparison.models",
+      "canonical": "hyso.advisor.comparison.CapturedCPUComparisonContract",
+      "kind": "class",
+      "origin": "hyso",
+      "path": "hyso/advisor/comparison.py",
+      "qualname": "CapturedCPUComparisonContract"
     },
     "hyso.advisor.comparison.ComparisonContract": {
       "topic": "comparison.models",
