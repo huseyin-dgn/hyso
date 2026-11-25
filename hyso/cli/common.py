@@ -116,7 +116,7 @@ def factory_kwargs(args):
 
 def presentation_options(parser, *, formats=('json', 'markdown', 'html'), levels=True):
     parser.add_argument('--format', choices=formats, default='json', help='Export/render format (default: json).')
-    parser.add_argument('--language', choices=('tr', 'en'), default='tr', help='Presentation language (default: tr).')
+    parser.add_argument('--language', choices=('tr', 'en', 'de', 'es'), default='tr', help='Presentation language (default: tr).')
     if levels:
         parser.add_argument('--level', choices=('beginner', 'technical', 'expert'), default='technical', help='Explanation detail.')
 
