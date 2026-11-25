@@ -12,16 +12,16 @@ specific failing instruction. A hook/autograd/runtime interaction is a hypothesi
 The previously fixed Python tensor-version check is not proved to cause this
 native exit. No crash was reproduced by this task.
 
-| Domain | Meaning and exclusions |
-|---|---|
-| Parameter | Registered tensor logical bytes; frozen bytes are a subset |
-| Gradient | Currently materialized gradients; absent and zeroed gradients differ |
-| Optimizer | Native SGD/Adam/AdamW tensor state, including lazy creation; excludes Python heap/EMA/scaler/scheduler |
-| Saved payload | CPU autograd saved-slot logical bytes and deduplicated storage extents, including registered aliases; not all activations or physical memory |
-| Process RSS | Main process working set sampled through native backend; includes runtime/observer and can miss transients |
-| Private commit | Separate OS Job lifetime peaks, including startup/import/factory and descendants for Job aggregate; not RSS or fit-only memory |
-| CUDA allocated/reserved | Selected process/device native allocator counters; owned reset-window peaks only when explicitly admitted; not physical VRAM |
-| Artifact | Serialized file length, not process/training memory; no RAM estimate from checkpoint size |
+| Domain                  | Meaning and exclusions                                                                                                                       |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Parameter               | Registered tensor logical bytes; frozen bytes are a subset                                                                                   |
+| Gradient                | Currently materialized gradients; absent and zeroed gradients differ                                                                         |
+| Optimizer               | Native SGD/Adam/AdamW tensor state, including lazy creation; excludes Python heap/EMA/scaler/scheduler                                       |
+| Saved payload           | CPU autograd saved-slot logical bytes and deduplicated storage extents, including registered aliases; not all activations or physical memory |
+| Process RSS             | Main process working set sampled through native backend; includes runtime/observer and can miss transients                                   |
+| Private commit          | Separate OS Job lifetime peaks, including startup/import/factory and descendants for Job aggregate; not RSS or fit-only memory               |
+| CUDA allocated/reserved | Selected process/device native allocator counters; owned reset-window peaks only when explicitly admitted; not physical VRAM                 |
+| Artifact                | Serialized file length, not process/training memory; no RAM estimate from checkpoint size                                                    |
 
 Do not add these domains. Logical views and components can alias. A numeric zero
 is valid for an observed empty gradient/optimizer component; missing CPU/CUDA,

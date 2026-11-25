@@ -256,8 +256,17 @@ def test_roundtrip_no_clobber_immutable_and_invalid_options(tmp_path):
     assert advisor.RecommendationReport.from_json(path).to_json() == result.to_json()
     with pytest.raises(FileExistsError): result.to_json(path)
     with pytest.raises(FrozenInstanceError): result._payload = "forged"
-    for kw in (dict(language="de"), dict(level="advanced")):
-        with pytest.raises(advisor.AdvisorError): result.to_display_dict(**kw)
+    # DE/ES are supported display languages. Retained recommendations stay immutable.
+    baseline = result.to_json()
+    for language in ("de", "es"):
+        display = result.to_display_dict(language=language)
+        assert display["language"] == language
+        assert display["format"] == "hyso.advisor.recommendations.display"
+    assert result.to_json() == baseline
+    # Unsupported languages and explanation levels remain rejected.
+    for kw in (dict(language="fr"), dict(language="TR"), dict(level="advanced")):
+        with pytest.raises(advisor.AdvisorError):
+            result.to_display_dict(**kw)
     with pytest.raises(advisor.AdvisorError): advisor.recommend({})
     with pytest.raises(advisor.AdvisorError): advisor.recommend(report(), request={})
     assert typing.get_type_hints(advisor.recommend)["return"] is advisor.RecommendationReport

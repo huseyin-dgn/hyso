@@ -209,6 +209,8 @@ DEVELOPMENT_MODULES |= {
     "hyso/models/_profile.py",
     "hyso/models/_development.py",
     "hyso/models/regularization.py",
+    "hyso/performance/comparison_capture.py",
+    "hyso/advisor/cpu_comparison.py",
 }
 PROFILE = json.loads((ROOT / "commercial-profile.json").read_text(encoding="utf-8"))
 MODULES = set(PROFILE["python_files"])
@@ -300,7 +302,7 @@ def test_canonical_packaging_configuration():
     assert {
         path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")
     } == DEVELOPMENT_MODULES
-    assert len(MODULES) == 170
+    assert len(MODULES) == 172
     assert MODULES.isdisjoint(PROFILE["excluded_python_files"])
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()

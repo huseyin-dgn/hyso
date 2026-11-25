@@ -22,8 +22,7 @@ from ..models.graph import GraphModel, GraphModelBuilder
 from ..models.output import GraphTensorOutput
 from ..training.data import NamedTargetDataset, NamedTensorDataset
 
-if _typing.TYPE_CHECKING:
-    from .model_comparison import ModelComparisonResult, ModelComparisonSource
+from .model_comparison import ModelComparisonResult, ModelComparisonSource
 
 
 class _RequiredGraphHeadSpec(_typing.TypedDict):

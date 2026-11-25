@@ -22,6 +22,60 @@ from .planning import PlannedFinding
 from .resolver import NativeObservation
 from ._recommendation_text import AREAS, AREA_FEATURES, RECIPES, recipe_text
 
+
+# Presentation-only translations. Canonical rule identifiers, metrics, evidence and
+# stored limitations are not translated or modified.
+_CARD_LOCALE = {
+    'de': {
+        'areas': {'inference':'Inferenz', 'training':'Training', 'memory':'Arbeitsspeicher',
+                  'model_architecture':'Modellarchitektur', 'deployment':'Bereitstellung',
+                  'data_pipeline':'Datenpipeline'},
+        'coverage':'Dies ist eine Prüfung der Nachweisabdeckung, kein gemessener Engpass oder nachgewiesener Leistungsgewinn.',
+        'blocked':'Klären Sie zunächst die Auswahl der Nachweise und die Vergleichbarkeit; wählen Sie noch keine Änderung.',
+        'step':'Wählen Sie die Kennung des Quelldatensatzes, prüfen Sie dessen Kontext und bewerten Sie die Empfehlungen erneut.',
+        'limitations': [
+            'Es wird nur eine manuelle Prüfung angeboten; Modell, Optimierer, Datenpipeline und Trainingsablauf werden nicht verändert.',
+            'Eine evidenzbasierte Nutzen-Kosten-Rangfolge wurde nicht ermittelt; die Priorität der Nutzenden bleibt separat.',
+            'Eine Abdeckungsangabe ist keine Optimierungsfreigabe. Resolver v1 unterstützt nur P01/P02/P03/P08/P10/P11/P26.',
+            'Bei der Quellenvalidierung werden externe Artefakte nicht erneut gelesen und keine unabhängigen Verbesserungsnachweise erzeugt.',
+        ],
+    },
+    'es': {
+        'areas': {'inference':'Inferencia', 'training':'Entrenamiento', 'memory':'Memoria',
+                  'model_architecture':'Arquitectura del modelo', 'deployment':'Despliegue',
+                  'data_pipeline':'Canalización de datos'},
+        'coverage':'Esta es una revisión de cobertura de evidencias, no un cuello de botella medido ni una mejora demostrada.',
+        'blocked':'Aclare primero la selección de evidencias y la comparabilidad; no elija todavía ningún cambio.',
+        'step':'Seleccione el identificador del registro de origen, valide su contexto y vuelva a revisar las recomendaciones.',
+        'limitations': [
+            'Solo se ofrece una revisión manual; no se modifican el modelo, el optimizador, la canalización de datos ni el entrenamiento.',
+            'No se ha establecido una clasificación de beneficios y costes basada en evidencias; la prioridad del usuario permanece aparte.',
+            'La cobertura no implica autorización para optimizar. Resolver v1 solo admite P01/P02/P03/P08/P10/P11/P26.',
+            'La validación de origen no vuelve a leer artefactos externos ni crea pruebas independientes de mejora.',
+        ],
+    },
+}
+
+
+def _area_label(area, language):
+    if language in _CARD_LOCALE:
+        return _CARD_LOCALE[language]['areas'][area]
+    return AREAS[area][0 if language == 'tr' else 1]
+
+
+def _card_message(kind, language):
+    if language in _CARD_LOCALE:
+        return _CARD_LOCALE[language][kind]
+    original = {
+        'coverage': ('Bu bir kapsam incelemesidir; ölçülmüş darboğaz veya iyileşme tespiti değildir.',
+                     'This is a coverage review, not a measured bottleneck or demonstrated improvement.'),
+        'blocked': ('Önce kanıt seçimini ve karşılaştırma uygunluğunu açıklığa kavuşturun; değişiklik seçmeyin.',
+                    'Clarify evidence selection and comparison eligibility first; do not select a change.'),
+        'step': ('Kaynak kayıt kimliğini seçin, bağlamı doğrulayın ve önerileri yeniden inceleyin.',
+                 'Select the source record identity, validate its context and review recommendations again.'),
+    }
+    return original[kind][0 if language == 'tr' else 1]
+
 _MAX_BYTES = 128 * 1024**2
 _RULE_RECIPES = {
     "plan.latency-stage": "latency", "plan.batch-throughput": "batch",
@@ -283,14 +337,14 @@ class RecommendationReport:
         data, _, _ = read_json(path, max_bytes=_MAX_BYTES)
         return cls(data)
 
-    def to_display_dict(self, *, language: _typing.Literal['tr', 'en'] = "tr", level: _typing.Literal['beginner', 'technical', 'expert'] = "technical") -> dict[str, Any]:
-        """Explain decisions in tr/en at beginner/technical/expert detail levels.
+    def to_display_dict(self, *, language: _typing.Literal['tr', 'en', 'de', 'es'] = "tr", level: _typing.Literal['beginner', 'technical', 'expert'] = "technical") -> dict[str, Any]:
+        """Explain decisions in tr/en/de/es at beginner/technical/expert levels.
 
         Native numbers, units, protocol bindings and original rule text remain
         unchanged. Coverage prompts explicitly distinguish gaps from measurements.
 
         Args:
-            language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'tr'.
+            language (str): Presentation language supported by this API, tr/en/de/es for this presentation; guide languages do not expand unrelated APIs. Default: 'tr'.
             level (str): Existing beginner, technical or expert presentation detail level. Default: 'technical'.
 
         Returns:
@@ -309,7 +363,7 @@ class RecommendationReport:
         Open: hyso docs open advisor.recommendations --lang en
         """
         from .presentation import to_display_dict
-        if language not in ("tr", "en") or level not in ("beginner", "technical", "expert"):
+        if language not in ("tr", "en", "de", "es") or level not in ("beginner", "technical", "expert"):
             raise AdvisorError("unsupported_recommendation_presentation")
         data = self.to_dict()
         from ..reporting.catalog import feature_explanations
@@ -327,17 +381,11 @@ class RecommendationReport:
         for item in data["recommendations"]:
             card = dict(item, **recipe_text(item["recipe"], language, level))
             if item["original_finding"] is None:
-                card["detected"] = ("Bu bir kapsam incelemesidir; ölçülmüş darboğaz veya iyileşme tespiti değildir."
-                                    if language == "tr" else
-                                    "This is a coverage review, not a measured bottleneck or demonstrated improvement.")
+                card["detected"] = _card_message('coverage', language)
             if item["blocked_by"]:
-                card["change"] = ("Önce kanıt seçimini ve karşılaştırma uygunluğunu açıklığa kavuşturun; değişiklik seçmeyin."
-                                  if language == "tr" else
-                                  "Clarify evidence selection and comparison eligibility first; do not select a change.")
-                card["steps"] = (("Kaynak kayıt kimliğini seçin, bağlamı doğrulayın ve önerileri yeniden inceleyin.",)
-                                 if language == "tr" else
-                                 ("Select the source record identity, validate its context and review recommendations again.",))
-            card["area_label"] = AREAS[item["area"]][0 if language == "tr" else 1]
+                card["change"] = _card_message('blocked', language)
+                card["steps"] = (_card_message('step', language),)
+            card["area_label"] = _area_label(item["area"], language)
             identity = data["content_sha256"] + "-" + item["recommendation_id"]
             card["recommendation_anchor"] = "recommendation-" + identity
             card["evidence_anchor"] = "evidence-" + identity
@@ -353,22 +401,22 @@ class RecommendationReport:
                 language=language)["comparison_observations"]
         return dict(format="hyso.advisor.recommendations.display", language=language, level=level,
                     comparison_observations=comparison_observations,
-                    recommendations=cards, areas=[dict(a, label=AREAS[a["area"]][0 if language == "tr" else 1])
+                    recommendations=cards, areas=[dict(a, label=_area_label(a["area"], language))
                                                    for a in data["areas"]],
                     sources=data["sources"], comparison=data["source"]["data"] if data["source"]["kind"] == "comparison" else None,
-                    priority_status=data["priority_status"], limitations=data["limitations"] if language == "en" else [
+                    priority_status=data["priority_status"], limitations=(_CARD_LOCALE[language]["limitations"] if language in _CARD_LOCALE else data["limitations"] if language == "en" else [
                         "Yalnız manuel inceleme sunulur; model, optimizer, veri hattı veya eğitim akışı değiştirilmez.",
                         "Kanıta dayalı fayda/maliyet sıralaması belirlenmedi; kullanıcı önceliği ayrı korunur.",
                         "Kapsam kaydı optimizasyon uygunluğu değildir. Resolver v1 yalnız P01/P02/P03/P08/P10/P11/P26'yı destekler.",
-                        "Kaynak doğrulaması dış artifact dosyalarını yeniden okumaz ve bağımsız iyileşme kanıtı oluşturmaz."])
+                        "Kaynak doğrulaması dış artifact dosyalarını yeniden okumaz ve bağımsız iyileşme kanıtı oluşturmaz."]))
 
-    def to_markdown(self, path: str | Path | None = None, *, language: _typing.Literal['tr', 'en'] = "tr",
+    def to_markdown(self, path: str | Path | None = None, *, language: _typing.Literal['tr', 'en', 'de', 'es'] = "tr",
                     level: _typing.Literal['beginner', 'technical', 'expert'] = "technical", overwrite: bool = False) -> str:
         """Render through the existing Stage 8 presentation contract.
 
         Args:
             path (str | Path | None): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
-            language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'tr'.
+            language (str): Presentation language supported by this API, tr/en/de/es for this presentation; guide languages do not expand unrelated APIs. Default: 'tr'.
             level (str): Existing beginner, technical or expert presentation detail level. Default: 'technical'.
             overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
 
@@ -390,13 +438,13 @@ class RecommendationReport:
         from ..reporting import create_report
         return create_report(self, language=language, level=level).to_markdown(path, overwrite=overwrite)
 
-    def to_html(self, path: str | Path | None = None, *, language: _typing.Literal['tr', 'en'] = "tr",
+    def to_html(self, path: str | Path | None = None, *, language: _typing.Literal['tr', 'en', 'de', 'es'] = "tr",
                 level: _typing.Literal['beginner', 'technical', 'expert'] = "technical", overwrite: bool = False) -> str:
         """Export portable HTML with source evidence and manual verification links.
 
         Args:
             path (str | Path | None): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
-            language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'tr'.
+            language (str): Presentation language supported by this API, tr/en/de/es for this presentation; guide languages do not expand unrelated APIs. Default: 'tr'.
             level (str): Existing beginner, technical or expert presentation detail level. Default: 'technical'.
             overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
 

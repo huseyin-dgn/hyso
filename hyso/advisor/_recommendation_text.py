@@ -139,8 +139,20 @@ RECIPES = {
 }
 
 
-def recipe_text(code, language: _typing.Literal['tr', 'en'], level: _typing.Literal['beginner', 'technical', 'expert']):
-    """Return bilingual manual steps without altering the originating rule decision."""
+def recipe_text(code, language: _typing.Literal['tr', 'en', 'de', 'es'], level: _typing.Literal['beginner', 'technical', 'expert']):
+    """Return localized manual steps without altering the originating rule decision."""
+    if language in ('de', 'es'):
+        if level not in ('beginner', 'technical', 'expert'):
+            raise ValueError('unsupported_explanation_level')
+        title, detected, change, why, risks, steps, verification = LOCALIZED_RECIPES[language][code]
+        if level == 'technical':
+            detected += (' Zahlenwerte sind mit nativen Einheiten und Datensatzkennungen zu lesen.' if language == 'de' else
+                         ' Interprete las cifras con unidades nativas e identificadores de registros.')
+        elif level == 'expert':
+            detected += (' Native Bezüge, Regelversionen und Vergleichsgrenzen bleiben in den Quelldetails erhalten.' if language == 'de' else
+                         ' Se conservan vínculos nativos, versiones de reglas y límites de comparación en los detalles.')
+        return dict(title=title, detected=detected, change=change, why=why, risks=risks,
+                    steps=steps, verification=verification)
     index = 0 if language == "tr" else 1
     recipe = RECIPES[code]
     text = {key: recipe[key][index] for key in ("title", "detected", "change", "why", "risks", "steps", "verification")}
@@ -151,3 +163,254 @@ def recipe_text(code, language: _typing.Literal['tr', 'en'], level: _typing.Lite
         text["detected"] += (" Native bağlar, orijinal kural/sürüm ve karşılaştırma kapıları kaynak ayrıntılarında korunur." if language == "tr" else
                              " Native bindings, original rule/version and comparison gates are retained in source details.")
     return text
+
+
+# Additional display-only translations; original rule decisions and bilingual recipes are retained.
+LOCALIZED_RECIPES = {'de': {'architecture': ('Architekturprofilierung prüfen',
+                         'Die gespeicherte Zähl- und Profilabdeckung wird angezeigt.',
+                         'Vor Änderungen an Schichten Struktur-, Kosten- und Qualitätsbelege prüfen.',
+                         'Verknüpfte Profile helfen, relevante Komponenten zu bestimmen.',
+                         'Schichtänderungen können Qualität, Checkpoint-Kompatibilität und Formen '
+                         'beeinflussen.',
+                         ('P11-Größe mit P12-Zählung und P13/P14-Profilen abgleichen.',
+                          'Funktionale Operationen und unbekannte Operatorkosten dokumentieren.',
+                          'Fehlende Qualitäts- und Profilbelege vor einer Kandidatenauswahl klären.'),
+                         ('P01/P02/P11/P12/P13/P14 und P26 unter passenden Bedingungen prüfen.',
+                          'Logische Zählungen getrennt von tatsächlicher Laufzeit validieren.')),
+        'batch': ('Voraussetzungen für einen begrenzten Batch-Versuch klären',
+                  'Die Durchsatzregel hat auf Basis verknüpfter Belege eine Prüfung oder einen bedingten '
+                  'Versuch vorgeschlagen.',
+                  'Zuerst P06-Ergebnisse prüfen; gegebenenfalls nur die Batchgröße im Versuchsplan '
+                  'variieren.',
+                  'Die Batchgröße kann den Durchsatz beeinflussen; die Wirkung muss am Referenzzustand '
+                  'geprüft werden.',
+                  'Latenz, RSS, OOM-Risiko und Qualität können sich ändern.',
+                  ('Referenzzustand, Daten, Gerät, Präzision, Backend und Zeitmessung festhalten.',
+                   'P06-Punkte prüfen und ein begrenztes Versuchsbudget festlegen.',
+                   'Fehlende Qualitäts- und Speicherbedingungen klären; Änderungen erst danach manuell '
+                   'durchführen.'),
+                  ('P02-Abschlussstatus, P01-P95, P10 und verknüpfte P26-Qualität prüfen.',
+                   'Harte Ziele und ComparisonContract-Grenzen beibehalten.',
+                   'Nach der Exploration unabhängige Bestätigungsmessungen auswerten.')),
+        'bindings': ('Quellen- und Vergleichsbezüge klären',
+                     'In der Eignungs- oder Zielprüfung fehlen erforderliche Zuordnungen.',
+                     'Den relevanten Datensatz auswählen und native Quelle, Protokoll und '
+                     'Laufzeitbedingungen prüfen.',
+                     'Explizite Zuordnungen verhindern Entscheidungen anhand unpassender Messumfänge.',
+                     'Unvereinbare Belege können zu falschen Qualitäts- oder Kapazitätsschlüssen führen.',
+                     ('Fehlende und vom Nutzer deklarierte Felder auflisten.',
+                      'Modell-, Daten-, Geräte-, Präzisions-, Backend- und Zeitbezüge prüfen.',
+                      'Fehlende Belege in einer gesonderten Messanfrage anfordern.'),
+                     ('Eignungsprüfung und ComparisonContract erneut anwenden.',
+                      'Vor Klärung der Unvereinbarkeit keinen Gewinner bestimmen.')),
+        'deployment': ('Deployment-Unterstützung prüfen',
+                       'Gespeicherte Geräte-, Provider- und Serviceabdeckung wird angezeigt.',
+                       'Vor Backend- oder Exportwechsel tatsächliche Node-Zuordnung und Servicebedingungen '
+                       'prüfen.',
+                       'Native Zuordnungen und Gerätebelege decken unbelegte Backend-Annahmen auf.',
+                       'Backendwechsel können Operatorunterstützung, numerische Qualität und Startkosten '
+                       'beeinflussen.',
+                       ('P35-Node-Ereignisse und Zuordnungsunsicherheit prüfen.',
+                        'P34-Gerätebedingungen und P15/P16/P30-Abdeckung prüfen.',
+                        'Fehlende Zeit- und Energiebelege für Serviceziele erfassen.'),
+                       ('P01/P02/P05/P26/P30/P34/P35 unter kompatiblen Bedingungen prüfen.',
+                        'Für Langzeit- und Energieaussagen P31/P32/P33-Verträge erhalten.')),
+        'goals': ('Widersprüchliche Ziele klären',
+                  'Die Zielvalidierung fand unvereinbare harte Bedingungen im selben Umfang.',
+                  'Ziele entsprechend der Nutzerabsicht überarbeiten.',
+                  'Konsistente Ziele sind für die Kandidatenbewertung erforderlich.',
+                  'Geänderte Ziele verändern die Akzeptanzregeln und verlangen eine Nutzerentscheidung.',
+                  ('Widersprüchliche Zielkennungen und Protokollzuordnungen prüfen.',
+                   'Gewünschte Bedingungen mit dem Nutzer klären.',
+                   'Überarbeitete Ziele mit dem bestehenden Validator prüfen.'),
+                  ('Sicherstellen, dass validate_request keine harten Widersprüche mehr meldet.',
+                   'Zielbewertungen anhand der einzelnen Datensätze erneut prüfen.')),
+        'latency': ('Grenzen der Latenzphasen prüfen',
+                    'Die vorhandene Regel verweist auf gespeicherte Latenzmessungen zur Phasenanalyse.',
+                    'Gespeicherte Phasen prüfen und die weiter zu untersuchende Komponente auswählen.',
+                    'Phasengrenzen trennen Modellkosten von Datenpipeline-Kosten.',
+                    'Profiling-Overhead und unterschiedliche Uhren können Ergebnisse beeinflussen.',
+                    ('Modell-, Eingabe- und Protokollkennungen dokumentieren.',
+                     'P03/P04-Phasengrenzen und Zeitquellen prüfen.',
+                     'Für fehlende Phasen eine begrenzte Messung planen.'),
+                    ('P01 und passende P03/P04-Datensätze im gleichen Umfang bewerten.',
+                     'Zeitdomänen getrennt halten und ausreichende Tail-Stichproben sicherstellen.')),
+        'memory': ('Speicherbereiche und Lebensdauern prüfen',
+                   'Gespeicherter Beleg- und Umfangsstatus bleibt für die Speicheranalyse erhalten.',
+                   'Prozess-RSS, Allocator und logische Tensorwerte getrennt untersuchen.',
+                   'Unterschiedliche Speicherbereiche verlangen unterschiedliche Erklärungen.',
+                   'Abgetastete Spitzen können kurzzeitige Peaks übersehen; Maßnahmen beeinflussen '
+                   'Laufzeit und Qualität.',
+                   ('P09-Allocator, P10-RSS und P11-logische Größe trennen.',
+                    'P23-Zustand/Aktivierungen und P32-Verlauf nach Verfügbarkeit prüfen.',
+                    'Fehlende Allokations- und Lebensdauerbelege bestimmen.'),
+                   ('Gleiche Speicherbereiche, Zeitfenster und Besitzbedingungen messen.',
+                    'Logische Bytes nicht vom RSS abziehen und aus Wachstum allein kein Leck ableiten.')),
+        'pipeline': ('Wartezeiten der Datenpipeline prüfen',
+                     'Die Abdeckung gespeicherter Phasen- und Dateneingabebelege wird angezeigt.',
+                     'Vor Worker-, Prefetch- oder Vorverarbeitungsänderungen Warte- und Phasenbelege '
+                     'prüfen.',
+                     'Phasen- und Workergrenzen helfen, Eingabekosten richtig einzuordnen.',
+                     'Worker- und Prefetchänderungen können RAM, Datenreihenfolge, Reproduzierbarkeit und '
+                     'Latenz beeinflussen.',
+                     ('P21-Wartezeiten des Hauptthreads von Worker- und Prefetchzeiten trennen.',
+                      'P03/P04-Phasen und gegebenenfalls P15-Transferuhren prüfen.',
+                      'Für fehlende Phasen einen begrenzten Versuch mit nur einer Variablen planen.'),
+                     ('P21 und passende Phasen bei gleichen Daten und Samplern prüfen.',
+                      'Durchsatz-, Latenz- und RAM-Wirkungen mit P01/P02/P10/P22 abgleichen.')),
+        'precision': ('Präzisionsunterstützung und Qualitätsbelege prüfen',
+                      'Die bestehende Regel verlangt eine Verknüpfung von Präzisionsmessungen mit '
+                      'Qualitätsbelegen.',
+                      'Datentyp-, Batch- und Qualitätsbelege für jeden unterstützten Punkt prüfen.',
+                      'Leistung und Qualität müssen zusammen bewertet werden.',
+                      'Präzisionsänderungen können Genauigkeit und Operatorunterstützung beeinflussen.',
+                      ('Unterstützungs- und Fehlerstatus der P08-Punkte getrennt bewahren.',
+                       'P28/P26-Daten- und Evaluatorbezüge prüfen.',
+                       'Keine Präzisionsänderung auswählen, solange Voraussetzungen fehlen.'),
+                      ('Qualität und Laufzeit bei identischen Daten vergleichen.',
+                       'Qualitätsgrenzen und native Vergleichskriterien anwenden.')),
+        'quality': ('Qualitätsbedingungen vor Änderungen prüfen',
+                    'Die Qualitätsregel fordert eine Prüfung von Referenz- und Kandidatendaten.',
+                    'Qualitätskriterien vor Architektur- oder Präzisionsänderungen festlegen.',
+                    'Verknüpfte Qualitätsbelege ermöglichen eine Prüfung anhand der Nutzerziele.',
+                    'Wiederholte Auswahl anhand von Evaluationsdaten kann die Bewertung verzerren.',
+                    ('Modell, Checkpoint, Kohorte, Vorverarbeitung, Split und Klassenmapping prüfen.',
+                     'Qualitätsgrenzen des Nutzers dokumentieren.',
+                     'Benötigte Profil- und Strukturbelege ergänzen.'),
+                    ('P26/P28 mit gleichen Daten und Evaluatorbedingungen prüfen.',
+                     'Vergleichbarkeit und unabhängige Bestätigung beibehalten.')),
+        'training': ('Belege zu Trainingsphasen prüfen',
+                     'Gespeicherte Trainingsabdeckung und fehlende Belege werden aufgelistet.',
+                     'Vor Optimizer- oder Trainingsablaufänderungen native Phasen- und Updatebelege '
+                     'prüfen.',
+                     'Phasen-, Durchsatz-, Gradienten- und Speicherbelege helfen Kosten einzugrenzen.',
+                     'Akkumulation, Optimizer und Präzision können Updates, Konvergenz und Speicher '
+                     'beeinflussen.',
+                     ('P19/P20-Zeiten von UX-Beobachtungsintervallen trennen.',
+                      'P22-Stichproben, P23-Speicher und P25-Updates prüfen.',
+                      'Fehlende native Trainingsbelege mit begrenztem Messumfang planen.'),
+                     ('P19/P20/P22/P23/P25 bei gleichen Daten, Updates, Gerät und Präzision prüfen.',
+                      'Qualität anhand P26 und expliziter Nutzerziele prüfen.'))},
+ 'es': {'architecture': ('Revisar perfilado de arquitectura',
+                         'Se presenta la cobertura de conteos y perfiles registrados.',
+                         'Revisar estructura, coste y calidad antes de modificar capas.',
+                         'Los perfiles vinculados ayudan a identificar componentes relevantes.',
+                         'Cambiar capas puede afectar calidad, compatibilidad de checkpoints y formas '
+                         'admitidas.',
+                         ('Comparar tamaño P11, conteo P12 y perfiles P13/P14.',
+                          'Registrar operaciones funcionales y costes de operadores desconocidos.',
+                          'Identificar evidencia faltante antes de seleccionar una arquitectura '
+                          'candidata.'),
+                         ('Evaluar P01/P02/P11/P12/P13/P14 y P26 en condiciones equivalentes.',
+                          'Validar los conteos lógicos por separado frente al tiempo real.')),
+        'batch': ('Completar requisitos para una prueba acotada del lote',
+                  'La regla de rendimiento generó una revisión o una prueba condicional basada en '
+                  'evidencia vinculada.',
+                  'Revisar primero P06; si hay candidato condicional, variar solo el tamaño del lote.',
+                  'El tamaño de lote puede afectar la capacidad; verificar el efecto frente a la '
+                  'referencia.',
+                  'Pueden cambiar latencia, RSS, riesgo de OOM y calidad.',
+                  ('Fijar estado de referencia, datos, dispositivo, precisión, backend y cronometraje.',
+                   'Revisar P06 y definir puntos finitos y presupuesto de la prueba.',
+                   'Resolver las condiciones de calidad y memoria antes de aplicar cambios manualmente.'),
+                  ('Revisar el registro P02, P95 de P01, P10 y la calidad P26 vinculada.',
+                   'Conservar metas estrictas y restricciones de ComparisonContract.',
+                   'Evaluar capturas independientes de confirmación tras la exploración.')),
+        'bindings': ('Aclarar asociaciones de fuentes y comparaciones',
+                     'Faltan vínculos en los controles actuales de elegibilidad u objetivos.',
+                     'Seleccionar el registro y validar fuente nativa, protocolo y ejecución.',
+                     'Los vínculos explícitos evitan decisiones basadas en alcances incompatibles.',
+                     'La evidencia incompatible puede dar conclusiones erróneas sobre calidad o capacidad.',
+                     ('Enumerar campos faltantes y declarados por el usuario.',
+                      'Revisar modelo, datos, dispositivo, precisión, backend y tiempos nativos.',
+                      'Solicitar una medición con alcance propio si falta evidencia.'),
+                     ('Repetir controles de elegibilidad y ComparisonContract.',
+                      'No elegir ganador ni preferencia antes de resolver incompatibilidades.')),
+        'deployment': ('Revisar capacidad de despliegue',
+                       'Se presenta la cobertura registrada de dispositivos, proveedores y servicios.',
+                       'Revisar ubicación real de nodos y condiciones del servicio antes de cambiar '
+                       'backend o exportación.',
+                       'La evidencia nativa ayuda a detectar suposiciones incorrectas del backend.',
+                       'Cambiar backend puede afectar operadores, calidad numérica y tiempo de inicio.',
+                       ('Revisar eventos P35 y dudas de asignación de nodos.',
+                        'Comprobar dispositivo P34 y cobertura P15/P16/P30.',
+                        'Registrar carencias de duración y energía exigidas por el servicio.'),
+                       ('Validar P01/P02/P05/P26/P30/P34/P35 bajo condiciones compatibles.',
+                        'Conservar contratos P31/P32/P33 para afirmaciones de duración y energía.')),
+        'goals': ('Resolver objetivos contradictorios',
+                  'El validador encontró condiciones estrictas contradictorias en el mismo alcance.',
+                  'Reformular los objetivos según la intención del usuario.',
+                  'Se necesitan objetivos coherentes para evaluar cambios candidatos.',
+                  'Cambiar objetivos modifica la política de aceptación y exige una decisión del usuario.',
+                  ('Examinar identificadores de objetivos y protocolos en conflicto.',
+                   'Aclarar con el usuario las condiciones deseadas.',
+                   'Validar el conjunto de objetivos revisado.'),
+                  ('Comprobar que validate_request resuelva los conflictos estrictos.',
+                   'Volver a revisar las evaluaciones de objetivos por registro.')),
+        'latency': ('Revisar los límites de las etapas de latencia',
+                    'La regla existente remite la evidencia de latencia registrada a una revisión por '
+                    'etapas.',
+                    'Revisar las etapas registradas y seleccionar el componente que requiere '
+                    'investigación.',
+                    'Los límites separan correctamente los costes del modelo y de la canalización.',
+                    'La sobrecarga del perfilado y los distintos relojes pueden alterar los resultados.',
+                    ('Registrar identificadores del modelo, entrada y protocolo.',
+                     'Revisar los límites y relojes de P03/P04.',
+                     'Planificar una medición delimitada para las etapas sin evidencia.'),
+                    ('Evaluar P01 y los registros P03/P04 equivalentes en el mismo alcance.',
+                     'Mantener los dominios temporales separados y muestras suficientes en la cola.')),
+        'memory': ('Revisar dominios y vida útil de memoria',
+                   'Se conserva el estado de evidencia y alcance para revisar la memoria.',
+                   'Examinar por separado RSS del proceso, asignador y tensores lógicos.',
+                   'Cada dominio requiere interpretar el coste según su mecanismo.',
+                   'El muestreo puede omitir picos breves; reducir memoria puede afectar tiempo y calidad.',
+                   ('Separar P09 del asignador, RSS de P10 y tamaño lógico de P11.',
+                    'Revisar P23 de estado/activaciones y P32 de continuidad cuando existan.',
+                    'Identificar evidencia faltante sobre asignación y vida útil.'),
+                   ('Medir de nuevo con dominios, ventanas y titularidad equivalentes.',
+                    'No restar bytes lógicos del RSS ni diagnosticar fugas solo por crecimiento.')),
+        'pipeline': ('Revisar tiempos de espera de la canalización de datos',
+                     'Se presenta la cobertura de etapas y alimentación de datos registrada.',
+                     'Revisar esperas y etapas antes de cambiar workers, prefetch o preprocesado.',
+                     'Los límites de etapas y workers ayudan a identificar costes de entrada.',
+                     'Cambiar workers o prefetch puede afectar RAM, orden, reproducibilidad y latencia.',
+                     ('Separar esperas del hilo principal P21 de servicio de workers y prefetch.',
+                      'Revisar relojes de P03/P04 y transferencias P15 disponibles.',
+                      'Planificar una prueba acotada de una sola variable para etapas faltantes.'),
+                     ('Evaluar P21 y etapas relacionadas con los mismos datos y sampler.',
+                      'Comprobar capacidad, latencia y RAM con P01/P02/P10/P22.')),
+        'precision': ('Revisar capacidad de precisión y vínculos de calidad',
+                      'La regla solicita vincular los puntos de precisión registrados con evidencia de '
+                      'calidad.',
+                      'Comprobar tipos de datos, lotes y calidad de cada punto compatible.',
+                      'La revisión permite evaluar conjuntamente rendimiento y calidad.',
+                      'Cambiar la precisión puede afectar la exactitud y compatibilidad de operadores.',
+                      ('Conservar por separado estados de capacidad y error de P08.',
+                       'Revisar datos y evaluadores vinculados de P28/P26.',
+                       'No seleccionar cambios sin resolver las capacidades faltantes.'),
+                      ('Comparar calidad y tiempos con los mismos datos.',
+                       'Aplicar límites de calidad y restricciones de comparación nativa.')),
+        'quality': ('Validar condiciones de calidad antes de modificar',
+                    'La regla de calidad pide revisar los vínculos de datos de referencia y candidato.',
+                    'Definir criterios de calidad antes de cambiar arquitectura o precisión.',
+                    'La evidencia de calidad vinculada permite evaluar cambios según objetivos del '
+                    'usuario.',
+                    'La selección reiterada con datos de evaluación puede sesgar la aceptación.',
+                    ('Revisar modelo, checkpoint, cohorte, preprocesado, partición y clases.',
+                     'Registrar los límites de calidad del usuario.',
+                     'Completar evidencia de perfil y estructura antes de elegir cambios.'),
+                    ('Validar P26/P28 con datos y evaluadores equivalentes.',
+                     'Mantener reglas de comparabilidad y confirmación independiente.')),
+        'training': ('Revisar evidencia de las etapas de entrenamiento',
+                     'Se enumeran cobertura y carencias del entrenamiento registrado.',
+                     'Revisar etapas y actualizaciones nativas antes de cambiar optimizador o '
+                     'entrenamiento.',
+                     'Las métricas de etapas, rendimiento, gradientes y memoria permiten estudiar costes.',
+                     'Acumulación, optimizador y precisión pueden afectar actualizaciones, convergencia y '
+                     'memoria.',
+                     ('Separar tiempos P19/P20 de intervalos del observador UX.',
+                      'Revisar muestras P22, memoria P23 y actualizaciones P25.',
+                      'Planificar mediciones delimitadas para evidencia nativa faltante.'),
+                     ('Evaluar P19/P20/P22/P23/P25 con datos, actualizaciones, equipo y precisión '
+                      'equivalentes.',
+                      'Comprobar calidad con P26 y metas explícitas del usuario.'))}}

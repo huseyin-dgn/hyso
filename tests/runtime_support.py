@@ -26,7 +26,7 @@ def make_cpu(mode='normal', delay=.005):
             if mode=='retain':
                 tensor=torch.ones(32768);self.retention_tracker.watch(tensor,label='allocation-'+str(self.calls));self.held.append(tensor)
             if mode=='release':self.held.clear()
-            time.sleep(delay+min(self.calls//20,5)*.002 if mode=='slowdown' else delay)
+            time.sleep(delay+min(self.calls//10,20)*.004 if mode=='slowdown' else delay)
             return base.step()
         def close(self):
             if mode=='close_hang':time.sleep(60)

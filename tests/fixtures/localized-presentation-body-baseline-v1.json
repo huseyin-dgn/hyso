@@ -1,0 +1,80 @@
+{
+  "format": "hyso.test.presentation_body_baseline",
+  "version": 1,
+  "scope": "Reviewed DE/ES presentation additions after UX-05; native engine baseline remains unchanged.",
+  "evidence": "Existing 251-case four-language regression and 36-report acceptance, reverified separately on 2026-11-25.",
+  "functions": [
+    {
+      "path": "hyso/advisor/_recommendation_text.py",
+      "function": "recipe_text",
+      "source_sha256": "69c0d7645b30f451f15b3dbb73f92d1aff312872e7fd720b6fc971c839f44039",
+      "normalized_body_sha256": "ccfc84e34f19e4f111855c9ba6185ba4e14cffac39d5983fc11a604e062baf6f"
+    },
+    {
+      "path": "hyso/advisor/model_comparison_presentation.py",
+      "function": "to_display_dict",
+      "source_sha256": "9431b7fca838e82d0887dcadc188c002ed7a5bba4812c24a25e5a13f56f2277e",
+      "normalized_body_sha256": "dc943198eeecd85b589c155041e26ddadb8300031d1d5d492c832a9e71136569"
+    },
+    {
+      "path": "hyso/advisor/model_comparison_presentation.py",
+      "function": "to_markdown",
+      "source_sha256": "9431b7fca838e82d0887dcadc188c002ed7a5bba4812c24a25e5a13f56f2277e",
+      "normalized_body_sha256": "86231ab3a2caebb14dafd8629938d1c0a031405860d6c97cda4db2c5b560e993"
+    },
+    {
+      "path": "hyso/advisor/presentation.py",
+      "function": "_number",
+      "source_sha256": "9c1f44998caa329d773d56cddc20bf06f83341b824e94caf87bea23fb5e21ae9",
+      "normalized_body_sha256": "19090ad182b0abc08f5413af0e9fcb9ac2c6886ef30367c367ec354d61b9e0fb"
+    },
+    {
+      "path": "hyso/advisor/presentation.py",
+      "function": "_value",
+      "source_sha256": "9c1f44998caa329d773d56cddc20bf06f83341b824e94caf87bea23fb5e21ae9",
+      "normalized_body_sha256": "61ed288a331b7066b77ef6b0b7ca349dd2a517488357681835614a3deec76153"
+    },
+    {
+      "path": "hyso/advisor/presentation.py",
+      "function": "_status",
+      "source_sha256": "9c1f44998caa329d773d56cddc20bf06f83341b824e94caf87bea23fb5e21ae9",
+      "normalized_body_sha256": "9d128b95f2ff29d75e72aa714e144eb0eda4a0900637726fb5a7b7263ef3fe30"
+    },
+    {
+      "path": "hyso/advisor/presentation.py",
+      "function": "_localized",
+      "source_sha256": "9c1f44998caa329d773d56cddc20bf06f83341b824e94caf87bea23fb5e21ae9",
+      "normalized_body_sha256": "aab1d9c53526eee5df7707aaab7fbb59ec10772a35f948923448451503a844e8"
+    },
+    {
+      "path": "hyso/advisor/recommendations.py",
+      "function": "RecommendationReport.to_display_dict",
+      "source_sha256": "ad4ce50071970f9591f9f38614db2b84abb2899f43d8b3d046f51c528ce2a08d",
+      "normalized_body_sha256": "f96c657c1de026029e2dca131f02456466eb63ef061960e616b33827ad791a7b"
+    },
+    {
+      "path": "hyso/reporting/catalog.py",
+      "function": "feature_explanations",
+      "source_sha256": "e78c6edc7e87439ee09a683133dda2ec83981529347795b73e4c1449e20948eb",
+      "normalized_body_sha256": "0244352df9317d35a4a4b902b45baf361d80d7df222bb8065eceaba0d46dd6bc"
+    },
+    {
+      "path": "hyso/reporting/render.py",
+      "function": "_status",
+      "source_sha256": "eca8486fa1b19a37a20feedf7bb40a9967a74d165095e9a3cd31f4a91b9315c4",
+      "normalized_body_sha256": "c3be3bd82b2bcb3f056b52ce0bd27b677cff79c9fae3bffb284995431084ce08"
+    },
+    {
+      "path": "hyso/reporting/report.py",
+      "function": "_text",
+      "source_sha256": "4590d5da36629c80879b44842e8d8fd17370a37eebd5990c989bd87bc4368289",
+      "normalized_body_sha256": "0032dab94d7762e951fc6e0270f1749ca79d3b5d200d4306734659dc3ad6d500"
+    },
+    {
+      "path": "hyso/reporting/report.py",
+      "function": "_options",
+      "source_sha256": "4590d5da36629c80879b44842e8d8fd17370a37eebd5990c989bd87bc4368289",
+      "normalized_body_sha256": "c300b8125658270d23b820a716a203967cb7150a4771a0cda04cc1459870bef8"
+    }
+  ]
+}

@@ -9,7 +9,7 @@ import math
 
 from ._json import AdvisorError, Contract, register
 from .contracts import _enum, _strings
-from .comparison import (ComparisonContract, P26QualityComparisonContract, P26BoundQualityComparisonContract,
+from .comparison import (ComparisonContract, CapturedCPUComparisonContract, P26QualityComparisonContract, P26BoundQualityComparisonContract,
                          ComparisonResult, ComparisonStatus, compare_records)
 from .resolver import NativeMetric, ResolvedMetric
 
@@ -157,7 +157,7 @@ class PerformanceComparison(Contract):
     Offline: hyso docs show metrics.interpretation --lang en
     Open: hyso docs open metrics.interpretation --lang en
     """
-    contract: ComparisonContract | P26QualityComparisonContract | P26BoundQualityComparisonContract
+    contract: ComparisonContract | CapturedCPUComparisonContract | P26QualityComparisonContract | P26BoundQualityComparisonContract
     eligibility: ComparisonResult
     difference: MetricDifference | None
     warnings: tuple
@@ -165,7 +165,7 @@ class PerformanceComparison(Contract):
     missing_evidence: tuple = _MISSING
 
     def __post_init__(self):
-        if type(self.contract) not in (ComparisonContract, P26QualityComparisonContract, P26BoundQualityComparisonContract) or type(self.eligibility) is not ComparisonResult:
+        if type(self.contract) not in (ComparisonContract, CapturedCPUComparisonContract, P26QualityComparisonContract, P26BoundQualityComparisonContract) or type(self.eligibility) is not ComparisonResult:
             raise AdvisorError('typed_comparison_required')
         if self.eligibility.contract_sha256 != self.contract.content_sha256:
             raise AdvisorError('comparison_contract_mismatch')

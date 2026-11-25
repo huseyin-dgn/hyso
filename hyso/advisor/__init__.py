@@ -14,7 +14,7 @@ from .presentation import build_display_model, to_display_dict, to_display_json,
 from .goals import evaluate_goal, evaluate_goals, goal_context
 from .planning import DecisionPlan, PlannedFinding
 from .recommendations import RecommendationReport, recommend
-from .comparison import (ComparisonContract, P26QualityComparisonContract, P26BoundQualityComparisonContract,
+from .comparison import (ComparisonContract, CapturedCPUComparisonContract, P26QualityComparisonContract, P26BoundQualityComparisonContract,
                          ComparisonReason, ComparisonResult, ComparisonStatus, compare_records)
 from .performance import MetricDifference, PerformanceComparison, compare_performance
 from .profiles import (BoundEvaluationReference, P26ModelProfileComparisonContract,
@@ -33,6 +33,7 @@ __all__ = [
     'DecisionPlan', 'PlannedFinding',
     'RecommendationReport', 'recommend',
     'ComparisonContract', 'ComparisonReason', 'ComparisonResult', 'ComparisonStatus', 'compare_records',
+    'CapturedCPUComparisonContract',
     'P26QualityComparisonContract',
     'P26BoundQualityComparisonContract',
     'MetricDifference', 'PerformanceComparison', 'compare_performance',

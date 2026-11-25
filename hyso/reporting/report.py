@@ -38,12 +38,26 @@ class ReportError(ValueError):
     """
 
 
+# DE/ES translations for presentation-only labels and explanations.
+# Technical evidence keys, status codes, hashes and measurements remain unchanged.
+_REPORT_TEXT_DE_ES = {'Retained model latency distribution': ('Verteilung der aufgezeichneten Modelllatenz', 'Distribución de la latencia registrada del modelo'), 'Repeat ': ('Wiederholung ', 'Repetición '), 'Training and validation loss': ('Trainings- und Validierungsverlust', 'Pérdida de entrenamiento y validación'), 'Loss is the recorded objective value. Inspect its changes across training.': ('Der Verlust ist der aufgezeichnete Wert der Zielfunktion. Prüfen Sie seine Entwicklung während des Trainings.', 'La pérdida es el valor registrado de la función objetivo. Examine su evolución durante el entrenamiento.'), 'Training and validation accuracy': ('Trainings- und Validierungsgenauigkeit', 'Exactitud de entrenamiento y validación'), 'Accuracy is the correct-prediction rate recorded as a percentage in Trainer history.': ('Die Genauigkeit ist der in Prozent aufgezeichnete Anteil korrekter Vorhersagen im Trainer-Verlauf.', 'La exactitud es el porcentaje de predicciones correctas registrado en el historial de Trainer.'), 'Training loss': ('Trainingsverlust', 'Pérdida de entrenamiento'), 'Validation loss': ('Validierungsverlust', 'Pérdida de validación'), 'Training accuracy': ('Trainingsgenauigkeit', 'Exactitud de entrenamiento'), 'Validation accuracy': ('Validierungsgenauigkeit', 'Exactitud de validación'), 'Training history may include restored epochs. Quality interpretation depends on recorded data and split scope.': ('Der Trainingsverlauf kann wiederhergestellte Epochen enthalten. Die Qualitätsbewertung hängt von den aufgezeichneten Daten und der Aufteilung ab.', 'El historial de entrenamiento puede incluir épocas restauradas. La interpretación de la calidad depende de los datos registrados y de la partición.'), ' Points use recorded epochs and units. Missing validation intervals remain gaps in the curve.': (' Die Punkte verwenden aufgezeichnete Epochen und Einheiten. Fehlende Validierungsintervalle bleiben als Lücken in der Kurve erhalten.', ' Los puntos usan épocas y unidades registradas. Los intervalos de validación ausentes permanecen como huecos en la curva.'), 'An observer interval is a UX duration including validation and observer overhead.': ('Ein Beobachterintervall ist eine UX-Zeitspanne einschließlich Validierung und Beobachter-Overhead.', 'Un intervalo del observador es una duración de UX que incluye validación y sobrecarga del observador.'), 'P19 native training ledgers and GPU compute time have separate measurement scopes.': ('Native P19-Trainingsprotokolle und GPU-Rechenzeit haben unterschiedliche Messumfänge.', 'Los registros nativos de entrenamiento P19 y el tiempo de cálculo de GPU tienen ámbitos de medición distintos.'), 'UX observer interval': ('UX-Beobachterintervall', 'Intervalo del observador UX'), 'UX observer intervals': ('UX-Beobachterintervalle', 'Intervalos del observador UX'), 'Retained training result': ('Aufgezeichnetes Trainingsergebnis', 'Resultado de entrenamiento registrado'), 'Models and evidence sources': ('Modelle und Nachweisquellen', 'Modelos y fuentes de evidencia'), 'Structure evidence scope': ('Umfang des Strukturnachweises', 'Alcance de la evidencia estructural'), 'Structure sources': ('Strukturquellen', 'Fuentes estructurales'), 'Registered module types': ('Registrierte Modultypen', 'Tipos de módulos registrados'), 'Tensor dtype metadata': ('Tensor-Datentyp-Metadaten', 'Metadatos de tipos de datos de tensores'), 'Added / removed module paths': ('Hinzugefügte / entfernte Modulpfade', 'Rutas de módulos añadidas / eliminadas'), 'Module and configuration differences': ('Modul- und Konfigurationsunterschiede', 'Diferencias de módulos y configuración'), 'State tensor metadata differences': ('Unterschiede der Zustandstensor-Metadaten', 'Diferencias de metadatos de tensores de estado'), 'Structure evidence limits': ('Grenzen des Strukturnachweises', 'Límites de la evidencia estructural'), 'Field': ('Feld', 'Campo'), 'Value': ('Wert', 'Valor'), 'Type': ('Typ', 'Tipo'), 'modules': ('Module', 'módulos'), 'paths': ('Pfade', 'rutas'), 'Registration': ('Registrierung', 'Registro'), 'Metric': ('Metrik', 'Métrica'), 'Status': ('Status', 'Estado'), 'A only': ('Nur A', 'Solo A'), 'B only': ('Nur B', 'Solo B'), 'Path / tensor': ('Pfad / Tensor', 'Ruta / tensor'), 'Explanation': ('Erläuterung', 'Explicación'), 'Registered parameter elements': ('Registrierte Parameterelemente', 'Elementos de parámetros registrados'), 'Trainable parameter elements': ('Trainierbare Parameterelemente', 'Elementos de parámetros entrenables'), 'Frozen parameter elements': ('Eingefrorene Parameterelemente', 'Elementos de parámetros congelados'), 'Unique parameter tensors': ('Eindeutige Parametertensoren', 'Tensores de parámetros únicos'), 'Unique buffer tensors': ('Eindeutige Puffertensoren', 'Tensores de búfer únicos'), 'Unique registered modules': ('Eindeutige registrierte Module', 'Módulos registrados únicos'), 'Registered module paths': ('Registrierte Modulpfade', 'Rutas de módulos registradas'), 'Cross-category tensors': ('Kategorieübergreifende Tensoren', 'Tensores entre categorías'), 'Registered buffer elements': ('Registrierte Pufferelemente', 'Elementos de búfer registrados'), 'Registered structure parameter bytes': ('Parameterbytes der registrierten Struktur', 'Bytes de parámetros de la estructura registrada'), 'Registered structure buffer bytes': ('Pufferbytes der registrierten Struktur', 'Bytes de búfer de la estructura registrada'), 'Registered structure tensor-union bytes': ('Tensor-Vereinigungsbytes der registrierten Struktur', 'Bytes de la unión de tensores de la estructura registrada'), 'Counts belong to the registered structure snapshot. P11 measurements and runtime-memory comparisons have separate evidence.': ('Die Zahlen stammen aus dem registrierten Struktur-Snapshot. P11-Messungen und Laufzeitspeichervergleiche erfordern getrennte Nachweise.', 'Los recuentos pertenecen a la instantánea de estructura registrada. Las mediciones P11 y las comparaciones de memoria en ejecución requieren evidencias separadas.'), 'Retained P12 analytic observations': ('Aufgezeichnete analytische P12-Beobachtungen', 'Observaciones analíticas P12 registradas'), 'Evidence': ('Nachweis', 'Evidencia'), 'Two-model comparison': ('Vergleich zweier Modelle', 'Comparación de dos modelos'), 'An existing Advisor observation over retained evidence.': ('Eine vorhandene Advisor-Beobachtung auf Grundlage aufgezeichneter Nachweise.', 'Una observación existente de Advisor basada en evidencia registrada.'), 'Performance Advisor recommendations': ('Empfehlungen des Performance Advisor', 'Recomendaciones de Performance Advisor')}
+
+
 def _text(language, tr, en):
-    return tr if language == "tr" else en
+    if language == "tr":
+        return tr
+    if language == "en":
+        return en
+    if language in ("de", "es"):
+        translated = _REPORT_TEXT_DE_ES.get(en)
+        if translated is None:
+            raise ReportError("missing_report_translation")
+        return translated[0 if language == "de" else 1]
+    raise ReportError("unsupported_language")
 
 
 def _options(language, level):
-    if language not in ("tr", "en"):
+    if type(language) is not str or language not in ("tr", "en", "de", "es"):
         raise ReportError("unsupported_language")
     if level not in ("beginner", "technical", "expert"):
         raise ReportError("unsupported_explanation_level")
@@ -551,7 +565,7 @@ class PresentationReport:
         return raw
 
 
-def create_report(*results: Any, language: _typing.Literal['tr', 'en'] = "tr", level: _typing.Literal['beginner', 'technical', 'expert'] = "technical",
+def create_report(*results: Any, language: _typing.Literal['tr', 'en', 'de', 'es'] = "tr", level: _typing.Literal['beginner', 'technical', 'expert'] = "technical",
                   title: str = "HYSo", context: AnalysisContext | None = None) -> PresentationReport:
     """Present retained Training/Analysis/Comparison/Advisor results without execution.
 
@@ -560,7 +574,7 @@ def create_report(*results: Any, language: _typing.Literal['tr', 'en'] = "tr", l
     Levels are beginner, technical, expert. Missing values keep their source statuses.
 
     Args:
-        language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'tr'.
+        language (str): Presentation language: tr/en/de/es; free-form evidence text stays unchanged. Default: 'tr'.
         level (str): Existing beginner, technical or expert presentation detail level. Default: 'technical'.
         title (str): Human-readable report title. Default: 'HYSo'.
         context (AnalysisContext | None): Explicit analysis/evaluation context; caller declarations are not producer attestation. Default: None.
@@ -616,7 +630,7 @@ def create_report(*results: Any, language: _typing.Literal['tr', 'en'] = "tr", l
     return PresentationReport(body)
 
 
-def report_experiment(manager: ExperimentManager, experiment_id: str, *, language: _typing.Literal['tr', 'en'] = "tr",
+def report_experiment(manager: ExperimentManager, experiment_id: str, *, language: _typing.Literal['tr', 'en', 'de', 'es'] = "tr",
                       level: _typing.Literal['beginner', 'technical', 'expert'] = "technical", title: str = "HYSo") -> PresentationReport:
     """Read all history pages and verified workflow results using the existing Manager.
 
@@ -626,7 +640,7 @@ def report_experiment(manager: ExperimentManager, experiment_id: str, *, languag
     Args:
         manager (ExperimentManager): Open ExperimentManager instance used for existing history and artifacts. Required.
         experiment_id (str): Exact existing experiment identifier. Required.
-        language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'tr'.
+        language (str): Presentation language: tr/en/de/es; free-form evidence text stays unchanged. Default: 'tr'.
         level (str): Existing beginner, technical or expert presentation detail level. Default: 'technical'.
         title (str): Human-readable report title. Default: 'HYSo'.
 

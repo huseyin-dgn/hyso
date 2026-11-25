@@ -165,8 +165,62 @@ rules apply if artifact APIs are needed. Do not reconstruct evidence from an
 arbitrary scalar metric name or a claimed run status.
 
 The existing `compare_performance_quality` is deliberately **not called**, because
-it performs new P29 inference/quality/memory measurement. Native measurement
-engines, old comparison algorithms/policies, checkpoint schemas, 70/70 acceptance,
-and forensic/debug files are unchanged. Broader P-feature comparison adapters,
-verified producer capture binding for ordinary execution outputs, independent
-uncertainty and generalization evidence remain future work.
+it performs new P29 inference/quality/memory measurement. Independent uncertainty,
+generalization evidence and broader P-feature comparison adapters remain outside
+this comparison's scope.
+
+## New bounded CPU observations for P01, P02 and P11
+
+`hyso.performance.capture_cpu_comparison(model, example_input)` explicitly runs
+the existing CPU producers and returns typed results keyed by feature ID. It
+requires the supported eager model profile and one resident contiguous NCHW
+float32/float64 CPU tensor. It never trains, loads a checkpoint, starts a worker,
+or initializes CUDA. Models are limited to 256 MiB of registered state and inputs
+to 8 MiB; each timing feature is limited to 16,384 forward calls. This bounds call
+counts, not wall time for arbitrary model code.
+
+```python
+from hyso.performance import capture_cpu_comparison
+
+values = capture_cpu_comparison(model, example_input)
+for feature_id, value in values.items():
+    value.to_json(output_directory / (feature_id + ".json"))
+```
+
+Defaults collect 1,000 P01 latency samples, including P50/P95/P99, and 1,000 P02
+completed batches. The protocols remain separate. Pass a CPU `ThroughputProtocol`
+to change throughput settings; duration-based protocols and CUDA requests are
+rejected. P11 counts the actual logical inventory once, without fabricated timing
+samples or a forward call. Its bound input is workload context only. Request a
+subset with `features=("P11",)` when timing is unnecessary.
+
+The schema-2 `provenance.comparison_capture` receipt binds each new native payload,
+run identity, input bytes/layout, registered model state before and after capture,
+actual protocol and observed CPU runtime/backend. It is an integrity record,
+not a signature or physical host attestation. Import rechecks recorded consistency
+without executing user code or querying hardware. Matching declared dataset,
+split or workload labels cannot establish dataset/preprocessing provenance.
+
+`compare_models` selects `CapturedCPUComparisonContract` only when both selected
+P01/P02/P11 records carry schema-2 receipts. At the lower-level `compare_records`
+API, select that contract explicitly. Timing keeps the existing minimum sample
+and tail requirements. P11 uses the explicit
+`exact_logical_inventory_or_verified_checkpoint_size` policy, without applying a
+timing sample count to deterministic byte inventories. Different actual protocols,
+runtime settings or bound input bytes remain incompatible. Reusing the same run
+does not create an independent second observation. No uncertainty or global winner
+claim follows from a comparable numerical difference.
+
+Checkpoint identity is optional and comes only from an existing trusted
+`load_training_checkpoint(..., capture_evidence=True)` receipt that still matches
+the model. This API never infers it from a path or a caller label. To measure an
+existing full HYSo training checkpoint, pass `footprint_artifact_path=path`;
+artifact-byte comparison additionally requires that file's hash to match the
+trusted load receipt. Missing artifact or checkpoint evidence remains unavailable.
+Logical byte inventories can be compared without a checkpoint claim.
+
+Ordinary measurement APIs, legacy `ComparisonContract`, checkpoint schemas and
+retained results keep their existing behavior. Old measurements cannot be upgraded
+through this live API; mixed old/new captures remain insufficient. Newly captured
+tiny CPU models do not supply missing capture metadata for historical trained
+Model A/B runs or establish their numeric performance comparison.

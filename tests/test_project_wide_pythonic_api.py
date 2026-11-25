@@ -1,6 +1,7 @@
 """UX-05 focused CPU compatibility, signatures and static discovery checks."""
 import ast
 import copy
+import hashlib
 import importlib
 import inspect
 import json
@@ -253,6 +254,10 @@ def test_existing_native_function_bodies_are_preserved():
         return result
 
     changed=subprocess.check_output(['git','diff','--name-only',BASELINE,'--','hyso','hyso_guide.py'],cwd=ROOT,text=True).splitlines()
+    # Later DE/ES presentation work has its own reviewed baseline. Keep checking
+    # those exact bodies instead of comparing them to pre-localization UX-05.
+    localized=json.loads((ROOT/'tests/fixtures/localized-presentation-body-baseline-v1.json').read_text(encoding='utf-8'))
+    presentation_bodies={(row['path'],row['function']):row['normalized_body_sha256'] for row in localized['functions']}
     checked=0
     exceptions={('hyso/models/graph.py','GraphModelBuilder.preview'),('hyso/performance/pipeline.py','measure_stages'),
                 ('hyso/analysis/__init__.py','__getattr__'),('hyso/models/fit.py','CNNSENormalWithFit.__init__')}
@@ -274,7 +279,11 @@ def test_existing_native_function_bodies_are_preserved():
                 target=name.replace('.__init__','._initialize')
             assert target in current,(filename,target)
             before=Normalize().visit(copy.deepcopy(old));after=Normalize().visit(copy.deepcopy(current[target]))
-            assert ast.dump(ast.Module(body=before.body,type_ignores=[]))==ast.dump(ast.Module(body=after.body,type_ignores=[])),(filename,name)
+            current_body=ast.dump(ast.Module(body=after.body,type_ignores=[]))
+            if (filename,name) in presentation_bodies:
+                assert hashlib.sha256(current_body.encode()).hexdigest()==presentation_bodies[(filename,name)],(filename,name)
+            else:
+                assert ast.dump(ast.Module(body=before.body,type_ignores=[]))==current_body,(filename,name)
             checked+=1
     assert checked>200
 

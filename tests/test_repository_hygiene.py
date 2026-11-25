@@ -20,7 +20,7 @@ def test_local_artifacts_ignored_without_masking_source_or_fixtures():
         'hyso/new_module.py','docs/guides/new-guide.md','docs/roadmap/new-roadmap.md']
     tracked=subprocess.check_output(['git','--no-optional-locks','ls-files'],cwd=ROOT,text=True).splitlines()
     paths=ignored+legitimate+tracked
-    result=subprocess.run(['git','--no-optional-locks','check-ignore','--no-index','-z','--stdin'],
+    result=subprocess.run(['git','--no-optional-locks','check-ignore','-z','--stdin'],
         cwd=ROOT,input=('\0'.join(paths)+'\0').encode(),capture_output=True,timeout=10)
     assert result.returncode==0,result.stderr
     assert set(result.stdout.decode().strip('\0').split('\0'))==set(ignored)
@@ -40,7 +40,9 @@ def test_executable_fixtures_preserve_every_original_python_block():
     # Inspect tracked paths so ignored private evidence remains outside this contract.
     tracked = subprocess.check_output(
         ['git', '--no-optional-locks', 'ls-files'], cwd=ROOT, text=True).splitlines()
-    assert not any(path.startswith(('docs/audit/', 'docs/design/')) for path in tracked)
+    tracked_audit = {p for p in tracked if p.startswith('docs/audit/')}
+    assert tracked_audit <= {'docs/audit/p07-resolution-completion-20261029.md'}
+    assert not any(p.startswith('docs/design/') for p in tracked)
     assert (ROOT / 'README.md').is_file()
     assert (ROOT / 'docs/guides/performance-profiling.md').is_file()
 

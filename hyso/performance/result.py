@@ -65,6 +65,10 @@ def _validate(data, kind):
     if data["identity"].get("experiment_run_id") is not None:
         raise ValueError("associate experiment run externally; result identity is immutable")
     protocol = data["protocol"]
+    capture = data.get('provenance', {}).get('comparison_capture')
+    if isinstance(capture, dict) and capture.get('schema_version') == 2:
+        from .comparison_capture import _validate_comparison_capture
+        _validate_comparison_capture(data)
     for key in ("model", "input", "environment"):
         if type(data["provenance"][key]) is not dict or not data["provenance"][key]:
             raise ValueError("missing model/input/runtime provenance")

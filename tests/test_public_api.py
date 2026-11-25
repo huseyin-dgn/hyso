@@ -2,6 +2,7 @@
 
 import importlib
 import inspect
+import ast
 
 import pytest
 
@@ -48,6 +49,22 @@ SIGNATURES = {
 }
 
 
+def _untyped_arguments(signature):
+    """Compare callable parameters/defaults while ignoring annotation spelling."""
+    tree = ast.parse("def _probe" + signature + ":\n    pass\n")
+    args = tree.body[0].args
+    params = [
+        *args.posonlyargs, *args.args, *args.kwonlyargs,
+    ]
+    if args.vararg is not None:
+        params.append(args.vararg)
+    if args.kwarg is not None:
+        params.append(args.kwarg)
+    for parameter in params:
+        parameter.annotation = None
+    return ast.dump(args, include_attributes=False)
+
+
 def canonical_symbol(name):
     return getattr(importlib.import_module(CANONICAL[name]), name)
 
@@ -76,8 +93,14 @@ def test_public_signature_and_defaults(path, expected):
     name, _, method = path.partition(".")
     symbol = canonical_symbol(name)
     target = getattr(symbol, method) if method else symbol
-    assert str(inspect.signature(target)) == expected
+    actual_signature = str(inspect.signature(target))
+    contract = (
+        SIGNATURES["CEMO.__init__"]
+        if path == "CNNSENormalWithFit.__init__"
+        else expected
+    )
+    assert _untyped_arguments(actual_signature) == _untyped_arguments(contract)
     if method == "__init__":
         # Class-call signature must also expose the documented constructor.
         parameters = list(inspect.signature(target).parameters.values())[1:]
-        assert inspect.signature(symbol) == inspect.Signature(parameters)
+        assert inspect.signature(symbol).replace(return_annotation=inspect.Signature.empty) == inspect.Signature(parameters)

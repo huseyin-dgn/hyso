@@ -190,8 +190,8 @@ def test_real_owned_exception_receipts_without_allocation_stress(mode,kind,tmp_p
 def test_real_cpu_slowdown_is_descriptive_with_bounded_moments(tmp_path):
     recipe=WorkloadRecipe('runtime_support:make_cpu',dict(mode='slowdown',delay=.001),
         search_path=str(Path(__file__).parent.resolve()))
-    result=measure_stability(recipe,tmp_path/'journal',protocol=StabilityProtocol(duration_seconds=1.,
-        interval_seconds=.03,chunk_rows=2,process_memory_bytes=4*1024**3,job_memory_bytes=6*1024**3,max_processes=4))
+    result=measure_stability(recipe,tmp_path/'journal',protocol=StabilityProtocol(duration_seconds=3.,
+        interval_seconds=.1,chunk_rows=2,process_memory_bytes=4*1024**3,job_memory_bytes=6*1024**3,max_processes=4))
     d=result.stability_diagnostics()
     assert d['core_status']=='complete'
     assert d['drift']['status']=='descriptive_only' and d['drift']['indicator']=='observed_slowdown'

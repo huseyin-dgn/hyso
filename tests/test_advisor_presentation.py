@@ -116,8 +116,14 @@ class PresentationTests(unittest.TestCase):
                 with self.subTest(options=options),self.assertRaises(AdvisorError):
                     self.report.to_markdown(path,**options)
                 self.assertFalse(path.exists())
-            with self.assertRaisesRegex(AdvisorError,'unsupported_language'):
-                self.report.to_display_json(path,language='de')
+            # German is supported by the localized presentation API.
+            view = self.report.to_display_dict(language='de')
+            self.assertEqual(view['language'], 'de')
+            self.assertEqual(view['source_advisor_report_id'], self.before_id)
+            self.assertTrue(view['presentation_only'])
+            self.assertFalse(view['authoritative_evidence'])
+            self.assertEqual(self.report.to_json(), self.before)
+            self.assertFalse(path.exists())
 
     def test_unknown_rule_or_version_is_explicit_original(self):
         original=next(f for f in self.report.findings if f.rule_id=='plan.latency-stage')

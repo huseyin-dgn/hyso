@@ -30,10 +30,13 @@ def worker_schema():
         benchmark._shape=lambda shape:tuple(shape)
         sys.modules[benchmark.__name__]=benchmark
         modules=[]
-        for name in ('cold','capacity'):
+        # Capacity admission now imports the stdlib bootstrap before dispatch.
+        # Load the real guard as well; keep package stubs closed to Torch imports.
+        for name in ('_batch_worker','cold','capacity'):
             full='hyso.performance.'+name
             spec=importlib.util.spec_from_file_location(full,ROOT/'hyso/performance'/(name+'.py'))
-            module=importlib.util.module_from_spec(spec);sys.modules[full]=module;spec.loader.exec_module(module);modules.append(module)
+            module=importlib.util.module_from_spec(spec);sys.modules[full]=module;spec.loader.exec_module(module)
+            if name != '_batch_worker': modules.append(module)
         yield *modules,result
 
 

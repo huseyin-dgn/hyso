@@ -253,6 +253,30 @@ class ComparisonResult(Contract):
             raise AdvisorError('effect_and_statistical_certification_out_of_scope')
 
 
+@register
+@dataclass(frozen=True)
+class CapturedCPUComparisonContract(ComparisonContract):
+    """V2 live CPU receipt gate; P11 requires exact inventory, not 1000 copies.
+
+    min_samples/min_tail_samples retain their native statistical requirements
+    for P01/P02. P11 is a deterministic logical inventory or a measured artifact
+    size with a matching trusted checkpoint-load receipt. It never establishes
+    physical RAM, dataset provenance, independent samples or a speedup.
+    V1 captures keep the original ComparisonContract unchanged.
+
+    HYSo Guide: comparison.models
+    """
+    footprint_policy: str = 'exact_logical_inventory_or_verified_checkpoint_size'
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.metric not in (_QUANTILES.keys() | {NativeMetric.COMPLETED_IMAGES_PER_SECOND,
+                NativeMetric.PARAMETER_BYTES, NativeMetric.BUFFER_BYTES, NativeMetric.MODEL_LOGICAL_BYTES,NativeMetric.ARTIFACT_BYTES}):
+            raise AdvisorError('unsupported_captured_CPU_metric')
+        if self.footprint_policy!='exact_logical_inventory_or_verified_checkpoint_size':
+            raise AdvisorError('unsupported_footprint_comparison_policy')
+
+
 _HASH_FIELDS = ('hardware_id', 'checkpoint_sha256', 'cohort_sha256', 'preprocessing_sha256', 'input_family_sha256')
 _TEXT_FIELDS = ('dataset_id', 'split', 'workload_id', 'clock_id')
 _CAPTURE_FIELDS = {'format', 'schema_version', 'authority', 'run_id', 'sample_sha256', *_HASH_FIELDS, *_TEXT_FIELDS}
@@ -398,12 +422,16 @@ def compare_records(left_resolver: '_typing.Any', left_record_id: '_typing.Any',
     if type(contract) in (P26QualityComparisonContract, P26BoundQualityComparisonContract):
         from ._p26_comparison import compare_p26_records
         return compare_p26_records(left_resolver, left_record_id, right_resolver, right_record_id, contract)
-    if type(contract) is not ComparisonContract:
+    if type(contract) not in (ComparisonContract, CapturedCPUComparisonContract):
         raise AdvisorError('typed_comparison_contract_required')
     if type(left_resolver) is not NativeMetricResolver or type(right_resolver) is not NativeMetricResolver:
         raise AdvisorError('validated_native_resolvers_required')
-    lm, left, lr, lb = _capture(left_resolver, left_record_id, contract, 'left')
-    rm, right, rr, rb = _capture(right_resolver, right_record_id, contract, 'right')
+    capture = _capture
+    if type(contract) is CapturedCPUComparisonContract:
+        from .cpu_comparison import capture_conditions
+        capture = capture_conditions
+    lm, left, lr, lb = capture(left_resolver, left_record_id, contract, 'left')
+    rm, right, rr, rb = capture(right_resolver, right_record_id, contract, 'right')
     reasons = lr + rr
     bad = lb or rb
     lrecord, rrecord = left_resolver.record(left_record_id), right_resolver.record(right_record_id)

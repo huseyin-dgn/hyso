@@ -1,0 +1,193 @@
+"""Real tiny CPU producers, retained compatibility and fail-closed comparison."""
+import copy
+import hashlib
+import json
+
+import pytest
+import torch
+
+from hyso.analysis import (AnalysisContext,EvidenceIndex,EvidenceRecord,EvidenceScope,
+    ModelComparisonSource,ModelComparisonResult,compare_models)
+from hyso.advisor import (CapturedCPUComparisonContract,ComparisonContract,NativeMetric,
+    NativeMetricResolver,compare_records,PerformanceComparison)
+from hyso.checkpoint import save_training_checkpoint,load_training_checkpoint
+from hyso.performance import capture_cpu_comparison,ThroughputProtocol,measure_footprint
+from hyso.performance.comparison_capture import _digest
+
+
+def model(outputs=2):return torch.nn.Sequential(torch.nn.Flatten(),torch.nn.Linear(4,outputs))
+def inputs():return torch.arange(8,dtype=torch.float32).reshape(2,1,2,2)/8
+def source(name,values,**scope):
+    records=[EvidenceRecord.from_native(v.to_dict(),feature_id=f,scope=EvidenceScope(model_id=name,**scope)) for f,v in values.items()]
+    report=EvidenceIndex(records).analyze(context=AnalysisContext(workload_id='CPU-capture-test',task='classification',model={'id':name},dataset={}))
+    return ModelComparisonSource(name,report)
+
+
+@pytest.fixture(scope='module')
+def pair(tmp_path_factory):
+    folder=tmp_path_factory.mktemp('cpu-capture'); result={}
+    for name,outputs in [('A',2),('B',3)]:
+        m=model(outputs);path=folder/(name+'.pth')
+        save_training_checkpoint(path,m,include_rng=False)
+        load_training_checkpoint(path,m,capture_evidence=True,expected_sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+        result[name]=capture_cpu_comparison(m,inputs(),footprint_artifact_path=path)
+    return result
+
+
+def test_real_three_producers_exact_samples_and_public_comparison(pair,tmp_path):
+    comparison=compare_models(source('A',pair['A']),source('B',pair['B']),features=('P01','P02','P11'))
+    data=comparison.to_dict()
+    assert len(data['metrics'])==8
+    assert all(r['status']=='COMPARABLE' and r['difference'] is not None for r in data['metrics']),data['metrics']
+    logical=next(r for r in data['metrics'] if r['metric']==NativeMetric.MODEL_LOGICAL_BYTES.value)
+    assert logical['difference']['difference']==20
+    assert data['claims']['acceptance']=='NOT_EVALUATED' and data['claims']['global_winner'] is None
+    comparison.to_json(tmp_path/'comparison.json')
+    assert ModelComparisonResult.from_json(tmp_path/'comparison.json').to_dict()==data
+    for values in pair.values():
+        assert values['P01'].to_dict()['actual']['samples']==1000
+        assert values['P02'].to_dict()['actual']['completed_batches']==1000
+        for value in values.values():
+            raw=value.to_dict();proof=raw['provenance']['comparison_capture']
+            assert proof['checkpoint']['status']=='native'
+            assert proof['model_state_sha256']==proof['post_model_state_sha256']
+            path=tmp_path/(raw['result_id']+'.json');value.to_json(path)
+            assert type(value)(json.loads(path.read_text(encoding='utf-8'))).to_dict()==raw
+
+
+def test_model_modes_gradients_inputs_and_rng_are_preserved():
+    m=model();m[0].eval();m[1].weight.grad=torch.ones_like(m[1].weight);x=inputs()
+    before={k:v.clone() for k,v in m.state_dict().items()};grad=m[1].weight.grad;version=grad._version
+    rng=torch.get_rng_state().clone();x_before=x.clone();modes=[s.training for s in m.modules()]
+    capture_cpu_comparison(m,x,latency_iterations=8,throughput_protocol=ThroughputProtocol(batch_count=8,repeats=1))
+    assert all(torch.equal(v,m.state_dict()[k]) for k,v in before.items())
+    assert [s.training for s in m.modules()]==modes
+    assert m[1].weight.grad is grad and grad._version==version and torch.equal(grad,torch.ones_like(grad))
+    assert torch.equal(x,x_before) and torch.equal(torch.get_rng_state(),rng) and not torch.cuda.is_initialized()
+
+
+@pytest.mark.parametrize('feature',['P01','P02','P11'])
+@pytest.mark.parametrize('damage',['sample','protocol','state','input','environment','run','checkpoint'])
+def test_tampered_receipts_cannot_be_imported(pair,feature,damage):
+    value=pair['A'][feature];raw=value.to_dict();proof=raw['provenance']['comparison_capture']
+    if damage=='sample':raw['result_id']='00000000-0000-0000-0000-000000000001'
+    elif damage=='protocol':raw['protocol']['scope']='other_clock_or_boundary'
+    elif damage=='state':proof['post_model_state_sha256']='a'*64
+    elif damage=='input':proof['bound_input']['sha256']='b'*64
+    elif damage=='environment':proof['environment']['torch']='different-runtime'
+    elif damage=='run':proof['run_id']='00000000-0000-0000-0000-000000000002'
+    else:proof['checkpoint']['model_state_sha256']='c'*64
+    # P11's bound input is context, but must still be part of receipt integrity.
+    with pytest.raises(ValueError):type(value)(raw)
+
+
+def test_footprint_is_an_exact_inventory_without_fake_forwards_or_samples(monkeypatch):
+    from hyso.benchmark import BenchmarkRunner
+    def deny(*a,**kw):pytest.fail('P11 must not run a forward/timing protocol')
+    monkeypatch.setattr(BenchmarkRunner,'run',deny);monkeypatch.setattr(torch.nn.Module,'_call_impl',deny)
+    a=capture_cpu_comparison(model(),inputs(),features=('P11',))
+    b=capture_cpu_comparison(model(3),inputs(),features=('P11',))
+    result=compare_models(source('A',a),source('B',b),features='P11').to_dict()
+    assert all(r['status']=='COMPARABLE' for r in result['metrics'][:3])
+    assert result['metrics'][-1]['status']=='INSUFFICIENT_EVIDENCE'
+    assert 'observations' not in a['P11'].to_dict()['actual']
+    assert a['P11'].to_dict()['provenance']['comparison_capture']['bound_input']['role']=='bound_workload_context_only'
+
+
+@pytest.mark.parametrize('kind',['protocol','input','precision'])
+def test_real_mismatched_protocols_or_inputs_are_not_comparable(pair,kind):
+    x=inputs();kwargs=dict(features=('P01',))
+    if kind=='protocol':kwargs['latency_iterations']=1001
+    elif kind=='input':x=x+1
+    else:x=x.double()
+    other=capture_cpu_comparison(model().double() if kind=='precision' else model(),x,**kwargs)
+    result=compare_models(source('A',{'P01':pair['A']['P01']}),source('B',other),features='P01').to_dict()
+    assert all(r['status']=='INCOMPATIBLE' and r['difference'] is None for r in result['metrics'])
+
+
+def test_short_throughput_retains_sample_threshold(pair):
+    short=capture_cpu_comparison(model(),inputs(),features=('P02',),throughput_protocol=ThroughputProtocol(batch_count=3,repeats=1))
+    result=compare_models(source('A',{'P02':pair['A']['P02']}),source('B',short),features='P02').to_dict()
+    assert result['metrics'][0]['status'] in ('INCOMPATIBLE','INSUFFICIENT_EVIDENCE')
+    assert result['metrics'][0]['difference'] is None
+
+
+def test_old_results_are_not_upgraded_and_legacy_contract_stays_strict(pair):
+    legacy=measure_footprint(model()); assert 'comparison_capture' not in legacy.to_dict()['provenance']
+    result=compare_models(source('old',{'P11':legacy}),source('new',{'P11':pair['A']['P11']}),features='P11').to_dict()
+    assert all(r['status']!='COMPARABLE' for r in result['metrics'])
+    old=legacy.to_dict()
+    with pytest.raises(TypeError):capture_cpu_comparison(old,inputs(),features=('P11',))
+    assert legacy.to_dict()==old
+
+
+def test_caller_dataset_declarations_do_not_become_native_origin(pair):
+    result=compare_models(source('A',pair['A'],dataset_id='caller-supplied'),source('B',pair['B'],dataset_id='caller-supplied'),features='P11').to_dict()
+    assert all(r['status']=='INSUFFICIENT_EVIDENCE' for r in result['metrics'])
+
+
+def test_checkpoint_mutation_invalidates_real_load_association(pair,tmp_path):
+    m=model();p=tmp_path/'model.pth';save_training_checkpoint(p,m,include_rng=False)
+    load_training_checkpoint(p,m,capture_evidence=True)
+    with torch.no_grad():m[1].weight.add_(1)
+    current=capture_cpu_comparison(m,inputs(),features=('P11',),footprint_artifact_path=p)
+    assert current['P11'].to_dict()['provenance']['comparison_capture']['checkpoint']['status']=='missing'
+    result=compare_models(source('A',{'P11':pair['A']['P11']}),source('B',current),features='P11').to_dict()
+    assert result['metrics'][-1]['status']=='INSUFFICIENT_EVIDENCE'
+
+
+def test_cuda_request_rejected_before_any_cuda_query(monkeypatch):
+    def deny(*a,**kw):pytest.fail('CUDA initialization/query reached')
+    monkeypatch.setattr(torch.cuda,'is_available',deny);monkeypatch.setattr(torch.cuda,'_lazy_init',deny)
+    with pytest.raises(ValueError,match='CPU_throughput'):
+        capture_cpu_comparison(model(),inputs(),throughput_protocol=ThroughputProtocol(device='cuda:0'))
+
+
+def test_explicit_v2_contract_roundtrip_and_legacy_gate(pair):
+    a=source('A',{'P11':pair['A']['P11']});b=source('B',{'P11':pair['B']['P11']})
+    ar=NativeMetricResolver(__import__('hyso.analysis',fromlist=['UnifiedAnalysisReport']).UnifiedAnalysisReport(a.to_dict()['report']))
+    br=NativeMetricResolver(__import__('hyso.analysis',fromlist=['UnifiedAnalysisReport']).UnifiedAnalysisReport(b.to_dict()['report']))
+    ai=a.to_dict()['report']['index']['records'][0]['record_id'];bi=b.to_dict()['report']['index']['records'][0]['record_id']
+    contract=CapturedCPUComparisonContract(metric=NativeMetric.MODEL_LOGICAL_BYTES,allowed_changes=('model',))
+    assert CapturedCPUComparisonContract.from_dict(contract.to_dict())==contract
+    assert compare_records(ar,ai,br,bi,contract=contract).status.value=='COMPARABLE'
+    assert compare_records(ar,ai,br,bi,contract=ComparisonContract(metric=NativeMetric.MODEL_LOGICAL_BYTES,allowed_changes=('model',))).status.value=='INSUFFICIENT_EVIDENCE'
+
+
+def test_capture_readers_and_comparison_never_execute(pair,monkeypatch):
+    import hyso.performance.comparison_capture as module
+    def deny(*a,**kw):pytest.fail('retained comparison invoked live operation')
+    monkeypatch.setattr(module,'_environment',deny)
+    monkeypatch.setattr(module,'capture_cpu_comparison',deny)
+    monkeypatch.setattr(torch.nn.Module,'_call_impl',deny)
+    result=compare_models(source('A',pair['A']),source('B',pair['B']),features=('P01','P02','P11')).to_dict()
+    assert all(r['status']=='COMPARABLE' for r in result['metrics'])
+
+
+def test_duplicate_capture_is_not_independent_evidence(pair):
+    result=compare_models(source('A',pair['A']),source('other-label',pair['A']),features=('P01','P02','P11')).to_dict()
+    assert all(r['status']=='INCOMPATIBLE' and r['difference'] is None for r in result['metrics'])
+
+
+def test_total_forward_budget_rejects_before_measurement(monkeypatch):
+    from hyso.benchmark import BenchmarkRunner
+    monkeypatch.setattr(BenchmarkRunner,'run',lambda *a,**kw:pytest.fail('budget bypass'))
+    with pytest.raises(ValueError,match='total_forward_budget'):
+        capture_cpu_comparison(model(),inputs(),latency_iterations=4096,repeats=4096)
+
+
+def test_throughput_queue_protocol_difference_is_preserved(pair):
+    other=capture_cpu_comparison(model(),inputs(),features=('P02',),throughput_protocol=ThroughputProtocol(
+        warmup_iterations=2,batch_count=1000,repeats=1,queue_depth=2))
+    result=compare_models(source('A',{'P02':pair['A']['P02']}),source('B',other),features='P02').to_dict()
+    assert result['metrics'][0]['status']=='INCOMPATIBLE'
+
+
+def test_wrong_artifact_does_not_gain_checkpoint_association(tmp_path):
+    m=model();checkpoint=tmp_path/'model.pth';foreign=tmp_path/'other.pth'
+    save_training_checkpoint(checkpoint,m,include_rng=False);save_training_checkpoint(foreign,model(3),include_rng=False)
+    load_training_checkpoint(checkpoint,m,capture_evidence=True)
+    a=capture_cpu_comparison(m,inputs(),features=('P11',),footprint_artifact_path=checkpoint)
+    b=capture_cpu_comparison(m,inputs(),features=('P11',),footprint_artifact_path=foreign)
+    result=compare_models(source('A',a),source('B',b),features='P11').to_dict()
+    assert result['metrics'][-1]['status']=='INSUFFICIENT_EVIDENCE'

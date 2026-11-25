@@ -318,7 +318,7 @@ def _strict_context_check(a, b, record_a, record_b):
 
 def _derive(a, b, features, include_structure, context_policy='legacy', *, p12_comparison=False):
     # Local imports retain the old Advisor <-> Analysis initialization boundary.
-    from ..advisor import (NativeMetric, NativeMetricResolver, ComparisonContract,
+    from ..advisor import (NativeMetric, NativeMetricResolver, ComparisonContract, CapturedCPUComparisonContract,
         P26QualityComparisonContract, P26BoundQualityComparisonContract,
         P26ModelProfileComparisonContract, compare_performance, compare_p26_model_profiles)
     from ..advisor.performance import _SEMANTICS
@@ -363,7 +363,11 @@ def _derive(a, b, features, include_structure, context_policy='legacy', *, p12_c
                     contract = contract_type(metric=metric,allowed_changes=('model',))
                 else:
                     # Retain the existing default general comparison thresholds.
-                    contract = ComparisonContract(metric=metric,allowed_changes=('model',))
+                    captures=[(r.record(i)['native_payload'] or {}).get('provenance',{}).get('comparison_capture',{})
+                              for r,i in ((ra,ia),(rb,ib))]
+                    contract_type=(CapturedCPUComparisonContract if feature in ('P01','P02','P11')
+                                   and all(isinstance(c,dict) and c.get('schema_version')==2 for c in captures) else ComparisonContract)
+                    contract = contract_type(metric=metric,allowed_changes=('model',))
                 native = compare_performance(ra,ia,rb,ib,contract=contract)
                 row.update(status=native.eligibility.status.value,comparison=native.to_dict(),
                     reasons=[reason.code+':'+reason.field for reason in native.eligibility.reasons],

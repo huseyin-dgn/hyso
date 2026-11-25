@@ -5,7 +5,7 @@ import tarfile
 
 import pytest
 
-from test_packaging import ROOT, MODULES, PROFILE, command
+from test_packaging import ROOT, MODULES, PROFILE, command, commercial_bytes
 from test_packaging import distributions as distributions
 
 pytestmark = pytest.mark.commercial_profile
@@ -34,7 +34,7 @@ def test_commercial_archive_allowlist(distributions, kind):  # noqa: F811 - pyte
         assert set(payload) == MODULES | {"setup.py"}
     assert not set(payload) & set(PROFILE["excluded_python_files"])
     for name in MODULES:
-        assert payload[name] == (ROOT / name).read_bytes()
+        assert payload[name] == commercial_bytes(name)
 
 
 COMMERCIAL_SMOKE = r"""

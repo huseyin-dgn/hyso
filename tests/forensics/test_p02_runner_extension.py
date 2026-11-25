@@ -54,6 +54,7 @@ def public_schema():
             api = copy.deepcopy(next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name=='measure_throughput'))
             api.body = [ast.Return(ast.Name('_reply', ast.Load()))]
             compiled = ast.fix_missing_locations(ast.Module(body=[protocol, api], type_ignores=[]))
+            inference.__dict__['_typing'] = __import__('typing')
             exec(compile(compiled, 'production_protocol_and_api_signature', 'exec'), inference.__dict__)
             yield inference, result
 

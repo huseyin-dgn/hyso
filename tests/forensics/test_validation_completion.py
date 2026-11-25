@@ -34,6 +34,7 @@ def pipeline_schema():
             _latency_metrics=schema._latency_metrics, PipelineResult=schema.PipelineResult,
             StageTimingResult=schema.StageTimingResult)
         with patch.dict(sys.modules, {'hyso.performance.pipeline':module}):
+            module.__dict__['_typing'] = __import__('typing')
             exec(compile(ast.Module(body=nodes,type_ignores=[]),'production_pipeline_schema','exec'),module.__dict__)
             yield module, schema
 
@@ -141,7 +142,7 @@ class PreparedValidationTests(unittest.TestCase):
             tree=ast.parse((ROOT/'hyso/performance/sweeps.py').read_text())
             cls=next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name=='SweepProtocol')
             module.__dict__.update(dataclass=dataclass,ThroughputProtocol=inference.ThroughputProtocol,
-                _integer=schema._integer,_PRECISIONS=('fp32','amp_fp16'))
+                _integer=schema._integer,_PRECISIONS=('fp32','amp_fp16'), _typing=__import__('typing'))
             exec(compile(ast.Module(body=[cls],type_ignores=[]),'sweep_protocol','exec'),module.__dict__)
             with patch.dict(sys.modules,{'hyso.performance.sweeps':module}),patch.object(schema,'SweepResult',side_effect=Box):
                 for scenario,contract in runner.PREPARED.items():

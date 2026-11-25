@@ -1,4 +1,4 @@
-"""Deterministic bilingual views; never authoritative evidence or engine input."""
+"""Deterministic localized views; never authoritative evidence or engine input."""
 import typing as _typing
 from collections import Counter
 import hashlib
@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 
 from ._json import AdvisorError, MAX_BYTES, canonical
-from ._locales import BOUNDARIES, LOCALIZATION_VERSION, RULES, STATUS, TEXT
+from ._locales import BOUNDARIES, LOCALIZATION_VERSION, RULES, STATUS, TEXT, BOUNDARIES_DE_ES, STATUS_DE_ES
 from .contracts import AdvisorReport
 from .planning import PlannedFinding
 from .resolver import NativeMetric as M, NativeObservation
@@ -42,6 +42,29 @@ _KIND = {
     'DIAGNOSIS': ('Kaynakta belirtilen teşhis', 'Source diagnosis'),
     'VERIFIED_IMPROVEMENT': ('Kaynakta belirtilen doğrulama', 'Source verification'),
 }
+
+
+_ADDITIONAL_ACTIONS = {'tr': {'batch_candidate_action': 'Önkoşullar sağlanırsa yalnız batch boyutunu değiştiren sınırlı bir deney değerlendirin.', 'native_review_action': 'İlgili kayıttaki kapsamı, örnek yeterliliğini ve native ilişkileri doğrulayın.'}, 'en': {'batch_candidate_action': 'Consider a bounded, single-variable batch-size experiment only after prerequisites are resolved.', 'native_review_action': 'Check the source record scope, sample sufficiency and native associations.'}, 'de': {'batch_candidate_action': 'Erwägen Sie ein begrenztes Experiment, bei dem nur die Batchgröße verändert wird, nachdem alle Voraussetzungen erfüllt sind.', 'native_review_action': 'Prüfen Sie Geltungsbereich, Stichprobengröße und native Verknüpfungen des Quelldatensatzes.'}, 'es': {'batch_candidate_action': 'Considere un experimento acotado que solo cambie el tamaño del lote cuando se cumplan los requisitos previos.', 'native_review_action': 'Compruebe el ámbito del registro de origen, la suficiencia de muestras y las asociaciones nativas.'}}
+# Display-only translations; TR/EN tuples remain byte-for-byte unchanged.
+_METRICS_DE_ES = {'FORWARD_P50': ('Modelllatenz P50', 'Latencia del modelo P50'), 'FORWARD_P95': ('Modelllatenz P95', 'Latencia del modelo P95'), 'FORWARD_P99': ('Modelllatenz P99', 'Latencia del modelo P99'), 'E2E_P50': ('End-to-End-Latenz P50', 'Latencia extremo a extremo P50'), 'E2E_P95': ('End-to-End-Latenz P95', 'Latencia extremo a extremo P95'), 'E2E_P99': ('End-to-End-Latenz P99', 'Latencia extremo a extremo P99'), 'COMPLETED_IMAGES_PER_SECOND': ('Durchsatz abgeschlossener Bilder', 'Rendimiento de imágenes completadas'), 'PRECISION_MEAN': ('Mittlere Modelllatenz am Präzisionspunkt', 'Latencia media del modelo en el punto de precisión'), 'PRECISION_THROUGHPUT': ('Durchsatz am Präzisionspunkt', 'Rendimiento en el punto de precisión'), 'RSS_BASELINE': ('Anfängliches Prozess-RSS', 'RSS inicial del proceso'), 'RSS_CURRENT': ('Aktuelles Prozess-RSS', 'RSS actual del proceso'), 'RSS_SAMPLED_PEAK': ('Abgetasteter Spitzenwert des Prozess-RSS', 'Pico muestreado de RSS del proceso'), 'RSS_LIFETIME_HWM': ('Maximaler Prozess-RSS-Wert über die Lebensdauer', 'Máximo RSS del proceso durante su vida útil'), 'PARAMETER_BYTES': ('Logische Größe der Modellparameter', 'Tamaño lógico de parámetros del modelo'), 'BUFFER_BYTES': ('Logische Größe der Modellpuffer', 'Tamaño lógico de búferes del modelo'), 'MODEL_LOGICAL_BYTES': ('Logische Modellgröße; nicht Prozess-RAM', 'Tamaño lógico del modelo; no es RAM del proceso'), 'ARTIFACT_BYTES': ('Größe der gespeicherten Modelldatei', 'Tamaño del archivo de modelo guardado'), 'TEST_ACCURACY': ('Testgenauigkeit', 'Exactitud en prueba'), 'TEST_MACRO_F1': ('Test-Makro-F1', 'F1 macro en prueba')}
+_KIND_DE_ES = {'OBSERVATION': ('Messbeobachtung', 'Observación de medición'), 'MEASURE_NEXT': ('Nächste Nachweisprüfung', 'Próxima revisión de evidencia'), 'EXPERIMENT_CANDIDATE': ('Bedingter Experimentkandidat', 'Experimento candidato condicionado'), 'HYPOTHESIS': ('Hypothese; keine kausale Diagnose', 'Hipótesis; no es diagnóstico causal'), 'DIAGNOSIS': ('Diagnose aus der Quelle', 'Diagnóstico indicado en origen'), 'VERIFIED_IMPROVEMENT': ('Quellseitige Verifizierung', 'Verificación indicada en origen')}
+_UNITS_DE_ES = {'de': {'images/s': 'Bilder/s', 'byte': 'Byte', 'fraction': 'Anteil', 'frames/s': 'Frames/s'}, 'es': {'images/s': 'imágenes/s', 'byte': 'bytes', 'fraction': 'fracción', 'frames/s': 'fotogramas/s'}}
+
+def _metric_label(identity, language):
+    if language in ('de', 'es'):
+        return _METRICS_DE_ES[identity.name][0 if language == 'de' else 1]
+    return _METRICS[identity][0 if language == 'tr' else 1]
+
+def _kind_label(kind, language):
+    if language in ('de', 'es'):
+        return _KIND_DE_ES[kind][0 if language == 'de' else 1]
+    return _KIND[kind][0 if language == 'tr' else 1]
+
+def _boundary_label(boundary, language):
+    if language in ('de', 'es'):
+        return BOUNDARIES_DE_ES[boundary][0 if language == 'de' else 1]
+    return BOUNDARIES[boundary][0 if language == 'tr' else 1]
+
 _SUMMARY_METRICS = {M.FORWARD_P95, M.E2E_P95, M.COMPLETED_IMAGES_PER_SECOND,
                     M.PRECISION_MEAN, M.RSS_SAMPLED_PEAK, M.MODEL_LOGICAL_BYTES,
                     M.ARTIFACT_BYTES, M.TEST_ACCURACY, M.TEST_MACRO_F1}
@@ -114,7 +137,7 @@ def _number(value, language, *, rate=False, integer=False):
         value = format(value, ',.0f')
     else:
         value = format(value, '.12g')
-    if language == 'tr':
+    if language in ('tr', 'de', 'es'):
         whole, dot, decimals = value.partition('.')
         return whole.replace(',', '.') + (',' + decimals if dot else '')
     return value
@@ -127,7 +150,7 @@ def _value(value, unit, language, *, accuracy=False):
     units = {'images/s': ('görüntü/sn', 'images/s'), 'byte': ('bayt', 'bytes'),
              'fraction': ('oran', 'fraction'), 'frames/s': ('kare/sn', 'frames/s')}
     displayed = _number(value, language, rate=unit == 'images/s', integer=unit == 'byte')
-    label = units.get(unit, (unit, unit))[0 if language == 'tr' else 1]
+    label = (_UNITS_DE_ES[language].get(unit, unit) if language in _UNITS_DE_ES else units.get(unit, (unit, unit))[0 if language == 'tr' else 1])
     return displayed + ' ' + label
 
 
@@ -135,7 +158,7 @@ def _status(code, language):
     key = code or 'not_evaluated'
     if key not in STATUS:
         raise AdvisorError('unsupported_display_status')
-    return STATUS[key][0 if language == 'tr' else 1]
+    return (STATUS_DE_ES[key][0 if language == 'de' else 1] if language in ('de','es') else STATUS[key][0 if language == 'tr' else 1])
 
 
 def _localized(data, language, audience):
@@ -154,7 +177,7 @@ def _localized(data, language, audience):
         if context.get('precision') is not None:
             parts.append(str(context['precision']).upper())
         metric_rows.append(dict(metric=identity.value, record_id=m['reference']['record_id'],
-            metric_path=m['reference']['metric_path'], label=_METRICS[identity][index],
+            metric_path=m['reference']['metric_path'], label=_metric_label(identity, language),
             value=_value(m['value'], m['reference']['unit'], language, accuracy=identity==M.TEST_ACCURACY),
             scope=', '.join(parts), summary=identity in _SUMMARY_METRICS))
     by_ref = {(m['reference']['record_id'],m['reference']['metric_path']):m for m in data['metrics']}
@@ -188,33 +211,31 @@ def _localized(data, language, audience):
         if known:
             action,why,missing = RULES[rule][language]
             if f['kind']=='EXPERIMENT_CANDIDATE':
-                action=('Önkoşullar sağlanırsa yalnız batch boyutunu değiştiren sınırlı bir deney değerlendirin.' if language=='tr'
-                        else 'Consider a bounded, single-variable batch-size experiment only after prerequisites are resolved.')
+                action=(_ADDITIONAL_ACTIONS[language]['batch_candidate_action'])
             actions.append(dict(finding_id=f['finding_id'], rule_id=rule, translation_status='localized_rule_v1',
-                label=_KIND[f['kind']][index], action=action, why=why, missing=missing,
+                label=_kind_label(f['kind'], language), action=action, why=why, missing=missing,
                 authorization=t['not_authorized'], candidate=f['kind']=='EXPERIMENT_CANDIDATE',
                 goal_ids=f['plan']['goal_ids'] if f['plan'] else []))
         elif rule in ('native-observation','record-local-goal') and version=='1' and f['kind']=='MEASURE_NEXT':
             actions.append(dict(finding_id=f['finding_id'],rule_id=rule,translation_status='localized_rule_v1',
-                label=t['review'], action=('İlgili kayıttaki kapsamı, örnek yeterliliğini ve native ilişkileri doğrulayın.' if language=='tr'
-                else 'Check the source record scope, sample sufficiency and native associations.'),
+                label=t['review'], action=_ADDITIONAL_ACTIONS[language]['native_review_action'],
                 why=t['local_goal'],missing=t['partial'],authorization=t['not_authorized'],candidate=False,goal_ids=[]))
         else:
             unknown.append(dict(finding_id=f['finding_id'],message=t['unknown_rule'],
                                 rule_id=rule,rule_version=version))
-    risks=[BOUNDARIES[r][index] for r in data['original_risks'] if r in BOUNDARIES]
+    risks=[_boundary_label(r, language) for r in data['original_risks'] if r in BOUNDARIES]
     return dict(title=t['title'], labels=t, metrics=metric_rows, goals=goal_rows, actions=actions,
                 unknown_records=unknown, risks=risks,
                 consistency=_status(data['consistency'],language),
-                kind_labels={k:v[index] for k,v in _KIND.items()})
+                kind_labels={k:_kind_label(k,language) for k in _KIND})
 
 
-def to_display_dict(report: '_typing.Any', *, language: _typing.Literal['tr', 'en']='en', audience: _typing.Literal['summary', 'technical']='summary') -> 'dict[str, _typing.Any]':
+def to_display_dict(report: '_typing.Any', *, language: _typing.Literal['tr', 'en', 'de', 'es']='en', audience: _typing.Literal['summary', 'technical']='summary') -> 'dict[str, _typing.Any]':
     """Return localized display text while preserving canonical comparison data.
 
     Args:
         report (_typing.Any): Validated retained analysis/advisory report. Required.
-        language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'en'.
+        language (str): Presentation language supported by this API, tr/en/de/es; source records are not translated. Default: 'en'.
         audience (str): Supported presentation audience/detail level. Default: 'summary'.
 
     Returns:
@@ -253,13 +274,13 @@ def _export(path,raw):
     return raw
 
 
-def to_display_json(report: '_typing.Any',path: '_typing.Any'=None,*,language: _typing.Literal['tr', 'en']='en',audience: _typing.Literal['summary', 'technical']='summary') -> 'str':
+def to_display_json(report: '_typing.Any',path: '_typing.Any'=None,*,language: _typing.Literal['tr', 'en', 'de', 'es']='en',audience: _typing.Literal['summary', 'technical']='summary') -> 'str':
     """Serialize localized display text while preserving the retained canonical data.
 
     Args:
         report (_typing.Any): Validated retained analysis/advisory report. Required.
         path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
-        language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'en'.
+        language (str): Presentation language supported by this API, tr/en/de/es; source records are not translated. Default: 'en'.
         audience (str): Supported presentation audience/detail level. Default: 'summary'.
 
     Returns:
@@ -285,13 +306,13 @@ def _esc(value):
     return re.sub(r'([\\`*_\[\]()!#|])',r'\\\1',text)
 
 
-def to_markdown(report: '_typing.Any',path: '_typing.Any'=None,*,language: _typing.Literal['tr', 'en']='en',audience: _typing.Literal['summary', 'technical']='summary') -> 'str':
+def to_markdown(report: '_typing.Any',path: '_typing.Any'=None,*,language: _typing.Literal['tr', 'en', 'de', 'es']='en',audience: _typing.Literal['summary', 'technical']='summary') -> 'str':
     """Format retained comparison findings as Markdown without rerunning models.
 
     Args:
         report (_typing.Any): Validated retained analysis/advisory report. Required.
         path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
-        language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'en'.
+        language (str): Presentation language supported by this API, tr/en/de/es; source records are not translated. Default: 'en'.
         audience (str): Supported presentation audience/detail level. Default: 'summary'.
 
     Returns:
