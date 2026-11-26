@@ -182,7 +182,7 @@ class PerformanceComparison(Contract):
             raise AdvisorError('performance_boundaries_required')
 
 
-def compare_performance(left_resolver: '_typing.Any', left_record_id: '_typing.Any', right_resolver: '_typing.Any', right_record_id: '_typing.Any', *, contract: '_typing.Any'=None) -> '_typing.Any':
+def compare_performance(left_resolver: '_typing.Any', left_record_id: '_typing.Any', right_resolver: '_typing.Any', right_record_id: '_typing.Any', *, contract: '_typing.Any'=None) -> 'PerformanceComparison':
     """Recheck eligibility and resolve both scalars; never trust caller results.
 
     Returns no difference for ineligible pairs or unsafe arithmetic. A favorable

@@ -5,7 +5,7 @@ namespaces expose measurement, evidence and advisory APIs; importing them never
 requests a training run or benchmark. Legacy canonical import paths are retained.
 See README.md and docs/guides/python-api.md for CPU-first examples and limits.
 """
-from typing import TYPE_CHECKING as _TYPE_CHECKING, Literal as _Literal
+from typing import TYPE_CHECKING as _TYPE_CHECKING, Literal as _Literal, Any as _Any
 from importlib import import_module as _import_module
 
 from . import models, callbacks, augmentation
@@ -83,6 +83,7 @@ if _TYPE_CHECKING:
     from . import training as training, benchmark as benchmark, performance as performance
     from . import analysis as analysis, advisor as advisor, experiments as experiments
     from . import reporting as reporting
+    from . import evaluation as evaluation, quality as quality, checkpoint as checkpoint
 
 _LAZY_EXPORTS = {
     'TrainingConfig': ('.training', 'TrainingConfig'),
@@ -101,8 +102,21 @@ _LAZY_EXPORTS = {
        ('training', 'benchmark', 'performance', 'analysis', 'advisor', 'experiments', 'reporting')},
 }
 
+# Existing root names plus the existing lazy aliases. The models namespace keeps
+# its independent frozen legacy wildcard contract.
+__all__ = [
+    'Device','ModelBuilder','GraphModelBuilder','ModelRegistry','ModelConfigError','ModularCNN',
+    'Trainer','TrainingConfig','TrainingConfigError','TrainingSession','TrainingResult','BenchmarkRunner','ExperimentManager',
+    'EvaluationResult','EvaluationCohort','QualityExperimentResult','evaluate_predictions','evaluate_classification',
+    'evaluation_capabilities','measure_time_to_quality','evaluate_robustness','evaluate_precision_quality','compare_performance_quality',
+    'ModelStructureSnapshot','ModelStructureError','capture_model_structure','ModelStructureComparison',
+    'ModelStructureComparisonError','compare_model_structures','ModelArchitectureAudit','ModelArchitectureAuditError','audit_model_architecture',
+    'models','callbacks','augmentation','evaluation','quality','checkpoint','benchmark','training','performance',
+    'analysis','advisor','reporting','experiments','structure','structure_comparison','architecture_audit',
+]
 
-def __getattr__(name: str):
+
+def __getattr__(name: str) -> _Any:
     """Resolve public convenience aliases without instantiating any component."""
     if name not in _LAZY_EXPORTS:
         raise AttributeError(f'module {__name__!r} has no attribute {name!r}')

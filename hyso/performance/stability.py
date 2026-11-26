@@ -329,7 +329,7 @@ def _read_journal(root):
     return evidence
 
 
-def reopen_stability(directory: '_typing.Any') -> '_typing.Any':
+def reopen_stability(directory: '_typing.Any') -> 'RuntimeResult':
     """Committed chunks survive failure. Reopen validates hashes/order/terminal.
 
     Args:

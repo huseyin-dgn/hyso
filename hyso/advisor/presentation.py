@@ -77,7 +77,7 @@ def _options(language, audience):
         raise AdvisorError('unsupported_audience')
 
 
-def build_display_model(report: '_typing.Any') -> '_typing.Any':
+def build_display_model(report: '_typing.Any') -> 'dict[str, _typing.Any]':
     """One detached, language-neutral structured snapshot for every view.
 
     Contract validation is not native evidence revalidation. No source files,

@@ -9,7 +9,7 @@ from pathlib import Path
 import threading
 import time
 
-from .runtime_result import _result, _hash, _int, _number, _name, _digest
+from .runtime_result import RuntimeResult, _result, _hash, _int, _number, _name, _digest
 from .stability import WorkloadRecipe, _run_owned, _read_journal, _factory, _Journal, _atomic
 
 
@@ -114,7 +114,7 @@ class StreamProtocol:
         if self.process_memory_bytes is not None and self.job_memory_bytes is not None and self.job_memory_bytes<self.process_memory_bytes:raise ValueError('job budget below process budget')
 
 
-def measure_streaming(source: '_typing.Any', processor_recipe: '_typing.Any', directory: '_typing.Any', *, protocol: '_typing.Any'=StreamProtocol()) -> '_typing.Any':
+def measure_streaming(source: '_typing.Any', processor_recipe: '_typing.Any', directory: '_typing.Any', *, protocol: '_typing.Any'=StreamProtocol()) -> 'RuntimeResult':
     """Run an explicitly requested bounded streaming workload in its owned worker.
 
     Args:

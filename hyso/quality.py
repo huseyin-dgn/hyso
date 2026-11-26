@@ -462,7 +462,7 @@ def _quality_device(device):
     return str(selected) if selected.type=='cuda' else 'cpu'
 
 
-def evaluate_robustness(model: '_typing.Any',cohort: '_typing.Any',perturbation: '_typing.Any', *, corruption_id: '_typing.Any', severity: '_typing.Any', seed: '_typing.Any', device: 'str'='cpu') -> '_typing.Any':
+def evaluate_robustness(model: '_typing.Any',cohort: '_typing.Any',perturbation: '_typing.Any', *, corruption_id: '_typing.Any', severity: '_typing.Any', seed: '_typing.Any', device: 'str'='cpu') -> 'QualityExperimentResult':
     """
 
     CPU perturbations remain on the immutable cohort; inference uses the explicit CPU/CUDA device.
@@ -519,7 +519,7 @@ def evaluate_robustness(model: '_typing.Any',cohort: '_typing.Any',perturbation:
     finally:_restore_rng(rng)
 
 
-def evaluate_precision_quality(model: '_typing.Any',cohort: '_typing.Any', *, candidate: _typing.Literal['fp32', 'fp64', 'amp_fp16', 'bf16', 'int8_dynamic']='int8_dynamic',device: 'str'='cpu',batch_size: 'int'=16) -> '_typing.Any':
+def evaluate_precision_quality(model: '_typing.Any',cohort: '_typing.Any', *, candidate: _typing.Literal['fp32', 'fp64', 'amp_fp16', 'bf16', 'int8_dynamic']='int8_dynamic',device: 'str'='cpu',batch_size: 'int'=16) -> 'QualityExperimentResult':
     """Paired labeled quality against a fresh same-device FP32 master copy.
 
     CPU: FP32/FP64/BF16/dynamic Linear INT8. CUDA opt-in: FP32/AMP FP16/BF16.
@@ -570,7 +570,7 @@ def evaluate_precision_quality(model: '_typing.Any',cohort: '_typing.Any', *, ca
     finally:_restore_rng(rng)
 
 
-def measure_time_to_quality(factory: '_typing.Any',cohort: '_typing.Any', *, seeds: '_typing.Any', target: '_typing.Any', epochs: 'int'=3,cadence: 'int'=1,metric: _typing.Literal['accuracy', 'macro_f1']='accuracy',device: 'str'='cpu') -> '_typing.Any':
+def measure_time_to_quality(factory: '_typing.Any',cohort: '_typing.Any', *, seeds: '_typing.Any', target: '_typing.Any', epochs: 'int'=3,cadence: 'int'=1,metric: _typing.Literal['accuracy', 'macro_f1']='accuracy',device: 'str'='cpu') -> 'QualityExperimentResult':
     """
 
     The factory must return a fresh Trainer on the selected device; CUDA evaluation is synchronized by its native reader.2..8 fresh CPU fits, <=10 epochs/seed, <=256 train/eval samples.
@@ -715,7 +715,7 @@ def _bundle(model,cohort,precision,iterations,memory_metric='logical_model_bytes
 
 def compare_performance_quality(baseline: '_typing.Any',candidate: '_typing.Any',cohort: '_typing.Any', *, precision: _typing.Literal['fp32', 'fp64']='fp32',iterations: 'int'=5,
         metric: _typing.Literal['accuracy', 'macro_f1']='accuracy',min_quality: 'float'=0.,max_quality_drop: 'float'=.01,max_latency_regression: 'float'=.05,independent_samples: 'bool'=False,
-        memory_metric: _typing.Literal[None, 'logical_model_bytes', 'cpu_rss_sampled_peak_bytes', 'cuda_allocated_peak_bytes', 'cuda_reserved_peak_bytes', 'physical_vram_bytes']='logical_model_bytes',max_memory_regression: 'float'=.05,memory_protocol: '_typing.Any'=None,batch_size: '_typing.Any'=None,device: 'str'='cpu',allow_cuda_peak_reset: 'bool'=False) -> '_typing.Any':
+        memory_metric: _typing.Literal[None, 'logical_model_bytes', 'cpu_rss_sampled_peak_bytes', 'cuda_allocated_peak_bytes', 'cuda_reserved_peak_bytes', 'physical_vram_bytes']='logical_model_bytes',max_memory_regression: 'float'=.05,memory_protocol: '_typing.Any'=None,batch_size: '_typing.Any'=None,device: 'str'='cpu',allow_cuda_peak_reset: 'bool'=False) -> 'QualityExperimentResult':
     """
 
     Observed quality/latency/memory with explicit same-device protocols.

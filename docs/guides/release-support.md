@@ -71,3 +71,16 @@ All remain BLOCKED and retained. None is relabeled PASS or deleted. Execution is
 | `tests/test_runtime_analysis.py::test_native_allocator_cache_growth_is_not_leak` | CUDA_NATIVE | Short actual GPU allocator-cache trend integration is deferred; offline P32 analysis remains available. |
 
 Verified runtime boundary: safe campaign Windows owned workers with CPU Torch 2.5.1+cpu; historical artifacts retain their exact original runtime identities. No blanket acceptance of other operating systems, hardware or runtime versions is implied.
+
+## Current bounded CUDA evidence (U15–U18 reconciliation)
+
+The original acceptance tables above remain historical. The support registry now
+adds `current_cuda_acceptance` entries for the 32 P features with retained PASS
+captures from `outputs/cuda-functional-acceptance-20261126/checkpoint.json`.
+Each entry binds its evidence path and SHA256. These are exact recorded
+model/device/runtime/protocol observations, not general hardware certification.
+P23 covers only its basic path with `saved_activation_lifetime=false`, B4 closed.
+P18 advanced counters, P31 CUDA 7200s and P33 advanced energy remain deferred;
+`full_cuda_acceptance=false`. U01–U14 records and failed attempts are unchanged.
+See [product experience acceptance](product-experience-acceptance.md) for the
+separate CPU/offline campaign and export preinventory.

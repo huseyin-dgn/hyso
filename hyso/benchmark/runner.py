@@ -377,7 +377,7 @@ class BenchmarkRunner:
     Args:
         model (nn.Module): Caller-owned model; device, dtype and task must match the native operation. Required.
         device (str | torch.device): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
-        input_shape (tuple[int, ...] | list[int] | None): Per-sample (C, H, W) dimensions; batch is excluded. Default: None.
+        input_shape (tuple[int, ...] | list[int] | None): Four positive (N, C, H, W) dimensions, including batch. Default: None.
         example_input (torch.Tensor | None): Caller-supplied example tensor/input with the declared shape/device/dtype. Default: None.
         precision (str): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: 'fp32'.
         warmup_iterations (int): Unreported warmup iteration count before measured samples. Default: 10.

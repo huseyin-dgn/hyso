@@ -399,7 +399,7 @@ def _capture(resolver, record_id, contract, side):
     return m, conditions, reasons, bad
 
 
-def compare_records(left_resolver: '_typing.Any', left_record_id: '_typing.Any', right_resolver: '_typing.Any', right_record_id: '_typing.Any', *, contract: '_typing.Any'=None) -> '_typing.Any':
+def compare_records(left_resolver: '_typing.Any', left_record_id: '_typing.Any', right_resolver: '_typing.Any', right_record_id: '_typing.Any', *, contract: '_typing.Any'=None) -> 'ComparisonResult':
     """Assess fair recorded conditions, never delta, significance or speedup.
 
     Resolvers validate native records using unchanged 3A constructors. Optional

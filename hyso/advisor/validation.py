@@ -7,7 +7,7 @@ from .contracts import (AdvisorRequest, Consistency, GoalEvaluation, InputValidi
                         RequestValidation, _METRICS)
 
 
-def validate_request(request: '_typing.Any') -> '_typing.Any':
+def validate_request(request: '_typing.Any') -> 'RequestValidation':
     """Find impossible hard intervals for exactly matching, complete goal contexts.
 
     Soft goals, priorities, budgets and different metrics cannot create a hard

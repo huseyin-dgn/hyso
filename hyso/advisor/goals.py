@@ -64,7 +64,7 @@ def _context(resolver, resolved, metric):
     return request_scope, request_protocol
 
 
-def goal_context(resolver: '_typing.Any', record_id: '_typing.Any', metric: Metric) -> '_typing.Any':
+def goal_context(resolver: '_typing.Any', record_id: '_typing.Any', metric: Metric) -> 'dict[str, _typing.Any]':
     """Explicitly request a retained record's scope/protocol selectors.
 
     This convenience call adds no target and leaves missing fields missing.
@@ -145,7 +145,7 @@ def _unknown(goal, support, reasons, evidence=()):
                           evidence=evidence, reasons=tuple(reasons))
 
 
-def evaluate_goal(resolver: '_typing.Any', goal: '_typing.Any') -> '_typing.Any':
+def evaluate_goal(resolver: '_typing.Any', goal: '_typing.Any') -> 'GoalEvaluation':
     """Evaluate one goal in exactly one eligible native capture, or abstain.
 
     Args:
@@ -224,7 +224,7 @@ def evaluate_goal(resolver: '_typing.Any', goal: '_typing.Any') -> '_typing.Any'
                           observed, Feasibility.UNKNOWN, (resolved.reference,), reasons)
 
 
-def evaluate_goals(resolver: '_typing.Any', request: '_typing.Any') -> '_typing.Any':
+def evaluate_goals(resolver: '_typing.Any', request: '_typing.Any') -> 'tuple[GoalEvaluation, ...]':
     """Evaluate the supplied user goals against resolved retained evidence without running missing measurements.
 
     Args:

@@ -1549,7 +1549,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P01",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\ad9e098b85c74a87851c384c5face197\\P01.json",
+          "sha256": "ea7fe2e5113643dd1556457ddc91c84b659cc8bd0f09015f0b235ab362a39225",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P02",
@@ -1563,7 +1569,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P02",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\ad9e098b85c74a87851c384c5face197\\P02.json",
+          "sha256": "d684faeefab9603e585c517188f5a6b1e4bdad8be59d879295e7c5dc7cab7050",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P03",
@@ -1577,7 +1589,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P03",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\c7a22ec7a41643b89bdfac36ab6196e3\\P03.json",
+          "sha256": "77de5f17975bdd2e8625feb656b79087a4828d325eb1a8a432ae55f337a97e5a",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P04",
@@ -1591,7 +1609,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P04",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\c7a22ec7a41643b89bdfac36ab6196e3\\P04.json",
+          "sha256": "00ddb1f067afd3c704b47dc0dfa3945558db2613a7a1b73edc6e914da3680848",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P05",
@@ -1605,7 +1629,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P05",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\ad9e098b85c74a87851c384c5face197\\P05.json",
+          "sha256": "93d88665df9611978071bae9f106c515fa738b00e3393ea152850d7ed3d2d2d3",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P06",
@@ -1619,7 +1649,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P06",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\aec8b7ab9b29411db23c41195f4eb4d2\\P06.json",
+          "sha256": "ac943c3d80217815d7ecba2ef0dd79295105c660f26b8da3bbefccf397d4ebfc",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P07",
@@ -1633,7 +1669,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P07",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\aec8b7ab9b29411db23c41195f4eb4d2\\P07.json",
+          "sha256": "fac60397c8943d6a9645518c3a4706882b986b66a038c24cd7f34ebe6ff4b7bf",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P08",
@@ -1647,7 +1689,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P08",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\aec8b7ab9b29411db23c41195f4eb4d2\\P08.json",
+          "sha256": "4635de31f89a85d94aabe121095228b96dcfcdf366990402bb803b12feaab474",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P09",
@@ -1661,7 +1709,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P09",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\ad9e098b85c74a87851c384c5face197\\P09.json",
+          "sha256": "febafc9467e29c401a4114e257bd51b947f8b4e4dea0727bd4e594f0fea4e40e",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P10",
@@ -1675,7 +1729,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P10",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\ad9e098b85c74a87851c384c5face197\\P10.json",
+          "sha256": "42089d5e8b05daf23d86b98de5c276bb134f05edcf9adc2aaa27a2466f6bdafc",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P11",
@@ -1689,7 +1749,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P11",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\ad9e098b85c74a87851c384c5face197\\P11.json",
+          "sha256": "2543cf3dee4598b3162706b63261b76ee0348a312ece0691872f33fad9e4d702",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P12",
@@ -1703,7 +1769,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P12",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\ca0fc0c6eb9e430ab0a620804c8b1cd4\\P12.json",
+          "sha256": "158f70ec4c5af2c41ea68077a65282369974a08c79811428010dab100aef03b5",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P13",
@@ -1717,7 +1789,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P13",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\ca0fc0c6eb9e430ab0a620804c8b1cd4\\P13.json",
+          "sha256": "2d84cd2fddc8c7321b638f036a2d9ccb5d5dead676fc6e086b2408194d2b31bd",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P14",
@@ -1731,7 +1809,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P14",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\fd0744d444ee45a0b620d03fee9742d9\\P14.json",
+          "sha256": "9c4802040f64d7664173e81dbc422f7470dac2fa480be63b0115212bf21f7f74",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P15",
@@ -1745,7 +1829,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P15",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\ca0fc0c6eb9e430ab0a620804c8b1cd4\\P15.json",
+          "sha256": "2d70ac260be543f86e8cceadcb8a5ee381ba02e907bdb7ac81bd0ed018081911",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P16",
@@ -1759,7 +1849,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P16",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\ca0fc0c6eb9e430ab0a620804c8b1cd4\\P16.json",
+          "sha256": "2c152eaa66bf89e998561778022f387593ebbadff3361043b1efe5dd293f3fa7",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P17",
@@ -1773,7 +1869,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P17",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\fd0744d444ee45a0b620d03fee9742d9\\P17.json",
+          "sha256": "3ee5c196c4c04c06bec7861a20bf007a92346324701db302e526b55590c03bbb",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P18",
@@ -1801,7 +1903,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P19",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\6e4ce6cb9cbc4678855632a71f4fa3b8\\P19.json",
+          "sha256": "1bec0c584c5b0ade1551b2a318d5bd683245649764df877eafbad6a2d1e353a6",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P20",
@@ -1815,7 +1923,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P20",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\6e4ce6cb9cbc4678855632a71f4fa3b8\\P20.json",
+          "sha256": "7bede2499b13186e1a159ab2f58fdba7e4cb4aec1880f265bb93e06cc4c093ff",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P21",
@@ -1829,7 +1943,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P21",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\5ea5c0ec23994cd4ba64bc23464ad990\\P21.json",
+          "sha256": "3bbd47f9a7fc68b9095c057eda56e8ece0ad508077cb7b36dbaab1486ad6cd52",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P22",
@@ -1843,7 +1963,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P22",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\6e4ce6cb9cbc4678855632a71f4fa3b8\\P22.json",
+          "sha256": "11a4aa2eb4fea55e17c3f167971156f89423ee63b3a673f05731879399d1f7dc",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P23",
@@ -1864,6 +1990,14 @@
           "cuda_saved_activation": "UNSUPPORTED",
           "cuda_saved_activation_execution": "BLOCKED",
           "reason": "BLOCKED_B4_UNRESOLVED"
+        },
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\6e4ce6cb9cbc4678855632a71f4fa3b8\\P23.json",
+          "sha256": "2f09a59661c755524125668ac201d9f27baf73ab66791a77ddfae35b77c5b5ea",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification",
+          "saved_activation_lifetime": false,
+          "B4": "CLOSED"
         }
       },
       {
@@ -1878,7 +2012,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P24",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\5ea5c0ec23994cd4ba64bc23464ad990\\P24.json",
+          "sha256": "5f1df42bacdc0aaf9199bc2cf607c3846f2978f3a4a544cd2f0ecef057b9a072",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P25",
@@ -1892,7 +2032,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P25",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\61c7ccc4a3ee4f9a85ecfea019942278\\P25.json",
+          "sha256": "2d9c1635f643a1f486acdf366f7e330c6263d07b0670180538ec52061f862341",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P26",
@@ -1906,7 +2052,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P26",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\aec8b7ab9b29411db23c41195f4eb4d2\\P26.json",
+          "sha256": "14448b70521d5425d65f2efbf69f888d59aca08db9a02614da3f0559e7baa479",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P27",
@@ -1920,7 +2072,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P27",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\78cc8a1964794644bd9003d3b3747d89\\P27.json",
+          "sha256": "8cd0eb0a9a7e38d97135254063cb8d2a881530eb4f2bbd2e09334c76ebb5d76f",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P28",
@@ -1934,7 +2092,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P28",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\aec8b7ab9b29411db23c41195f4eb4d2\\P28.json",
+          "sha256": "3b20939e716cf7fdd359c5b6b6de87a64219ba47a16734cb1593be49d7a1fe9a",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P29",
@@ -1948,7 +2112,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P29",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\78cc8a1964794644bd9003d3b3747d89\\P29.json",
+          "sha256": "25ba2c21030cfbc1181f3650297f0263914d18f3a6e8453b3450c50b9277ae66",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P30",
@@ -1962,7 +2132,13 @@
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P30",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\5ea5c0ec23994cd4ba64bc23464ad990\\P30.json",
+          "sha256": "38fbc4d0061a867debc6e98b91c0d88d7fb8d333897df52b7092e949ad5fec90",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P31",
@@ -1991,12 +2167,18 @@
         "cuda": "PARTIAL",
         "verified_scope": "Offline CPU analysis of retained memory trends",
         "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
-        "limitations": "Growth is not proof of a causal leak; GPU cache integration remains blocked",
+        "limitations": "Allocated/reserved trends are distinct; sampled allocator evidence is not proof of a causal leak.",
         "acceptance_evidence": [
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P32",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\a506d330b0ee49e88b2c00df5c135e61\\P32.json",
+          "sha256": "38319439b463ac02f419c391ca53c31a04ff011dc10a7e386720bb2dcc5160ef",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P33",
@@ -2019,12 +2201,18 @@
         "cuda": "PARTIAL",
         "verified_scope": "CPU-side protocol validation and retained device comparisons",
         "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
-        "limitations": "Real CPU/CUDA device comparison integration remains blocked",
+        "limitations": "Only the recorded CPU/CUDA devices and comparable protocols are verified; no global device winner.",
         "acceptance_evidence": [
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P34",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\a506d330b0ee49e88b2c00df5c135e61\\P34.json",
+          "sha256": "f03a2152b50ecd497abd6dda19d167d5096d8472f1e9fa307aa65e7227827dbd",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       },
       {
         "feature_id": "P35",
@@ -2033,12 +2221,18 @@
         "cuda": "PARTIAL",
         "verified_scope": "ONNX Runtime CPU provider event analysis",
         "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
-        "limitations": "Provider availability alone does not prove placement; actual CUDA provider integration remains blocked",
+        "limitations": "Actual provider node events required; provider availability alone is insufficient. Exact admitted runtime/DLL identity only.",
         "acceptance_evidence": [
           "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P35",
           "outputs/release-acceptance-20261125/final-campaign/summary.json"
         ],
-        "historical_acceptance": "PASS"
+        "historical_acceptance": "PASS",
+        "current_cuda_acceptance": {
+          "status": "PASS",
+          "evidence": "C:\\Users\\hdgn5\\OneDrive\\Belgeler\\GitHub\\hyso\\outputs\\cuda-functional-acceptance-20261126\\attempts\\8ce28207d4554e769c6e83724c85e45b\\P35.json",
+          "sha256": "53d2ba077e68179dc7b8ba0734a5ef96a241db959ad1ec8c748ebdef6e9b8726",
+          "scope": "Exact retained CUDA model/device/runtime/protocol only; not general hardware certification"
+        }
       }
     ],
     "test_acceptance": "8536 source PASS; 55 infrastructure PASS; 36 package PASS; 13 risky integrations BLOCKED; 1 historical AST RETIRED. These original results are preserved, not rerun or reclassified.",

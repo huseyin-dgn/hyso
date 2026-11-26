@@ -26,7 +26,7 @@ from pathlib import Path
 import sys
 import time
 
-from .runtime_result import _result, _hash, _int, _number, _name, _digest
+from .runtime_result import RuntimeResult, _result, _hash, _int, _number, _name, _digest
 from .stability import WorkloadRecipe, _factory, _atomic
 from .devices import _launch, _valid_run
 
@@ -82,7 +82,7 @@ class ProviderProtocol:
 
 
 def profile_execution_providers(recipe: '_typing.Any', directory: '_typing.Any', *, providers: '_typing.Any'=None, expected: '_typing.Any'=None, optimization: _typing.Literal['disabled', 'all']='all',
-                                protocol: '_typing.Any'=ProviderProtocol(), runtime_search_path: '_typing.Any'=None, provider_options: '_typing.Any'=None) -> '_typing.Any':
+                                protocol: '_typing.Any'=ProviderProtocol(), runtime_search_path: '_typing.Any'=None, provider_options: '_typing.Any'=None) -> 'RuntimeResult':
     """Factory returns (self-contained ONNX bytes, numpy input-feed dictionary).
 
     Default: one profiled CPU execution with normal ORT graph optimization.

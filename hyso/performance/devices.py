@@ -13,7 +13,7 @@ import platform
 import time
 import uuid
 
-from .runtime_result import _result, _hash, _int, _number, _digest
+from .runtime_result import RuntimeResult, _result, _hash, _int, _number, _digest
 from .stability import WorkloadRecipe, _run_owned, _load, _atomic, _factory
 
 
@@ -101,7 +101,7 @@ def _launch(recipe, directory, mode, extra, protocol):
                 controller=controller,report=report,**extra)
 
 
-def compare_devices(recipe: '_typing.Any', devices: '_typing.Any', directory: '_typing.Any', *, protocol: '_typing.Any'=DeviceProtocol()) -> '_typing.Any':
+def compare_devices(recipe: '_typing.Any', devices: '_typing.Any', directory: '_typing.Any', *, protocol: '_typing.Any'=DeviceProtocol()) -> 'RuntimeResult':
     """Explicit 'cpu' or physical GPU UUIDs; serial resident eager inference.
 
     Energy and quality remain null: this adapter has no labeled evaluation or

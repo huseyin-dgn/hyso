@@ -539,7 +539,7 @@ class UnifiedModelComparison:
 
 
 def compare_p26_model_profiles(baseline_resolver: '_typing.Any', baseline_record_id: '_typing.Any',
-                               candidate_resolver: '_typing.Any', candidate_record_id: '_typing.Any', *, contract: '_typing.Any'=None) -> '_typing.Any':
+                               candidate_resolver: '_typing.Any', candidate_record_id: '_typing.Any', *, contract: '_typing.Any'=None) -> 'UnifiedModelComparison':
     """Compare two distinct, bound native evaluations without rerunning models.
 
     Structure eligibility is independent of quality. Accuracy and macro-F1 use

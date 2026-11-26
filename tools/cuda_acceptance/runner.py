@@ -315,7 +315,7 @@ def main():
         except OSError:lock.close();raise RuntimeError('CUDA_MANAGER_ALREADY_OWNED')
         try:p,_=prepare()
         finally:lock.seek(0);msvcrt.locking(lock.fileno(),msvcrt.LK_UNLCK,1);lock.close()
-        print(json.dumps(dict(status='PREPARED',cpu_cases=len(p['cpu_inventory']),groups=7,GPU_executed=False)));return 0
+        print(json.dumps(dict(status='PREPARED',cpu_cases=len(p['cpu_inventory']),groups=len(FEATURES),GPU_executed=False)));return 0
     plan=read_json(ROOT/'plan.json');cp=read_json(ROOT/'checkpoint.json')
     if not plan:raise RuntimeError('PREPARATION_REQUIRED: use -CudaScope -PrepareOnly')
     if cp['attempts'] and not args.resume:raise RuntimeError('RESUME_REQUIRED: use -CudaScope -Resume; no automatic retries')

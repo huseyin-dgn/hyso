@@ -1,13 +1,14 @@
 [CmdletBinding(DefaultParameterSetName = 'Run')]
 param(
-    [Parameter(ParameterSetName = 'Status')][Parameter(ParameterSetName = 'Cuda')][Parameter(ParameterSetName = 'User')][switch]$Status,
+    [Parameter(ParameterSetName = 'Status')][Parameter(ParameterSetName = 'Cuda')][Parameter(ParameterSetName = 'User')][Parameter(ParameterSetName = 'Product')][switch]$Status,
     [Parameter(ParameterSetName = 'Stop')][switch]$Stop,
-    [Parameter(ParameterSetName = 'Prepare')][Parameter(ParameterSetName = 'Cuda')][Parameter(ParameterSetName = 'User')][switch]$PrepareOnly,
+    [Parameter(ParameterSetName = 'Prepare')][Parameter(ParameterSetName = 'Cuda')][Parameter(ParameterSetName = 'User')][Parameter(ParameterSetName = 'Product')][switch]$PrepareOnly,
     [Parameter(ParameterSetName = 'Support')][switch]$SupportScope,
     [Parameter(ParameterSetName = 'Cuda', Mandatory = $true)][switch]$CudaScope,
     [Parameter(ParameterSetName = 'User', Mandatory = $true)][switch]$UserAcceptance,
-    [Parameter(ParameterSetName = 'Cuda')][Parameter(ParameterSetName = 'User')][switch]$Resume,
-    [Parameter(ParameterSetName = 'Cuda')][Parameter(ParameterSetName = 'User')][string[]]$Revalidate
+    [Parameter(ParameterSetName = 'Product', Mandatory = $true)][switch]$ProductExperience,
+    [Parameter(ParameterSetName = 'Cuda')][Parameter(ParameterSetName = 'User')][Parameter(ParameterSetName = 'Product')][switch]$Resume,
+    [Parameter(ParameterSetName = 'Cuda')][Parameter(ParameterSetName = 'User')][Parameter(ParameterSetName = 'Product')][string[]]$Revalidate
 )
 $ErrorActionPreference = 'Stop'
 $repoRoot = $PSScriptRoot
@@ -23,6 +24,7 @@ $controllerPath = Join-Path $repoRoot 'tools/final_acceptance/campaign_controlle
 if ($SupportScope) { $controllerPath = Join-Path $repoRoot 'tools/final_acceptance/verify_support_scope.py' }
 if ($CudaScope) { $controllerPath = Join-Path $repoRoot 'tools/cuda_acceptance/runner.py' }
 if ($UserAcceptance) { $controllerPath = Join-Path $repoRoot 'tools/user_acceptance/runner.py' }
+if ($ProductExperience) { $controllerPath = Join-Path $repoRoot 'tools/product_acceptance/runner.py' }
 $controllerArgs = @('-I', '-B', $controllerPath)
 if ($Status) { $controllerArgs += '--status' }
 elseif ($Stop) { $controllerArgs += '--stop' }
