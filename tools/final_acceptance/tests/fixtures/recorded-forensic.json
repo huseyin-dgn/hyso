@@ -1,0 +1,21 @@
+{
+  "attempt": "outputs/release-acceptance-20261125/final-campaign/attempts/e2bc575156964b30ac1729ac928a19fd",
+  "baseline_path": "outputs/release-acceptance-20261125/final-campaign/defect-resolution-20261126/checkpoint-before.json",
+  "files": {
+    "admission-receipt.json": "d66004f29e0d9f0718531176d95bce77c6f61243d9b6e61ac7de5ddd6e18ba8d",
+    "admit.json": "9d1ebfb832ec99d65ad2bf1f6874515e97a321b731507a68ccb4191fe1d47e5d",
+    "collected.json": "9c24252ff84b5eb4551c99799967684d70ac52f9622f5fff5a05ffb89f1b3f4a",
+    "controller.json": "96863576f9642d4909312c6a2784f7afc47f70269223acba4e18aaad21f754ad",
+    "events.jsonl": "d120e46277317db5fdeea2ac232d8eba377b5d35761552852f8c01269ab81fbc",
+    "harvest.json": "b5276ec2cfcf04e56d63a6e15705219200f0d8ffd18591eaba93a3983890ca2f",
+    "interpreter-ready.json": "ed03d47bd96379a26f03b43859b07f5544c6c316f24e8b3ece932373dbb91368",
+    "journal-terminal.json": "c240c5f28dc6de6a3d4b55ca65a0712573bd7ba388b7508c45506cd44430ad14",
+    "launch-receipt.json": "17ef60afb497b20aefd0eb1559c3a7011c66d4f435948750f1a9e9eaf256600a",
+    "owner-identities.json": "9758e1c4078db43379266e92f64fb3b3a3bc111b08f343813d55cc4bc247088b",
+    "request.json": "0a2c65b9c71c7cb874f288f2c0b0e16d948e8b2a742bed994a18bbd20a72bc27",
+    "selection.json": "6add4fba8d7f7e0c3f0df492f6ba4adfadb179f1b66df4b2f0a7faedc518d5d9",
+    "terminal-evidence.json": "6287c4bcd6b953b74842ac77fdf055d163e1bac092a172f5683bc3e6aaff6ff2"
+  },
+  "nodeid": "tests/forensics/test_p23_forensic_runner.py::OwnedSafety::test_cpu_recipe_full_saved_payload",
+  "baseline_sha256": "4fb988fe462d95a2fef3f8ab10bf818d175555b67508d925058300ac76feb591"
+}

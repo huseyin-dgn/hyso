@@ -591,7 +591,9 @@ class Trainer:
                 raise TypeError("binary targets must have floating dtype")
             if not torch.isfinite(targets).all() or not ((targets == 0) | (targets == 1)).all():
                 raise ValueError("binary targets must be finite hard labels 0 or 1")
-        return inputs if named else inputs.to(self.device), targets.to(self.device), size
+        observer = getattr(self, '_loader_recorder', None)
+        move = (lambda tensor, role: tensor.to(self.device)) if observer is None else observer.transfer_tensor
+        return inputs if named else move(inputs, 'inputs'), move(targets, 'targets'), size
 
     def _loss_and_correct(self, logits, targets, size):
         if self._multi_loss:

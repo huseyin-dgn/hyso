@@ -1,4 +1,4 @@
-"""P24/P27/P28/P29: bounded CPU experiments with embedded source evidence."""
+"""P24/P27/P28/P29: bounded explicit CPU/CUDA experiments with embedded source evidence."""
 import typing as _typing
 from dataclasses import dataclass
 import hashlib
@@ -407,7 +407,7 @@ def _precision(model,policy,device='cpu'):
     from .performance.sweeps import _prepare
     owned,proof=_prepare(model,policy,device)
     adapter=_PrecisionAdapter(owned,policy).to(device)
-    return adapter,dict(policy=policy,p08_recipe=proof,source_master_sha256=_model_hash(model),adapter_state_sha256=_model_hash(adapter,allow_device=device.type=='cuda'),
+    return adapter,dict(policy=policy,p08_recipe=proof,source_master_sha256=_model_hash(model,allow_device=device.type=='cuda'),adapter_state_sha256=_model_hash(adapter,allow_device=device.type=='cuda'),
                         execution_guard='per_batch_dtype' if policy!='int8_dynamic' else 'per_batch_quantized::linear_dynamic')
 
 
@@ -427,8 +427,21 @@ def _precision_evaluation(adapter,proof,cohort,*,batch_size=16,device='cpu',stri
     return result
 
 
-def evaluate_robustness(model: '_typing.Any',cohort: '_typing.Any',perturbation: '_typing.Any', *, corruption_id: '_typing.Any', severity: '_typing.Any', seed: '_typing.Any') -> '_typing.Any':
-    """Evaluate baseline and explicitly supplied perturbed predictions/cohorts under the robustness contract.
+def _quality_device(device):
+    selected=torch.device(device)
+    if selected.type not in ('cpu','cuda'):raise NotImplementedError('quality supports CPU or CUDA only')
+    if selected.type=='cuda':
+        if not torch.cuda.is_available():raise NotImplementedError('CUDA unavailable; no CPU fallback')
+        selected=torch.device('cuda',torch.cuda.current_device() if selected.index is None else selected.index)
+        torch.cuda.current_stream(selected)  # Initialize before the caller's RNG snapshot.
+    return str(selected) if selected.type=='cuda' else 'cpu'
+
+
+def evaluate_robustness(model: '_typing.Any',cohort: '_typing.Any',perturbation: '_typing.Any', *, corruption_id: '_typing.Any', severity: '_typing.Any', seed: '_typing.Any', device: 'str'='cpu') -> '_typing.Any':
+    """
+
+    CPU perturbations remain on the immutable cohort; inference uses the explicit CPU/CUDA device.
+    Evaluate clean and perturbed predictions under the paired robustness contract.
 
     Args:
         model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
@@ -438,6 +451,7 @@ def evaluate_robustness(model: '_typing.Any',cohort: '_typing.Any',perturbation:
         severity (_typing.Any): Explicit corruption severity recorded in the comparison. Required.
         seed (_typing.Any): Random seed recorded/applied by this operation; reproducibility still depends on the device/backend. Required.
 
+        device (str): Explicit CPU or indexed CUDA device, without CPU fallback. Default: 'cpu'.
     Returns:
         A QualityExperimentResult with the explicit perturbation and baseline evidence.
 
@@ -453,6 +467,7 @@ def evaluate_robustness(model: '_typing.Any',cohort: '_typing.Any',perturbation:
     Offline: hyso docs show analysis.p27 --lang en
     Open: hyso docs open analysis.p27 --lang en
     """
+    device=_quality_device(device)
     if type(cohort) is not EvaluationCohort:raise TypeError('explicit cohort required')
     _name(corruption_id);_fraction(severity);_integer(seed,0,2**32-1)
     if not callable(perturbation):raise TypeError('perturbation callable required')
@@ -467,13 +482,15 @@ def evaluate_robustness(model: '_typing.Any',cohort: '_typing.Any',perturbation:
         d=cohort.to_dict();c=d['configuration']
         other=EvaluationCohort(torch.cat(changed),y,sample_ids=d['sample_ids'],class_names=c['class_names'],
             split=c['split'],preprocessing_id=d['preprocessing_id'],task=c['task'])
-        _seed(seed);clean=_evaluate(model,cohort).to_dict()
-        _seed(seed);perturbed=_evaluate(model,other).to_dict()
+        _seed(seed);clean=_evaluate(model,cohort,device=device).to_dict()
+        _seed(seed);perturbed=_evaluate(model,other,device=device).to_dict()
         try:code_hash=hashlib.sha256(inspect.getsource(perturbation).encode()).hexdigest()
         except (OSError,TypeError):code_hash=None
-        return _result('P27',dict(clean_cohort=d,perturbed_cohort=other.to_dict(),clean=clean,perturbed=perturbed,
+        sources=dict(clean_cohort=d,perturbed_cohort=other.to_dict(),clean=clean,perturbed=perturbed,
             corruption=dict(id=corruption_id,severity=severity,seed=seed,calls=len(x),
-                operation=getattr(perturbation,'__qualname__',type(perturbation).__qualname__),source_sha256=code_hash)))
+                operation=getattr(perturbation,'__qualname__',type(perturbation).__qualname__),source_sha256=code_hash))
+        if device!='cpu':sources['execution_device']=device
+        return _result('P27',sources)
     finally:_restore_rng(rng)
 
 
@@ -521,8 +538,10 @@ def evaluate_precision_quality(model: '_typing.Any',cohort: '_typing.Any', *, ca
     finally:_restore_rng(rng)
 
 
-def measure_time_to_quality(factory: '_typing.Any',cohort: '_typing.Any', *, seeds: '_typing.Any', target: '_typing.Any', epochs: 'int'=3,cadence: 'int'=1,metric: _typing.Literal['accuracy', 'macro_f1']='accuracy') -> '_typing.Any':
-    """2..8 fresh CPU fits, <=10 epochs/seed, <=256 train/eval samples.
+def measure_time_to_quality(factory: '_typing.Any',cohort: '_typing.Any', *, seeds: '_typing.Any', target: '_typing.Any', epochs: 'int'=3,cadence: 'int'=1,metric: _typing.Literal['accuracy', 'macro_f1']='accuracy',device: 'str'='cpu') -> '_typing.Any':
+    """
+
+    The factory must return a fresh Trainer on the selected device; CUDA evaluation is synchronized by its native reader.2..8 fresh CPU fits, <=10 epochs/seed, <=256 train/eval samples.
 
     Args:
         factory (_typing.Any): Trusted importable factory identity required by the worker recipe. Required.
@@ -533,6 +552,7 @@ def measure_time_to_quality(factory: '_typing.Any',cohort: '_typing.Any', *, see
         cadence (int): Observation cadence under this protocol. Default: 1.
         metric (str): Exact supported metric selector; units and missing-value status are preserved. Default: 'accuracy'.
 
+        device (str): Explicit CPU or indexed CUDA device, without CPU fallback. Default: 'cpu'.
     Returns:
         The retained measure time to quality value, without recomputing measurements.
 
@@ -550,6 +570,7 @@ def measure_time_to_quality(factory: '_typing.Any',cohort: '_typing.Any', *, see
     """
     from .training import Trainer
     from .performance.training import measure_training
+    device=_quality_device(device)
     if type(cohort) is not EvaluationCohort:raise TypeError('explicit cohort required')
     _fraction(target);_integer(epochs,1,10);_integer(cadence,1,epochs)
     if type(seeds) not in (list,tuple) or not 2<=len(seeds)<=8 or len(set(seeds))!=len(seeds):raise ValueError('2..8 distinct seeds required')
@@ -561,8 +582,8 @@ def measure_time_to_quality(factory: '_typing.Any',cohort: '_typing.Any', *, see
     try:
         for seed in seeds:
             _seed(seed);trainer,loader=factory(seed)
-            if (type(trainer) is not Trainer or trainer.device.type!='cpu' or trainer.callbacks or trainer.ema is not None
-                    or trainer.early_stopping is not None or trainer._epochs is not None):raise ValueError('fresh ordinary CPU Trainer without callbacks/EMA/earlystop required')
+            if (type(trainer) is not Trainer or str(trainer.device)!=device or trainer.callbacks or trainer.ema is not None
+                    or trainer.early_stopping is not None or trainer._epochs is not None):raise ValueError('fresh ordinary same-device Trainer without callbacks/EMA/earlystop required')
             if (type(loader) is not DataLoader or type(loader.dataset) is not TensorDataset or loader.num_workers!=0
                     or type(loader.sampler) is not SequentialSampler or type(loader.batch_sampler) is not BatchSampler
                     or loader.collate_fn is not default_collate or loader.pin_memory or loader.worker_init_fn is not None
@@ -576,7 +597,7 @@ def measure_time_to_quality(factory: '_typing.Any',cohort: '_typing.Any', *, see
             from .benchmark.runner import _profile,_descriptor
             from .training.resume import _optimizer_plan,_scheduler_plan,_plain as _configuration
             dtype=next(trainer.model.parameters()).dtype
-            modules,entries=_profile(trainer.model,dtype,torch.device('cpu'))
+            modules,entries=_profile(trainer.model,dtype,torch.device(device))
             structure,_=_descriptor(modules,entries)
             conditions=_configuration(dict(model=structure,optimizer=_optimizer_plan(trainer),scheduler=_scheduler_plan(trainer),
                 grad_clip=trainer.grad_clip,accum_steps=trainer.accum_steps,amp=trainer.amp,batch_size=loader.batch_size,
@@ -591,8 +612,8 @@ def measure_time_to_quality(factory: '_typing.Any',cohort: '_typing.Any', *, see
             train_hash=_hash([t.detach().tolist() for t in loader.dataset.tensors])
             owners.append(trainer);checkpoints=[]
             def evaluate(epoch):
-                model_state=_model_hash(trainer.model)
-                start=time.perf_counter_ns();result=_evaluate(trainer.model,cohort).to_dict();end=time.perf_counter_ns()
+                model_state=_model_hash(trainer.model,allow_device=device!='cpu')
+                start=time.perf_counter_ns();result=_evaluate(trainer.model,cohort,device=device).to_dict();end=time.perf_counter_ns()
                 checkpoints.append(dict(epoch=epoch,start_ns=start,end_ns=end,model_state_sha256=model_state,evaluation=result))
             evaluate(0)
             def callback(event,logs):
@@ -601,7 +622,9 @@ def measure_time_to_quality(factory: '_typing.Any',cohort: '_typing.Any', *, see
             try:timing=measure_training(trainer,loader,epochs=epochs).to_dict()
             finally:trainer.callbacks=()
             runs.append(dict(seed=seed,training_protocol=conditions,training_data_sha256=train_hash,timing=timing,checkpoints=checkpoints))
-        return _result('P24',dict(cohort=cohort.to_dict(),seeds=list(seeds),target=target,epochs=epochs,cadence=cadence,metric=metric,runs=runs))
+        sources=dict(cohort=cohort.to_dict(),seeds=list(seeds),target=target,epochs=epochs,cadence=cadence,metric=metric,runs=runs)
+        if device!='cpu':sources['execution_device']=device
+        return _result('P24',sources)
     finally:_restore_rng(rng)
 
 
@@ -623,13 +646,14 @@ def _inference_batch(data,x,batch_size):
         input_sha256=hashlib.sha256(x.contiguous().numpy().tobytes()).hexdigest())
 
 
-def _bundle(model,cohort,precision,iterations,memory_metric='logical_model_bytes',memory_protocol=None,batch_size=None):
+def _bundle(model,cohort,precision,iterations,memory_metric='logical_model_bytes',memory_protocol=None,batch_size=None,device='cpu',allow_cuda_peak_reset=False):
     from .benchmark.runner import _profile,_descriptor,_bits
-    adapter,proof=_precision(model,precision)
-    if precision not in ('fp32','fp64'):raise NotImplementedError('P29 resident timing supports fp32/fp64')
+    adapter,proof=_precision(model,precision,device)
+    if precision not in (('fp32','fp64') if device=='cpu' else ('fp32','amp_fp16')):raise NotImplementedError('unsupported resident timing precision')
     data=cohort.to_dict();x=_timing_input(data,precision,batch_size)
     if x.ndim!=4:raise ValueError('P29 BenchmarkRunner requires NCHW cohort')
-    modules,entries=_profile(adapter.model,x.dtype,torch.device('cpu'))
+    if device!='cpu':x=x.to(device)
+    modules,entries=_profile(adapter.model,x.dtype,torch.device(device))
     descriptor,digest=_descriptor(modules,entries)
     if sum(t.numel()*t.element_size() for _,_,t in entries)>16*1024*1024:
         raise ValueError('P29 model witness exceeds 16 MiB budget')
@@ -638,14 +662,20 @@ def _bundle(model,cohort,precision,iterations,memory_metric='logical_model_bytes
     witness=[dict(kind=kind,name=name,shape=list(t.shape),dtype=str(t.dtype),object_alias=meta['object_alias'],
                   bytes_hex=_bits(t).numpy().tobytes().hex())
              for (kind,name,t),meta in zip(entries,descriptor['tensors'])]
-    adapter.register_buffer('benchmark_structure_witness',torch.tensor(list(bytes.fromhex(_hash(descriptor))),dtype=torch.uint8))
-    proof['adapter_state_sha256']=_model_hash(adapter)
-    evaluation=_precision_evaluation(adapter,proof,cohort,batch_size=batch_size or len(x))
-    performance=BenchmarkRunner(adapter.model,device='cpu',precision=precision,example_input=x,
-        warmup_iterations=1,measure_iterations=iterations,repeats=2,seed=0).run().to_dict()
+    adapter.register_buffer('benchmark_structure_witness',torch.tensor(list(bytes.fromhex(_hash(descriptor))),dtype=torch.uint8,device=device))
+    proof['adapter_state_sha256']=_model_hash(adapter,allow_device=device!='cpu')
+    evaluation=_precision_evaluation(adapter,proof,cohort,batch_size=batch_size or len(x),device=device,strict=device!='cpu')
+    performance=BenchmarkRunner(adapter.model,device=device,precision=precision,example_input=x,
+        warmup_iterations=1,measure_iterations=iterations,repeats=2,seed=0,
+        measure_cuda_memory=device!='cpu' and memory_metric in ('cuda_allocated_peak_bytes','cuda_reserved_peak_bytes') and allow_cuda_peak_reset).run().to_dict()
     bundle=dict(evaluation=evaluation,performance=performance,precision=proof,
         benchmark_model_sha256=digest,state_witness=witness,host_id=platform.node())
-    if batch_size is not None:bundle['inference_batch']=_inference_batch(data,x,batch_size)
+    if batch_size is not None:bundle['inference_batch']=_inference_batch(data,x.detach().cpu(),batch_size)
+    if device!='cpu':
+        props=torch.cuda.get_device_properties(device);physical=getattr(props,'uuid',None)
+        if physical is None:raise NotImplementedError('native GPU UUID unavailable; cannot bind comparison')
+        bundle['gpu_provenance']=dict(device=device,physical_gpu_uuid=str(physical),cuda_build=torch.version.cuda,
+            torch_version=str(torch.__version__),stream_id=int(torch.cuda.current_stream(device).cuda_stream))
     from ._quality_memory import capture
     bundle['memory']=capture(bundle,cohort.to_dict(),adapter.model,x,memory_metric,memory_protocol)
     return bundle
@@ -653,12 +683,17 @@ def _bundle(model,cohort,precision,iterations,memory_metric='logical_model_bytes
 
 def compare_performance_quality(baseline: '_typing.Any',candidate: '_typing.Any',cohort: '_typing.Any', *, precision: _typing.Literal['fp32', 'fp64']='fp32',iterations: 'int'=5,
         metric: _typing.Literal['accuracy', 'macro_f1']='accuracy',min_quality: 'float'=0.,max_quality_drop: 'float'=.01,max_latency_regression: 'float'=.05,independent_samples: 'bool'=False,
-        memory_metric: _typing.Literal[None, 'logical_model_bytes', 'cpu_rss_sampled_peak_bytes', 'cuda_allocated_peak_bytes', 'cuda_reserved_peak_bytes', 'physical_vram_bytes']='logical_model_bytes',max_memory_regression: 'float'=.05,memory_protocol: '_typing.Any'=None,batch_size: '_typing.Any'=None) -> '_typing.Any':
-    """Observed quality/latency/memory, same CPU FP32/64 protocol.
+        memory_metric: _typing.Literal[None, 'logical_model_bytes', 'cpu_rss_sampled_peak_bytes', 'cuda_allocated_peak_bytes', 'cuda_reserved_peak_bytes', 'physical_vram_bytes']='logical_model_bytes',max_memory_regression: 'float'=.05,memory_protocol: '_typing.Any'=None,batch_size: '_typing.Any'=None,device: 'str'='cpu',allow_cuda_peak_reset: 'bool'=False) -> '_typing.Any':
+    """
+
+    Observed quality/latency/memory with explicit same-device protocols.
+    CUDA uses comparison_version=4 and device-bound native evidence;
+    allocator peak reset is opt-in and irreversible.
 
     Memory defaults to P11 registered logical bytes. Opt-in process RSS executes
     one separate guarded forward per model; it is neither model-only nor exact peak.
-    CUDA/physical domains stay unsupported, and absent memory cannot select a 3D winner.
+    CUDA allocator peaks require explicit reset consent. Physical VRAM remains
+    unsupported, and absent memory cannot select a 3D winner.
     Explicit batch_size streams the full quality cohort, and times/probes its
     first ordered batch separately. Large encoded cohorts require this choice;
     they are never automatically submitted as one inference batch.
@@ -679,6 +714,8 @@ def compare_performance_quality(baseline: '_typing.Any',candidate: '_typing.Any'
         memory_protocol (_typing.Any): Typed memory measurement settings; boundaries and device guards remain explicit. Default: None.
         batch_size (_typing.Any): Positive batch-size setting or metadata assumption; no implicit batch search. Default: None.
 
+        device (str): Explicit CPU or indexed CUDA device, without CPU fallback. Default: 'cpu'.
+        allow_cuda_peak_reset (bool): Explicit consent for native allocator peak reset in an exclusive owned process. Default: False.
     Returns:
         The retained compare performance quality value, without recomputing measurements.
 
@@ -697,6 +734,11 @@ def compare_performance_quality(baseline: '_typing.Any',candidate: '_typing.Any'
     from dataclasses import asdict
     from ._quality_memory import MEMORY_METRICS
     from .performance.memory import MemoryProtocol
+    selected=torch.device(device)
+    if type(allow_cuda_peak_reset) is not bool:raise TypeError('explicit peak-reset boolean required')
+    if selected.type=='cuda' and memory_metric in ('cuda_allocated_peak_bytes','cuda_reserved_peak_bytes') and not allow_cuda_peak_reset:
+        raise ValueError('CUDA allocator peak reset requires allow_cuda_peak_reset=True in an exclusive owned process')
+    if selected.type=='cuda' and batch_size is None:batch_size=16
     if type(cohort) is not EvaluationCohort:raise TypeError('explicit cohort required')
     if batch_size is not None and (type(batch_size) is not int or batch_size<1):raise ValueError('positive integer batch_size required')
     if batch_size is None and type(cohort.to_dict()['inputs']) is dict:
@@ -707,6 +749,7 @@ def compare_performance_quality(baseline: '_typing.Any',candidate: '_typing.Any'
     _integer(iterations,2,50)
     for v in (min_quality,max_quality_drop,max_latency_regression,max_memory_regression):_fraction(v)
     if metric not in ('accuracy','macro_f1') or type(independent_samples) is not bool:raise ValueError('invalid comparison policy')
+    device=_quality_device(device)
     rng=_rng_state()
     try:
         policy=dict(metric=metric,min_quality=min_quality,
@@ -714,9 +757,10 @@ def compare_performance_quality(baseline: '_typing.Any',candidate: '_typing.Any'
             independent_samples=independent_samples,memory_metric=memory_metric,max_memory_regression=max_memory_regression,
             memory_protocol=asdict(memory_protocol or MemoryProtocol()) if memory_metric=='cpu_rss_sampled_peak_bytes' else None)
         if batch_size is not None:policy['batch_size']=batch_size
-        return _result('P29',dict(comparison_version=3 if batch_size is not None else 2,cohort=cohort.to_dict(),
-            baseline=_bundle(baseline,cohort,precision,iterations,memory_metric,memory_protocol,batch_size),
-            candidate=_bundle(candidate,cohort,precision,iterations,memory_metric,memory_protocol,batch_size),policy=policy))
+        if device!='cpu':policy.update(device=device,allow_cuda_peak_reset=allow_cuda_peak_reset)
+        return _result('P29',dict(comparison_version=4 if device!='cpu' else 3 if batch_size is not None else 2,cohort=cohort.to_dict(),
+            baseline=_bundle(baseline,cohort,precision,iterations,memory_metric,memory_protocol,batch_size,device,allow_cuda_peak_reset),
+            candidate=_bundle(candidate,cohort,precision,iterations,memory_metric,memory_protocol,batch_size,device,allow_cuda_peak_reset),policy=policy))
     finally:_restore_rng(rng)
 
 
@@ -752,7 +796,7 @@ def _precision_binding(evaluation,proof):
 def _performance_binding(bundle,evaluation,cohort):
     p=BenchmarkResult(bundle['performance']).to_dict()
     policy=bundle['precision']['policy']
-    if policy not in ('fp32','fp64') or p['configuration']['precision']!=policy:
+    if policy not in (('fp32','amp_fp16') if p['environment']['device'].startswith('cuda:') else ('fp32','fp64')) or p['configuration']['precision']!=policy:
         raise ValueError('unsupported/mismatched timing precision')
     selection=bundle.get('inference_batch')
     batch_size=selection['requested_batch_size'] if selection is not None else None
@@ -768,6 +812,7 @@ def _performance_binding(bundle,evaluation,cohort):
     if any(evaluation['provenance'][e]!=p['environment'][b] for e,b in
            (('python','python_version'),('torch','torch_version'),('platform','platform'))):
         raise ValueError('performance/evaluation runtime mismatch')
+    if evaluation['source']['device']!=p['environment']['device']:raise ValueError('quality/performance device mismatch')
     entries=bundle['state_witness'];metadata=p['model']['structural_descriptor']['tensors']
     if len(entries)!=len(metadata):raise ValueError('incomplete model witness')
     digest=hashlib.sha256();payloads=[];total=0
@@ -805,6 +850,7 @@ def _derive(feature,s):
         a,b=s['clean_cohort'],s['perturbed_cohort'];_cohort(a);_cohort(b);_paired(a,b,same_inputs=False)
         left,right=_evaluation(s['clean'],a),_evaluation(s['perturbed'],b)
         if left['source']['model_state_sha256']!=right['source']['model_state_sha256']:raise ValueError('robustness model mismatch')
+        if left['source']['device']!=right['source']['device'] or s.get('execution_device','cpu')!=left['source']['device']:raise ValueError('robustness device mismatch')
         p=s['corruption'];_name(p['id']);_fraction(p['severity']);_integer(p['seed'],0,2**32-1)
         _name(p['operation']);_integer(p['calls'],1,4096)
         if p['calls']!=len(a['sample_ids']):raise ValueError('missing perturbation calls')
@@ -845,6 +891,7 @@ def _derive(feature,s):
         for run in s['runs']:
             _integer(run['seed'],0,2**32-1)
             p=TrainingPerformanceResult(run['timing']).to_dict()
+            if p['provenance']['runtime']['device']!=s.get('execution_device','cpu'):raise ValueError('time-to-target device mismatch')
             if p['actual_epochs']!=s['epochs'] or p['segment_id'] in segments:raise ValueError('incomplete/reused training')
             segments.add(p['segment_id']);training_hashes.add(run['training_data_sha256'])
             protocols.add(_hash(dict(p19=p['provenance'],configuration=run['training_protocol'])))
@@ -852,6 +899,7 @@ def _derive(feature,s):
             crossed=None;previous=0.;checkpoints=[]
             for checkpoint in run['checkpoints']:
                 epoch=checkpoint['epoch'];ev=_evaluation(checkpoint['evaluation'],c)
+                if ev['source']['device']!=p['provenance']['runtime']['device']:raise ValueError('checkpoint evaluation device mismatch')
                 _integer(epoch,0,s['epochs'])
                 _integer(checkpoint['start_ns'],0,2**63-1);_integer(checkpoint['end_ns'],0,2**63-1)
                 if ev['source']['model_state_sha256']!=checkpoint['model_state_sha256']:
@@ -881,7 +929,7 @@ def _derive(feature,s):
             variance_scope='reached_runs_only_not_censor_adjusted',timing_scope='sum_P19_training_s_excludes_evaluation')
     if feature=='P29':
         version=s.get('comparison_version',1)
-        if type(version) is not int or version not in (1,2,3):raise ValueError('invalid P29 comparison version')
+        if type(version) is not int or version not in (1,2,3,4):raise ValueError('invalid P29 comparison version')
         if version<3 and ('batch_size' in s['policy'] or any('inference_batch' in s[k] for k in ('baseline','candidate'))):
             raise ValueError('batched evidence requires P29 comparison_version=3')
         if version==1 and (any('memory' in s[k] for k in ('baseline','candidate'))
@@ -891,7 +939,7 @@ def _derive(feature,s):
         for k in ('min_quality','max_quality_drop','max_latency_regression'):_fraction(policy[k])
         if type(policy['independent_samples']) is not bool:raise ValueError('explicit independence policy required')
         a,b=s['baseline'],s['candidate'];ea,eb=_evaluation(a['evaluation'],c),_evaluation(b['evaluation'],c)
-        if version==3:
+        if version in (3,4):
             size=policy.get('batch_size')
             if type(size) is not int or size<1:raise ValueError('invalid comparison batch size')
             if any(type(bundle.get('inference_batch')) is not dict for bundle in (a,b)):
@@ -902,6 +950,17 @@ def _derive(feature,s):
         for bundle,evaluation in ((a,ea),(b,eb)):
             _precision_binding(evaluation,bundle['precision'])
             _performance_binding(bundle,evaluation,c)
+        if version==4:
+            device=policy.get('device')
+            if type(device) is not str or not device.startswith('cuda:') or type(policy.get('allow_cuda_peak_reset')) is not bool:raise ValueError('invalid GPU comparison policy')
+            for bundle in (a,b):
+                p=bundle['performance'];proof=bundle.get('gpu_provenance',{})
+                if set(proof)!={'device','physical_gpu_uuid','cuda_build','torch_version','stream_id'}:raise ValueError('missing GPU provenance')
+                if proof['device']!=device or p['environment']['device']!=device or proof['torch_version']!=p['environment']['torch_version'] or not proof['cuda_build'] or type(proof['physical_gpu_uuid']) is not str or not proof['physical_gpu_uuid'] or type(proof['stream_id']) is not int:raise ValueError('GPU provenance mismatch')
+                if policy['memory_metric'] in ('cuda_allocated_peak_bytes','cuda_reserved_peak_bytes') and not policy['allow_cuda_peak_reset']:raise ValueError('missing allocator reset consent')
+            if a['gpu_provenance']!=b['gpu_provenance']:raise ValueError('different GPU runtime/device/stream')
+        elif any(bundle['performance']['environment']['device']!='cpu' for bundle in (a,b)):
+            raise ValueError('CUDA evidence requires comparison_version=4')
         comparison=compare_results(BenchmarkResult(a['performance']),BenchmarkResult(b['performance']))
         if comparison['status']!='compatible' or a['host_id']!=b['host_id'] or not a['host_id']:raise ValueError('incompatible performance conditions')
         qa,qb=_score(ea,policy['metric']),_score(eb,policy['metric'])
@@ -923,11 +982,11 @@ def _derive(feature,s):
             quality_regression=qa-qb>policy['max_quality_drop'],latency_regression=(lb-la)/la>policy['max_latency_regression'],
             quality_significance=dict(status=status,p_value=pvalue,significant=significant,discordant_pairs=n,alpha=.05),
             timing_significance=dict(status='unsupported_no_independent_timing_experiments',p_value=None),compatibility=comparison)
-        if version in (2,3):
+        if version in (2,3,4):
             from ._quality_memory import compare
             result=compare(a,b,c,policy,qa,la,qb,lb,result)
-        if version==3:
-            result.update(comparison_version=3,accuracy=_delta(_score(ea,'accuracy'),_score(eb,'accuracy')),
+        if version in (3,4):
+            result.update(comparison_version=version,accuracy=_delta(_score(ea,'accuracy'),_score(eb,'accuracy')),
                 macro_f1=_delta(_score(ea,'macro_f1'),_score(eb,'macro_f1')),
                 latency=dict(baseline_mean_ms=la,candidate_mean_ms=lb,delta_ms=lb-la,relative_change=(lb-la)/la),
                 inference_protocol=dict(requested_batch_size=policy['batch_size'],quality_samples=len(c['targets']),
@@ -1091,11 +1150,11 @@ class QualityExperimentResult:
                     walk(dict(run_id=s[key]['performance']['identity']['run_id'],precision=s[key]['precision'],
                               model_sha256=s[key]['benchmark_model_sha256'],host_id=s[key]['host_id']),
                          'provenance.'+key+'.benchmark')
-                    if s.get('comparison_version') in (2,3):
+                    if s.get('comparison_version') in (2,3,4):
                         walk(dict(binding=s[key]['memory']['binding'],metric=s[key]['memory']['metric'],
                                   source_result_id=s[key]['memory']['source']['result_id'] if s[key]['memory']['source'] else None),
                              'provenance.'+key+'.memory')
-                    if s.get('comparison_version')==3:
+                    if s.get('comparison_version') in (3,4):
                         walk(s[key]['inference_batch'],'provenance.'+key+'.inference_batch')
         if feature=='P29':walk(s['policy'],'provenance.policy')
         _write_export(path,_csv_text(['feature_id','experiment_id','source_sha256','field','value'],rows),overwrite)

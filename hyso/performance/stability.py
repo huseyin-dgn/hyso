@@ -169,8 +169,16 @@ class _Journal:
         self.previous=digest;self.pending=[]
 
 
+def _check_release_stability_scope(recipe, protocol):
+    # Short GPU telemetry/trend captures are independent features and stay intact.
+    # Reject the deferred long-run path before Job creation or factory imports.
+    if recipe.get('gpu_uuid') is not None and protocol.get('duration_seconds',0)>=7200:
+        raise NotImplementedError('P31_CUDA_LONG_RUN_DEFERRED: CUDA stability runs of 7200 seconds or longer are outside release support; CPU stability and retained reports remain supported')
+
+
 def _run_owned(root, mode, request, *, startup_timeout, heartbeat_timeout, max_runtime, max_bytes):
     """Windows admission before package/factory imports; kill-on-close Job tree."""
+    if mode=='stability':_check_release_stability_scope(request['recipe'],request['protocol'])
     from ._training_process import _Job
     if os.name!='nt':raise NotImplementedError('owned runtime worker native adapter is Windows-only')
     root=Path(root).absolute();root.mkdir(parents=False,exist_ok=False)
@@ -182,7 +190,7 @@ def _run_owned(root, mode, request, *, startup_timeout, heartbeat_timeout, max_r
     # P30 observes OS resource pressure; no implicit RAM quota is a hardware limit.
     limits=((request['protocol'].get('process_memory_bytes'),request['protocol'].get('job_memory_bytes'))
             if mode in ('stability','devices','providers','streaming') else (4*1024**3,6*1024**3))
-    process_limit=request['protocol'].get('max_processes') if mode in ('stability','devices','providers') else 4
+    process_limit=(request['protocol'].get('max_processes',4) if mode=='streaming' else request['protocol'].get('max_processes')) if mode in ('stability','devices','providers','streaming') else 4
     job=_Job(*limits,process_limit);process=None;cleanup=None;reason=None;interrupted=None
     started=time.monotonic();ready_seen=None;last_beat=None;last_mtime=None
     controller_start_ns=time.perf_counter_ns();process_started_ns=None
@@ -194,7 +202,7 @@ def _run_owned(root, mode, request, *, startup_timeout, heartbeat_timeout, max_r
             resources=_StreamResources(token)
         with stdout.open('wb') as out,stderr.open('wb') as err:
             env=dict(os.environ,PYTHONDONTWRITEBYTECODE='1',PYTHONIOENCODING='utf-8')
-            if mode=='streaming' or (mode=='stability' and not request.get('recipe',{}).get('gpu_uuid')):
+            if mode in ('streaming','stability') and not request.get('recipe',{}).get('gpu_uuid'):
                 env['CUDA_VISIBLE_DEVICES']='-1'
             gpu=request.get('recipe',{}).get('gpu_uuid')
             if gpu:env['CUDA_VISIBLE_DEVICES']=gpu
@@ -245,7 +253,7 @@ def _run_owned(root, mode, request, *, startup_timeout, heartbeat_timeout, max_r
     if mode in ('stability','devices','providers'):controller['memory_limits']=dict(process_memory_bytes=limits[0],job_memory_bytes=limits[1])
     if mode in ('stability','devices','providers'):controller['process_limit']=process_limit
     if mode=='streaming':
-        controller['memory_limits']=dict(process_memory_bytes=None,job_memory_bytes=None)
+        controller['memory_limits']=dict(process_memory_bytes=limits[0],job_memory_bytes=limits[1])
         controller['process_limit']=process_limit
         controller['resource_monitor']=resources.summary if resources is not None else None
     if mode=='stability':
@@ -281,6 +289,7 @@ def measure_stability(recipe: '_typing.Any', directory: '_typing.Any', *, protoc
     Open: hyso docs open analysis.p31 --lang en
     """
     if type(recipe) is not WorkloadRecipe or type(protocol) is not StabilityProtocol:raise TypeError('typed recipe/protocol required')
+    _check_release_stability_scope(asdict(recipe),asdict(protocol))
     if recipe.search_path is not None and not Path(recipe.search_path).is_dir():raise ValueError('missing factory search directory')
     p=protocol
     root=_run_owned(directory,'stability',dict(recipe=asdict(recipe),protocol=asdict(p)),
@@ -594,6 +603,7 @@ def _factory(recipe):
 
 
 def _worker_stability(root, request):
+    _check_release_stability_scope(request['recipe'],request['protocol'])
     from .memory import _observe
     from . import _telemetry
     import torch

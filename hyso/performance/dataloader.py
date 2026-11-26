@@ -119,6 +119,32 @@ class _LoaderMixin:
         self.loader_protocol = protocol
         self.loader_rows, self.live, self.waiting = [], set(), {}
         self.window_batches = []
+        self.transfer_rows = []
+
+    def transfer_tensor(self, tensor, role):
+        # The brackets cover only the existing blocking Tensor.to call, not
+        # DataLoader wait, validation, input preparation or model compute.
+        if self.trainer.device.type != 'cuda' or tensor.device.type != 'cpu':
+            return tensor.to(self.trainer.device)
+        import torch
+        if len(self.transfer_rows) >= self.loader_protocol.max_records:
+            raise TrainingTimingError('P21 transfer record budget exhausted')
+        self._check_stream()
+        stream=self.stream
+        start=torch.cuda.Event(enable_timing=True);end=torch.cuda.Event(enable_timing=True)
+        start.record(stream);a=time.perf_counter_ns()
+        output=tensor.to(self.trainer.device)
+        b=time.perf_counter_ns();end.record(stream);end.synchronize()
+        if not end.query():raise TrainingTimingError('P21 transfer completion unavailable')
+        elapsed=float(start.elapsed_time(end))
+        if not math.isfinite(elapsed) or elapsed<0:raise TrainingTimingError('invalid CUDA transfer clock')
+        row=self.waiting.get('training') if 'microbatch' in self.active else self.waiting.get('validation')
+        if row is None:raise TrainingTimingError('transfer outside observed batch')
+        self.transfer_rows.append(dict(epoch_id=row['epoch_id'],phase=row['phase'],batch_index=row['batch_index'],
+            role=role,start_ns=a,end_ns=b,host_ms=(b-a)/1e6,cuda_event_ms=elapsed,
+            bytes=tensor.numel()*tensor.element_size(),source_device='cpu',device=str(self.trainer.device),
+            pinned=bool(tensor.is_pinned()),stream_id=int(stream.cuda_stream),completed=True))
+        return output
 
     def reserve_loader(self):
         if len(self.loader_rows) >= self.loader_protocol.max_records:
@@ -255,12 +281,35 @@ def _links(rows, stages):
     return result
 
 
+def _validate_transfers(data,source,loader_rows,budget):
+    expected={'value','unit','status','reason','host_scope','device_scope','excludes','observations'}
+    if set(data)!=expected or data['unit']!='ms' or data['host_scope']!='blocking_Tensor.to_call_only' or data['device_scope']!='inclusive_selected_stream_event_interval' or data['excludes']!='loader_wait_input_validation_and_model_compute; not_DMA_engine_exclusive_time':
+        raise ValueError('invalid P21 transfer scope')
+    rows=data['observations'];seen=set();streams=set()
+    if type(rows) is not list or len(rows)>budget:raise ValueError('invalid transfer budget')
+    batches={(r['epoch_id'],r['phase'],r['batch_index']):r for r in loader_rows if r['kind']=='batch'}
+    epochs={e['epoch_id']:e for e in source['epochs']}
+    for row in rows:
+        if set(row)!={'epoch_id','phase','batch_index','role','start_ns','end_ns','host_ms','cuda_event_ms','bytes','source_device','device','pinned','stream_id','completed'}:raise ValueError('invalid transfer fields')
+        key=(row['epoch_id'],row['phase'],row['batch_index']);identity=key+(row['role'],)
+        if key not in batches or identity in seen or row['role'] not in ('inputs','targets'):raise ValueError('duplicate/unbound transfer')
+        seen.add(identity);_duration(row,'start_ns','end_ns','host_ms',1e6);_int(row['bytes']);_int(row['stream_id'])
+        epoch=epochs[row['epoch_id']]
+        if not batches[key]['delivery_ns']<=row['start_ns']<=row['end_ns']<=epoch['end_ns']:raise ValueError('transfer outside batch/epoch')
+        if row['source_device']!='cpu' or row['device']!=source['provenance']['runtime']['device'] or type(row['pinned']) is not bool or row['completed'] is not True:raise ValueError('invalid transfer identity/completion')
+        if type(row['cuda_event_ms']) not in (int,float) or not math.isfinite(row['cuda_event_ms']) or row['cuda_event_ms']<0:raise ValueError('invalid CUDA interval')
+        streams.add(row['stream_id'])
+    if len(streams)>1:raise ValueError('transfer stream changed')
+    expected_state=('measured',None,sum(r['cuda_event_ms'] for r in rows)) if rows else ('not_executed','no_CPU_to_CUDA_copies',None)
+    if (data['status'],data['reason'],data['value'])!=expected_state:raise ValueError('transfer aggregate mismatch')
+
+
 def _validate(data):
     required = {"schema_version", "format", "feature_ids", "protocol", "source_segment_id", "source_sha256",
                 "source_p19", "source_p20", "source_p20_sha256", "provenance", "requested", "actual",
                 "observations", "summaries", "stage_links", "worker_service", "queue_occupancy",
                 "prefetch_efficiency", "h2d_transfer", "status", "reason", "limitations"}
-    if set(data) != required or type(data["schema_version"]) is not int or data["schema_version"] != 1 or data["format"] != "hyso.performance.dataloader" or data["feature_ids"] != ["P21"]:
+    if set(data) != required or type(data["schema_version"]) is not int or data["schema_version"] not in (1,2) or data["format"] != "hyso.performance.dataloader" or data["feature_ids"] != ["P21"]:
         raise ValueError("invalid P21 identity/schema")
     plan = DataLoaderAnalysisProtocol(**data["protocol"])
     source, digest = _source(TrainingPerformanceResult(data["source_p19"]))
@@ -301,7 +350,10 @@ def _validate(data):
         if data[name] != dict(value=None, status="unsupported", reason="no_verified_worker_or_queue_trace"):
             raise ValueError("unmeasured worker/queue data must stay null")
     cuda = source["provenance"]["runtime"]["device"].startswith("cuda")
-    if data["h2d_transfer"] != dict(value=None, status="unsupported" if cuda else "not_executed",
+    if data['schema_version']==2:
+        if not cuda:raise ValueError('P21 transfer schema requires CUDA training source')
+        _validate_transfers(data['h2d_transfer'],source,data['observations'],plan.max_records)
+    elif data["h2d_transfer"] != dict(value=None, status="unsupported" if cuda else "not_executed",
                                    reason="no_separate_H2D_clock" if cuda else "CPU_training"):
         raise ValueError("input preparation is not an isolated H2D measurement")
     rows = data["observations"]
@@ -678,6 +730,13 @@ def measure_training_with_loader(trainer: '_typing.Any', train_loader: '_typing.
                      "instrumented scopes include observer overhead; stage intervals must not be summed",
                      "no strict multiworker resume or hidden-stream/kernel attribution"],
         **{name: dict(value=None, status="unsupported", reason="no_verified_worker_or_queue_trace") for name in ("worker_service", "queue_occupancy", "prefetch_efficiency")})
+    if trainer.device.type=='cuda':
+        data['schema_version']=2
+        rows=recorder.transfer_rows
+        data['h2d_transfer']=dict(value=sum(r['cuda_event_ms'] for r in rows) if rows else None,
+            unit='ms',status='measured' if rows else 'not_executed',reason=None if rows else 'no_CPU_to_CUDA_copies',
+            host_scope='blocking_Tensor.to_call_only',device_scope='inclusive_selected_stream_event_interval',
+            excludes='loader_wait_input_validation_and_model_compute; not_DMA_engine_exclusive_time',observations=rows)
     result = LoaderTrainingResult(timing, DataLoaderAnalysisResult(data), stage_result, analyze_training_throughput(timing))
     if type(train_loader) is WorkerTaskDataLoader:
         train_loader.trace_source = dict(source_p21_sha256=_hash(data),

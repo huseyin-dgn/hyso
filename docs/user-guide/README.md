@@ -52,3 +52,5 @@ The reproducible browser check is `tools/docs/check_user_guide_browser.py`;
 pass an already-installed Chromium browser with `--browser` and a fresh
 `--output` directory. It uses offline headless mode with GPU disabled. Playwright
 is a developer test dependency, not a runtime dependency of HYSo or the guide.
+
+The [release support matrix](../guides/release-support.md) is sourced from `content.json` and embedded in the packaged registry. All four languages describe the P23 CUDA saved-activation exclusion and P31 CUDA long-run deferral.

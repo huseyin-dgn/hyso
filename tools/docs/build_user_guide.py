@@ -129,6 +129,7 @@ def render(data, version):
     chunks.append('</main></div><footer>'+translated(ui['footer'])+'</footer><script>'+SCRIPT+'</script></body></html>\n')
     registry = dict(format='hyso.user_guide.topics', schema_version=1, hyso_version=version, languages=list(LANGUAGES),
                     topics=[dict(id=t['id'], titles={l:t['translations'][l]['title'] for l in LANGUAGES}, related=t['related'], sources=t['sources'], inventory=t.get('inventory',[])) for t in topics])
+    registry['release_support']=data['release_support']
     return ''.join(chunks), json.dumps(registry,ensure_ascii=False,indent=2)+'\n'
 
 

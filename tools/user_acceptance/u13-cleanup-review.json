@@ -1,0 +1,31 @@
+{
+  "baseline_plan_sha256": "ab91b05dc104daadd03f1a6851de75cbb817f160a77ba9666bb3261fefb95f91",
+  "files": {
+    "tests/test_user_acceptance_runner.py": {
+      "before": "0c710c868ad19fb7e3b508fc4940b1f54a0833042d214509295fc4d55db893d7",
+      "after": "ce9ed60df0b4fdcbc9e915283b9ce0672e2f5c4bd2785af955b34957086d3a1b"
+    },
+    "tools/cuda_acceptance/runner.py": {
+      "before": "b7d903ab3ec5ef413005a7f2fc7d23773cdd6d71f6f67109ebe1d264ed049da0",
+      "after": "f0cf5aa6b58807a3e741fa6c593c8ad10959a8565668cc2e5a233d6790946156"
+    },
+    "tools/user_acceptance/cpu_onnx.py": {
+      "before": null,
+      "after": "4886055e8c5b6a0e2505d5af9d482234e552d87ec33df22eeb24f5d121c1e1e9"
+    },
+    "tools/user_acceptance/recovery_review.py": {
+      "before": null,
+      "after": "79cda6d0f670c470402ec06aad9874fc00365a7bf0851d508624b2f094a24b0c"
+    },
+    "tools/user_acceptance/runner.py": {
+      "before": "129a6fa594359a7b04735077d1b1d68ca37aac24401a9c44266244bbe787f9f8",
+      "after": "348f5cccf8993f467e2a93bcae871484e46a3dd01d189dd99cda0894cbe03fc1"
+    },
+    "tools/user_acceptance/scenarios.py": {
+      "before": "ce3847e476b2c8148c4b936b9bfa0bbe675aaf2805195cc4fc2d4fae730b62cf",
+      "after": "1f2eefc7535de4457a0734bdd99cdb0b8d5f786af27afd13d759f84990f7e1ed"
+    }
+  },
+  "scenario_delta": "Only U13; exact reconstruction matched sealed baseline SHA256",
+  "cuda_runner_delta": "Only cleanup campaign argument; exact reconstruction matched sealed baseline SHA256"
+}

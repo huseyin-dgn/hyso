@@ -110,24 +110,22 @@ def admission(binding, feature, device, context):
     options = source.options
     if type(options) is not dict:
         return 'MISSING_PREREQUISITE', ['native_options_mapping_required']
-    if type(source) is QualitySource and feature in ('P24', 'P27', 'P29') and device != 'cpu':
-        return 'UNSUPPORTED', ['quality_operation_CPU_only']
     if feature == 'P11' and device != 'cpu':
         return 'UNSUPPORTED', ['logical_footprint_CPU_model_required']
     if feature == 'P09' and device == 'cpu':
         return 'UNSUPPORTED', ['CUDA_allocator_capture_requires_CUDA']
-    if feature in ('P26', 'P28') and str(options.get('device', 'cpu')) != device:
+    if feature in ('P24', 'P26', 'P27', 'P28', 'P29') and str(options.get('device', 'cpu')) != device:
         return 'MISSING_PREREQUISITE', ['native_device_option_must_match_operation_device']
     if device != 'cpu':
         if feature in ('P02', 'P03', 'P04', 'P06', 'P07', 'P08') and options.get('protocol') is None:
             return 'MISSING_PREREQUISITE', ['explicit_CUDA_native_protocol_required']
-        if feature in ('P26', 'P28') and str(options.get('device')) != device:
+        if feature in ('P24', 'P26', 'P27', 'P28', 'P29') and str(options.get('device')) != device:
             return 'MISSING_PREREQUISITE', ['explicit_native_device_option_required']
     protocol = options.get('protocol')
     declared_device = getattr(protocol, 'device', device)
     if declared_device != device:
         return 'MISSING_PREREQUISITE', ['native_protocol_device_mismatch']
-    if feature == 'P09' or getattr(protocol, 'measure_cuda_memory', False):
+    if feature == 'P09' or getattr(protocol, 'measure_cuda_memory', False) or options.get('allow_cuda_peak_reset',False):
         if binding.policy.peak_reset_pid != os.getpid():
             return 'MISSING_PREREQUISITE', ['current_process_allocator_reset_consent_required']
     if type(source) is InferenceSource:
@@ -236,8 +234,13 @@ def _runtime_admission(binding, feature):
     if feature == 'P30':
         if type(source.stream) is not perf.StreamSource:
             return 'MISSING_PREREQUISITE', ['explicit_video_or_camera_source_required']
-        if source.recipe.gpu_uuid is not None or binding.device != 'cpu':
-            return 'UNSUPPORTED', ['native_stream_processor_CPU_only']
+        if source.recipe.gpu_uuid is not None:
+            if binding.device!='cuda:0':return 'UNSUPPORTED',['UUID_visibility_uses_worker_cuda_0']
+            if not binding.policy.allow_cuda:return 'MISSING_PREREQUISITE',['explicit_GPU_stream_consent_required']
+            protocol=source.options.get('protocol')
+            if type(protocol) is not perf.StreamProtocol or any(v is None for v in (protocol.process_memory_bytes,protocol.job_memory_bytes,protocol.max_processes)):
+                return 'MISSING_PREREQUISITE',['explicit_GPU_stream_owned_budgets_required']
+        elif binding.device!='cpu':return 'MISSING_PREREQUISITE',['explicit_physical_GPU_stream_recipe_required']
         if source.stream.kind == 'camera' and not binding.policy.allow_camera:
             return 'MISSING_PREREQUISITE', ['explicit_camera_source_consent_required']
         return 'SUPPORTED', []
@@ -245,6 +248,8 @@ def _runtime_admission(binding, feature):
         protocol = source.options.get('protocol')
         if type(protocol) is not perf.StabilityProtocol:
             return 'MISSING_PREREQUISITE', ['explicit_stability_duration_and_journal_protocol_required']
+        if protocol.duration_seconds >= 7200 and (source.recipe.gpu_uuid is not None or binding.device!='cpu'):
+            return 'UNSUPPORTED', ['P31_CUDA_LONG_RUN_DEFERRED']
         if protocol.duration_seconds >= 7200 and not binding.policy.allow_long_run:
             return 'MISSING_PREREQUISITE', ['separate_long_run_consent_required']
         if source.recipe.gpu_uuid is not None:

@@ -22,7 +22,7 @@ EXECUTOR_FEATURES = MappingProxyType({
 })
 NATIVE_CUDA_FEATURES = frozenset(('P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P08',
     'P09', 'P12', 'P13', 'P14', 'P15', 'P17', 'P18', 'P19', 'P20', 'P21', 'P22',
-    'P23', 'P25', 'P26', 'P28', 'P31', 'P32', 'P33', 'P34', 'P35'))
+    'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P31', 'P32', 'P33', 'P34', 'P35'))
 _SCOPES = {
     'P01': 'resident CPU benchmark samples, then native latency analysis; tail policy unchanged',
     'P02': 'existing G2/G3 completed CPU inference throughput',
@@ -99,7 +99,12 @@ class AnalysisFeature:
         Offline: hyso docs show analyzer.workflow --lang en
         Open: hyso docs open analyzer.workflow --lang en
         """
-        return asdict(self)
+        # Native backend availability and release support are separate contracts.
+        import json
+        from pathlib import Path
+        support=json.loads((Path(__file__).resolve().parents[1]/'data/user-guide-topics.json').read_text(encoding='utf-8'))['release_support']
+        row=next(r for r in support['features'] if r['feature_id']==self.feature_id)
+        return dict(asdict(self),release_support=row)
 
 
 def feature_catalog(feature_id: _typing.Literal['P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P08', 'P09', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20', 'P21', 'P22', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P31', 'P32', 'P33', 'P34', 'P35'] | None = None) -> tuple[AnalysisFeature, ...] | AnalysisFeature:

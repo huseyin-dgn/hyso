@@ -131,3 +131,7 @@ areas, missing evidence and manual verification steps. Use `to_display_dict` or
 the Stage 8 exports with `language="tr"/"en"` and
 `level="beginner"/"technical"/"expert"`. Reopening JSON rederives recommendations
 without running a workload. It does not reread external artifact files.
+
+## Release support metadata
+
+`hyso.analysis.feature_catalog("P23").to_dict()["release_support"]` exposes the shared [release support matrix](release-support.md). `supported_devices` remains native backend capability metadata, not a support certificate. P23 CUDA saved-activation is unsupported; new P31 CUDA stability captures >=7200 seconds are deferred. Retained evidence readers and independent Builder/Trainer workflows remain unchanged.

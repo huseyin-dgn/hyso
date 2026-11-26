@@ -1,5 +1,7 @@
 # P31 trained-model stability
 
+Release scope (2026-11-26): CPU stability and both historical continuous 7200-second CPU records remain supported. New CUDA stability captures of 7200 seconds or longer are DEFERRED and rejected with `P31_CUDA_LONG_RUN_DEFERRED` before native work. Short GPU telemetry/trend operations and retained journals remain separate. See [release matrix](release-support.md).
+
 CPU inference stability uses its own owned runtime worker and does not install
 the P23 saved-tensor observer. Disabling CUDA saved-activation measurement for B4
 does not invalidate a previously verified CPU P31 journal. CPU and CUDA acceptance

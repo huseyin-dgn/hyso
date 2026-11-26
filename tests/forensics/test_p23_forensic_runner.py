@@ -178,7 +178,8 @@ class OwnedSafety(unittest.TestCase):
     def test_native_missing_consent_never_launches(self):
         work = self.root/'native-denied'
         work.mkdir()
-        with self.assertRaises(FileNotFoundError): runner.controller(self.root, work, 'native', self.sha)
+        with self.assertRaisesRegex(NotImplementedError, 'BLOCKED_B4_UNRESOLVED'):
+            runner.controller(self.root, work, 'native', self.sha)
         self.assertFalse((self.root/'execution-consumed.json').exists())
         self.assertFalse((work/'controller-identity.json').exists())
 

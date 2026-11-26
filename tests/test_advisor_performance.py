@@ -57,6 +57,24 @@ class PerformanceTests(unittest.TestCase):
         self.assertEqual(compare_performance(*args,contract=self.policy).to_json(),
                          compare_performance(*args,contract=self.policy).to_json())
 
+    def test_comparison_envelope_rejects_forged_bindings(self):
+        result=self.run_pair()
+        # Direct construction and deserialization must keep the public contract
+        # and observed evidence bound, irrespective of implementation history.
+        cases=[
+            ({'contract':object()},'typed_comparison_required'),
+            ({'eligibility':object()},'typed_comparison_required'),
+            ({'contract':replace(self.policy,min_samples=21)},'comparison_contract_mismatch'),
+            ({'eligibility':replace(result.eligibility,contract_sha256='0'*64)},'comparison_contract_mismatch'),
+            ({'difference':object()},'difference_requires_comparable'),
+            ({'eligibility':replace(result.eligibility,left=result.eligibility.right)},'difference_evidence_mismatch'),
+            ({'limitations':()},'performance_boundaries_required'),
+            ({'missing_evidence':()},'performance_boundaries_required'),
+        ]
+        for changes,reason in cases:
+            with self.subTest(reason=reason,fields=tuple(changes)),self.assertRaisesRegex(AdvisorError,reason):
+                replace(result,**changes)
+
     def test_throughput_direction(self):
         d=_difference(*self.scalar_pair(M.COMPLETED_IMAGES_PER_SECOND,100.,150.,'images/s','throughput'))
         self.assertEqual((d.difference,d.percent_change,d.metric_effect),(50.,50.,'favorable'))

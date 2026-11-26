@@ -26,7 +26,7 @@ class G3WindowsRealCPU(unittest.TestCase):
     def test_single_worker_native_P11(self):
         req=FeaturePlanRequest('single',(ModelContext('A',trusted_factory=True),),features=('P11',))
         got=execute_isolated_cpu(req,(self.binding('A',2),),authorized_features=('P11',),policy=self.policy)
-        self.assertEqual(got.status,'COMPLETED',got.reason)
+        self.assertEqual(got.status,'COMPLETED',(got.reason,got.worker_receipt))
         self.assertTrue(got.worker_receipt['assigned_before_resume'])
         self.assertEqual(got.worker_receipt['active_owned_processes'],0)
         self.assertEqual(got.native_bridge_report['captures'][0]['native_result']['feature_ids'],['P11'])
@@ -39,7 +39,7 @@ class G3WindowsRealCPU(unittest.TestCase):
             features=('P02','P11'))
         got=execute_isolated_cpu(req,(self.binding('A',2),self.binding('B',4)),
                                  authorized_features=('P02','P11'),policy=self.policy)
-        self.assertEqual(got.status,'COMPLETED',got.reason)
+        self.assertEqual(got.status,'COMPLETED',(got.reason,got.worker_receipt))
         self.assertEqual(len(got.native_bridge_report['captures']),4)
         self.assertEqual(len(got.native_bridge_report['comparisons']),2)
         self.assertEqual(got.worker_receipt['active_owned_processes'],0)

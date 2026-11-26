@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "retirements": [
+    {
+      "nodeid": "tests/test_project_wide_pythonic_api.py::test_existing_native_function_bodies_are_preserved",
+      "source_before_sha256": "1026b749e4a23a240cd9edf44fd900b022147f3b87b8d2ccaf51699bb1b3af26",
+      "source_after_sha256": "8a5b5b6cebe13e9bf9d9a275f3cbda8b7e5153632c19e039ce29809625dfc0a3",
+      "reason": "User-authorized retirement of historical body-equality invariant; approved comparison contracts legitimately extend implementation. Existing behavioral/API evidence plus one narrow negative envelope regression replace this assertion.",
+      "coverage_evidence": "outputs/release-acceptance-20261125/final-campaign/retirement-support-20261126/coverage.json"
+    }
+  ],
+  "additions": [
+    {
+      "nodeid": "tests/test_advisor_performance.py::PerformanceTests::test_comparison_envelope_rejects_forged_bindings",
+      "source_sha256": "8a1bc6691ddc2908f54c8b4c867df6811fcab637326d4c8eaeed4ce6b040ab36",
+      "reason": "CPU/offline negative checks for typed contract, content hash, evidence binding and immutable scope boundaries; no workload, CUDA or model execution."
+    }
+  ]
+}

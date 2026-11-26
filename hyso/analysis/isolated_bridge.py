@@ -23,6 +23,19 @@ class IsolatedBridgeError(ValueError):
 
 _ALLOWED = frozenset(('P02', 'P11'))
 _HEX = re.compile(r'[0-9a-f]{64}\Z')
+
+
+def _worker_command(worker,config,output):
+    # A Windows venv redirector needs a second process, incompatible with this
+    # worker's hard one-process Job. Execute its base binary directly and retain
+    # the caller's import search paths without running site/.pth startup code.
+    executable=getattr(sys,'_base_executable',None) or sys.executable
+    paths=[p for p in sys.path if p and Path(p).is_dir()]
+    script=('import sys,runpy,traceback;sys.path[:0]='+repr(paths)+';sys.argv='+
+            repr([str(worker),str(config),str(output)])+';sys.stdout=open('+repr(str(config.parent/'worker.stdout.log'))+
+            ',"w",encoding="utf-8");sys.stderr=open('+repr(str(config.parent/'worker.stderr.log'))+
+            ',"w",encoding="utf-8")\ntry: runpy.run_path('+repr(str(worker))+',run_name="__main__")\nexcept BaseException:\n traceback.print_exc();raise')
+    return [executable,'-I','-S','-B','-c',script]
 _NAME = re.compile(r'[A-Za-z_][A-Za-z_0-9]*\Z')
 _MAX_SOURCE = 512 * 1024
 _MAX_RESULT = 4 * 1024 * 1024
@@ -320,10 +333,12 @@ def execute_isolated_cpu(request: '_typing.Any', bindings: '_typing.Any', *, aut
         config.write_text(serialized, encoding='utf-8')
         worker = Path(__file__).with_name('_isolated_worker.py').resolve(strict=True)
         try:
-            receipt = run_bounded_windows([sys.executable, '-I', '-B', str(worker), str(config), str(output)], root,
+            receipt = run_bounded_windows(_worker_command(worker,config,output), root,
                                           timeout_seconds=policy.timeout_seconds,
                                           job_memory_limit_bytes=policy.job_memory_limit_bytes)
             if receipt['status'] != 'process_exited' or receipt['exit_code'] != 0:
+                receipt['worker_stderr']=(root/'worker.stderr.log').read_text(encoding='utf-8',errors='replace')[-65536:] if (root/'worker.stderr.log').is_file() else 'Worker exited before diagnostic capture'
+                receipt['worker_stdout']=(root/'worker.stdout.log').read_text(encoding='utf-8',errors='replace')[-65536:] if (root/'worker.stdout.log').is_file() else ''
                 return IsolatedCPUReport('FAILED', receipt['status'] if receipt['status'] != 'process_exited'
                                          else 'worker_nonzero_exit', receipt, None, selected, authorized)
             if not receipt['assigned_before_resume'] or receipt['active_owned_processes'] != 0:

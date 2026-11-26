@@ -25,7 +25,7 @@ For a locally built distribution, use a separate virtual environment and
 `python -m pip install C:/local-hyso/dist/hyso-0.2.0-py3-none-any.whl`, then
 `python -m hyso --help` from outside the checkout. Wheel/sdist use the commercial
 allowlist; repository examples and other guides are source-checkout files, while
-the central offline guide is installed as package data. CPU beta acceptance and its exact limits are recorded in the
+the central offline guide is installed as package data. Historical CPU acceptance and its exact limits are recorded in the
 [acceptance guide](docs/guides/python-first-acceptance-and-limits.md#cpu-beta-installation).
 Optional `hyso[deployment]` supplies pinned ONNX/ONNX Runtime packages, not a
 general deployment converter or automatic CUDA runtime installation.
@@ -384,3 +384,7 @@ production CUDA saved-activation hooks remain disabled. Acceptance is not a
 universal model/hardware/backend/version guarantee.
 
 License: [MIT](LICENSE).
+
+## First release support scope
+
+All 35 analyses are retained. See the [CPU/CUDA support matrix](docs/guides/release-support.md). P23 CPU memory/saved-activation remain supported; CUDA saved-activation is unsupported and blocked by `BLOCKED_B4_UNRESOLVED`. P31 CPU stability and historical 7200-second records remain; new CUDA long runs are deferred. **FULL CUDA ACCEPTANCE is not established.** Normal CUDA training and independent GPU features remain.

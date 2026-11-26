@@ -1523,5 +1523,525 @@
       ],
       "inventory": []
     }
-  ]
+  ],
+  "release_support": {
+    "schema_version": 1,
+    "release": "0.2.0",
+    "policy_date": "2026-11-26",
+    "statuses": {
+      "SUPPORTED": "Supported only within verified_scope and stated prerequisites.",
+      "PARTIAL": "Only a subset is supported/verified; this is not feature failure.",
+      "BLOCKED": "Execution is refused by a safety or admission gate.",
+      "UNSUPPORTED": "Requested execution path is outside this release support scope.",
+      "DEFERRED": "Intentionally postponed release support."
+    },
+    "full_cuda_acceptance": false,
+    "features": [
+      {
+        "feature_id": "P01",
+        "name": "Inference latency P50/P95/P99",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Resident CPU latency quantiles",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "1000 samples required by captured comparison; tail eligibility is separate",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P01",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P02",
+        "name": "Completed inference throughput",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Completed CPU inference throughput",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Completion/queue protocol and sample count must match",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P02",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P03",
+        "name": "End-to-end pipeline latency",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Bounded end-to-end timing",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Only declared pipeline boundaries are covered",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P03",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P04",
+        "name": "Preprocessing / postprocessing",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Declared preprocessing/postprocessing stages",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "No inference of uninstrumented stages",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P04",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P05",
+        "name": "Cold start and model loading",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Owned fresh-process cold-start phases",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Factory, process identity and startup boundaries are required",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P05",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P06",
+        "name": "Batch-size sweep",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Matched batch sweep points",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Each point must retain its actual input and protocol",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P06",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P07",
+        "name": "Resolution sweep",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Matched input-resolution sweep",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Shape changes are explicit; no inferred missing points",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P07",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P08",
+        "name": "Precision benchmark",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "CPU precision measurements",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Supported dtype/backend only; accuracy requires P28",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P08",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P09",
+        "name": "CUDA allocator peak memory",
+        "cpu": "UNSUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Retained GPU allocator evidence read on CPU; offline reader/analysis remains supported, CPU status describes fresh measurement.",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "No live GPU-memory measurement on a CPU device",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P09",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P10",
+        "name": "Process RSS and sampled peak",
+        "cpu": "SUPPORTED",
+        "cuda": "UNSUPPORTED",
+        "verified_scope": "Current-process RSS/HWM",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Host RSS is not GPU memory or model-exclusive memory",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P10",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P11",
+        "name": "Model tensor and artifact footprint",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Exact logical tensor/artifact inventory",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Logical bytes are not allocator peak; artifact identity is separate",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P11",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P12",
+        "name": "FLOPs / MACs",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Validated operation-count source",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Profiler coverage and unsupported operators remain explicit",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P12",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P13",
+        "name": "Module/layer profiling",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Native profiler module observations",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Incomplete attribution is not fabricated as zero",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P13",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P14",
+        "name": "Operator/kernel profiling",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Native operator profiling",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Instrumentation overhead and scope limits remain",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P14",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P15",
+        "name": "CPU-GPU transfer analysis",
+        "cpu": "UNSUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Retained transfer evidence read on CPU; offline reader/analysis remains supported, CPU status describes fresh measurement.",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Live host/device copies require a CUDA worker",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P15",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P16",
+        "name": "CPU/GPU utilization",
+        "cpu": "PARTIAL",
+        "cuda": "PARTIAL",
+        "verified_scope": "CPU observations and retained utilization evidence",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "GPU samples require an actual telemetry source",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P16",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P17",
+        "name": "Maximum feasible batch search",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Bounded CPU batch search",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Search bounds do not guarantee safety on every device; real stress integration remains blocked",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P17",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P18",
+        "name": "Arithmetic intensity / roofline",
+        "cpu": "PARTIAL",
+        "cuda": "PARTIAL",
+        "verified_scope": "Offline analytic/retained roofline",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Hardware counters and empirical session identity are not inferred",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P18",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P19",
+        "name": "Epoch / training step timing",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Explicit CPU Trainer episode",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Trainer is independent of read-only Analyzer/Advisor",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P19",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P20",
+        "name": "Forward / backward / optimizer stages",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "CPU training-stage observations",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Only declared training boundaries are measured",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P20",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P21",
+        "name": "DataLoader bottleneck",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "CPU DataLoader observation",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Loader, workers and cohort must be explicit",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P21",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P22",
+        "name": "Training throughput",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "CPU training throughput derived from retained P19 epoch/step evidence",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Actual completed examples and measured elapsed time only; no inferred missing training work",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P22",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P23",
+        "name": "Training memory analysis",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "CPU basic/isolated training memory and saved-payload accounting",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "CUDA saved-activation UNSUPPORTED; BLOCKED_B4_UNRESOLVED remains; host payload is not physical VRAM",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P23",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json",
+          "outputs/full-library-acceptance-20261125/b4-p23-p31-20261125/P23-subscope-acceptance.json"
+        ],
+        "historical_acceptance": "PARTIAL",
+        "subscopes": {
+          "cpu_saved_activation": "SUPPORTED",
+          "cuda_saved_activation": "UNSUPPORTED",
+          "cuda_saved_activation_execution": "BLOCKED",
+          "reason": "BLOCKED_B4_UNRESOLVED"
+        }
+      },
+      {
+        "feature_id": "P24",
+        "name": "Time to target accuracy",
+        "cpu": "SUPPORTED",
+        "cuda": "SUPPORTED",
+        "verified_scope": "Offline time-to-target analysis of retained training history; CUDA column refers only to device-independent retained evidence, not new GPU execution.",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Unattained targets remain censored; no fabricated target crossing or quality guarantee",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P24",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P25",
+        "name": "Gradient / AMP diagnostics",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "CPU gradient diagnostics",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "No automatic optimizer/model changes",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P25",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P26",
+        "name": "Accuracy / precision / recall / F1",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "CPU prediction quality and bound comparisons",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Labels/stream/cohort/checkpoint policies remain distinct",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P26",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P27",
+        "name": "Robustness measurements",
+        "cpu": "SUPPORTED",
+        "cuda": "UNSUPPORTED",
+        "verified_scope": "Task-appropriate CPU perturbation measurements",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Not a general robustness certificate",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P27",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P28",
+        "name": "Precision accuracy change",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Matched precision/quality deltas",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Requires genuine baseline/candidate evidence",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P28",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P29",
+        "name": "Quality/speed/memory tradeoff",
+        "cpu": "SUPPORTED",
+        "cuda": "SUPPORTED",
+        "verified_scope": "Read-only matched quality/speed/memory comparison; CUDA column refers only to device-independent retained evidence, not new GPU execution.",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "No global winner, causal improvement or invented missing measurements",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P29",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P30",
+        "name": "Live camera/recorded video FPS and drops",
+        "cpu": "SUPPORTED",
+        "cuda": "UNSUPPORTED",
+        "verified_scope": "CPU stream processor and retained video/camera accounting",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Adapter/camera authorization required; only application queue drops measured",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P30",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P31",
+        "name": "Uninterrupted long-run stability",
+        "cpu": "SUPPORTED",
+        "cuda": "DEFERRED",
+        "verified_scope": "CPU bounded stability; two historical continuous 7200-second runs",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "New CUDA duration >=7200 seconds DEFERRED; historical results remain readable",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P31",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json",
+          "outputs/full-library-acceptance-20261125/b4-p23-p31-20261125/P31-duration-binding.json"
+        ],
+        "historical_acceptance": "PARTIAL",
+        "subscopes": {
+          "cpu_historical_7200": "SUPPORTED",
+          "new_cuda_7200": "DEFERRED",
+          "reason": "P31_CUDA_LONG_RUN_DEFERRED"
+        }
+      },
+      {
+        "feature_id": "P32",
+        "name": "Memory growth analysis",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Offline CPU analysis of retained memory trends",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Growth is not proof of a causal leak; GPU cache integration remains blocked",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P32",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P33",
+        "name": "Energy per inference",
+        "cpu": "PARTIAL",
+        "cuda": "PARTIAL",
+        "verified_scope": "Offline integration of valid measured power windows",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "CPU live energy is not inferred; GPU power/thermal integration remains blocked",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P33",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P34",
+        "name": "Multiple-device comparison",
+        "cpu": "PARTIAL",
+        "cuda": "PARTIAL",
+        "verified_scope": "CPU-side protocol validation and retained device comparisons",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Real CPU/CUDA device comparison integration remains blocked",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P34",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P35",
+        "name": "ONNX Runtime node/provider placement",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "ONNX Runtime CPU provider event analysis",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Provider availability alone does not prove placement; actual CUDA provider integration remains blocked",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P35",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      }
+    ],
+    "test_acceptance": "8536 source PASS; 55 infrastructure PASS; 36 package PASS; 13 risky integrations BLOCKED; 1 historical AST RETIRED. These original results are preserved, not rerun or reclassified.",
+    "runtime_scope": "Safe campaign: Windows owned workers and CPU Torch 2.5.1+cpu. Historical artifacts retain their own exact runtime identities. Other hardware, operating systems and runtime versions are not automatically accepted."
+  }
 }

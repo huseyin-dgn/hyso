@@ -1250,28 +1250,28 @@
           "what": "Her P kimliği belirli bir soru ve ölçüm kapsamıdır. Önce list/show ile gereksinimleri okuyun, sonra plan oluşturun; yürütme ayrı izin ve gerçek kaynak ister.",
           "when": "Modelin hangi maliyetini inceleyeceğinizi seçerken kullanın.",
           "benefit": "Tek bir tam test zinciri yerine gereken ölçümü seçersiniz. Aşağıda 35 analizin her biri ayrı açıklanır.",
-          "limits": "Katalogda bulunmak canlı çalışma izni veya kabul PASS değildir. COMPLETED yalnız kendi kapsamını; BLOCKED engeli; UNSUPPORTED destek dışını; PARTIAL eksik kapsamı bildirir. null/UNKNOWN sıfır değildir. Tarihsel kayıt bugünkü cihazın durumunu kanıtlamaz."
+          "limits": "Katalogda bulunmak canlı çalışma izni veya kabul PASS değildir. COMPLETED yalnız kendi kapsamını; BLOCKED engeli; UNSUPPORTED destek dışını; PARTIAL eksik kapsamı bildirir. null/UNKNOWN sıfır değildir. Tarihsel kayıt bugünkü cihazın durumunu kanıtlamaz. İlk sürüm, belgelenen CPU iş akışlarını ve 35 analizin doğrulanmış alt kapsamlarını korur. Native backend seçenekleri tam CUDA kabulü değildir."
         },
         "en": {
           "title": "Using P01–P35",
           "what": "Each P identifier answers a particular question within a measurement scope. Read requirements with list/show, then make a plan; execution separately needs authorization and actual sources.",
           "when": "Use this catalog to choose which model cost or quality question to investigate.",
           "benefit": "Select the measurements you need rather than launching a complete test chain. All 35 are explained individually below.",
-          "limits": "Catalog presence is neither live permission nor an acceptance PASS. COMPLETED applies only to its scope; BLOCKED records an obstacle, UNSUPPORTED a support limit, and PARTIAL incomplete coverage. null/UNKNOWN is not zero. Historical captures do not prove today’s device state."
+          "limits": "Catalog presence is neither live permission nor an acceptance PASS. COMPLETED applies only to its scope; BLOCKED records an obstacle, UNSUPPORTED a support limit, and PARTIAL incomplete coverage. null/UNKNOWN is not zero. Historical captures do not prove today’s device state. The first release retains documented CPU workflows and the verified subscopes of all 35 analyses. Native backend options are not full CUDA acceptance."
         },
         "de": {
           "title": "P01–P35 verwenden",
           "what": "Jede P-Kennung beantwortet eine bestimmte Frage innerhalb eines Messbereichs. Lesen Sie mit list/show die Voraussetzungen und erstellen Sie dann einen Plan. Die Ausführung braucht getrennte Freigaben und tatsächliche Quellen.",
           "when": "Damit wählen Sie aus, welchen Kosten- oder Qualitätsaspekt Sie untersuchen möchten.",
           "benefit": "Sie wählen einzelne Messungen statt einer vollständigen Testkette. Alle 35 Analysen werden unten einzeln erklärt.",
-          "limits": "Ein Katalogeintrag ist weder Ausführungserlaubnis noch Abnahme-PASS. COMPLETED gilt nur für seinen Bereich; BLOCKED beschreibt ein Hindernis, UNSUPPORTED eine Supportgrenze und PARTIAL unvollständige Abdeckung. null/UNKNOWN bedeutet unbekannt, nicht den Zahlenwert 0. Historische Messungen belegen nicht den heutigen Gerätezustand."
+          "limits": "Ein Katalogeintrag ist weder Ausführungserlaubnis noch Abnahme-PASS. COMPLETED gilt nur für seinen Bereich; BLOCKED beschreibt ein Hindernis, UNSUPPORTED eine Supportgrenze und PARTIAL unvollständige Abdeckung. null/UNKNOWN bedeutet unbekannt, nicht den Zahlenwert 0. Historische Messungen belegen nicht den heutigen Gerätezustand. Die erste Version behält die dokumentierten CPU-Abläufe und die verifizierten Teilbereiche aller 35 Analysen bei. Native Backend-Optionen bedeuten keine vollständige CUDA-Abnahme."
         },
         "es": {
           "title": "Cómo utilizar P01–P35",
           "what": "Cada identificador P responde a una pregunta dentro de un ámbito de medición. Consulte los requisitos con list/show y cree un plan; la ejecución exige por separado autorización y fuentes reales.",
           "when": "Use el catálogo para elegir qué aspecto del coste o de la calidad investigar.",
           "benefit": "Puede seleccionar mediciones concretas sin iniciar toda una cadena de pruebas. Las 35 se explican por separado más abajo.",
-          "limits": "Aparecer en el catálogo no concede permiso de ejecución ni un PASS de aceptación. COMPLETED solo vale para su ámbito; BLOCKED indica un obstáculo, UNSUPPORTED un límite de soporte y PARTIAL cobertura incompleta. null/UNKNOWN no significa cero. Las capturas históricas no prueban el estado actual del dispositivo."
+          "limits": "Aparecer en el catálogo no concede permiso de ejecución ni un PASS de aceptación. COMPLETED solo vale para su ámbito; BLOCKED indica un obstáculo, UNSUPPORTED un límite de soporte y PARTIAL cobertura incompleta. null/UNKNOWN no significa cero. Las capturas históricas no prueban el estado actual del dispositivo. La primera versión conserva los flujos CPU documentados y los ámbitos verificados de los 35 análisis. Las opciones de backend nativo no equivalen a una aceptación CUDA completa."
         }
       },
       "inventory": [],
@@ -1698,31 +1698,31 @@
       "translations": {
         "tr": {
           "title": "CPU/GPU destek durumu",
-          "what": "Kabul edilmiş CPU beta, belgelenen Builder/Graph sınıflandırma, sınırlı resume, değerlendirme ve kayıtlı rapor akışlarını kapsar. CUDA seçenekleri ve geçmiş başarılı kayıtlar vardır; bunlar bugünkü genel GPU kabulü değildir.",
+          "what": "İlk sürüm, belgelenen CPU iş akışlarını ve 35 analizin doğrulanmış alt kapsamlarını korur. Native backend seçenekleri tam CUDA kabulü değildir.",
           "when": "Çalıştırma aygıtını ve güvenilir kapsamı seçerken bu durumu kontrol edin.",
           "benefit": "CPU üzerinde doğrulanmış akışları, henüz kabul edilmemiş GPU profillerinden ayırırsınız.",
-          "limits": "B4 ROOT_CAUSE_UNRESOLVED; GPU admission BLOCKED kalır. CUDA saved-activation guard korunur. Son CONTROL denemesi admission nedeniyle başlatılmadı: unknown GPU süreçleri ve 4 GiB altı boş RAM vardı. Bu tarihsel bir anlık kayıttır; canlı envanter veya yeni izin değildir. Rehber hiçbir GPU testi başlatmaz."
+          "limits": "P23 CPU bellek ve CPU saved-activation desteklenir; CUDA saved-activation UNSUPPORTED olup BLOCKED_B4_UNRESOLVED korumasıyla kapalıdır. P31 CPU kararlılık ve iki tarihsel 7200 saniyelik kanıt korunur; yeni CUDA 7200 saniye ve üzeri koşular DEFERRED durumundadır. Normal CUDA eğitimi ve bağımsız GPU özellikleri kaldırılmamıştır. 13 riskli testin BLOCKED olması otomatik ürün başarısızlığı değildir."
         },
         "en": {
           "title": "CPU/GPU support status",
-          "what": "Accepted CPU beta covers documented Builder/Graph classification, bounded resume, evaluation and retained-report workflows. CUDA options and historical successful captures exist, but do not establish current general GPU acceptance.",
+          "what": "The first release retains documented CPU workflows and the verified subscopes of all 35 analyses. Native backend options are not full CUDA acceptance.",
           "when": "Check this status before choosing a device and a validated scope.",
           "benefit": "It separates CPU-validated workflows from GPU profiles that are not accepted.",
-          "limits": "B4 remains ROOT_CAUSE_UNRESOLVED and GPU admission BLOCKED. The CUDA saved-activation guard remains. The latest CONTROL attempt was not started because admission found unknown GPU processes and less than 4 GiB free RAM. That is a historical snapshot, not live inventory or new permission. This guide starts no GPU tests."
+          "limits": "P23 CPU memory and CPU saved-activation are supported; CUDA saved-activation is UNSUPPORTED and blocked by BLOCKED_B4_UNRESOLVED. P31 CPU stability and both historical 7200-second records remain; new CUDA runs of 7200 seconds or longer are DEFERRED. Normal CUDA training and independent GPU features remain. The 13 BLOCKED risky integrations do not automatically mean product failure."
         },
         "de": {
           "title": "CPU-/GPU-Unterstützung",
-          "what": "Die abgenommene CPU-Beta umfasst dokumentierte Builder-/Graph-Klassifikation, begrenztes Resume, Auswertung und gespeicherte Berichte. CUDA-Optionen und frühere erfolgreiche Aufzeichnungen existieren, belegen aber keine allgemeine aktuelle GPU-Freigabe.",
+          "what": "Die erste Version behält die dokumentierten CPU-Abläufe und die verifizierten Teilbereiche aller 35 Analysen bei. Native Backend-Optionen bedeuten keine vollständige CUDA-Abnahme.",
           "when": "Prüfen Sie diesen Status vor Gerätewahl und Auswahl eines validierten Profils.",
           "benefit": "So trennen Sie CPU-validierte Abläufe von noch nicht freigegebenen GPU-Profilen.",
-          "limits": "B4 bleibt ROOT_CAUSE_UNRESOLVED, die GPU-Zulassung BLOCKED. Die CUDA-Saved-Activation-Sperre bleibt bestehen. Der letzte CONTROL-Versuch startete nicht: Die Zulassung meldete unbekannte GPU-Prozesse und weniger als 4 GiB freien RAM. Das ist eine historische Momentaufnahme, keine Live-Inventur oder neue Erlaubnis. Dieses Handbuch startet keine GPU-Tests."
+          "limits": "P23 CPU-Speicher und CPU saved-activation werden unterstützt; CUDA saved-activation ist UNSUPPORTED und durch BLOCKED_B4_UNRESOLVED gesperrt. P31 CPU-Stabilität und beide historischen 7200-Sekunden-Nachweise bleiben erhalten; neue CUDA-Läufe ab 7200 Sekunden sind DEFERRED. Normales CUDA-Training und unabhängige GPU-Funktionen bleiben erhalten. Die 13 riskanten BLOCKED-Integrationstests bedeuten nicht automatisch einen Produktfehler."
         },
         "es": {
           "title": "Estado del soporte CPU/GPU",
-          "what": "La beta CPU aceptada cubre la clasificación Builder/Graph documentada, reanudaciones limitadas, evaluación e informes guardados. Existen opciones CUDA y capturas históricas satisfactorias, pero no establecen una aceptación general actual de GPU.",
+          "what": "La primera versión conserva los flujos CPU documentados y los ámbitos verificados de los 35 análisis. Las opciones de backend nativo no equivalen a una aceptación CUDA completa.",
           "when": "Compruebe este estado antes de elegir el dispositivo y el perfil validado.",
           "benefit": "Distingue los flujos validados en CPU de los perfiles GPU todavía no aceptados.",
-          "limits": "B4 sigue ROOT_CAUSE_UNRESOLVED y la admisión GPU, BLOCKED. Se mantiene el guard de saved-activation CUDA. El último intento CONTROL no empezó: la admisión encontró procesos GPU desconocidos y menos de 4 GiB de RAM libre. Es una instantánea histórica, no un inventario actual ni un permiso nuevo. Esta guía no inicia pruebas GPU."
+          "limits": "Se admiten la memoria CPU y saved-activation CPU de P23; saved-activation CUDA es UNSUPPORTED y está bloqueado por BLOCKED_B4_UNRESOLVED. Se conservan la estabilidad CPU de P31 y los dos registros históricos de 7200 segundos; las nuevas ejecuciones CUDA de 7200 segundos o más son DEFERRED. Se mantienen el entrenamiento CUDA normal y las funciones GPU independientes. Las 13 integraciones de riesgo BLOCKED no implican automáticamente un fallo del producto."
         }
       },
       "inventory": []
@@ -1791,7 +1791,7 @@
           "measures": "Kaydedilen örneklerden P50, P95 ve P99 gibi süre yüzdeliklerini ölçer.",
           "meaning": "Aynı koşullarda daha küçük değer daha kısa model beklemesi demektir.",
           "when": "Etkileşimli yanıt süresini veya yavaş uçları incelemek için kullanın.",
-          "limits": "Kuyruk yüzdelikleri yeterli örnek ve kayıtlı politika ister. Model süresi tüm uygulama hattının süresi değildir."
+          "limits": "Kuyruk yüzdelikleri yeterli örnek ve kayıtlı politika ister. Model süresi tüm uygulama hattının süresi değildir. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P01 — Inference latency",
@@ -1799,7 +1799,7 @@
           "measures": "Measures timing percentiles such as P50, P95 and P99 from retained samples.",
           "meaning": "Under matching conditions, a smaller value means a shorter model wait.",
           "when": "Use it for interactive response times and slow-tail behavior.",
-          "limits": "Tail percentiles need sufficient samples and the recorded policy. Model time is not the whole application pipeline."
+          "limits": "Tail percentiles need sufficient samples and the recorded policy. Model time is not the whole application pipeline. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P01 — Inferenzlatenz",
@@ -1807,7 +1807,7 @@
           "measures": "Misst Zeitperzentile wie P50, P95 und P99 aus gespeicherten Stichproben.",
           "meaning": "Unter gleichen Bedingungen bedeutet ein kleinerer Wert weniger Modellwartezeit.",
           "when": "Für interaktive Antworten und besonders langsame Ausführungen.",
-          "limits": "Randperzentile brauchen genügend Stichproben und die gespeicherte Auswertungsregel. Modellzeit ist nicht die Zeit der gesamten Anwendungskette."
+          "limits": "Randperzentile brauchen genügend Stichproben und die gespeicherte Auswertungsregel. Modellzeit ist nicht die Zeit der gesamten Anwendungskette. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P01 — Latencia de inferencia",
@@ -1815,7 +1815,7 @@
           "measures": "Mide percentiles temporales como P50, P95 y P99 a partir de muestras guardadas.",
           "meaning": "En condiciones equivalentes, un valor menor indica menos espera del modelo.",
           "when": "Úselo para respuestas interactivas y ejecuciones de la cola lenta.",
-          "limits": "Los percentiles de cola requieren muestras suficientes y la política registrada. El tiempo del modelo no es el de toda la aplicación."
+          "limits": "Los percentiles de cola requieren muestras suficientes y la política registrada. El tiempo del modelo no es el de toda la aplicación. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -1839,7 +1839,7 @@
           "measures": "Tamamlanan görüntü sayısını geçen duvar saatine bölerek images/s ölçer.",
           "meaning": "Aynı işte yüksek değer daha fazla tamamlanan iş demektir.",
           "when": "Toplu işleme kapasitesini planlamak için kullanın.",
-          "limits": "Kamera FPS’i veya yalnız başlatılan iş sayısı değildir. Batch ve tamamlanma sınırları eşleşmelidir."
+          "limits": "Kamera FPS’i veya yalnız başlatılan iş sayısı değildir. Batch ve tamamlanma sınırları eşleşmelidir. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P02 — Completed inference throughput",
@@ -1847,7 +1847,7 @@
           "measures": "Divides completed image count by elapsed wall time, in images/s.",
           "meaning": "For the same work, a higher value means more completed output.",
           "when": "Use it to plan processing capacity.",
-          "limits": "It is not camera FPS or merely the count of submitted work. Batch and completion boundaries must match."
+          "limits": "It is not camera FPS or merely the count of submitted work. Batch and completion boundaries must match. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P02 — Abgeschlossener Inferenzdurchsatz",
@@ -1855,7 +1855,7 @@
           "measures": "Teilt abgeschlossene Bilder durch verstrichene Echtzeit, in images/s.",
           "meaning": "Bei gleicher Arbeit bedeutet ein höherer Wert mehr fertige Ergebnisse.",
           "when": "Zur Planung der Verarbeitungskapazität.",
-          "limits": "Das ist weder Kamera-FPS noch nur die Zahl gestarteter Aufgaben. Batch- und Abschlussgrenzen müssen passen."
+          "limits": "Das ist weder Kamera-FPS noch nur die Zahl gestarteter Aufgaben. Batch- und Abschlussgrenzen müssen passen. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P02 — Rendimiento de inferencias completadas",
@@ -1863,7 +1863,7 @@
           "measures": "Divide las imágenes completadas por el tiempo real transcurrido, en images/s.",
           "meaning": "Para el mismo trabajo, un valor mayor indica más resultados terminados.",
           "when": "Úselo para planificar la capacidad de procesamiento.",
-          "limits": "No es el FPS de la cámara ni el número de tareas enviadas. Deben coincidir los lotes y los límites de finalización."
+          "limits": "No es el FPS de la cámara ni el número de tareas enviadas. Deben coincidir los lotes y los límites de finalización. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -1887,7 +1887,7 @@
           "measures": "Tanımlanmış edinim, hazırlama, model ve çıktı aşamalarının zamanlarını ölçer.",
           "meaning": "Kullanıcının yaşadığı beklemeye model süresinden daha geniş bakar.",
           "when": "Uygulama yavaşken model dışındaki maliyeti aramak için kullanın.",
-          "limits": "Yalnız kayıtlı seri hat kapsamı geçerlidir. Eksik aşamalar veya farklı saatler otomatik tamamlanmaz."
+          "limits": "Yalnız kayıtlı seri hat kapsamı geçerlidir. Eksik aşamalar veya farklı saatler otomatik tamamlanmaz. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P03 — End-to-end latency",
@@ -1895,7 +1895,7 @@
           "measures": "Measures the declared acquisition, preparation, model and output stages.",
           "meaning": "It describes a broader user-visible wait than model timing alone.",
           "when": "Use it to investigate application costs around a model.",
-          "limits": "Only the recorded serial-pipeline scope applies. Missing stages and incompatible clocks are not filled in automatically."
+          "limits": "Only the recorded serial-pipeline scope applies. Missing stages and incompatible clocks are not filled in automatically. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P03 — Ende-zu-Ende-Latenz",
@@ -1903,7 +1903,7 @@
           "measures": "Misst ausdrücklich definierte Erfassungs-, Vorbereitungs-, Modell- und Ausgabestufen.",
           "meaning": "Sie beschreibt mehr von der wahrgenommenen Wartezeit als die reine Modellzeit.",
           "when": "Zur Suche nach Anwendungskosten außerhalb des Modells.",
-          "limits": "Es gilt nur die aufgezeichnete serielle Verarbeitungskette. Fehlende Stufen und unvereinbare Uhren werden nicht automatisch ergänzt."
+          "limits": "Es gilt nur die aufgezeichnete serielle Verarbeitungskette. Fehlende Stufen und unvereinbare Uhren werden nicht automatisch ergänzt. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P03 — Latencia de extremo a extremo",
@@ -1911,7 +1911,7 @@
           "measures": "Mide las etapas declaradas de adquisición, preparación, modelo y salida.",
           "meaning": "Describe una espera visible para el usuario más amplia que el tiempo del modelo.",
           "when": "Sirve para investigar costes de la aplicación alrededor del modelo.",
-          "limits": "Solo vale el ámbito de la cadena secuencial registrada. No se completan automáticamente etapas ausentes ni relojes incompatibles."
+          "limits": "Solo vale el ámbito de la cadena secuencial registrada. No se completan automáticamente etapas ausentes ni relojes incompatibles. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -1935,7 +1935,7 @@
           "measures": "Kaydedilen preprocessing ve postprocessing sürelerini ölçer.",
           "meaning": "Model dışındaki dönüşümlerin maliyetini gösterir.",
           "when": "Görüntü yeniden boyutlandırma veya çıktı dönüştürme beklemelerini ayırmak için kullanın.",
-          "limits": "Yalnız bildirilen aşamalar ölçülür; tüm I/O veya uygulama süresi varsayılmaz."
+          "limits": "Yalnız bildirilen aşamalar ölçülür; tüm I/O veya uygulama süresi varsayılmaz. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P04 — Preprocessing and postprocessing",
@@ -1943,7 +1943,7 @@
           "measures": "Measures recorded preprocessing and postprocessing durations.",
           "meaning": "Shows costs of transformations around the model.",
           "when": "Use it to separate waits for image preparation or output conversion.",
-          "limits": "Only declared stages are measured; complete I/O or application coverage is not assumed."
+          "limits": "Only declared stages are measured; complete I/O or application coverage is not assumed. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P04 — Vor- und Nachverarbeitung",
@@ -1951,7 +1951,7 @@
           "measures": "Misst aufgezeichnete Zeiten der Vor- und Nachverarbeitung.",
           "meaning": "Zeigt die Kosten der Umformungen rund um das Modell.",
           "when": "Zum Trennen von Bildvorbereitung und Ausgabeumwandlung.",
-          "limits": "Nur deklarierte Stufen werden gemessen; vollständige I/O- oder Anwendungsabdeckung wird nicht vorausgesetzt."
+          "limits": "Nur deklarierte Stufen werden gemessen; vollständige I/O- oder Anwendungsabdeckung wird nicht vorausgesetzt. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P04 — Preprocesamiento y posprocesamiento",
@@ -1959,7 +1959,7 @@
           "measures": "Mide las duraciones registradas de preprocesamiento y posprocesamiento.",
           "meaning": "Muestra el coste de las transformaciones alrededor del modelo.",
           "when": "Permite separar esperas de preparación de imágenes y conversión de salidas.",
-          "limits": "Solo se miden las etapas declaradas; no se supone cobertura de toda la E/S o aplicación."
+          "limits": "Solo se miden las etapas declaradas; no se supone cobertura de toda la E/S o aplicación. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -1983,7 +1983,7 @@
           "measures": "Kurma, checkpoint yükleme ve ilk kullanım aşamalarının sürelerini ölçer.",
           "meaning": "İlk istek maliyetini tekrar eden çıkarımdan ayırır.",
           "when": "Uygulama açılışını veya ilk yanıtı planlarken kullanın.",
-          "limits": "Yeni süreç işletim sistemi dosya önbelleğinin de soğuk olduğunu kanıtlamaz. Güvenilen factory ve uygun checkpoint kapsamı gerekir."
+          "limits": "Yeni süreç işletim sistemi dosya önbelleğinin de soğuk olduğunu kanıtlamaz. Güvenilen factory ve uygun checkpoint kapsamı gerekir. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P05 — Cold start and loading",
@@ -1991,7 +1991,7 @@
           "measures": "Measures construction, checkpoint loading and first-use stages.",
           "meaning": "Separates first-request costs from repeated inference.",
           "when": "Use it for startup and first-response planning.",
-          "limits": "A new process does not prove a cold OS file cache. A trusted factory and an appropriate checkpoint contract are required."
+          "limits": "A new process does not prove a cold OS file cache. A trusted factory and an appropriate checkpoint contract are required. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P05 — Kaltstart und Laden",
@@ -1999,7 +1999,7 @@
           "measures": "Misst Aufbau, Checkpoint-Laden und erste Nutzung.",
           "meaning": "Trennt die erste Anfrage von wiederholter Inferenz.",
           "when": "Zur Planung von Programmstart und erster Antwort.",
-          "limits": "Ein neuer Prozess belegt keinen kalten Betriebssystem-Dateicache. Eine vertrauenswürdige Factory und ein passender Checkpoint-Vertrag sind nötig."
+          "limits": "Ein neuer Prozess belegt keinen kalten Betriebssystem-Dateicache. Eine vertrauenswürdige Factory und ein passender Checkpoint-Vertrag sind nötig. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P05 — Arranque en frío y carga",
@@ -2007,7 +2007,7 @@
           "measures": "Mide construcción, carga del checkpoint y primera utilización.",
           "meaning": "Separa el coste de la primera petición del de inferencias repetidas.",
           "when": "Úselo para planificar el inicio de la aplicación y la primera respuesta.",
-          "limits": "Un proceso nuevo no demuestra que la caché de archivos del sistema esté fría. Se requieren una factory fiable y un contrato de checkpoint adecuado."
+          "limits": "Un proceso nuevo no demuestra que la caché de archivos del sistema esté fría. Se requieren una factory fiable y un contrato de checkpoint adecuado. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -2031,7 +2031,7 @@
           "measures": "Her açık batch noktasında gecikme ve tamamlanan images/s ölçer.",
           "meaning": "Kapasite ile tek isteğin beklemesi arasındaki değişimi gösterir.",
           "when": "Uygun batch seçimini araştırmak için kullanın.",
-          "limits": "Sonlu noktalar genel optimumu kanıtlamaz. Veri, precision ve ölçüm yöntemi eşleşmeli; bellek sınırları korunmalıdır."
+          "limits": "Sonlu noktalar genel optimumu kanıtlamaz. Veri, precision ve ölçüm yöntemi eşleşmeli; bellek sınırları korunmalıdır. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P06 — Batch-size sweep",
@@ -2039,7 +2039,7 @@
           "measures": "Measures latency and completed images/s at each explicit batch point.",
           "meaning": "Shows how capacity and request wait change together.",
           "when": "Use it to investigate a suitable batch size.",
-          "limits": "Finite points do not prove a global optimum. Data, precision and method must match, and memory limits remain in force."
+          "limits": "Finite points do not prove a global optimum. Data, precision and method must match, and memory limits remain in force. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P06 — Batch-Größen untersuchen",
@@ -2047,7 +2047,7 @@
           "measures": "Misst Latenz und abgeschlossene images/s je ausdrücklich gewählter Batch-Größe.",
           "meaning": "Zeigt, wie sich Kapazität und Wartezeit gemeinsam ändern.",
           "when": "Zur Suche nach einer geeigneten Batch-Größe.",
-          "limits": "Endliche Messpunkte beweisen kein globales Optimum. Daten, Zahlenformat und Methode müssen passen; Speichergrenzen bleiben wirksam."
+          "limits": "Endliche Messpunkte beweisen kein globales Optimum. Daten, Zahlenformat und Methode müssen passen; Speichergrenzen bleiben wirksam. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P06 — Barrido de tamaños de lote",
@@ -2055,7 +2055,7 @@
           "measures": "Mide latencia e images/s completadas en cada tamaño explícito.",
           "meaning": "Muestra cómo varían la capacidad y la espera de cada petición.",
           "when": "Sirve para investigar un tamaño de lote adecuado.",
-          "limits": "Un conjunto finito de puntos no demuestra un óptimo global. Deben coincidir datos, formato numérico y método; se mantienen los límites de memoria."
+          "limits": "Un conjunto finito de puntos no demuestra un óptimo global. Deben coincidir datos, formato numérico y método; se mantienen los límites de memoria. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -2079,7 +2079,7 @@
           "measures": "Her çözünürlükte süre ve işleme kapasitesini ölçer.",
           "meaning": "Daha çok pikselin kaynak maliyetini gösterir.",
           "when": "Girdi boyutu seçimini araştırırken kullanın.",
-          "limits": "Görev anlamı ve ön işleme korunmalıdır. Daha küçük görüntüde hız kazanımı kaliteyi koruduğunu göstermez; kalite ayrıca ölçülür."
+          "limits": "Görev anlamı ve ön işleme korunmalıdır. Daha küçük görüntüde hız kazanımı kaliteyi koruduğunu göstermez; kalite ayrıca ölçülür. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P07 — Resolution sweep",
@@ -2087,7 +2087,7 @@
           "measures": "Measures timing and processing capacity for each resolution.",
           "meaning": "Shows resource costs of processing more pixels.",
           "when": "Use it to investigate input-size choices.",
-          "limits": "Task meaning and preprocessing must remain appropriate. A speed gain on smaller images does not prove preserved quality; quality needs separate evaluation."
+          "limits": "Task meaning and preprocessing must remain appropriate. A speed gain on smaller images does not prove preserved quality; quality needs separate evaluation. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P07 — Auflösungen untersuchen",
@@ -2095,7 +2095,7 @@
           "measures": "Misst Zeiten und Verarbeitungskapazität je Auflösung.",
           "meaning": "Zeigt den Ressourcenaufwand zusätzlicher Pixel.",
           "when": "Zur Untersuchung geeigneter Eingabegrößen.",
-          "limits": "Aufgabenbedeutung und Vorverarbeitung müssen passend bleiben. Schnellere kleine Bilder belegen keine erhaltene Qualität; diese muss separat geprüft werden."
+          "limits": "Aufgabenbedeutung und Vorverarbeitung müssen passend bleiben. Schnellere kleine Bilder belegen keine erhaltene Qualität; diese muss separat geprüft werden. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P07 — Barrido de resoluciones",
@@ -2103,7 +2103,7 @@
           "measures": "Mide el tiempo y la capacidad de procesamiento para cada resolución.",
           "meaning": "Muestra el coste de procesar más píxeles.",
           "when": "Úselo para investigar tamaños de entrada.",
-          "limits": "Debe preservarse el sentido de la tarea y un preprocesamiento adecuado. Ganar velocidad con imágenes menores no demuestra que se conserve la calidad; hay que evaluarla aparte."
+          "limits": "Debe preservarse el sentido de la tarea y un preprocesamiento adecuado. Ganar velocidad con imágenes menores no demuestra que se conserve la calidad; hay que evaluarla aparte. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -2127,7 +2127,7 @@
           "measures": "Kayıtlı dtype/precision koşullarında süre ve throughput ölçer.",
           "meaning": "Sayısal formatın performans etkisini gösterir.",
           "when": "Desteklenen precision seçeneklerini karşılaştırırken kullanın.",
-          "limits": "Bu ölçüm doğruluğu veya kaliteyi kanıtlamaz; P28 gerekir. CPU’da desteklenmeyen AMP/BF16 seçenekleri desteklenmiş sayılmaz."
+          "limits": "Bu ölçüm doğruluğu veya kaliteyi kanıtlamaz; P28 gerekir. CPU’da desteklenmeyen AMP/BF16 seçenekleri desteklenmiş sayılmaz. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P08 — Numerical-precision performance",
@@ -2135,7 +2135,7 @@
           "measures": "Measures timing and throughput under recorded dtype/precision conditions.",
           "meaning": "Shows how the numerical format affects performance.",
           "when": "Use it to compare supported precision settings.",
-          "limits": "It does not establish numerical accuracy or task quality; use P28 evidence. Unsupported CPU AMP/BF16 options do not become supported."
+          "limits": "It does not establish numerical accuracy or task quality; use P28 evidence. Unsupported CPU AMP/BF16 options do not become supported. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P08 — Laufzeit nach Zahlenformat",
@@ -2143,7 +2143,7 @@
           "measures": "Misst Zeit und Durchsatz unter aufgezeichneten dtype-/Precision-Bedingungen.",
           "meaning": "Zeigt den Leistungseinfluss des Zahlenformats.",
           "when": "Zum Vergleich unterstützter Rechenformate.",
-          "limits": "Das belegt weder numerische Genauigkeit noch Aufgabenqualität; dafür ist P28 vorgesehen. Nicht unterstütztes CPU-AMP/BF16 wird dadurch nicht unterstützt."
+          "limits": "Das belegt weder numerische Genauigkeit noch Aufgabenqualität; dafür ist P28 vorgesehen. Nicht unterstütztes CPU-AMP/BF16 wird dadurch nicht unterstützt. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P08 — Rendimiento según la precisión numérica",
@@ -2151,7 +2151,7 @@
           "measures": "Mide tiempos y rendimiento con las condiciones dtype/precision registradas.",
           "meaning": "Muestra el efecto del formato numérico sobre el rendimiento.",
           "when": "Úselo para comparar ajustes numéricos admitidos.",
-          "limits": "No demuestra exactitud numérica ni calidad de la tarea; se necesita P28. No habilita opciones AMP/BF16 de CPU que no estén admitidas."
+          "limits": "No demuestra exactitud numérica ni calidad de la tarea; se necesita P28. No habilita opciones AMP/BF16 de CPU que no estén admitidas. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -2175,7 +2175,7 @@
           "measures": "Allocated/reserved ve ilgili tepe sayaçlarını byte olarak ölçer.",
           "meaning": "Allocator kapsamındaki bellek davranışını gösterir.",
           "when": "GPU bellek kayıtlarını yorumlamak için kullanın.",
-          "limits": "Gerçek toplam fiziksel VRAM değildir. Peak reset ayrı açık izin ister; CPU sonucu CUDA bellek kanıtı olmaz. Mevcut GPU admission ve guard’lar geçerlidir."
+          "limits": "Gerçek toplam fiziksel VRAM değildir. Peak reset ayrı açık izin ister; CPU sonucu CUDA bellek kanıtı olmaz. Mevcut GPU admission ve guard’lar geçerlidir. Sürüm desteği: CPU=UNSUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P09 — CUDA allocator memory",
@@ -2183,7 +2183,7 @@
           "measures": "Measures allocated/reserved bytes and related peak counters.",
           "meaning": "Describes memory within the allocator’s scope.",
           "when": "Use it to interpret GPU-memory captures.",
-          "limits": "It is not total physical VRAM. Peak reset needs separate explicit permission; CPU results are not CUDA-memory evidence. Current GPU admission and guards still apply."
+          "limits": "It is not total physical VRAM. Peak reset needs separate explicit permission; CPU results are not CUDA-memory evidence. Current GPU admission and guards still apply. Release support: CPU=UNSUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P09 — CUDA-Allocator-Speicher",
@@ -2191,7 +2191,7 @@
           "measures": "Misst allocated/reserved in Byte sowie zugehörige Spitzenzähler.",
           "meaning": "Beschreibt den Speicherbereich des Allocators.",
           "when": "Zum Einordnen von GPU-Speicheraufzeichnungen.",
-          "limits": "Das ist nicht der gesamte physische Grafikspeicher. Ein Peak-Reset braucht eine gesonderte ausdrückliche Erlaubnis; CPU-Ergebnisse sind kein CUDA-Speichernachweis. Bestehende GPU-Zulassungen und Sperren gelten weiter."
+          "limits": "Das ist nicht der gesamte physische Grafikspeicher. Ein Peak-Reset braucht eine gesonderte ausdrückliche Erlaubnis; CPU-Ergebnisse sind kein CUDA-Speichernachweis. Bestehende GPU-Zulassungen und Sperren gelten weiter. Versionsunterstützung: CPU=UNSUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P09 — Memoria del allocator CUDA",
@@ -2199,7 +2199,7 @@
           "measures": "Mide bytes allocated/reserved y sus contadores de pico.",
           "meaning": "Describe la memoria dentro del ámbito del allocator.",
           "when": "Úselo para interpretar capturas de memoria GPU.",
-          "limits": "No es toda la VRAM física. Reiniciar picos requiere permiso explícito separado; los resultados CPU no prueban memoria CUDA. Siguen vigentes la admisión y los guards GPU."
+          "limits": "No es toda la VRAM física. Reiniciar picos requiere permiso explícito separado; los resultados CPU no prueban memoria CUDA. Siguen vigentes la admisión y los guards GPU. Soporte de la versión: CPU=UNSUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -2223,7 +2223,7 @@
           "measures": "RSS, örneklenen tepe ve uygun yaşam boyu HWM değerlerini ölçer.",
           "meaning": "Tüm süreçteki RAM maliyetini gösterir.",
           "when": "Modelle birlikte runtime ve veri yüklerinin RAM etkisini incelerken kullanın.",
-          "limits": "Modelin tek başına belleği değildir. Örneklenen tepe gerçek anlık maksimumu kaçırabilir; HWM yaşam boyu kapsamdır. Job private commit sınırı RSS kotası değildir."
+          "limits": "Modelin tek başına belleği değildir. Örneklenen tepe gerçek anlık maksimumu kaçırabilir; HWM yaşam boyu kapsamdır. Job private commit sınırı RSS kotası değildir. Sürüm desteği: CPU=SUPPORTED, CUDA=UNSUPPORTED. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P10 — Process RAM",
@@ -2231,7 +2231,7 @@
           "measures": "Measures RSS, sampled peaks and applicable lifetime HWM values.",
           "meaning": "Shows process-wide RAM costs.",
           "when": "Use it to examine the combined model, runtime and data footprint.",
-          "limits": "It is not model-only memory. Sampling can miss an instantaneous maximum; HWM has lifetime scope. A Job private-commit limit is not an RSS quota."
+          "limits": "It is not model-only memory. Sampling can miss an instantaneous maximum; HWM has lifetime scope. A Job private-commit limit is not an RSS quota. Release support: CPU=SUPPORTED, CUDA=UNSUPPORTED. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P10 — Prozess-RAM",
@@ -2239,7 +2239,7 @@
           "measures": "Misst RSS, abgetastete Spitzen und passende lebenslange HWM-Werte.",
           "meaning": "Zeigt den RAM-Bedarf des gesamten Prozesses.",
           "when": "Zur Betrachtung von Modell, Laufzeitumgebung und Daten zusammen.",
-          "limits": "Das ist kein reiner Modellspeicher. Stichproben können kurze Maxima verpassen; HWM gilt über die Prozesslebenszeit. Ein Job-Private-Commit-Limit ist keine RSS-Quote."
+          "limits": "Das ist kein reiner Modellspeicher. Stichproben können kurze Maxima verpassen; HWM gilt über die Prozesslebenszeit. Ein Job-Private-Commit-Limit ist keine RSS-Quote. Versionsunterstützung: CPU=SUPPORTED, CUDA=UNSUPPORTED. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P10 — RAM del proceso",
@@ -2247,7 +2247,7 @@
           "measures": "Mide RSS, picos muestreados y los HWM de vida completa aplicables.",
           "meaning": "Muestra el coste de RAM de todo el proceso.",
           "when": "Sirve para estudiar el conjunto de modelo, runtime y datos.",
-          "limits": "No es memoria exclusiva del modelo. El muestreo puede perder máximos instantáneos; HWM abarca la vida del proceso. El límite private-commit de un Job no es una cuota RSS."
+          "limits": "No es memoria exclusiva del modelo. El muestreo puede perder máximos instantáneos; HWM abarca la vida del proceso. El límite private-commit de un Job no es una cuota RSS. Soporte de la versión: CPU=SUPPORTED, CUDA=UNSUPPORTED. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -2271,7 +2271,7 @@
           "measures": "Mantıksal tensor byte’ları, sayıları ve varsa ayrı artifact boyutunu verir.",
           "meaning": "Ağırlıkların temsil maliyetini açıklar.",
           "when": "Model depolama ve karşılaştırma planında kullanın.",
-          "limits": "Mantıksal byte, dosya byte’ı ve resident RAM farklıdır. Paylaşılan storage politikası korunmalı; yalnız metadata kapsamı yeni dosya yazıldığını göstermez."
+          "limits": "Mantıksal byte, dosya byte’ı ve resident RAM farklıdır. Paylaşılan storage politikası korunmalı; yalnız metadata kapsamı yeni dosya yazıldığını göstermez. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P11 — Tensor and artifact footprint",
@@ -2279,7 +2279,7 @@
           "measures": "Reports logical tensor bytes, counts and separate artifact size when present.",
           "meaning": "Describes the cost of representing model state.",
           "when": "Use it for model storage and comparison planning.",
-          "limits": "Logical bytes, file bytes and resident RAM differ. Shared-storage rules must be preserved; metadata-only coverage does not mean a new file was written."
+          "limits": "Logical bytes, file bytes and resident RAM differ. Shared-storage rules must be preserved; metadata-only coverage does not mean a new file was written. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P11 — Tensor- und Artefaktgröße",
@@ -2287,7 +2287,7 @@
           "measures": "Berichtet logische Tensor-Bytes, Anzahlen und gegebenenfalls eine separate Artefaktgröße.",
           "meaning": "Beschreibt den Darstellungsaufwand des Modellzustands.",
           "when": "Für Speicherplatzplanung und Modellvergleiche.",
-          "limits": "Logische Bytes, Dateibytes und residentes RAM sind verschieden. Regeln für gemeinsam genutzten Storage bleiben maßgeblich; reine Metadaten belegen keinen neuen Dateischreibvorgang."
+          "limits": "Logische Bytes, Dateibytes und residentes RAM sind verschieden. Regeln für gemeinsam genutzten Storage bleiben maßgeblich; reine Metadaten belegen keinen neuen Dateischreibvorgang. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P11 — Tamaño de tensores y artefactos",
@@ -2295,7 +2295,7 @@
           "measures": "Informa bytes lógicos, recuentos y, si existe, el tamaño separado del artefacto.",
           "meaning": "Describe el coste de representar el estado del modelo.",
           "when": "Úselo al planificar almacenamiento y comparaciones.",
-          "limits": "Los bytes lógicos, los del archivo y la RAM residente son distintos. Debe respetarse la política de almacenamiento compartido; los metadatos no demuestran una escritura nueva."
+          "limits": "Los bytes lógicos, los del archivo y la RAM residente son distintos. Debe respetarse la política de almacenamiento compartido; los metadatos no demuestran una escritura nueva. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -2319,7 +2319,7 @@
           "measures": "Kayıtlı işlem kuralı ve kapsamla FLOP/MAC değerlerini ölçer.",
           "meaning": "Yapısal hesaplama maliyetini karşılaştırmanıza yardım eder.",
           "when": "İşlem miktarının nereden geldiğini araştırırken kullanın.",
-          "limits": "Bilinmeyen operatör maliyeti sıfır sayılamaz. Kural, girdi, kapsam ve receipt eşleşmelidir; FLOP gerçek cihaz süresi değildir. Genel 1 MAC=2 FLOP dönüşümü kayıt kuralı doğrulanmadan uygulanmaz."
+          "limits": "Bilinmeyen operatör maliyeti sıfır sayılamaz. Kural, girdi, kapsam ve receipt eşleşmelidir; FLOP gerçek cihaz süresi değildir. Genel 1 MAC=2 FLOP dönüşümü kayıt kuralı doğrulanmadan uygulanmaz. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P12 — FLOPs and MACs",
@@ -2327,7 +2327,7 @@
           "measures": "Measures FLOP/MAC values under a recorded convention and coverage.",
           "meaning": "Helps compare structural computational costs.",
           "when": "Use it to investigate where operation counts come from.",
-          "limits": "Unknown operator cost cannot be counted as zero. Convention, input, coverage and receipts must match; FLOPs are not device runtime. Do not assume 1 MAC=2 FLOPs without checking the recorded rule."
+          "limits": "Unknown operator cost cannot be counted as zero. Convention, input, coverage and receipts must match; FLOPs are not device runtime. Do not assume 1 MAC=2 FLOPs without checking the recorded rule. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P12 — FLOPs und MACs",
@@ -2335,7 +2335,7 @@
           "measures": "Ermittelt FLOP-/MAC-Werte mit gespeicherter Zählregel und Abdeckung.",
           "meaning": "Hilft beim Vergleich struktureller Rechenkosten.",
           "when": "Zur Untersuchung der Herkunft von Operationszahlen.",
-          "limits": "Unbekannte Operator-Kosten dürfen nicht als null zählen. Zählregel, Eingabe, Abdeckung und Receipts müssen passen; FLOPs sind keine Gerätelaufzeit. 1 MAC=2 FLOPs gilt nicht ohne Prüfung der dokumentierten Regel."
+          "limits": "Unbekannte Operator-Kosten dürfen nicht als null zählen. Zählregel, Eingabe, Abdeckung und Receipts müssen passen; FLOPs sind keine Gerätelaufzeit. 1 MAC=2 FLOPs gilt nicht ohne Prüfung der dokumentierten Regel. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P12 — FLOPs y MACs",
@@ -2343,7 +2343,7 @@
           "measures": "Mide valores FLOP/MAC según la convención y cobertura registradas.",
           "meaning": "Ayuda a comparar el coste computacional estructural.",
           "when": "Úselo para investigar de dónde proceden los recuentos.",
-          "limits": "Un coste desconocido no puede contarse como cero. Deben coincidir convención, entrada, cobertura y receipts; los FLOPs no son tiempo de dispositivo. No suponga 1 MAC=2 FLOPs sin comprobar la regla guardada."
+          "limits": "Un coste desconocido no puede contarse como cero. Deben coincidir convención, entrada, cobertura y receipts; los FLOPs no son tiempo de dispositivo. No suponga 1 MAC=2 FLOPs sin comprobar la regla guardada. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -2367,7 +2367,7 @@
           "measures": "Araçla gözlenen modül sürelerini ve ilgili kapsamı ölçer.",
           "meaning": "Pahalı olabilecek katmanları işaret eder.",
           "when": "Model içi darboğaz adaylarını araştırırken kullanın.",
-          "limits": "Profiler zamanlamayı değiştirir. Modül ile CUDA kernel arasında tam sahiplik eşlemesi kanıtlanmış sayılmaz; instrumented süre normal çalışma süresi değildir."
+          "limits": "Profiler zamanlamayı değiştirir. Modül ile CUDA kernel arasında tam sahiplik eşlemesi kanıtlanmış sayılmaz; instrumented süre normal çalışma süresi değildir. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P13 — Module/layer profiling",
@@ -2375,7 +2375,7 @@
           "measures": "Measures instrumented module durations and their recorded scope.",
           "meaning": "Highlights layers that may be expensive.",
           "when": "Use it to investigate possible internal bottlenecks.",
-          "limits": "Profiling perturbs timing. Complete module-to-CUDA-kernel ownership is not established; instrumented duration is not uninstrumented runtime."
+          "limits": "Profiling perturbs timing. Complete module-to-CUDA-kernel ownership is not established; instrumented duration is not uninstrumented runtime. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P13 — Modul-/Schichtprofil",
@@ -2383,7 +2383,7 @@
           "measures": "Misst instrumentierte Modulzeiten und deren gespeicherten Bezugsbereich.",
           "meaning": "Weist auf möglicherweise teure Schichten hin.",
           "when": "Zur Untersuchung interner Engpasskandidaten.",
-          "limits": "Profiling verändert die Zeitmessung. Eine vollständige Zuordnung von Modulen zu CUDA-Kerneln ist nicht belegt; instrumentierte Zeit ist keine unveränderte Normallaufzeit."
+          "limits": "Profiling verändert die Zeitmessung. Eine vollständige Zuordnung von Modulen zu CUDA-Kerneln ist nicht belegt; instrumentierte Zeit ist keine unveränderte Normallaufzeit. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P13 — Perfil por módulo o capa",
@@ -2391,7 +2391,7 @@
           "measures": "Mide duraciones instrumentadas y su ámbito registrado.",
           "meaning": "Señala capas que podrían resultar costosas.",
           "when": "Sirve para investigar posibles cuellos de botella internos.",
-          "limits": "El profiler altera los tiempos. No se establece una atribución completa de módulos a kernels CUDA; la duración instrumentada no es el tiempo normal sin instrumentación."
+          "limits": "El profiler altera los tiempos. No se establece una atribución completa de módulos a kernels CUDA; la duración instrumentada no es el tiempo normal sin instrumentación. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -2415,7 +2415,7 @@
           "measures": "Kayıtlı operatör süre ve etkinliklerini ölçer.",
           "meaning": "Maliyetin hangi işlem türlerinde toplandığını gösterir.",
           "when": "Modül görünümü yeterli ayrıntı vermediğinde kullanın.",
-          "limits": "Host olayı tek başına CUDA kernel kimliğini veya sahipliğini kanıtlamaz. Eksik native kernel kapsamı unsupported/partial kalır; araç ek yükü vardır."
+          "limits": "Host olayı tek başına CUDA kernel kimliğini veya sahipliğini kanıtlamaz. Eksik native kernel kapsamı unsupported/partial kalır; araç ek yükü vardır. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P14 — Operator/kernel profiling",
@@ -2423,7 +2423,7 @@
           "measures": "Measures retained operator durations and activity.",
           "meaning": "Shows which kinds of operations account for observed cost.",
           "when": "Use it when module-level views are too coarse.",
-          "limits": "A host event alone does not prove CUDA kernel identity or ownership. Missing native-kernel coverage remains unsupported/partial; instrumentation adds overhead."
+          "limits": "A host event alone does not prove CUDA kernel identity or ownership. Missing native-kernel coverage remains unsupported/partial; instrumentation adds overhead. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P14 — Operator-/Kernelprofil",
@@ -2431,7 +2431,7 @@
           "measures": "Misst gespeicherte Operatorzeiten und Aktivität.",
           "meaning": "Zeigt, bei welchen Operationsarten beobachtete Kosten anfallen.",
           "when": "Wenn die Modulebene zu wenig Detail bietet.",
-          "limits": "Ein Host-Ereignis allein belegt weder CUDA-Kernel-Identität noch Zuordnung. Fehlende native Kernel-Abdeckung bleibt unsupported/partial; Instrumentierung verursacht Zusatzaufwand."
+          "limits": "Ein Host-Ereignis allein belegt weder CUDA-Kernel-Identität noch Zuordnung. Fehlende native Kernel-Abdeckung bleibt unsupported/partial; Instrumentierung verursacht Zusatzaufwand. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P14 — Perfil de operadores y kernels",
@@ -2439,7 +2439,7 @@
           "measures": "Mide las duraciones y actividad de operadores guardados.",
           "meaning": "Muestra qué tipos de operación concentran el coste observado.",
           "when": "Úselo si la vista por módulo resulta demasiado general.",
-          "limits": "Un evento del host no demuestra identidad ni atribución de un kernel CUDA. La cobertura nativa ausente sigue unsupported/partial; la instrumentación añade coste."
+          "limits": "Un evento del host no demuestra identidad ni atribución de un kernel CUDA. La cobertura nativa ausente sigue unsupported/partial; la instrumentación añade coste. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -2463,7 +2463,7 @@
           "measures": "Kayıtlı kopya byte’larını, sürelerini ve aktarım hızını ölçer.",
           "meaning": "Veri taşımanın hesaplamaya eklediği maliyeti ayırır.",
           "when": "Aktarım ağırlıklı uygulamalarda kullanın.",
-          "limits": "Kopya ve hesaplamanın örtüşmesi ayrı zaman kanıtı ister. Pinned/nonblocking adları tek başına örtüşme kanıtı değildir. CUDA admission gerekir."
+          "limits": "Kopya ve hesaplamanın örtüşmesi ayrı zaman kanıtı ister. Pinned/nonblocking adları tek başına örtüşme kanıtı değildir. CUDA admission gerekir. Sürüm desteği: CPU=UNSUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P15 — CPU–GPU transfers",
@@ -2471,7 +2471,7 @@
           "measures": "Measures recorded copy bytes, durations and transfer rates.",
           "meaning": "Separates data-movement cost from computation.",
           "when": "Use it for transfer-heavy applications.",
-          "limits": "Copy/compute overlap needs separate timing evidence. Pinned/nonblocking labels alone do not prove overlap. CUDA admission is required."
+          "limits": "Copy/compute overlap needs separate timing evidence. Pinned/nonblocking labels alone do not prove overlap. CUDA admission is required. Release support: CPU=UNSUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P15 — CPU–GPU-Übertragung",
@@ -2479,7 +2479,7 @@
           "measures": "Misst aufgezeichnete Kopierbytes, Zeiten und Übertragungsraten.",
           "meaning": "Trennt Datenbewegung von Rechenaufwand.",
           "when": "Für Anwendungen mit hohem Transferanteil.",
-          "limits": "Überlappung von Kopie und Rechnung braucht getrennte Zeitnachweise. Pinned-/Nonblocking-Bezeichnungen belegen allein keine Überlappung. CUDA-Zulassung ist erforderlich."
+          "limits": "Überlappung von Kopie und Rechnung braucht getrennte Zeitnachweise. Pinned-/Nonblocking-Bezeichnungen belegen allein keine Überlappung. CUDA-Zulassung ist erforderlich. Versionsunterstützung: CPU=UNSUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P15 — Transferencias CPU–GPU",
@@ -2487,7 +2487,7 @@
           "measures": "Mide bytes copiados, duraciones y tasas registradas.",
           "meaning": "Separa el movimiento de datos del cálculo.",
           "when": "Úselo en aplicaciones con muchas transferencias.",
-          "limits": "El solapamiento entre copia y cálculo necesita evidencias temporales aparte. Las etiquetas pinned/nonblocking no lo demuestran. Se requiere admisión CUDA."
+          "limits": "El solapamiento entre copia y cálculo necesita evidencias temporales aparte. Las etiquetas pinned/nonblocking no lo demuestran. Se requiere admisión CUDA. Soporte de la versión: CPU=UNSUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -2511,7 +2511,7 @@
           "measures": "Mevcut backend’in kullanım sayaçlarını ve örnek zamanlarını ölçer.",
           "meaning": "Kaynakların boş veya meşgul göründüğü aralıkları gösterir.",
           "when": "Darboğaz adaylarını diğer sürelerle birlikte incelerken kullanın.",
-          "limits": "Makine/kart genelindeki kullanım modelin özel payı değildir. Sensör yoksa değer uydurulmaz. Yüksek kullanım tek başına verimli çalışma kanıtı değildir."
+          "limits": "Makine/kart genelindeki kullanım modelin özel payı değildir. Sensör yoksa değer uydurulmaz. Yüksek kullanım tek başına verimli çalışma kanıtı değildir. Sürüm desteği: CPU=PARTIAL, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P16 — Hardware utilization",
@@ -2519,7 +2519,7 @@
           "measures": "Measures available backend counters and sample times.",
           "meaning": "Shows intervals that appear idle or busy.",
           "when": "Use it alongside timing when investigating bottlenecks.",
-          "limits": "Machine/board utilization is not the model’s exclusive share. Missing sensors do not produce fabricated values. High utilization alone does not prove efficiency."
+          "limits": "Machine/board utilization is not the model’s exclusive share. Missing sensors do not produce fabricated values. High utilization alone does not prove efficiency. Release support: CPU=PARTIAL, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P16 — Hardwareauslastung",
@@ -2527,7 +2527,7 @@
           "measures": "Misst verfügbare Backend-Zähler und Abtastzeiten.",
           "meaning": "Zeigt scheinbar freie oder ausgelastete Zeitbereiche.",
           "when": "Zusammen mit Zeitmessungen zur Engpasssuche.",
-          "limits": "Maschinen-/Kartenauslastung ist kein exklusiver Modellanteil. Fehlende Sensorwerte werden nicht erfunden. Hohe Auslastung belegt für sich keine Effizienz."
+          "limits": "Maschinen-/Kartenauslastung ist kein exklusiver Modellanteil. Fehlende Sensorwerte werden nicht erfunden. Hohe Auslastung belegt für sich keine Effizienz. Versionsunterstützung: CPU=PARTIAL, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P16 — Utilización del hardware",
@@ -2535,7 +2535,7 @@
           "measures": "Mide los contadores disponibles del backend y sus tiempos de muestreo.",
           "meaning": "Muestra intervalos aparentemente inactivos u ocupados.",
           "when": "Úselo junto con los tiempos al investigar cuellos de botella.",
-          "limits": "La utilización de toda la máquina o tarjeta no pertenece exclusivamente al modelo. No se inventan valores si falta el sensor. Una utilización alta no demuestra eficiencia por sí sola."
+          "limits": "La utilización de toda la máquina o tarjeta no pertenece exclusivamente al modelo. No se inventan valores si falta el sensor. Una utilización alta no demuestra eficiencia por sí sola. Soporte de la versión: CPU=PARTIAL, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -2559,7 +2559,7 @@
           "measures": "Sınırlı aralıkta denenmiş uygun/uygunsuz batch noktalarını kaydeder.",
           "meaning": "Yalnız denenen koşullardaki kapasiteyi gösterir.",
           "when": "Bellek bütçesine uygun batch ararken kullanın.",
-          "limits": "Global maksimum garantisi yoktur. Güvenilen factory, süre/bellek sınırları ve hata/cleanup kanıtı gerekir. Bir OOM başka workload’ları güvenli saydırmaz."
+          "limits": "Global maksimum garantisi yoktur. Güvenilen factory, süre/bellek sınırları ve hata/cleanup kanıtı gerekir. Bir OOM başka workload’ları güvenli saydırmaz. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P17 — Feasible batch search",
@@ -2567,7 +2567,7 @@
           "measures": "Records tested feasible/infeasible points within bounded ranges.",
           "meaning": "Describes capacity only under the tested conditions.",
           "when": "Use it to look for a batch that fits a memory budget.",
-          "limits": "It does not guarantee a global maximum. Trusted factories, time/memory limits and failure/cleanup evidence are required. An OOM does not certify other workloads as safe."
+          "limits": "It does not guarantee a global maximum. Trusted factories, time/memory limits and failure/cleanup evidence are required. An OOM does not certify other workloads as safe. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P17 — Machbare Batch-Größe suchen",
@@ -2575,7 +2575,7 @@
           "measures": "Erfasst getestete machbare und nicht machbare Punkte im begrenzten Bereich.",
           "meaning": "Beschreibt Kapazität nur unter den geprüften Bedingungen.",
           "when": "Zur Suche nach einer zum Speicherbudget passenden Batch-Größe.",
-          "limits": "Kein garantiertes globales Maximum. Vertrauenswürdige Factory, Zeit-/Speichergrenzen und Fehler-/Cleanup-Nachweise sind nötig. Ein OOM erklärt andere Workloads nicht für sicher."
+          "limits": "Kein garantiertes globales Maximum. Vertrauenswürdige Factory, Zeit-/Speichergrenzen und Fehler-/Cleanup-Nachweise sind nötig. Ein OOM erklärt andere Workloads nicht für sicher. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P17 — Búsqueda de lotes viables",
@@ -2583,7 +2583,7 @@
           "measures": "Registra puntos viables y no viables probados en un intervalo acotado.",
           "meaning": "Describe la capacidad solo bajo las condiciones ensayadas.",
           "when": "Sirve para encontrar un lote que se ajuste al presupuesto de memoria.",
-          "limits": "No garantiza un máximo global. Se requieren factory fiable, límites de tiempo/memoria y evidencias de fallo y limpieza. Un OOM no certifica que otras cargas sean seguras."
+          "limits": "No garantiza un máximo global. Se requieren factory fiable, límites de tiempo/memoria y evidencias de fallo y limpieza. Un OOM no certifica que otras cargas sean seguras. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -2607,7 +2607,7 @@
           "measures": "Uyumlu hedef sayaçlarından FLOP/byte ve ilgili sınırları değerlendirir.",
           "meaning": "Hesaplama veya veri taşıma kısıtını araştırmaya yardım eder.",
           "when": "Hedef modelin uygun GPU sayaçları bulunduğunda kullanın.",
-          "limits": "Ncu ve hedef-model trafik kanıtı gibi koşullar gerekir. Referans kernel veya tensor payload tahmini modelin DRAM trafiği değildir. Eksik sayaçlardan roofline sonucu uydurulmaz."
+          "limits": "Ncu ve hedef-model trafik kanıtı gibi koşullar gerekir. Referans kernel veya tensor payload tahmini modelin DRAM trafiği değildir. Eksik sayaçlardan roofline sonucu uydurulmaz. Sürüm desteği: CPU=PARTIAL, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P18 — Roofline and arithmetic intensity",
@@ -2615,7 +2615,7 @@
           "measures": "Uses compatible target counters to assess FLOP/byte and relevant limits.",
           "meaning": "Helps investigate compute versus data-movement constraints.",
           "when": "Use it when suitable GPU counters exist for the target model.",
-          "limits": "Requirements include tools such as Ncu and target-model traffic evidence. Reference kernels or tensor-payload estimates are not model DRAM traffic. Missing counters cannot produce a fabricated roofline."
+          "limits": "Requirements include tools such as Ncu and target-model traffic evidence. Reference kernels or tensor-payload estimates are not model DRAM traffic. Missing counters cannot produce a fabricated roofline. Release support: CPU=PARTIAL, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P18 — Roofline und arithmetische Intensität",
@@ -2623,7 +2623,7 @@
           "measures": "Bewertet FLOP/Byte und passende Grenzen anhand kompatibler Zielzähler.",
           "meaning": "Hilft, Rechen- und Datentransferbeschränkungen zu untersuchen.",
           "when": "Wenn geeignete GPU-Zähler für das Zielmodell vorliegen.",
-          "limits": "Vorausgesetzt werden etwa Ncu und Nachweise zum Speicherverkehr des Zielmodells. Referenzkernel oder Tensor-Payload-Schätzungen sind kein Modell-DRAM-Verkehr. Fehlende Zähler erlauben kein erfundenes Roofline-Ergebnis."
+          "limits": "Vorausgesetzt werden etwa Ncu und Nachweise zum Speicherverkehr des Zielmodells. Referenzkernel oder Tensor-Payload-Schätzungen sind kein Modell-DRAM-Verkehr. Fehlende Zähler erlauben kein erfundenes Roofline-Ergebnis. Versionsunterstützung: CPU=PARTIAL, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P18 — Roofline e intensidad aritmética",
@@ -2631,7 +2631,7 @@
           "measures": "Evalúa FLOP/byte y límites relacionados mediante contadores compatibles del objetivo.",
           "meaning": "Ayuda a investigar restricciones de cálculo frente a movimiento de datos.",
           "when": "Úselo si hay contadores GPU adecuados para el modelo objetivo.",
-          "limits": "Se requieren herramientas como Ncu y evidencias de tráfico del modelo objetivo. Un kernel de referencia o una estimación del payload no equivale al tráfico DRAM del modelo. No se inventa un roofline si faltan contadores."
+          "limits": "Se requieren herramientas como Ncu y evidencias de tráfico del modelo objetivo. Un kernel de referencia o una estimación del payload no equivale al tráfico DRAM del modelo. No se inventa un roofline si faltan contadores. Soporte de la versión: CPU=PARTIAL, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -2655,7 +2655,7 @@
           "measures": "Epoch, microbatch ve update-attempt sürelerini native zaman defterinden ölçer.",
           "meaning": "Kayıtlı eğitim bölümünün maliyetini gösterir.",
           "when": "Eğitimin nerede zaman harcadığını izlemek için kullanın.",
-          "limits": "Resume geçmişi yeni ölçülmüş zaman değildir. UX callback aralıkları veya toplam geçmiş süre P19’un yerine geçmez. CUDA event ve host saat kapsamları ayrıdır."
+          "limits": "Resume geçmişi yeni ölçülmüş zaman değildir. UX callback aralıkları veya toplam geçmiş süre P19’un yerine geçmez. CUDA event ve host saat kapsamları ayrıdır. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P19 — Training-step and epoch timing",
@@ -2663,7 +2663,7 @@
           "measures": "Measures epochs, microbatches and update attempts from the native timing ledger.",
           "meaning": "Describes the cost of the captured training segment.",
           "when": "Use it to examine where training time goes.",
-          "limits": "Restored history is not newly measured time. UX callback intervals or historical totals do not replace P19. CUDA-event and host-clock scopes remain separate."
+          "limits": "Restored history is not newly measured time. UX callback intervals or historical totals do not replace P19. CUDA-event and host-clock scopes remain separate. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P19 — Trainingsschritt- und Epochenzeiten",
@@ -2671,7 +2671,7 @@
           "measures": "Misst Epochen, Microbatches und Update-Versuche anhand des nativen Zeitprotokolls.",
           "meaning": "Beschreibt die Kosten des aufgezeichneten Trainingsabschnitts.",
           "when": "Zur Untersuchung der Zeitverteilung beim Training.",
-          "limits": "Wiederhergestellte Historie ist keine neue Zeitmessung. UX-Callback-Intervalle und historische Gesamtdauern ersetzen P19 nicht. CUDA-Event- und Host-Uhrbereiche bleiben getrennt."
+          "limits": "Wiederhergestellte Historie ist keine neue Zeitmessung. UX-Callback-Intervalle und historische Gesamtdauern ersetzen P19 nicht. CUDA-Event- und Host-Uhrbereiche bleiben getrennt. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P19 — Tiempos de pasos y épocas",
@@ -2679,7 +2679,7 @@
           "measures": "Mide épocas, microbatches e intentos de actualización mediante el registro temporal nativo.",
           "meaning": "Describe el coste del segmento de entrenamiento capturado.",
           "when": "Úselo para examinar dónde se consume tiempo al entrenar.",
-          "limits": "El historial restaurado no es tiempo recién medido. Los intervalos de callbacks o totales históricos no sustituyen P19. Los ámbitos de eventos CUDA y reloj del host siguen separados."
+          "limits": "El historial restaurado no es tiempo recién medido. Los intervalos de callbacks o totales históricos no sustituyen P19. Los ámbitos de eventos CUDA y reloj del host siguen separados. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -2703,7 +2703,7 @@
           "measures": "Forward, backward, optimizer ve desteklenen ek aşamaların sürelerini ölçer.",
           "meaning": "Maliyetin hangi aşamada yoğunlaştığını gösterir.",
           "when": "Eğitim süresini daha ayrıntılı bölmek istediğinizde kullanın.",
-          "limits": "Host zamanları, CUDA olayları ve örtüşen işler toplanarak her zaman toplam süre elde edilmez. Instrumentation ek yükü ve eksik aşamalar açık kalmalıdır."
+          "limits": "Host zamanları, CUDA olayları ve örtüşen işler toplanarak her zaman toplam süre elde edilmez. Instrumentation ek yükü ve eksik aşamalar açık kalmalıdır. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P20 — Training stages",
@@ -2711,7 +2711,7 @@
           "measures": "Measures forward, backward, optimizer and supported additional-stage durations.",
           "meaning": "Shows where observed stage costs concentrate.",
           "when": "Use it for a finer training-time breakdown.",
-          "limits": "Host times, CUDA events and overlapping work cannot always be summed into a total. Instrumentation overhead and missing-stage coverage must remain explicit."
+          "limits": "Host times, CUDA events and overlapping work cannot always be summed into a total. Instrumentation overhead and missing-stage coverage must remain explicit. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P20 — Trainingsphasen",
@@ -2719,7 +2719,7 @@
           "measures": "Misst Zeiten für Vorwärtsrechnung, Rückwärtsrechnung, Optimizer und unterstützte Zusatzphasen.",
           "meaning": "Zeigt, in welchen Phasen beobachtete Kosten liegen.",
           "when": "Für eine feinere Aufteilung der Trainingszeit.",
-          "limits": "Host-Zeiten, CUDA-Events und überlappende Arbeit ergeben addiert nicht immer eine Gesamtzeit. Instrumentierungsaufwand und fehlende Phasen müssen erkennbar bleiben."
+          "limits": "Host-Zeiten, CUDA-Events und überlappende Arbeit ergeben addiert nicht immer eine Gesamtzeit. Instrumentierungsaufwand und fehlende Phasen müssen erkennbar bleiben. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P20 — Etapas del entrenamiento",
@@ -2727,7 +2727,7 @@
           "measures": "Mide tiempos de forward, backward, optimizador y etapas adicionales admitidas.",
           "meaning": "Muestra dónde se concentra el coste observado.",
           "when": "Úselo para desglosar con más detalle el tiempo de entrenamiento.",
-          "limits": "No siempre se obtiene el total sumando tiempos del host, eventos CUDA y tareas solapadas. Deben declararse el coste de instrumentación y las etapas no cubiertas."
+          "limits": "No siempre se obtiene el total sumando tiempos del host, eventos CUDA y tareas solapadas. Deben declararse el coste de instrumentación y las etapas no cubiertas. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -2751,7 +2751,7 @@
           "measures": "Batch bekleme ve desteklenen worker/prefetch olaylarını ölçer.",
           "meaning": "Veri beslemenin darboğaz adayı olup olmadığını gösterir.",
           "when": "Model çalışırken veri yetişmiyorsa kullanın.",
-          "limits": "Worker hizmet süresi, tüketici beklemesi ve prefetch aynı kapsam değildir. Eksik olaylar PARTIAL kalır; kuyruk, worker veya görev süresi tahminle doldurulmaz."
+          "limits": "Worker hizmet süresi, tüketici beklemesi ve prefetch aynı kapsam değildir. Eksik olaylar PARTIAL kalır; kuyruk, worker veya görev süresi tahminle doldurulmaz. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P21 — DataLoader waiting",
@@ -2759,7 +2759,7 @@
           "measures": "Measures batch waits and supported worker/prefetch events.",
           "meaning": "Indicates whether data supply may be a bottleneck.",
           "when": "Use it when feeding data appears to limit training.",
-          "limits": "Worker service time, consumer wait and prefetch are different scopes. Missing events remain PARTIAL; queue, worker or task durations are not guessed."
+          "limits": "Worker service time, consumer wait and prefetch are different scopes. Missing events remain PARTIAL; queue, worker or task durations are not guessed. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P21 — DataLoader-Wartezeit",
@@ -2767,7 +2767,7 @@
           "measures": "Misst Batch-Warten und unterstützte Worker-/Prefetch-Ereignisse.",
           "meaning": "Zeigt, ob die Datenversorgung ein Engpass sein könnte.",
           "when": "Wenn Daten möglicherweise nicht schnell genug nachgeliefert werden.",
-          "limits": "Worker-Bearbeitungszeit, Verbraucherwartezeit und Prefetch sind verschiedene Bereiche. Fehlende Ereignisse bleiben PARTIAL; Warteschlangen-, Worker- oder Aufgabendauern werden nicht geschätzt."
+          "limits": "Worker-Bearbeitungszeit, Verbraucherwartezeit und Prefetch sind verschiedene Bereiche. Fehlende Ereignisse bleiben PARTIAL; Warteschlangen-, Worker- oder Aufgabendauern werden nicht geschätzt. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P21 — Espera del DataLoader",
@@ -2775,7 +2775,7 @@
           "measures": "Mide esperas de lote y eventos worker/prefetch admitidos.",
           "meaning": "Indica si el suministro de datos puede limitar el entrenamiento.",
           "when": "Úselo cuando los datos no parezcan llegar a tiempo.",
-          "limits": "El servicio del worker, la espera del consumidor y el prefetch son ámbitos distintos. Los eventos ausentes siguen PARTIAL; no se adivinan duraciones de colas, workers o tareas."
+          "limits": "El servicio del worker, la espera del consumidor y el prefetch son ámbitos distintos. Los eventos ausentes siguen PARTIAL; no se adivinan duraciones de colas, workers o tareas. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -2799,7 +2799,7 @@
           "measures": "Uyumlu P19 zaman defterindeki örnek ve update sayılarını kendi sürelerine oranlar.",
           "meaning": "Aynı protokolde tamamlanan eğitim işini karşılaştırmaya yardım eder.",
           "when": "Eğitim kapasitesini incelerken kullanın.",
-          "limits": "Microbatch, örnek, uygulanmış update ve atlanmış update farklı sayaçlardır. Resume ile geri gelen toplamlar yeni iş değildir. Sadece yeni bir saat başlatılarak eski kayda throughput eklenmez."
+          "limits": "Microbatch, örnek, uygulanmış update ve atlanmış update farklı sayaçlardır. Resume ile geri gelen toplamlar yeni iş değildir. Sadece yeni bir saat başlatılarak eski kayda throughput eklenmez. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P22 — Training throughput",
@@ -2807,7 +2807,7 @@
           "measures": "Relates sample/update counts to their compatible P19 ledger durations.",
           "meaning": "Helps compare completed training work under the same protocol.",
           "when": "Use it to examine training capacity.",
-          "limits": "Microbatches, examples, applied updates and skipped updates are distinct counts. Restored totals are not new work. Starting a fresh clock cannot supply throughput for an old capture."
+          "limits": "Microbatches, examples, applied updates and skipped updates are distinct counts. Restored totals are not new work. Starting a fresh clock cannot supply throughput for an old capture. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P22 — Trainingsdurchsatz",
@@ -2815,7 +2815,7 @@
           "measures": "Setzt Beispiel-/Update-Zahlen zu passenden Zeiten des P19-Protokolls in Beziehung.",
           "meaning": "Hilft beim Vergleich abgeschlossener Trainingsarbeit unter gleichem Protokoll.",
           "when": "Zur Untersuchung der Trainingskapazität.",
-          "limits": "Microbatches, Beispiele, angewandte und übersprungene Updates sind verschiedene Zähler. Wiederhergestellte Summen sind keine neue Arbeit. Eine neu gestartete Uhr liefert keinen Durchsatz für eine alte Aufzeichnung."
+          "limits": "Microbatches, Beispiele, angewandte und übersprungene Updates sind verschiedene Zähler. Wiederhergestellte Summen sind keine neue Arbeit. Eine neu gestartete Uhr liefert keinen Durchsatz für eine alte Aufzeichnung. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P22 — Rendimiento del entrenamiento",
@@ -2823,7 +2823,7 @@
           "measures": "Relaciona los recuentos de ejemplos y actualizaciones con los tiempos compatibles del registro P19.",
           "meaning": "Ayuda a comparar trabajo de entrenamiento completado bajo el mismo protocolo.",
           "when": "Úselo para estudiar la capacidad de entrenamiento.",
-          "limits": "Microbatches, ejemplos y actualizaciones aplicadas u omitidas son contadores distintos. Los totales restaurados no son trabajo nuevo. Iniciar un reloj nuevo no aporta rendimiento a una captura antigua."
+          "limits": "Microbatches, ejemplos y actualizaciones aplicadas u omitidas son contadores distintos. Los totales restaurados no son trabajo nuevo. Iniciar un reloj nuevo no aporta rendimiento a una captura antigua. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -2847,7 +2847,7 @@
           "measures": "Parametre/gradient/optimizer byte’ları, RSS ve izinli allocator veya saved-payload kayıtlarını ölçer.",
           "meaning": "Belleğin hangi kayıtlı bölümde arttığını gösterir.",
           "when": "Eğitim bellek bütçesini araştırırken kullanın.",
-          "limits": "Mantıksal durum, host payload ömrü ve fiziksel VRAM aynı değildir. CUDA saved-activation guard ve B4 unresolved engeli korunur. CPU testleri GPU güvenliği veya crash çözümü değildir. Cleanup/abnormal exit başarısızlığı tamamlanmış ölçüm sayılamaz."
+          "limits": "Mantıksal durum, host payload ömrü ve fiziksel VRAM aynı değildir. CUDA saved-activation guard ve B4 unresolved engeli korunur. CPU testleri GPU güvenliği veya crash çözümü değildir. Cleanup/abnormal exit başarısızlığı tamamlanmış ölçüm sayılamaz. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur. P23 CPU bellek ve CPU saved-activation desteklenir; CUDA saved-activation UNSUPPORTED olup BLOCKED_B4_UNRESOLVED korumasıyla kapalıdır. P31 CPU kararlılık ve iki tarihsel 7200 saniyelik kanıt korunur; yeni CUDA 7200 saniye ve üzeri koşular DEFERRED durumundadır. Normal CUDA eğitimi ve bağımsız GPU özellikleri kaldırılmamıştır. 13 riskli testin BLOCKED olması otomatik ürün başarısızlığı değildir."
         },
         "en": {
           "title": "P23 — Training memory",
@@ -2855,7 +2855,7 @@
           "measures": "Measures parameter/gradient/optimizer bytes, RSS and authorized allocator or saved-payload records.",
           "meaning": "Shows where memory grows within the recorded scope.",
           "when": "Use it to investigate a training-memory budget.",
-          "limits": "Logical state, host payload lifetime and physical VRAM differ. The CUDA saved-activation guard and unresolved B4 block remain. CPU tests establish neither GPU safety nor a crash fix. Cleanup failures and abnormal exits cannot count as completed measurements."
+          "limits": "Logical state, host payload lifetime and physical VRAM differ. The CUDA saved-activation guard and unresolved B4 block remain. CPU tests establish neither GPU safety nor a crash fix. Cleanup failures and abnormal exits cannot count as completed measurements. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established. P23 CPU memory and CPU saved-activation are supported; CUDA saved-activation is UNSUPPORTED and blocked by BLOCKED_B4_UNRESOLVED. P31 CPU stability and both historical 7200-second records remain; new CUDA runs of 7200 seconds or longer are DEFERRED. Normal CUDA training and independent GPU features remain. The 13 BLOCKED risky integrations do not automatically mean product failure."
         },
         "de": {
           "title": "P23 — Trainingsspeicher",
@@ -2863,7 +2863,7 @@
           "measures": "Misst Parameter-/Gradienten-/Optimizer-Bytes, RSS sowie erlaubte Allocator- oder Saved-Payload-Aufzeichnungen.",
           "meaning": "Zeigt Speicherwachstum innerhalb des erfassten Bereichs.",
           "when": "Zur Untersuchung eines Trainingsspeicherbudgets.",
-          "limits": "Logischer Zustand, Lebensdauer von Host-Payloads und physischer Grafikspeicher sind verschieden. CUDA-Saved-Activation-Sperre und ungelöste B4-Blockade bleiben bestehen. CPU-Tests belegen weder GPU-Sicherheit noch eine Crash-Behebung. Cleanup-Fehler und abnormale Exits sind keine abgeschlossenen Messungen."
+          "limits": "Logischer Zustand, Lebensdauer von Host-Payloads und physischer Grafikspeicher sind verschieden. CUDA-Saved-Activation-Sperre und ungelöste B4-Blockade bleiben bestehen. CPU-Tests belegen weder GPU-Sicherheit noch eine Crash-Behebung. Cleanup-Fehler und abnormale Exits sind keine abgeschlossenen Messungen. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht. P23 CPU-Speicher und CPU saved-activation werden unterstützt; CUDA saved-activation ist UNSUPPORTED und durch BLOCKED_B4_UNRESOLVED gesperrt. P31 CPU-Stabilität und beide historischen 7200-Sekunden-Nachweise bleiben erhalten; neue CUDA-Läufe ab 7200 Sekunden sind DEFERRED. Normales CUDA-Training und unabhängige GPU-Funktionen bleiben erhalten. Die 13 riskanten BLOCKED-Integrationstests bedeuten nicht automatisch einen Produktfehler."
         },
         "es": {
           "title": "P23 — Memoria de entrenamiento",
@@ -2871,7 +2871,7 @@
           "measures": "Mide bytes de parámetros, gradientes y optimizador, RSS y registros autorizados del allocator o saved-payload.",
           "meaning": "Muestra dónde aumenta la memoria dentro del ámbito registrado.",
           "when": "Úselo para investigar el presupuesto de memoria de entrenamiento.",
-          "limits": "Estado lógico, vida del payload en el host y VRAM física son distintos. Se mantienen el guard de saved-activation CUDA y el bloqueo B4 sin resolver. Las pruebas CPU no demuestran seguridad GPU ni una solución al crash. Fallos de limpieza y salidas anormales no cuentan como mediciones completas."
+          "limits": "Estado lógico, vida del payload en el host y VRAM física son distintos. Se mantienen el guard de saved-activation CUDA y el bloqueo B4 sin resolver. Las pruebas CPU no demuestran seguridad GPU ni una solución al crash. Fallos de limpieza y salidas anormales no cuentan como mediciones completas. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE. Se admiten la memoria CPU y saved-activation CPU de P23; saved-activation CUDA es UNSUPPORTED y está bloqueado por BLOCKED_B4_UNRESOLVED. Se conservan la estabilidad CPU de P31 y los dos registros históricos de 7200 segundos; las nuevas ejecuciones CUDA de 7200 segundos o más son DEFERRED. Se mantienen el entrenamiento CUDA normal y las funciones GPU independientes. Las 13 integraciones de riesgo BLOCKED no implican automáticamente un fallo del producto."
         }
       },
       "inventory": []
@@ -2895,7 +2895,7 @@
           "measures": "Kayıtlı eğitim akışında hedefe kadar geçen süreyi ölçer.",
           "meaning": "Aynı hedef ve veriyle öğrenme maliyetini karşılaştırır.",
           "when": "Belirli doğruluğa ulaşma bütçesini planlarken kullanın.",
-          "limits": "Hedefe ulaşılmadıysa süre bilinmiyor/censored kalır; sıfır veya son süreyle başarı yapılmaz. Eşik, değerlendirme verisi ve ölçüm akışı eşleşmelidir."
+          "limits": "Hedefe ulaşılmadıysa süre bilinmiyor/censored kalır; sıfır veya son süreyle başarı yapılmaz. Eşik, değerlendirme verisi ve ölçüm akışı eşleşmelidir. Sürüm desteği: CPU=SUPPORTED, CUDA=SUPPORTED. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P24 — Time to target quality",
@@ -2903,7 +2903,7 @@
           "measures": "Measures time to the target in the retained training stream.",
           "meaning": "Compares learning costs for the same target and data.",
           "when": "Use it to plan a budget for reaching a required quality level.",
-          "limits": "An unattained target stays unavailable/censored, never successful at zero or the final time. Threshold, evaluation data and measurement stream must match."
+          "limits": "An unattained target stays unavailable/censored, never successful at zero or the final time. Threshold, evaluation data and measurement stream must match. Release support: CPU=SUPPORTED, CUDA=SUPPORTED. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P24 — Zeit bis zur Zielqualität",
@@ -2911,7 +2911,7 @@
           "measures": "Misst die Zeit bis zum Ziel im gespeicherten Trainingsablauf.",
           "meaning": "Vergleicht Lernaufwand bei gleichem Ziel und gleichen Daten.",
           "when": "Zur Budgetplanung für eine geforderte Qualität.",
-          "limits": "Ein nicht erreichtes Ziel bleibt nicht verfügbar/zensoriert und wird weder mit null noch mit der Endzeit zum Erfolg erklärt. Schwelle, Auswertungsdaten und Messablauf müssen passen."
+          "limits": "Ein nicht erreichtes Ziel bleibt nicht verfügbar/zensoriert und wird weder mit null noch mit der Endzeit zum Erfolg erklärt. Schwelle, Auswertungsdaten und Messablauf müssen passen. Versionsunterstützung: CPU=SUPPORTED, CUDA=SUPPORTED. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P24 — Tiempo hasta la calidad objetivo",
@@ -2919,7 +2919,7 @@
           "measures": "Mide el tiempo hasta ese objetivo en el flujo registrado.",
           "meaning": "Compara costes de aprendizaje para el mismo objetivo y datos.",
           "when": "Sirve para planificar el presupuesto necesario para una calidad requerida.",
-          "limits": "Un objetivo no alcanzado queda no disponible/censurado; no se convierte en éxito con cero ni con el tiempo final. Deben coincidir umbral, datos de evaluación y flujo medido."
+          "limits": "Un objetivo no alcanzado queda no disponible/censurado; no se convierte en éxito con cero ni con el tiempo final. Deben coincidir umbral, datos de evaluación y flujo medido. Soporte de la versión: CPU=SUPPORTED, CUDA=SUPPORTED. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -2943,7 +2943,7 @@
           "measures": "Gradient normları, sonlu olmayan değerler ve kayıtlı AMP update/skip olaylarını ölçer.",
           "meaning": "Şüpheli gradient veya atlanmış update durumlarını görünür yapar.",
           "when": "Eğitim kararsızlığını araştırırken kullanın.",
-          "limits": "Sparse/custom gradient kapsamı sınırlıdır. Atlanan update, OOM veya tek başına hata nedeni değildir; kayıtlı gerekçe korunur. Desteklenmeyen precision/device birleşimleri açılmaz."
+          "limits": "Sparse/custom gradient kapsamı sınırlıdır. Atlanan update, OOM veya tek başına hata nedeni değildir; kayıtlı gerekçe korunur. Desteklenmeyen precision/device birleşimleri açılmaz. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P25 — Gradient and AMP diagnostics",
@@ -2951,7 +2951,7 @@
           "measures": "Measures gradient norms, nonfinite values and recorded AMP update/skip events.",
           "meaning": "Makes unusual gradients and skipped updates visible.",
           "when": "Use it to investigate unstable training.",
-          "limits": "Sparse/custom gradient coverage is limited. A skipped update is not an OOM or a root-cause diagnosis; retain its recorded reason. Unsupported precision/device combinations remain unsupported."
+          "limits": "Sparse/custom gradient coverage is limited. A skipped update is not an OOM or a root-cause diagnosis; retain its recorded reason. Unsupported precision/device combinations remain unsupported. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P25 — Gradienten- und AMP-Diagnostik",
@@ -2959,7 +2959,7 @@
           "measures": "Misst Gradientennormen, nicht endliche Werte und aufgezeichnete AMP-Update-/Skip-Ereignisse.",
           "meaning": "Macht auffällige Gradienten und ausgelassene Updates sichtbar.",
           "when": "Zur Untersuchung instabilen Trainings.",
-          "limits": "Sparse-/Custom-Gradienten sind nur begrenzt abgedeckt. Ein ausgelassenes Update ist weder OOM noch Ursachendiagnose; der gespeicherte Grund bleibt maßgeblich. Nicht unterstützte Precision-/Gerätekombinationen bleiben ausgeschlossen."
+          "limits": "Sparse-/Custom-Gradienten sind nur begrenzt abgedeckt. Ein ausgelassenes Update ist weder OOM noch Ursachendiagnose; der gespeicherte Grund bleibt maßgeblich. Nicht unterstützte Precision-/Gerätekombinationen bleiben ausgeschlossen. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P25 — Diagnóstico de gradientes y AMP",
@@ -2967,7 +2967,7 @@
           "measures": "Mide normas de gradiente, valores no finitos y eventos AMP de actualización u omisión registrados.",
           "meaning": "Hace visibles gradientes inusuales y actualizaciones omitidas.",
           "when": "Úselo para investigar inestabilidad del entrenamiento.",
-          "limits": "La cobertura de gradientes sparse o personalizados es limitada. Una actualización omitida no es un OOM ni diagnostica la causa; se conserva el motivo registrado. No habilita combinaciones de formato y dispositivo no admitidas."
+          "limits": "La cobertura de gradientes sparse o personalizados es limitada. Una actualización omitida no es un OOM ni diagnostica la causa; se conserva el motivo registrado. No habilita combinaciones de formato y dispositivo no admitidas. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -2991,7 +2991,7 @@
           "measures": "Accuracy, precision, recall, F1 ve uygun karışıklık matrisi/sınıf özetlerini ölçer.",
           "meaning": "Hangi sınıfların doğru bulunduğunu veya karıştırıldığını gösterir.",
           "when": "Hız/bellek değişiminin kaliteyi etkileyip etkilemediğini araştırırken kullanın.",
-          "limits": "Veri split’i, sınıf sırası, threshold ve averaging politikası önemlidir. Oran, yüzde ve yüzde puanı ayrıdır. Bu sınıflandırma metrikleri detection mAP veya segmentation IoU desteği değildir."
+          "limits": "Veri split’i, sınıf sırası, threshold ve averaging politikası önemlidir. Oran, yüzde ve yüzde puanı ayrıdır. Bu sınıflandırma metrikleri detection mAP veya segmentation IoU desteği değildir. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P26 — Classification quality",
@@ -2999,7 +2999,7 @@
           "measures": "Measures accuracy, precision, recall, F1 and applicable confusion-matrix/class summaries.",
           "meaning": "Shows which classes are recovered or confused.",
           "when": "Use it to check quality alongside speed or memory changes.",
-          "limits": "Data split, class order, thresholds and averaging rules matter. Fractions, percentages and percentage points differ. Classification metrics do not establish detection mAP or segmentation IoU support."
+          "limits": "Data split, class order, thresholds and averaging rules matter. Fractions, percentages and percentage points differ. Classification metrics do not establish detection mAP or segmentation IoU support. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P26 — Klassifikationsqualität",
@@ -3007,7 +3007,7 @@
           "measures": "Misst Accuracy, Präzision, Recall, F1 sowie passende Konfusionsmatrizen und Klassenübersichten.",
           "meaning": "Zeigt, welche Klassen erkannt oder verwechselt werden.",
           "when": "Zur Qualitätsprüfung neben Geschwindigkeits- oder Speicheränderungen.",
-          "limits": "Datensplit, Klassenreihenfolge, Schwellen und Mittelungsregeln sind wichtig. Anteile, Prozent und Prozentpunkte unterscheiden sich. Klassifikationsmetriken begründen keine Unterstützung für Detection-mAP oder Segmentation-IoU."
+          "limits": "Datensplit, Klassenreihenfolge, Schwellen und Mittelungsregeln sind wichtig. Anteile, Prozent und Prozentpunkte unterscheiden sich. Klassifikationsmetriken begründen keine Unterstützung für Detection-mAP oder Segmentation-IoU. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P26 — Calidad de clasificación",
@@ -3015,7 +3015,7 @@
           "measures": "Mide accuracy, precision, recall, F1 y las matrices de confusión o resúmenes por clase aplicables.",
           "meaning": "Muestra qué clases se identifican o confunden.",
           "when": "Úselo para estudiar calidad junto con cambios de velocidad o memoria.",
-          "limits": "Importan el split, el orden de clases, los umbrales y el promedio. Proporciones, porcentajes y puntos porcentuales son distintos. Estas métricas no implican soporte de mAP de detección o IoU de segmentación."
+          "limits": "Importan el split, el orden de clases, los umbrales y el promedio. Proporciones, porcentajes y puntos porcentuales son distintos. Estas métricas no implican soporte de mAP de detección o IoU de segmentación. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -3039,7 +3039,7 @@
           "measures": "Eşleştirilmiş temiz/değiştirilmiş veride kalite ve farkları ölçer.",
           "meaning": "Modelin seçilen değişime duyarlılığını gösterir.",
           "when": "Gürültü veya uygun bozulmalara karşı davranışı araştırırken kullanın.",
-          "limits": "Değişiklik görev anlamını korumalıdır. Eşleştirilmiş veri koşulu gerekir. Sınırlı bozulmalarda başarı bütün gerçek dünya koşullarına dayanıklılık garantisi değildir."
+          "limits": "Değişiklik görev anlamını korumalıdır. Eşleştirilmiş veri koşulu gerekir. Sınırlı bozulmalarda başarı bütün gerçek dünya koşullarına dayanıklılık garantisi değildir. Sürüm desteği: CPU=SUPPORTED, CUDA=UNSUPPORTED. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P27 — Robustness measurements",
@@ -3047,7 +3047,7 @@
           "measures": "Measures quality and differences on paired clean/changed data.",
           "meaning": "Shows sensitivity to the chosen perturbation.",
           "when": "Use it to investigate noise or task-appropriate corruptions.",
-          "limits": "Changes must preserve task meaning and use paired data. Success on a limited set of corruptions is not a guarantee of real-world robustness."
+          "limits": "Changes must preserve task meaning and use paired data. Success on a limited set of corruptions is not a guarantee of real-world robustness. Release support: CPU=SUPPORTED, CUDA=UNSUPPORTED. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P27 — Robustheitsmessungen",
@@ -3055,7 +3055,7 @@
           "measures": "Misst Qualität und Unterschiede an gepaarten sauberen/veränderten Daten.",
           "meaning": "Zeigt die Empfindlichkeit gegenüber der gewählten Störung.",
           "when": "Zur Untersuchung von Rauschen oder aufgabenpassenden Veränderungen.",
-          "limits": "Änderungen müssen die Aufgabenbedeutung erhalten und gepaarte Daten verwenden. Erfolg bei wenigen Störungen garantiert keine allgemeine Robustheit im Alltag."
+          "limits": "Änderungen müssen die Aufgabenbedeutung erhalten und gepaarte Daten verwenden. Erfolg bei wenigen Störungen garantiert keine allgemeine Robustheit im Alltag. Versionsunterstützung: CPU=SUPPORTED, CUDA=UNSUPPORTED. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P27 — Mediciones de robustez",
@@ -3063,7 +3063,7 @@
           "measures": "Mide calidad y diferencias en datos limpios y modificados emparejados.",
           "meaning": "Muestra la sensibilidad a la perturbación elegida.",
           "when": "Sirve para investigar ruido o alteraciones adecuadas para la tarea.",
-          "limits": "Los cambios deben conservar el sentido de la tarea y usar datos emparejados. Superar unas alteraciones limitadas no garantiza robustez en todas las condiciones reales."
+          "limits": "Los cambios deben conservar el sentido de la tarea y usar datos emparejados. Superar unas alteraciones limitadas no garantiza robustez en todas las condiciones reales. Soporte de la versión: CPU=SUPPORTED, CUDA=UNSUPPORTED. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -3087,7 +3087,7 @@
           "measures": "Eş veri ve karar kurallarıyla baseline/candidate kalite farkını ölçer.",
           "meaning": "P08’deki performans farkının kalite maliyetini değerlendirmeye yardım eder.",
           "when": "Desteklenen düşük/yüksek precision seçeneklerini karşılaştırırken kullanın.",
-          "limits": "Aynı örnekler, etiketler ve prediction politikası gerekir. Zaman ölçümü kaliteyi sağlayamaz; kalite farkı da kendi başına hız kazancı değildir."
+          "limits": "Aynı örnekler, etiketler ve prediction politikası gerekir. Zaman ölçümü kaliteyi sağlayamaz; kalite farkı da kendi başına hız kazancı değildir. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P28 — Quality change across precisions",
@@ -3095,7 +3095,7 @@
           "measures": "Measures baseline/candidate quality differences on matched data and decision rules.",
           "meaning": "Helps assess the quality cost of performance differences seen in P08.",
           "when": "Use it when comparing supported precision settings.",
-          "limits": "The same examples, labels and prediction policy are required. Timing does not supply quality evidence, and a quality difference alone does not prove a speed gain."
+          "limits": "The same examples, labels and prediction policy are required. Timing does not supply quality evidence, and a quality difference alone does not prove a speed gain. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P28 — Qualität bei verschiedenen Zahlenformaten",
@@ -3103,7 +3103,7 @@
           "measures": "Misst Qualitätsunterschiede von Baseline und Kandidat bei gleichen Daten und Entscheidungsregeln.",
           "meaning": "Hilft, Qualitätskosten eines P08-Leistungsunterschieds zu beurteilen.",
           "when": "Beim Vergleich unterstützter Rechenformate.",
-          "limits": "Dieselben Beispiele, Labels und Vorhersageregeln sind nötig. Zeitmessung liefert keinen Qualitätsnachweis; ein Qualitätsunterschied belegt umgekehrt keinen Geschwindigkeitsgewinn."
+          "limits": "Dieselben Beispiele, Labels und Vorhersageregeln sind nötig. Zeitmessung liefert keinen Qualitätsnachweis; ein Qualitätsunterschied belegt umgekehrt keinen Geschwindigkeitsgewinn. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P28 — Cambio de calidad entre precisiones numéricas",
@@ -3111,7 +3111,7 @@
           "measures": "Mide diferencias de calidad entre baseline y candidato con datos y reglas iguales.",
           "meaning": "Ayuda a valorar el coste en calidad de las diferencias de rendimiento de P08.",
           "when": "Úselo al comparar ajustes numéricos admitidos.",
-          "limits": "Se requieren los mismos ejemplos, etiquetas y política de predicción. El tiempo no aporta evidencia de calidad y una diferencia de calidad no demuestra una mejora de velocidad."
+          "limits": "Se requieren los mismos ejemplos, etiquetas y política de predicción. El tiempo no aporta evidencia de calidad y una diferencia de calidad no demuestra una mejora de velocidad. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -3135,7 +3135,7 @@
           "measures": "Uyumlu kayıtlı kalite, süre/hız ve bellek değerlerini ilişkilendirir.",
           "meaning": "Bir hedefte kazanç olurken diğerindeki maliyeti görünür yapar.",
           "when": "Model seçiminizde birden fazla öncelik varsa kullanın.",
-          "limits": "Eksik kanıt, uyumsuz model durumu veya dataset karşılaştırmayı sınırlayabilir. Gözlenen fark doğrulanmış optimizasyon veya genel kazanan değildir; karşılaştırma yeni ölçüm uydurmaz."
+          "limits": "Eksik kanıt, uyumsuz model durumu veya dataset karşılaştırmayı sınırlayabilir. Gözlenen fark doğrulanmış optimizasyon veya genel kazanan değildir; karşılaştırma yeni ölçüm uydurmaz. Sürüm desteği: CPU=SUPPORTED, CUDA=SUPPORTED. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P29 — Quality/speed/memory tradeoffs",
@@ -3143,7 +3143,7 @@
           "measures": "Relates compatible retained quality, timing/throughput and memory observations.",
           "meaning": "Makes the cost in one objective visible alongside gains in another.",
           "when": "Use it when model selection has multiple priorities.",
-          "limits": "Missing evidence, mismatched model states or datasets can limit comparison. Observed differences are not verified optimization or an overall winner; comparison never invents new measurements."
+          "limits": "Missing evidence, mismatched model states or datasets can limit comparison. Observed differences are not verified optimization or an overall winner; comparison never invents new measurements. Release support: CPU=SUPPORTED, CUDA=SUPPORTED. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P29 — Qualität, Geschwindigkeit und Speicher abwägen",
@@ -3151,7 +3151,7 @@
           "measures": "Verknüpft kompatible gespeicherte Qualitäts-, Zeit-/Durchsatz- und Speicherwerte.",
           "meaning": "Macht Kosten eines Ziels neben Vorteilen eines anderen sichtbar.",
           "when": "Wenn mehrere Prioritäten die Modellauswahl bestimmen.",
-          "limits": "Fehlende Nachweise sowie abweichende Modellzustände oder Datensätze begrenzen den Vergleich. Beobachtete Unterschiede sind keine bestätigte Optimierung und kein Gesamtsieg; neue Messwerte werden nicht erfunden."
+          "limits": "Fehlende Nachweise sowie abweichende Modellzustände oder Datensätze begrenzen den Vergleich. Beobachtete Unterschiede sind keine bestätigte Optimierung und kein Gesamtsieg; neue Messwerte werden nicht erfunden. Versionsunterstützung: CPU=SUPPORTED, CUDA=SUPPORTED. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P29 — Equilibrio entre calidad, velocidad y memoria",
@@ -3159,7 +3159,7 @@
           "measures": "Relaciona observaciones compatibles de calidad, tiempo/rendimiento y memoria guardadas.",
           "meaning": "Hace visible el coste en un objetivo junto con la ganancia en otro.",
           "when": "Úselo cuando la selección del modelo tenga varias prioridades.",
-          "limits": "La falta de evidencias o los estados y datasets incompatibles limitan la comparación. Una diferencia observada no demuestra optimización ni un ganador global; no se inventan mediciones nuevas."
+          "limits": "La falta de evidencias o los estados y datasets incompatibles limitan la comparación. Una diferencia observada no demuestra optimización ni un ganador global; no se inventan mediciones nuevas. Soporte de la versión: CPU=SUPPORTED, CUDA=SUPPORTED. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -3183,7 +3183,7 @@
           "measures": "Tamamlanan kareleri, uygulama kuyruk düşmelerini ve uygun FPS paydalarını ölçer.",
           "meaning": "Akışın yetişip yetişmediğini ve nerede kare kaybettiğini gösterir.",
           "when": "Kayıtlı video veya açıkça izinli kamera uygulamalarında kullanın.",
-          "limits": "Kaynak, model, uygulama ve ekran FPS’i ayrıdır. Yalnız gözlenen uygulama kuyruğu düşmeleri sayılır; sürücüdeki bütün kayıplar bilinmez. Canlı kamera ayrıca izin ve uygun adapter ister."
+          "limits": "Kaynak, model, uygulama ve ekran FPS’i ayrıdır. Yalnız gözlenen uygulama kuyruğu düşmeleri sayılır; sürücüdeki bütün kayıplar bilinmez. Canlı kamera ayrıca izin ve uygun adapter ister. Sürüm desteği: CPU=SUPPORTED, CUDA=UNSUPPORTED. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P30 — Video/camera FPS and drops",
@@ -3191,7 +3191,7 @@
           "measures": "Measures completed frames, application-queue drops and scoped FPS rates.",
           "meaning": "Shows whether the application keeps up and where observed frames are dropped.",
           "when": "Use it with recorded video or explicitly authorized camera applications.",
-          "limits": "Source, model, application and display FPS differ. Only observed application-queue drops are counted, not all driver losses. Live cameras require separate permission and a suitable adapter."
+          "limits": "Source, model, application and display FPS differ. Only observed application-queue drops are counted, not all driver losses. Live cameras require separate permission and a suitable adapter. Release support: CPU=SUPPORTED, CUDA=UNSUPPORTED. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P30 — Video-/Kamera-FPS und verworfene Bilder",
@@ -3199,7 +3199,7 @@
           "measures": "Misst fertige Frames, Verluste in der Anwendungswarteschlange und klar abgegrenzte FPS-Raten.",
           "meaning": "Zeigt, ob die Anwendung Schritt hält und wo beobachtete Bilder verloren gehen.",
           "when": "Für gespeicherte Videos oder ausdrücklich erlaubte Kameraanwendungen.",
-          "limits": "Quell-, Modell-, Anwendungs- und Anzeige-FPS sind verschieden. Gezählt werden nur beobachtete Queue-Verluste der Anwendung, nicht sämtliche Treiberverluste. Live-Kameras brauchen eine separate Erlaubnis und einen passenden Adapter."
+          "limits": "Quell-, Modell-, Anwendungs- und Anzeige-FPS sind verschieden. Gezählt werden nur beobachtete Queue-Verluste der Anwendung, nicht sämtliche Treiberverluste. Live-Kameras brauchen eine separate Erlaubnis und einen passenden Adapter. Versionsunterstützung: CPU=SUPPORTED, CUDA=UNSUPPORTED. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P30 — FPS de vídeo/cámara y fotogramas perdidos",
@@ -3207,7 +3207,7 @@
           "measures": "Mide fotogramas completados, descartes de la cola de aplicación y FPS con su ámbito.",
           "meaning": "Muestra si la aplicación mantiene el ritmo y dónde descarta fotogramas observados.",
           "when": "Úselo con vídeo grabado o cámaras autorizadas explícitamente.",
-          "limits": "Los FPS de fuente, modelo, aplicación y pantalla difieren. Solo se cuentan descartes observados en la cola, no todas las pérdidas del controlador. Una cámara en vivo exige permiso separado y un adaptador adecuado."
+          "limits": "Los FPS de fuente, modelo, aplicación y pantalla difieren. Solo se cuentan descartes observados en la cola, no todas las pérdidas del controlador. Una cámara en vivo exige permiso separado y un adaptador adecuado. Soporte de la versión: CPU=SUPPORTED, CUDA=UNSUPPORTED. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -3231,7 +3231,7 @@
           "measures": "Aynı kesintisiz pencerenin süre, ilerleme ve uygun durum kayıtlarını ölçer.",
           "meaning": "Uzun çalışma boyunca tamamlanma ve sürekliliği gösterir.",
           "when": "Yalnız açıkça planlanmış uzun dayanıklılık çalışmasında kullanın.",
-          "limits": "Kabul koşulu tek kesintisiz 7200 saniyedir. Kısa koşular veya ayrı koşuların toplamı bunu karşılamaz. Süre tek başına kalite, sızıntısızlık veya GPU güvenliği kanıtı değildir; ayrı uzun-run izni gerekir."
+          "limits": "Kabul koşulu tek kesintisiz 7200 saniyedir. Kısa koşular veya ayrı koşuların toplamı bunu karşılamaz. Süre tek başına kalite, sızıntısızlık veya GPU güvenliği kanıtı değildir; ayrı uzun-run izni gerekir. Sürüm desteği: CPU=SUPPORTED, CUDA=DEFERRED. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur. P23 CPU bellek ve CPU saved-activation desteklenir; CUDA saved-activation UNSUPPORTED olup BLOCKED_B4_UNRESOLVED korumasıyla kapalıdır. P31 CPU kararlılık ve iki tarihsel 7200 saniyelik kanıt korunur; yeni CUDA 7200 saniye ve üzeri koşular DEFERRED durumundadır. Normal CUDA eğitimi ve bağımsız GPU özellikleri kaldırılmamıştır. 13 riskli testin BLOCKED olması otomatik ürün başarısızlığı değildir."
         },
         "en": {
           "title": "P31 — Uninterrupted long-run stability",
@@ -3239,7 +3239,7 @@
           "measures": "Measures duration, progress and applicable state within that same uninterrupted run.",
           "meaning": "Shows completion and continuity over the long window.",
           "when": "Use it only for an explicitly planned long stability run.",
-          "limits": "Acceptance requires one continuous 7200-second run. Short runs or added separate runs do not satisfy it. Duration alone proves neither quality, leak freedom nor GPU safety; separate long-run permission is required."
+          "limits": "Acceptance requires one continuous 7200-second run. Short runs or added separate runs do not satisfy it. Duration alone proves neither quality, leak freedom nor GPU safety; separate long-run permission is required. Release support: CPU=SUPPORTED, CUDA=DEFERRED. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established. P23 CPU memory and CPU saved-activation are supported; CUDA saved-activation is UNSUPPORTED and blocked by BLOCKED_B4_UNRESOLVED. P31 CPU stability and both historical 7200-second records remain; new CUDA runs of 7200 seconds or longer are DEFERRED. Normal CUDA training and independent GPU features remain. The 13 BLOCKED risky integrations do not automatically mean product failure."
         },
         "de": {
           "title": "P31 — Ununterbrochener Langzeitbetrieb",
@@ -3247,7 +3247,7 @@
           "measures": "Misst Dauer, Fortschritt und passende Zustände desselben ununterbrochenen Laufs.",
           "meaning": "Zeigt Abschluss und Kontinuität im langen Fenster.",
           "when": "Nur für einen ausdrücklich geplanten Langzeit-Stabilitätslauf.",
-          "limits": "Die Abnahme verlangt einen einzigen ununterbrochenen Lauf von 7200 Sekunden. Kurze oder addierte Einzelläufe genügen nicht. Dauer allein belegt weder Qualität noch Leckfreiheit oder GPU-Sicherheit; eine separate Langzeitfreigabe ist nötig."
+          "limits": "Die Abnahme verlangt einen einzigen ununterbrochenen Lauf von 7200 Sekunden. Kurze oder addierte Einzelläufe genügen nicht. Dauer allein belegt weder Qualität noch Leckfreiheit oder GPU-Sicherheit; eine separate Langzeitfreigabe ist nötig. Versionsunterstützung: CPU=SUPPORTED, CUDA=DEFERRED. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht. P23 CPU-Speicher und CPU saved-activation werden unterstützt; CUDA saved-activation ist UNSUPPORTED und durch BLOCKED_B4_UNRESOLVED gesperrt. P31 CPU-Stabilität und beide historischen 7200-Sekunden-Nachweise bleiben erhalten; neue CUDA-Läufe ab 7200 Sekunden sind DEFERRED. Normales CUDA-Training und unabhängige GPU-Funktionen bleiben erhalten. Die 13 riskanten BLOCKED-Integrationstests bedeuten nicht automatisch einen Produktfehler."
         },
         "es": {
           "title": "P31 — Estabilidad en ejecución continua prolongada",
@@ -3255,7 +3255,7 @@
           "measures": "Mide duración, progreso y estado aplicable de esa misma ejecución sin interrupciones.",
           "meaning": "Muestra la finalización y continuidad a lo largo de la ventana.",
           "when": "Úselo solo para una prueba prolongada planificada explícitamente.",
-          "limits": "La aceptación requiere una única ejecución continua de 7200 segundos. Pruebas cortas o la suma de varias no bastan. La duración no demuestra por sí sola calidad, ausencia de fugas ni seguridad GPU; se necesita permiso separado para la prueba larga."
+          "limits": "La aceptación requiere una única ejecución continua de 7200 segundos. Pruebas cortas o la suma de varias no bastan. La duración no demuestra por sí sola calidad, ausencia de fugas ni seguridad GPU; se necesita permiso separado para la prueba larga. Soporte de la versión: CPU=SUPPORTED, CUDA=DEFERRED. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE. Se admiten la memoria CPU y saved-activation CPU de P23; saved-activation CUDA es UNSUPPORTED y está bloqueado por BLOCKED_B4_UNRESOLVED. Se conservan la estabilidad CPU de P31 y los dos registros históricos de 7200 segundos; las nuevas ejecuciones CUDA de 7200 segundos o más son DEFERRED. Se mantienen el entrenamiento CUDA normal y las funciones GPU independientes. Las 13 integraciones de riesgo BLOCKED no implican automáticamente un fallo del producto."
         }
       },
       "inventory": []
@@ -3279,7 +3279,7 @@
           "measures": "Uyumlu RSS serisinden byte değişimi ve byte/s eğilimini değerlendirir.",
           "meaning": "Büyüyen, sabit veya dalgalanan kullanımın gözlenen biçimini gösterir.",
           "when": "Uygun P31 kaydını sonradan incelerken kullanın.",
-          "limits": "Kabul karşılığı uygun aynı kesintisiz 7200 saniyelik kaynak ve warmup politikası gerekir. Büyüme tek başına nedensel bellek sızıntısı değildir; cache/allocator etkileri olabilir. Eksik zaman serisi doldurulmaz."
+          "limits": "Kabul karşılığı uygun aynı kesintisiz 7200 saniyelik kaynak ve warmup politikası gerekir. Büyüme tek başına nedensel bellek sızıntısı değildir; cache/allocator etkileri olabilir. Eksik zaman serisi doldurulmaz. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P32 — Memory-growth analysis",
@@ -3287,7 +3287,7 @@
           "measures": "Assesses byte changes and byte/s trends from compatible RSS samples.",
           "meaning": "Describes observed growth, stability or fluctuations.",
           "when": "Use it to analyze an appropriate retained P31 capture offline.",
-          "limits": "Acceptance needs the appropriate same uninterrupted 7200-second source and warmup policy. Growth alone is not a causal leak diagnosis; caches and allocators may contribute. Missing time series are not filled in."
+          "limits": "Acceptance needs the appropriate same uninterrupted 7200-second source and warmup policy. Growth alone is not a causal leak diagnosis; caches and allocators may contribute. Missing time series are not filled in. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P32 — Speicherwachstum analysieren",
@@ -3295,7 +3295,7 @@
           "measures": "Bewertet Byte-Änderungen und Byte/s-Trends aus passenden RSS-Stichproben.",
           "meaning": "Beschreibt beobachtetes Wachstum, Stabilität oder Schwankungen.",
           "when": "Zur nachträglichen Analyse einer passenden P31-Aufzeichnung.",
-          "limits": "Für die Abnahme sind dieselbe geeignete ununterbrochene 7200-Sekunden-Quelle und Warmup-Regeln nötig. Wachstum allein diagnostiziert kein Speicherleck; Caches und Allocator können beitragen. Fehlende Zeitreihen werden nicht ergänzt."
+          "limits": "Für die Abnahme sind dieselbe geeignete ununterbrochene 7200-Sekunden-Quelle und Warmup-Regeln nötig. Wachstum allein diagnostiziert kein Speicherleck; Caches und Allocator können beitragen. Fehlende Zeitreihen werden nicht ergänzt. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P32 — Análisis del crecimiento de memoria",
@@ -3303,7 +3303,7 @@
           "measures": "Evalúa cambios en bytes y tendencias en byte/s de muestras RSS compatibles.",
           "meaning": "Describe crecimiento, estabilidad o fluctuaciones observadas.",
           "when": "Sirve para analizar sin conexión una captura P31 adecuada.",
-          "limits": "La aceptación exige la misma fuente continua adecuada de 7200 segundos y su política de warmup. Crecer no diagnostica por sí solo una fuga; pueden influir cachés y allocators. No se completan series temporales ausentes."
+          "limits": "La aceptación exige la misma fuente continua adecuada de 7200 segundos y su política de warmup. Crecer no diagnostica por sí solo una fuga; pueden influir cachés y allocators. No se completan series temporales ausentes. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -3327,7 +3327,7 @@
           "measures": "Gerçek sensör gücünü zamanla bütünleyerek J ve J/image ölçer.",
           "meaning": "Ölçülen donanım kapsamındaki iş başına enerji maliyetini gösterir.",
           "when": "Enerji verimliliğini incelerken kullanın.",
-          "limits": "Güç örnekleri ile tamamlanan görüntüler aynı pencereye ait olmalıdır. Kart enerjisi modelin özel enerjisi değildir. TDP, utilization veya tahmini watt fiziksel enerji ölçümü yerine geçmez; sensör yoksa sonuç bilinmiyor kalır."
+          "limits": "Güç örnekleri ile tamamlanan görüntüler aynı pencereye ait olmalıdır. Kart enerjisi modelin özel enerjisi değildir. TDP, utilization veya tahmini watt fiziksel enerji ölçümü yerine geçmez; sensör yoksa sonuç bilinmiyor kalır. Sürüm desteği: CPU=PARTIAL, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P33 — Energy per inference",
@@ -3335,7 +3335,7 @@
           "measures": "Integrates actual sensor power over time to measure J and J/image.",
           "meaning": "Shows energy cost per unit of work within the measured hardware scope.",
           "when": "Use it to investigate energy efficiency.",
-          "limits": "Power samples and completed images must share the same window. Board energy is not model-exclusive. TDP, utilization or guessed watts cannot replace physical energy measurements; absent sensors leave the result unknown."
+          "limits": "Power samples and completed images must share the same window. Board energy is not model-exclusive. TDP, utilization or guessed watts cannot replace physical energy measurements; absent sensors leave the result unknown. Release support: CPU=PARTIAL, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P33 — Energie je Inferenz",
@@ -3343,7 +3343,7 @@
           "measures": "Integriert tatsächliche Sensorleistung über die Zeit und ermittelt J und J/image.",
           "meaning": "Zeigt Energiekosten je Arbeitseinheit im gemessenen Hardwarebereich.",
           "when": "Zur Untersuchung der Energieeffizienz.",
-          "limits": "Leistungsstichproben und fertige Bilder müssen zum selben Fenster gehören. Kartenenergie ist nicht exklusiv dem Modell zuzuordnen. TDP, Auslastung oder geschätzte Watt ersetzen keine physische Energiemessung; ohne Sensor bleibt das Ergebnis unbekannt."
+          "limits": "Leistungsstichproben und fertige Bilder müssen zum selben Fenster gehören. Kartenenergie ist nicht exklusiv dem Modell zuzuordnen. TDP, Auslastung oder geschätzte Watt ersetzen keine physische Energiemessung; ohne Sensor bleibt das Ergebnis unbekannt. Versionsunterstützung: CPU=PARTIAL, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P33 — Energía por inferencia",
@@ -3351,7 +3351,7 @@
           "measures": "Integra potencia real del sensor en el tiempo para medir J y J/image.",
           "meaning": "Muestra el coste energético por unidad de trabajo en el hardware medido.",
           "when": "Úselo para investigar eficiencia energética.",
-          "limits": "Potencia e imágenes completadas deben corresponder a la misma ventana. La energía de la tarjeta no es exclusiva del modelo. TDP, utilización o vatios estimados no sustituyen una medición física; sin sensor el resultado queda desconocido."
+          "limits": "Potencia e imágenes completadas deben corresponder a la misma ventana. La energía de la tarjeta no es exclusiva del modelo. TDP, utilización o vatios estimados no sustituyen una medición física; sin sensor el resultado queda desconocido. Soporte de la versión: CPU=PARTIAL, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -3375,7 +3375,7 @@
           "measures": "Uyumlu yöntemle alınmış ayrı cihaz kayıtlarını karşılaştırır.",
           "meaning": "Cihaz değişiminin gözlenen süre/kapasite etkisini gösterir.",
           "when": "Donanım seçimini değerlendirmek istediğinizde kullanın.",
-          "limits": "Ayrı etiketler ayrı fiziksel cihaz kanıtı değildir. Model durumu, girdi, yöntem ve çalışma koşulları eşleşmelidir. Tarihsel CUDA kaydı bugünkü GPU admission’ını geçirmiş sayılmaz."
+          "limits": "Ayrı etiketler ayrı fiziksel cihaz kanıtı değildir. Model durumu, girdi, yöntem ve çalışma koşulları eşleşmelidir. Tarihsel CUDA kaydı bugünkü GPU admission’ını geçirmiş sayılmaz. Sürüm desteği: CPU=PARTIAL, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P34 — Actual-device comparison",
@@ -3383,7 +3383,7 @@
           "measures": "Compares device captures obtained with compatible methods.",
           "meaning": "Shows observed timing/capacity effects of changing devices.",
           "when": "Use it to assess hardware choices.",
-          "limits": "Different labels do not prove different physical devices. Model state, inputs, method and runtime conditions must match. Historical CUDA captures do not pass today’s GPU admission."
+          "limits": "Different labels do not prove different physical devices. Model state, inputs, method and runtime conditions must match. Historical CUDA captures do not pass today’s GPU admission. Release support: CPU=PARTIAL, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P34 — Tatsächliche Geräte vergleichen",
@@ -3391,7 +3391,7 @@
           "measures": "Vergleicht Geräteaufzeichnungen mit kompatiblen Methoden.",
           "meaning": "Zeigt beobachtete Zeit-/Kapazitätseffekte eines Gerätewechsels.",
           "when": "Zur Bewertung von Hardwareoptionen.",
-          "limits": "Unterschiedliche Namen belegen keine unterschiedlichen physischen Geräte. Modellzustand, Eingaben, Methode und Laufbedingungen müssen passen. Historische CUDA-Aufzeichnungen ersetzen keine heutige GPU-Zulassung."
+          "limits": "Unterschiedliche Namen belegen keine unterschiedlichen physischen Geräte. Modellzustand, Eingaben, Methode und Laufbedingungen müssen passen. Historische CUDA-Aufzeichnungen ersetzen keine heutige GPU-Zulassung. Versionsunterstützung: CPU=PARTIAL, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P34 — Comparación de dispositivos reales",
@@ -3399,7 +3399,7 @@
           "measures": "Compara capturas obtenidas con métodos compatibles.",
           "meaning": "Muestra efectos observados del cambio de dispositivo sobre tiempo y capacidad.",
           "when": "Sirve para evaluar opciones de hardware.",
-          "limits": "Etiquetas distintas no prueban dispositivos físicos distintos. Deben coincidir estado del modelo, entradas, método y condiciones. Las capturas CUDA históricas no superan la admisión GPU actual."
+          "limits": "Etiquetas distintas no prueban dispositivos físicos distintos. Deben coincidir estado del modelo, entradas, método y condiciones. Las capturas CUDA históricas no superan la admisión GPU actual. Soporte de la versión: CPU=PARTIAL, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
@@ -3423,7 +3423,7 @@
           "measures": "Kayıtlı node yürütme ve provider olaylarını, ilgili sürelerle gözler.",
           "meaning": "Gözlenen CPU/provider dağılımını anlamaya yardım eder.",
           "when": "Desteklenen ONNX/Runtime protokolünde yerleşimi incelerken kullanın.",
-          "limits": "Provider listesinin varlığı gerçek node yürütme kanıtı değildir. Profiling gözlemi genel export/deployment, bütün mimariler veya bütün task’ler için destek oluşturmaz. Fallback ve eksik eşleme açık kalmalıdır."
+          "limits": "Provider listesinin varlığı gerçek node yürütme kanıtı değildir. Profiling gözlemi genel export/deployment, bütün mimariler veya bütün task’ler için destek oluşturmaz. Fallback ve eksik eşleme açık kalmalıdır. Sürüm desteği: CPU=SUPPORTED, CUDA=PARTIAL. Destek yalnız kayıtlı protokol ve doğrulanmış alt kapsam içindir; FULL CUDA ACCEPTANCE yoktur."
         },
         "en": {
           "title": "P35 — ONNX node/provider placement",
@@ -3431,7 +3431,7 @@
           "measures": "Observes recorded node execution and provider events with relevant durations.",
           "meaning": "Helps interpret the observed CPU/provider distribution.",
           "when": "Use it within a supported ONNX/Runtime placement protocol.",
-          "limits": "A provider list is not evidence of actual node execution. Profiling does not certify general export/deployment or all architectures/tasks. Fallback and missing mappings must stay explicit."
+          "limits": "A provider list is not evidence of actual node execution. Profiling does not certify general export/deployment or all architectures/tasks. Fallback and missing mappings must stay explicit. Release support: CPU=SUPPORTED, CUDA=PARTIAL. Support is limited to the recorded protocol and verified subscope; FULL CUDA ACCEPTANCE has not been established."
         },
         "de": {
           "title": "P35 — ONNX-Knoten und Ausführungsanbieter",
@@ -3439,7 +3439,7 @@
           "measures": "Beobachtet aufgezeichnete Knoten-/Provider-Ereignisse und passende Zeiten.",
           "meaning": "Hilft beim Verständnis der beobachteten CPU-/Provider-Verteilung.",
           "when": "Innerhalb eines unterstützten ONNX-/Runtime-Platzierungsprotokolls.",
-          "limits": "Eine Providerliste belegt keine tatsächliche Knotenausführung. Profiling bestätigt weder allgemeinen Export/Deployment noch alle Architekturen und Aufgaben. Fallback und fehlende Zuordnungen müssen sichtbar bleiben."
+          "limits": "Eine Providerliste belegt keine tatsächliche Knotenausführung. Profiling bestätigt weder allgemeinen Export/Deployment noch alle Architekturen und Aufgaben. Fallback und fehlende Zuordnungen müssen sichtbar bleiben. Versionsunterstützung: CPU=SUPPORTED, CUDA=PARTIAL. Die Unterstützung gilt nur für das dokumentierte Protokoll und den verifizierten Teilbereich; FULL CUDA ACCEPTANCE ist nicht erreicht."
         },
         "es": {
           "title": "P35 — Ubicación de nodos y proveedores ONNX",
@@ -3447,10 +3447,530 @@
           "measures": "Observa eventos registrados de nodos y proveedores con sus tiempos correspondientes.",
           "meaning": "Ayuda a interpretar la distribución observada entre CPU y proveedores.",
           "when": "Úselo dentro de un protocolo ONNX/Runtime admitido para ubicación.",
-          "limits": "Una lista de proveedores no prueba ejecución real de nodos. El profiling no certifica exportación o despliegue general ni todas las arquitecturas o tareas. Deben mostrarse el fallback y las correspondencias ausentes."
+          "limits": "Una lista de proveedores no prueba ejecución real de nodos. El profiling no certifica exportación o despliegue general ni todas las arquitecturas o tareas. Deben mostrarse el fallback y las correspondencias ausentes. Soporte de la versión: CPU=SUPPORTED, CUDA=PARTIAL. El soporte se limita al protocolo registrado y al ámbito verificado; no se ha alcanzado FULL CUDA ACCEPTANCE."
         }
       },
       "inventory": []
     }
-  ]
+  ],
+  "release_support": {
+    "schema_version": 1,
+    "release": "0.2.0",
+    "policy_date": "2026-11-26",
+    "statuses": {
+      "SUPPORTED": "Supported only within verified_scope and stated prerequisites.",
+      "PARTIAL": "Only a subset is supported/verified; this is not feature failure.",
+      "BLOCKED": "Execution is refused by a safety or admission gate.",
+      "UNSUPPORTED": "Requested execution path is outside this release support scope.",
+      "DEFERRED": "Intentionally postponed release support."
+    },
+    "full_cuda_acceptance": false,
+    "features": [
+      {
+        "feature_id": "P01",
+        "name": "Inference latency P50/P95/P99",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Resident CPU latency quantiles",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "1000 samples required by captured comparison; tail eligibility is separate",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P01",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P02",
+        "name": "Completed inference throughput",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Completed CPU inference throughput",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Completion/queue protocol and sample count must match",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P02",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P03",
+        "name": "End-to-end pipeline latency",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Bounded end-to-end timing",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Only declared pipeline boundaries are covered",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P03",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P04",
+        "name": "Preprocessing / postprocessing",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Declared preprocessing/postprocessing stages",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "No inference of uninstrumented stages",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P04",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P05",
+        "name": "Cold start and model loading",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Owned fresh-process cold-start phases",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Factory, process identity and startup boundaries are required",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P05",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P06",
+        "name": "Batch-size sweep",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Matched batch sweep points",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Each point must retain its actual input and protocol",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P06",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P07",
+        "name": "Resolution sweep",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Matched input-resolution sweep",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Shape changes are explicit; no inferred missing points",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P07",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P08",
+        "name": "Precision benchmark",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "CPU precision measurements",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Supported dtype/backend only; accuracy requires P28",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P08",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P09",
+        "name": "CUDA allocator peak memory",
+        "cpu": "UNSUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Retained GPU allocator evidence read on CPU; offline reader/analysis remains supported, CPU status describes fresh measurement.",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "No live GPU-memory measurement on a CPU device",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P09",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P10",
+        "name": "Process RSS and sampled peak",
+        "cpu": "SUPPORTED",
+        "cuda": "UNSUPPORTED",
+        "verified_scope": "Current-process RSS/HWM",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Host RSS is not GPU memory or model-exclusive memory",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P10",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P11",
+        "name": "Model tensor and artifact footprint",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Exact logical tensor/artifact inventory",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Logical bytes are not allocator peak; artifact identity is separate",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P11",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P12",
+        "name": "FLOPs / MACs",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Validated operation-count source",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Profiler coverage and unsupported operators remain explicit",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P12",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P13",
+        "name": "Module/layer profiling",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Native profiler module observations",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Incomplete attribution is not fabricated as zero",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P13",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P14",
+        "name": "Operator/kernel profiling",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Native operator profiling",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Instrumentation overhead and scope limits remain",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P14",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P15",
+        "name": "CPU-GPU transfer analysis",
+        "cpu": "UNSUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Retained transfer evidence read on CPU; offline reader/analysis remains supported, CPU status describes fresh measurement.",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Live host/device copies require a CUDA worker",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P15",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P16",
+        "name": "CPU/GPU utilization",
+        "cpu": "PARTIAL",
+        "cuda": "PARTIAL",
+        "verified_scope": "CPU observations and retained utilization evidence",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "GPU samples require an actual telemetry source",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P16",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P17",
+        "name": "Maximum feasible batch search",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Bounded CPU batch search",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Search bounds do not guarantee safety on every device; real stress integration remains blocked",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P17",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P18",
+        "name": "Arithmetic intensity / roofline",
+        "cpu": "PARTIAL",
+        "cuda": "PARTIAL",
+        "verified_scope": "Offline analytic/retained roofline",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Hardware counters and empirical session identity are not inferred",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P18",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P19",
+        "name": "Epoch / training step timing",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Explicit CPU Trainer episode",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Trainer is independent of read-only Analyzer/Advisor",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P19",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P20",
+        "name": "Forward / backward / optimizer stages",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "CPU training-stage observations",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Only declared training boundaries are measured",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P20",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P21",
+        "name": "DataLoader bottleneck",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "CPU DataLoader observation",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Loader, workers and cohort must be explicit",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P21",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P22",
+        "name": "Training throughput",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "CPU training throughput derived from retained P19 epoch/step evidence",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Actual completed examples and measured elapsed time only; no inferred missing training work",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P22",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P23",
+        "name": "Training memory analysis",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "CPU basic/isolated training memory and saved-payload accounting",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "CUDA saved-activation UNSUPPORTED; BLOCKED_B4_UNRESOLVED remains; host payload is not physical VRAM",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P23",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json",
+          "outputs/full-library-acceptance-20261125/b4-p23-p31-20261125/P23-subscope-acceptance.json"
+        ],
+        "historical_acceptance": "PARTIAL",
+        "subscopes": {
+          "cpu_saved_activation": "SUPPORTED",
+          "cuda_saved_activation": "UNSUPPORTED",
+          "cuda_saved_activation_execution": "BLOCKED",
+          "reason": "BLOCKED_B4_UNRESOLVED"
+        }
+      },
+      {
+        "feature_id": "P24",
+        "name": "Time to target accuracy",
+        "cpu": "SUPPORTED",
+        "cuda": "SUPPORTED",
+        "verified_scope": "Offline time-to-target analysis of retained training history; CUDA column refers only to device-independent retained evidence, not new GPU execution.",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Unattained targets remain censored; no fabricated target crossing or quality guarantee",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P24",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P25",
+        "name": "Gradient / AMP diagnostics",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "CPU gradient diagnostics",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "No automatic optimizer/model changes",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P25",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P26",
+        "name": "Accuracy / precision / recall / F1",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "CPU prediction quality and bound comparisons",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Labels/stream/cohort/checkpoint policies remain distinct",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P26",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P27",
+        "name": "Robustness measurements",
+        "cpu": "SUPPORTED",
+        "cuda": "UNSUPPORTED",
+        "verified_scope": "Task-appropriate CPU perturbation measurements",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Not a general robustness certificate",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P27",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P28",
+        "name": "Precision accuracy change",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Matched precision/quality deltas",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Requires genuine baseline/candidate evidence",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P28",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P29",
+        "name": "Quality/speed/memory tradeoff",
+        "cpu": "SUPPORTED",
+        "cuda": "SUPPORTED",
+        "verified_scope": "Read-only matched quality/speed/memory comparison; CUDA column refers only to device-independent retained evidence, not new GPU execution.",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "No global winner, causal improvement or invented missing measurements",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P29",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P30",
+        "name": "Live camera/recorded video FPS and drops",
+        "cpu": "SUPPORTED",
+        "cuda": "UNSUPPORTED",
+        "verified_scope": "CPU stream processor and retained video/camera accounting",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Adapter/camera authorization required; only application queue drops measured",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P30",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P31",
+        "name": "Uninterrupted long-run stability",
+        "cpu": "SUPPORTED",
+        "cuda": "DEFERRED",
+        "verified_scope": "CPU bounded stability; two historical continuous 7200-second runs",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "New CUDA duration >=7200 seconds DEFERRED; historical results remain readable",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P31",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json",
+          "outputs/full-library-acceptance-20261125/b4-p23-p31-20261125/P31-duration-binding.json"
+        ],
+        "historical_acceptance": "PARTIAL",
+        "subscopes": {
+          "cpu_historical_7200": "SUPPORTED",
+          "new_cuda_7200": "DEFERRED",
+          "reason": "P31_CUDA_LONG_RUN_DEFERRED"
+        }
+      },
+      {
+        "feature_id": "P32",
+        "name": "Memory growth analysis",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "Offline CPU analysis of retained memory trends",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Growth is not proof of a causal leak; GPU cache integration remains blocked",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P32",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P33",
+        "name": "Energy per inference",
+        "cpu": "PARTIAL",
+        "cuda": "PARTIAL",
+        "verified_scope": "Offline integration of valid measured power windows",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "CPU live energy is not inferred; GPU power/thermal integration remains blocked",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P33",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P34",
+        "name": "Multiple-device comparison",
+        "cpu": "PARTIAL",
+        "cuda": "PARTIAL",
+        "verified_scope": "CPU-side protocol validation and retained device comparisons",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Real CPU/CUDA device comparison integration remains blocked",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P34",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      },
+      {
+        "feature_id": "P35",
+        "name": "ONNX Runtime node/provider placement",
+        "cpu": "SUPPORTED",
+        "cuda": "PARTIAL",
+        "verified_scope": "ONNX Runtime CPU provider event analysis",
+        "unverified_scope": "General native CUDA acceptance, other hardware/runtime/cohorts and any unmeasured workload are not established.",
+        "limitations": "Provider availability alone does not prove placement; actual CUDA provider integration remains blocked",
+        "acceptance_evidence": [
+          "outputs/release-acceptance-20261125/final-campaign/P01-P35-acceptance.json#P35",
+          "outputs/release-acceptance-20261125/final-campaign/summary.json"
+        ],
+        "historical_acceptance": "PASS"
+      }
+    ],
+    "test_acceptance": "8536 source PASS; 55 infrastructure PASS; 36 package PASS; 13 risky integrations BLOCKED; 1 historical AST RETIRED. These original results are preserved, not rerun or reclassified.",
+    "runtime_scope": "Safe campaign: Windows owned workers and CPU Torch 2.5.1+cpu. Historical artifacts retain their own exact runtime identities. Other hardware, operating systems and runtime versions are not automatically accepted."
+  }
 }

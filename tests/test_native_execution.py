@@ -563,7 +563,7 @@ def test_example_retained_native_exports(tmp_path, monkeypatch):
     assert api.AnalysisExecutionResult.from_json(output / 'execution.json').to_dict()['status_counts']['COMPLETED'] == 2
 
 
-@pytest.mark.parametrize('feature', ['P26', 'P28'])
+@pytest.mark.parametrize('feature', ['P24', 'P26', 'P27', 'P28', 'P29'])
 def test_CPU_binding_cannot_hide_CUDA_device_option(feature):
     if feature == 'P26':
         source = api.EvaluationSource(torch.nn.Identity(), [], options=dict(device='cuda:0'))

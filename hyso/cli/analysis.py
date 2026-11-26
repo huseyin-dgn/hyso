@@ -131,7 +131,7 @@ def run(args):
     if args.action in ('list', 'show'):
         data = [x.to_dict() for x in api.feature_catalog()] if args.action == 'list' else api.feature_catalog(args.feature).to_dict()
         export_text(args, json_text(data))
-        text = None if args.action != 'list' else 'ID   FEATURE                                      COST / DEVICES\n' + ''.join(
+        text = None if args.action != 'list' else 'ID   FEATURE                                      NATIVE COST / BACKENDS (release support: --json)\n' + ''.join(
             f"{r['feature_id']}  {r['name']:<44} {r['cost_class']} / {','.join(r['supported_devices'])}\n" for r in data)
         return Outcome(data, text=text)
     plan = _selection(args)

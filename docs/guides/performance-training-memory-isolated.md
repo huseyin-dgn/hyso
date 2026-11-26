@@ -1,5 +1,7 @@
 # P23 isolated training memory — R1 experimental scope
 
+Release scope (2026-11-26): verified CPU memory and CPU saved-activation remain supported. CUDA saved-activation is UNSUPPORTED, with the existing `BLOCKED_B4_UNRESOLVED` execution gate retained. This is distinct from normal CUDA training and basic CUDA memory without saved-activation. See [release matrix](release-support.md).
+
 Current containment policy (2026-11-25): CUDA with
 `saved_activation_lifetime=True` returns `outcome="unsupported"`,
 `reason="BLOCKED_B4_UNRESOLVED: ..."`, and `measurement=None` before a worker

@@ -13,7 +13,7 @@ pytest_plugins = ["pytester"]
 
 def run_isolated(pytester, monkeypatch, *args):
     tests = Path(__file__).parent
-    paths = [str(tests), str(tests.parent), os.environ.get("PYTHONPATH", "")]
+    paths = [str(tests),str(tests.parent),*sys.path,os.environ.get("PYTHONPATH", "")]
     monkeypatch.setenv("PYTHONPATH", os.pathsep.join(filter(None, paths)))
     # Native torch/torchvision registrations outlive pytester's sys.modules reset.
     # A fresh interpreter keeps both controls independent of collection order.

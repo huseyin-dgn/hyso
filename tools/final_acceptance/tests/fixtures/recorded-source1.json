@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "source_attempt": "outputs/release-acceptance-20261125/final-campaign/event-recovery-20261126/preserved/attempts/13b5284e444d4296b91d6614f74a9b4b",
+  "files": {
+    "events.jsonl": "b5a41e148d12d4b232267d6a9a147c84c490a9b5ad1068228cd441ec08578221",
+    "request.json": "59fb38e685cd97ff0c03f859474c81a67391aa79100fce52fe5253386fe4e01e",
+    "controller.json": "5d067d5f4ac4a468bd7c509f8bc1b96d113943d713e0bad6f96a136e623e3f85",
+    "junit.xml": "f992a9fd515e8141c7d40d0ff911c0a89eee5b53b77526fe0fb1c3b3cc924e90",
+    "selection.json": "138d3640302a03943eb71b578e9b59baac02bbc94632d2992d59c270f531752c",
+    "admission-receipt.json": "49a421aff512b11bb739d6fb0703c02c7d09ceadd6484c0e840d5b2e5e5c159f",
+    "owner-identities.json": "116dbaef14b1cdf312d45be196afd4878264d3830d6c10ab5177032ba6e809ac",
+    "interpreter-ready.json": "7cfaa70f6a47eda9c53650c8c1fa32ec29575af24f722b5bb3b77e502f24b5e8",
+    "admit.json": "52e8019c41a74613d1cb7e9b113d849f891cb005268ad16e1604cb78affc896b",
+    "bootstrap.py": "be27380686777a0b46e1c00b0525f1e4a14d93cfb67c76076b34200aefe51448"
+  },
+  "baseline_path": "outputs/release-acceptance-20261125/final-campaign/event-recovery-20261126/replay-baseline.json",
+  "baseline_sha256": "014bef736707757a402c5f2b2e4d86c5267e28a40fb85c301ea30db450e62197",
+  "expected_prefix_events": 1610,
+  "expected_outcomes": {
+    "PASS": 401,
+    "NOT_RUN": 1
+  },
+  "incomplete_node": "tests/test_experiment_artifacts.py::test_ingest_failures_block_completion_preserve_source[fsync]",
+  "examples": [
+    "tests/test_deployment_analysis.py::test_lossless_json_csv_and_tamper[provider_cpu]",
+    "tests/test_deployment_analysis.py::test_provider_parent_state_and_execution_ledger"
+  ],
+  "forensic_path": "outputs/release-acceptance-20261125/forensic-stdlib-reports.jsonl",
+  "forensic_sha256": "d6914d6eff9f8ccdd49aed8c6b2b0044d98b3029920dd96be7b08e1f56942365",
+  "forensic_subtest_node": "tests/forensics/test_gpu_admission_policy.py::WarningPolicyTests::test_each_hard_safety_receipt_fails_closed",
+  "expected_forensic_subtests": 24
+}

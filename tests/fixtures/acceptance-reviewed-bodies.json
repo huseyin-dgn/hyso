@@ -1,0 +1,16 @@
+{
+  "functions": [
+    {
+      "path": "hyso/advisor/comparison.py",
+      "function": "compare_records",
+      "normalized_body_sha256": "c7eb956bbcdd83ab1e0f38170240288107555342d011c8cbafd786147e33c8b0",
+      "reviewed_scope": "Captured CPU contract integration"
+    },
+    {
+      "path": "hyso/analysis/isolated_bridge.py",
+      "function": "execute_isolated_cpu",
+      "normalized_body_sha256": "7c9764c03e5eb234d3ef509feee0fc6a3cb5624116f151ae8ee497dd690cfc11",
+      "reviewed_scope": "Single-process Windows venv launch preserving caller import paths"
+    }
+  ]
+}

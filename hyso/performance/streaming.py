@@ -13,6 +13,11 @@ from .runtime_result import _result, _hash, _int, _number, _name, _digest
 from .stability import WorkloadRecipe, _run_owned, _read_journal, _factory, _Journal, _atomic
 
 
+def _physical_uuid(value):
+    from uuid import UUID
+    return 'GPU-'+str(UUID(str(value).removeprefix('GPU-')))
+
+
 @dataclass(frozen=True)
 class StreamSource:
     """Describe the explicit bounded streaming input and its identity.
@@ -96,11 +101,17 @@ class StreamProtocol:
     heartbeat_timeout_seconds: float = 5.
     max_runtime_seconds: float = 30.
     max_journal_bytes: int = 128*1024**2
+    process_memory_bytes: int | None = None
+    job_memory_bytes: int | None = None
+    max_processes: int | None = None
 
     def __post_init__(self):
         _int(self.max_frames,1);_int(self.queue_capacity,1);_int(self.max_journal_bytes,65536)
         for v in (self.late_after_seconds,self.startup_timeout_seconds,self.heartbeat_timeout_seconds,self.max_runtime_seconds):_number(v,.001)
         if self.queue_policy not in ('block','drop_newest') or type(self.pace_video) is not bool:raise ValueError('unknown stream queue/pacing policy')
+        for limit in (self.process_memory_bytes,self.job_memory_bytes,self.max_processes):
+            if limit is not None:_int(limit,1)
+        if self.process_memory_bytes is not None and self.job_memory_bytes is not None and self.job_memory_bytes<self.process_memory_bytes:raise ValueError('job budget below process budget')
 
 
 def measure_streaming(source: '_typing.Any', processor_recipe: '_typing.Any', directory: '_typing.Any', *, protocol: '_typing.Any'=StreamProtocol()) -> '_typing.Any':
@@ -129,9 +140,11 @@ def measure_streaming(source: '_typing.Any', processor_recipe: '_typing.Any', di
     """
     if type(source) is not StreamSource or type(processor_recipe) is not WorkloadRecipe or type(protocol) is not StreamProtocol:
         raise TypeError('typed stream source/recipe/protocol required')
-    if processor_recipe.gpu_uuid is not None:raise NotImplementedError('P30 processing adapter CPU-only')
+    if processor_recipe.gpu_uuid is not None and any(v is None for v in (protocol.process_memory_bytes,protocol.job_memory_bytes,protocol.max_processes)):
+        raise ValueError('CUDA streaming requires explicit owned process/Job budgets')
     p=protocol
-    root=_run_owned(directory,'streaming',dict(source=asdict(source),recipe=asdict(processor_recipe),protocol=asdict(p)),
+    protocol_data={k:v for k,v in asdict(p).items() if v is not None}
+    root=_run_owned(directory,'streaming',dict(source=asdict(source),recipe=asdict(processor_recipe),protocol=protocol_data),
         startup_timeout=p.startup_timeout_seconds,heartbeat_timeout=p.heartbeat_timeout_seconds,
         max_runtime=p.max_runtime_seconds,max_bytes=p.max_journal_bytes)
     return _result('P30',_read_journal(root))
@@ -156,6 +169,7 @@ def _analyze_stream(e):
     if 'lifecycle_version' in header and header['lifecycle_version']!=2:raise ValueError('unsupported lifecycle version')
     if any(header['capture'][k]!=e['request']['source'][k] for k in ('kind','location','provenance')):
         raise ValueError('capture source association mismatch')
+    if header['processor'].get('processing_version')==2 and (not e['request']['recipe'].get('gpu_uuid') or header['processor']['device_id']!=e['request']['recipe']['gpu_uuid']):raise ValueError('GPU header/recipe identity mismatch')
     source=e['request']['source']
     if source.get('camera_binding') is not None:
         if (header['capture'].get('camera_binding')!=source['camera_binding']
@@ -228,6 +242,10 @@ def _analyze_stream(e):
                 if [s['name'] for s in stages if s['name'] in ('preprocess','inference','postprocess')] not in (
                         ['preprocess','inference'],['preprocess','inference','postprocess']):
                     raise ValueError('invalid model stage order')
+            if header['processor'].get('processing_version')==2:
+                if not e['request']['recipe'].get('gpu_uuid') or header['processor']['device_id']!=e['request']['recipe']['gpu_uuid']:raise ValueError('GPU frame identity mismatch')
+                infer=next(s for s in stages if s['name']=='inference')
+                if infer.get('completed') is not True or type(infer.get('stream_id')) is not int or type(infer.get('cuda_event_ms')) not in (int,float) or not math.isfinite(infer['cuda_event_ms']) or infer['cuda_event_ms']<0:raise ValueError('unverified CUDA frame completion')
             elapsed=stamp-states[frame]['receive_ns'];late+=elapsed>p.late_after_seconds*1e9
             latencies.append(elapsed/1e6);processed+=1;states[frame]['state']='processed';pending_ids.remove(frame);inflight=None
         elif kind=='dropped':
@@ -285,7 +303,7 @@ def _analyze_stream(e):
 
 
 class FrameInferenceProcessor:
-    """CPU BGR uint8 -> explicit RGB resize/normalize -> actual owned model inference.
+    """BGR uint8 -> CPU preprocessing -> explicitly selected CPU/CUDA owned inference.
 
     Args:
         model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
@@ -306,7 +324,7 @@ class FrameInferenceProcessor:
     Offline: hyso docs show analysis.p30 --lang en
     Open: hyso docs open analysis.p30 --lang en
     """
-    def __init__(self,model: '_typing.Any',*,size: '_typing.Sequence[int]'=(32,32)) -> 'None':
+    def __init__(self,model: '_typing.Any',*,size: '_typing.Sequence[int]'=(32,32),device: 'str'='cpu',gpu_uuid: '_typing.Any'=None,cuda_memory_fraction: '_typing.Any'=None) -> 'None':
         """Initialize FrameInferenceProcessor with the supplied settings.
 
         Args:
@@ -333,11 +351,22 @@ class FrameInferenceProcessor:
         from hyso.benchmark.runner import _profile,_descriptor,_Snapshot,_output
         if len(size)!=2:raise ValueError('explicit H,W required')
         for v in size:_int(v,1)
-        self.torch=torch;self.size=tuple(size);self.model=copy.deepcopy(model).cpu().float().eval()
-        placeholder=torch.empty(0);modules,entries=_profile(self.model,torch.float32,torch.device('cpu'))
+        self.device=torch.device(device)
+        if self.device.type not in ('cpu','cuda'):raise NotImplementedError('CPU/CUDA frame processing only')
+        if self.device.type=='cuda':
+            if not gpu_uuid or os.environ.get('CUDA_VISIBLE_DEVICES')!=gpu_uuid or self.device.index not in (None,0):raise ValueError('explicit UUID-visible CUDA device 0 required')
+            if type(cuda_memory_fraction) not in (int,float) or not math.isfinite(cuda_memory_fraction) or not 0<cuda_memory_fraction<=1:raise ValueError('explicit CUDA allocator fraction required')
+            if not torch.cuda.is_available():raise NotImplementedError('CUDA unavailable; no CPU fallback')
+            self.device=torch.device('cuda:0');props=torch.cuda.get_device_properties(self.device)
+            if _physical_uuid(getattr(props,'uuid',None))!=gpu_uuid:raise ValueError('physical GPU UUID mismatch')
+            torch.cuda.set_per_process_memory_fraction(cuda_memory_fraction,self.device)
+        elif gpu_uuid is not None or cuda_memory_fraction is not None:raise ValueError('GPU options require CUDA')
+        self.torch=torch;self.size=tuple(size);self.model=copy.deepcopy(model).to(self.device).float().eval()
+        placeholder=torch.empty(0,device=self.device);modules,entries=_profile(self.model,torch.float32,self.device)
         descriptor,digest=_descriptor(modules,entries);self.guard=_Snapshot(modules,entries,placeholder);self.output_check=_output
         self.identity=dict(kind='frame_model_inference',device_id='cpu',model_sha256=digest,structural_descriptor=descriptor,
             preprocessing=dict(color='BGR_to_RGB',scale='divide_255',size=list(size),resize='bilinear_align_corners_false'))
+        if self.device.type=='cuda':self.identity.update(device_id=gpu_uuid,processing_version=2,cuda=dict(device='cuda:0',physical_gpu_uuid=gpu_uuid,cuda_build=torch.version.cuda,allocator_fraction=cuda_memory_fraction,completion='selected_stream_end_event_sync'))
 
     def process(self,frame: '_typing.Any') -> '_typing.Any':
         """Process one caller-supplied frame in this processor implementation.
@@ -364,6 +393,18 @@ class FrameInferenceProcessor:
         x=torch.from_numpy(frame[:,:,::-1].copy()).permute(2,0,1).unsqueeze(0).float()/255
         x=torch.nn.functional.interpolate(x,size=self.size,mode='bilinear',align_corners=False)
         b=time.perf_counter_ns()
+        if self.device.type=='cuda':
+            stream=torch.cuda.current_stream(self.device)
+            x=x.to(self.device);transfer_end=time.perf_counter_ns()
+            start=torch.cuda.Event(enable_timing=True);end=torch.cuda.Event(enable_timing=True)
+            start.record(stream)
+            with torch.inference_mode():out=self.model(x)
+            end.record(stream);end.synchronize()
+            c=time.perf_counter_ns();elapsed=float(start.elapsed_time(end))
+            if not end.query() or not math.isfinite(elapsed) or elapsed<0:raise RuntimeError('CUDA frame completion unverified')
+            self.output_check(out,1,device=self.device);self.guard.check(full=True)
+            return [dict(name='preprocess',start_ns=a,end_ns=b),dict(name='transfer',start_ns=b,end_ns=transfer_end),
+                dict(name='inference',start_ns=transfer_end,end_ns=c,cuda_event_ms=elapsed,stream_id=int(stream.cuda_stream),completed=True)]
         with torch.inference_mode():out=self.model(x)
         c=time.perf_counter_ns();self.output_check(out,1,device=torch.device('cpu'));self.guard.check(full=True)
         return [dict(name='preprocess',start_ns=a,end_ns=b),dict(name='inference',start_ns=b,end_ns=c)]
@@ -440,6 +481,14 @@ def _worker_stream(root,request):
     torch.set_num_threads(1)
     p=StreamProtocol(**request['protocol']);source=StreamSource(**request['source'])
     processor,processor_source=_factory(request['recipe'])
+    gpu=request['recipe'].get('gpu_uuid')
+    try:
+        if gpu:
+            if processor.identity.get('device_id')!=gpu or _physical_uuid(getattr(torch.cuda.get_device_properties(0),'uuid',None))!=gpu:
+                raise ValueError('CUDA frame processor/recipe physical identity mismatch')
+        elif processor.identity.get('device_id')!='cpu' or torch.cuda.is_initialized():raise ValueError('CPU stream factory initialized CUDA')
+    except BaseException:
+        processor.close();raise
     capture,fps,target,digest,journal=_prepare_capture(root,request,p,source,processor,processor_source)
     condition=threading.Condition();queue=deque()
     state=dict(done=False,stop=False,failure=None,received=0,processed=0,dropped=0,closed=False,capture_closed=False)

@@ -241,3 +241,7 @@ CLI ek bir Linux worker backend'i veya otomatik cihaz fallback'i eklemez.
 
 Çalışan offline senaryolar ve factory Python örneği:
 [examples/cli](../../examples/cli/README.md).
+
+## First release scope
+
+`hyso analysis list --json` and `hyso analysis show P23 --json` include `release_support` from the shared release matrix. Native backend capability is separate. CUDA P23 saved-activation returns `BLOCKED_B4_UNRESOLVED`; new CUDA P31 captures >=7200 seconds return `P31_CUDA_LONG_RUN_DEFERRED`/UNSUPPORTED. Retained analysis stays available. See [release scope](release-support.md).

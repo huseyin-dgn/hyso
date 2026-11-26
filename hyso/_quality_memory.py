@@ -36,6 +36,17 @@ def capture(bundle, cohort, model, x, metric, protocol):
     import torch
     record = dict(metric=metric, binding=binding(bundle,cohort), source=None,
                   completed_forwards=0, missing_reason=None)
+    if x.device.type=='cuda' and metric in ('cuda_allocated_peak_bytes','cuda_reserved_peak_bytes'):
+        memory=bundle['performance']['cuda_memory']
+        if memory['status']!='measured' or not memory['counter_reset_performed']:raise ValueError('native CUDA memory probe missing')
+        record.update(source=bundle['performance'],completed_forwards=1)
+        return record
+    if x.device.type=='cuda' and metric=='cpu_rss_sampled_peak_bytes':
+        record['missing_reason']='CPU_RSS_is_not_GPU_resident_memory';return record
+    if x.device.type=='cuda' and metric=='logical_model_bytes':
+        import copy
+        record['source']=measure_footprint(copy.deepcopy(model).cpu()).to_dict()
+        return record
     if metric not in ('logical_model_bytes','cpu_rss_sampled_peak_bytes'):
         record['missing_reason'] = ('not_requested' if metric is None else
             'P29_CPU_adapter_has_no_matching_'+metric+'_measurement')
@@ -100,10 +111,18 @@ def value(bundle, cohort, metric):
                 or record['completed_forwards'] != int(measured)):
             raise ValueError('RSS must cover one completed separate inference or be unsupported')
         result.update(value=measurement['value'],status='measured' if measured else 'unsupported',reason=measurement['reason'])
+    elif metric in ('cuda_allocated_peak_bytes','cuda_reserved_peak_bytes'):
+        from .benchmark.result import BenchmarkResult
+        source=BenchmarkResult(source).to_dict();p=bundle['performance'];memory=source['cuda_memory']
+        if source!=p or not source['environment']['device'].startswith('cuda:') or memory['status']!='measured' or memory['counter_reset_performed'] is not True or record['completed_forwards']!=1:
+            raise ValueError('unbound CUDA memory source')
+        field='peak_allocated_bytes' if metric=='cuda_allocated_peak_bytes' else 'peak_reserved_bytes'
+        result.update(value=memory[field],status='measured',reason=None)
+        return result
     else:
-        raise ValueError('CPU comparison cannot bind CUDA allocator/physical VRAM evidence')
+        raise ValueError('no verified measurement for selected memory domain')
     environment = source['provenance']['environment']; p = bundle['performance']['environment']
-    if (environment['device'] != p['device'] or any(environment[a]!=p[b] for a,b in
+    if ((environment['device'] != p['device'] and not (metric=='logical_model_bytes' and environment['device']=='cpu')) or any(environment[a]!=p[b] for a,b in
             (('python','python_version'),('torch','torch_version'),('platform_detail','platform')))):
         raise ValueError('memory device/runtime differs from benchmark')
     return result
@@ -145,6 +164,7 @@ def compare(a, b, cohort, policy, qa, la, qb, lb, previous):
             'undefined_zero_baseline' if available else 'missing_measurement',
         regression=relative>threshold if relative is not None else None,
         uncertainty='Logical bytes are exact under the object convention; RSS is sampled process-wide, sequential and environment-dependent.')
+    cpu_scope=not a['performance']['environment']['device'].startswith('cuda:')
     return dict(previous, comparison_version=2, quality_speed_pareto_dominates=previous['pareto_dominates'],
         pareto_dominates=pareto(qa,la,ma,qb,lb,mb) if available else None,
         pareto_dimensions=['quality','latency','memory'],pareto_status='observed' if available else 'unsupported_missing_memory',
@@ -152,4 +172,4 @@ def compare(a, b, cohort, policy, qa, la, qb, lb, previous):
         limitations=['Pareto is descriptive of the recorded protocol, not a guaranteed winner or significant speedup.',
             'Memory domains are never summed or substituted; RSS is not model-only memory or an absolute peak.',
             'Latency is measured, not P02 completion-window throughput. Memory observation is outside timing/evaluation.',
-            'CUDA allocator/physical VRAM are unsupported by this CPU adapter; no GPU probe or fallback runs.'])
+            'CUDA allocator/physical VRAM are unsupported by this CPU adapter; no GPU probe or fallback runs.' if cpu_scope else 'Physical VRAM is not allocator memory; missing domains remain unsupported, never substituted.'])

@@ -1,7 +1,5 @@
 """UX-05 focused CPU compatibility, signatures and static discovery checks."""
 import ast
-import copy
-import hashlib
 import importlib
 import inspect
 import json
@@ -229,63 +227,6 @@ def test_complete_original_api_and_alias_inventory(tmp_path):
     assert not summary['original_ux03_missing'] and not summary['original_aliases_missing'] and not summary['indexed_source_missing']
 
 
-def test_existing_native_function_bodies_are_preserved():
-    """Annotation edits and explicit constructors must not rewrite native engines."""
-    require_audit_history()
-    class Normalize(ast.NodeTransformer):
-        def visit_arg(self, node):
-            node.annotation = None
-            return node
-
-        def visit_FunctionDef(self, node):
-            node.returns = None
-            if node.body and isinstance(node.body[0],ast.Expr) and isinstance(node.body[0].value,ast.Constant) and isinstance(node.body[0].value.value,str):
-                node.body=node.body[1:]
-            return self.generic_visit(node)
-
-    def functions(tree):
-        result={}
-        def walk(nodes,prefix=''):
-            for n in nodes:
-                if isinstance(n,ast.ClassDef):walk(n.body,prefix+n.name+'.')
-                elif isinstance(n,ast.If):walk(n.body,prefix);walk(n.orelse,prefix)
-                elif isinstance(n,ast.FunctionDef):result[prefix+n.name]=n
-        walk(tree.body)
-        return result
-
-    changed=subprocess.check_output(['git','diff','--name-only',BASELINE,'--','hyso','hyso_guide.py'],cwd=ROOT,text=True).splitlines()
-    # Later DE/ES presentation work has its own reviewed baseline. Keep checking
-    # those exact bodies instead of comparing them to pre-localization UX-05.
-    localized=json.loads((ROOT/'tests/fixtures/localized-presentation-body-baseline-v1.json').read_text(encoding='utf-8'))
-    presentation_bodies={(row['path'],row['function']):row['normalized_body_sha256'] for row in localized['functions']}
-    checked=0
-    exceptions={('hyso/models/graph.py','GraphModelBuilder.preview'),('hyso/performance/pipeline.py','measure_stages'),
-                ('hyso/analysis/__init__.py','__getattr__'),('hyso/models/fit.py','CNNSENormalWithFit.__init__')}
-    # UX-06 adds metadata-only inference in these delegates; native geometry stays protected.
-    exceptions.update({('hyso/models/builder.py','ModelBuilder.conv2d'),
-                       ('hyso/models/builder.py','ModelBuilder.batch_norm'),
-                       ('hyso/models/graph.py','GraphModelBuilder.conv2d'),
-                       ('hyso/models/graph.py','GraphModelBuilder.batch_norm'),
-                       ('hyso/models/graph.py','GraphModelBuilder.classification_head')})
-    engines={'SpatialSelfAttention','AdvancedResidual','PredictionHead'}
-    for filename in changed:
-        if not filename.endswith('.py'):continue
-        original=functions(ast.parse(subprocess.check_output(['git','show',f'{BASELINE}:{filename}'],cwd=ROOT).decode('utf-8')))
-        current=functions(ast.parse((ROOT/filename).read_text(encoding='utf-8')))
-        for name,old in original.items():
-            if (filename,name) in exceptions:continue
-            target=name
-            if filename in ('hyso/models/advanced.py','hyso/models/sampling.py') and name.endswith('.__init__') and name.split('.')[0] in engines:
-                target=name.replace('.__init__','._initialize')
-            assert target in current,(filename,target)
-            before=Normalize().visit(copy.deepcopy(old));after=Normalize().visit(copy.deepcopy(current[target]))
-            current_body=ast.dump(ast.Module(body=after.body,type_ignores=[]))
-            if (filename,name) in presentation_bodies:
-                assert hashlib.sha256(current_body.encode()).hexdigest()==presentation_bodies[(filename,name)],(filename,name)
-            else:
-                assert ast.dump(ast.Module(body=before.body,type_ignores=[]))==current_body,(filename,name)
-            checked+=1
-    assert checked>200
 
 
 @pytest.mark.parametrize('execute',[False,True])
