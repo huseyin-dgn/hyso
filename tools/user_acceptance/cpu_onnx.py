@@ -4,6 +4,14 @@ from tools.cuda_acceptance.native_identity import canonical_path, DLLIntegrityEr
 from tools.final_acceptance.common import file_hash
 
 
+def canonical_trace_hash(trace):
+    # Exactly runtime_result._hash / providers' canonical JSON encoding. Keep
+    # this Torch-free so runner validation never imports a GPU runtime.
+    from tools.cuda_acceptance.p25_evidence import native_hash
+    if type(trace) is not list:raise ValueError('ORT trace must be a canonical event list')
+    return native_hash(trace)
+
+
 def runtime_options(request):
     expected=request['cpu_ort_manifest']
     site=Path(expected['site'])
@@ -25,9 +33,15 @@ def verify_cpu_execution(result,identity,expected):
             a['evidence_assessment']['node_coverage']['status']=='complete' and
             r['completed_runs']==4 and r['session_providers']==['CPUExecutionProvider']):
         raise ValueError('CPU ORT requires actual complete CPU node execution, not exit zero/provider listing')
-    if not (r['trace'] and r['trace_sha256']==file_hash(r['trace']) and
+    if not (r['trace'] and r['trace_sha256']==canonical_trace_hash(r['trace']) and
             r['capture_context']['input_unchanged'] is True and len(r['capture_context']['run_intervals'])==4):
         raise ValueError('CPU ORT completed trace/input binding missing')
+    coverage=a['evidence_assessment']['node_coverage']
+    per_run=coverage['per_run_source_event_counts'];nodes=coverage['events_per_source_node']
+    if not (coverage['per_run_association']=='complete' and len(per_run)==4 and nodes and
+            all(count==4 for count in nodes.values()) and
+            all(set(run)==set(nodes) and all(count==1 for count in run.values()) for run in per_run)):
+        raise ValueError('CPU ORT requires every source node in each completed run')
     pid=controller['launcher_pid']
     if not (identity.get('pid')==pid and identity.get('admitted_pid')==str(pid) and
             identity.get('visible_uuid')=='-1' and

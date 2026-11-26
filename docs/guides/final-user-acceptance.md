@@ -4,7 +4,8 @@ This is a separate campaign, not a rerun of the 658 CPU / 36 CUDA acceptance.
 The adapter reuses the serial CUDA controller, admission, UUID/runtime/DLL pins,
 Windows Jobs, no-breakaway, memory limits, journal sealing and verified cleanup.
 All previous CUDA files (including failed attempts) and original campaign result
-files are hashed read-only in the new plan. No product files are changed.
+files are hashed read-only in the new plan. Product defect fixes require a
+scoped source-impact review; they never rewrite original campaign evidence.
 
 ```powershell
 .\run_final_acceptance.ps1 -UserAcceptance -PrepareOnly
@@ -70,3 +71,51 @@ Product performance scope stays frozen. full_cuda_acceptance=false. Deferred:
 P18 advanced hardware counters/Roofline, P23 CUDA saved activation/B4, new P31
 7200-second CUDA validation, and P33 advanced energy/thermal. Native failfast,
 intentional overflow/OOM, allocation stress and long-duration runs are excluded.
+
+The U02 CUDA budget separates host guard/byte-witness copies from the single
+resident GPU model. A meta-only forward at batch 1 / 32x32 sums every module
+output conservatively; model + input + this activation sum must fit the existing
+70% allocator allowance. The other 30% remains workspace headroom. The 3 GiB
+host estimate and 15% Torch allocator cap remain unchanged. A budget refusal is
+a resource limitation of this capture, not an unsupported architecture.
+
+U05 Graph training permits native FP32/autocast intermediate dtype promotion
+only while the matching CPU/CUDA autocast policy is active. Graph input dtype,
+node shape/device, and out-of-policy dtype rejection remain strict. Native AMP
+skip evidence is retained; every episode still needs a real applied update.
+
+U07 now requests both producer evidence and receiver structure on CUDA. The
+existing schema 2 stream hashes describe CPU batches before their CUDA transfer;
+schema 3 structure records the actual isolated CUDA forward receiver before and
+after inference. Execution source device is never relabeled CPU. Default schema
+1 behavior and CPU capture remain compatible. Structure requires producer
+evidence and nonempty evaluation. Named two-input Graph evaluation and the
+separate Graph receiver-runtime receipt remain CPU-only. Physical GPU identity
+comes from the campaign's admitted runtime, not from imported evidence alone.
+
+Benchmark finite validation now scans at most 65,536 logical elements per view.
+Non-contiguous views are narrowed without flattening or making a full CUDA
+contiguous copy. Host snapshots still retain the complete state required for
+read-only verification/rollback; their device-to-host transfers, descriptor
+hashing, bit comparisons and output finite checks use bounded chunks. Canonical
+weight hashes and bitwise NaN/signed-zero gradient preservation stay unchanged.
+U02's GPU admission estimate includes an additional 8 MiB validation scratch
+allowance, without increasing the allocator, Job or process limits.
+
+After the sealed U02 OOM, explicit revalidation still requires U02 in the retry
+set and verified cleanup. The reviewed recovery runs U07, U05, then U02 in
+separate owned workers. Each gets fresh pre-import Job admission, physical GPU
+and binary checks, a completed CUDA probe and fresh resource admission. Cached
+campaign ADMISSION is not substituted for these per-worker checks. The safety
+hold is not bypassed: any new OOM/ownership/cleanup failure stops immediately;
+ordinary budget refusal remains BLOCKED and never counts as a successful model.
+
+U07 precision quality permits a native FP32 final output under active FP16/BF16
+autocast, for example when a low-precision head result is added to a FP32 buffer.
+The result is not cast down to create evidence. Each batch still needs supported
+Conv2d/Linear observations with matching active autocast, FP32 weights and actual
+target-low outputs on the selected device. Output dtype alone cannot establish
+AMP execution. Mixed-output proof v3 records actual final dtypes independently
+from the autocast target. Uniform-output v2 and legacy readers remain compatible;
+CPU FP32/FP64 profiles remain strict. These module observations do not certify
+every functional operator, output dataflow dependency or hardware instruction.

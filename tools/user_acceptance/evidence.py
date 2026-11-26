@@ -26,7 +26,15 @@ def verify_feature(feature, data, runtime):
     if feature=='U01':forward(d)
     elif feature=='U02':
         need(len(d['rows'])==4 and not d['blocked'],'all four architectures measured')
-        for r in d['rows']:forward(r['result'])
+        need({r['model'] for r in d['rows']}=={'resnet18','vgg11','mobilenet_v3_small','efficientnet_b0'},'four distinct requested architectures')
+        for r in d['rows']:
+            forward(r['result'])
+            need(r['weights'] is None and r['parameters']==r['result']['parameters'] and
+                r['logical_bytes']>=r['parameters']*4 and r['estimated_gpu_working_bytes']<=r['allowance'] and
+                r['estimated_host_working_bytes']<=3*1024**3,'unaltered architecture and separate admitted host/GPU estimates')
+            need(r['validation_scratch_bytes']==8*1024**2 and r['estimated_gpu_working_bytes']==
+                r['logical_bytes']+3*32*32*4+r['activation_bytes']+r['validation_scratch_bytes'],
+                'bounded finite validation scratch included in admission')
     elif feature=='U03':
         need(len(d['rows'])==3,'three builder convolution paths')
         for r in d['rows']:forward(r['result']);need(r['result']['shape']==[2,2],'classification output')
@@ -40,6 +48,12 @@ def verify_feature(feature, data, runtime):
     elif feature=='U07':
         ev=d['evaluation'];need(ev['source']['device']=='cuda:0' and len(ev['raw']['predictions'])==8 and
             sum(ev['accounting']['batch_sizes'])==8,'eight actual labeled predictions')
+        need(ev['schema_version']==3 and ev['producer_evidence']['evaluated_stream']['sample_count']==8 and
+            ev['structure_binding']['pre_model_state_sha256']==ev['structure_binding']['post_model_state_sha256']==ev['source']['model_state_sha256'] and
+            ev['structure_binding']['pre_structure_sha256']==ev['structure_binding']['post_structure_sha256'],
+            'native CUDA evaluation producer and receiver structure binding')
+        need(all(t['device']=='cuda:0' for t in ev['structure_binding']['snapshot']['tensors']),
+            'structure belongs to the actual CUDA forward receiver')
         t=d['throughput'];need(t['actual']['completed_batches']==3 and t['actual']['pending_batches']==0 and
             t['measurements']['status']=='measured' and t['measurements']['value']>0,'completed throughput')
         native_verify('P28',d['precision'],runtime)
@@ -62,7 +76,12 @@ def verify_feature(feature, data, runtime):
         need(len(d['episodes'])==6,'three model families times FP32/AMP')
         for row in data['observations']['episodes']:
             if row['applied'] <= 0 or not row['weights_changed']: raise ValueError('No applied optimizer update')
-            if row['amp']: native_verify('P25', row['gradient_result'], runtime)
+            if row['amp']:
+                native_verify('P25', row['gradient_result'], runtime)
+                if row['model']=='graph':
+                    need(bool(row['node_observations']) and any(n['dtype']=='torch.float16' for n in row['node_observations']) and
+                        all(n['device']=='cuda:0' and n['dtype'] in ('torch.float32','torch.float16') for n in row['node_observations']),
+                        'actual Graph AMP shape/dtype/device observations')
             else:
                 source=row['gradient_result']['source_p19']
                 need(source['provenance']['runtime']['device']=='cuda:0' and source['actual_epochs']==1 and

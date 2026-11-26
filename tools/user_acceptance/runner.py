@@ -92,6 +92,9 @@ def snapshot():
               REPO / 'tests/test_user_acceptance_runner.py',
               REPO / 'docs/guides/final-user-acceptance.md']
     paths += [REPO/'tools/user_acceptance/u13-cleanup-review.json']
+    paths += [REPO/'tests/test_user_acceptance_four_fixes.py',REPO/'tools/user_acceptance/four-failures-review.json']
+    paths += [REPO/'tests/test_benchmark_bounded_validation.py',REPO/'tools/user_acceptance/benchmark-memory-review.json']
+    paths += [REPO/'tests/test_precision_mixed_output.py',REPO/'tools/user_acceptance/u07-precision-review.json']
     values.update({p.relative_to(REPO).as_posix(): engine.file_hash(p) for p in paths if p.is_file()})
     return values
 
@@ -150,7 +153,8 @@ def prepare():
         cp['history'].append(dict(reason='USER_SCOPE_SOURCE_TRANSITION', results=cp['results'], cpu_results=cp.get('cpu_results', {})))
         # No implicit rerun; exact Revalidate is required even after preparation.
         for table in ('results', 'cpu_results'):
-            cp[table] = {n: dict(r, source_valid=False) if not review or n not in review['retained_cpu_pass'] else r
+            retained=[] if not review else review['retained_cpu_pass']+review.get('retained_gpu_pass',[])
+            cp[table] = {n: dict(r, source_valid=n in retained)
                          for n, r in cp.get(table, {}).items()}
         if cp.get('cpu_results'):cp['results']['CPU_REGRESSIONS']=engine.cpu_summary(cp,plan)
     cp['plan_sha256'] = engine.digest(plan)
@@ -171,9 +175,25 @@ def request_for(folder, work, group, plan, inventory=None):
     return request
 
 
+def gpu_group_order(plan,checkpoint):
+    review=plan.get('source_impact_review',{})
+    if (review.get('kind')=='BOUNDED_BENCHMARK_FINITE_VALIDATION' and review.get('verified_oom_cleanup') is True and
+            review.get('fresh_worker_admission_required') is True and checkpoint.get('safety_hold',{}).get('features')==['U02']):
+        return ['01-admission','03-sweeps','05-training','02-inference','04-profiling','06-new-features','07-deployment']
+    return list(GROUPS)
+
+
 def configure():
     engine.ROOT = ROOT
     engine.FEATURES = GROUPS
+    prepared=engine.read_json(ROOT/'plan.json',{})
+    checkpoint=engine.read_json(ROOT/'checkpoint.json',{})
+    if gpu_group_order(prepared,checkpoint)!=list(GROUPS):
+        # All groups still get their own pre-import Job admission, UUID/binary
+        # checks and completed CUDA probe. Exact U02 retry remains mandatory.
+        # Run independent controls first; any new OOM still stops immediately.
+        order=gpu_group_order(prepared,checkpoint)
+        engine.FEATURES={g:GROUPS[g] for g in order}
     engine.snapshot = snapshot
     engine.prepare = prepare
     engine.request_for = request_for

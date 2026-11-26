@@ -1,0 +1,45 @@
+{
+  "baseline_plan_sha256": "34083a28e5465e2b6f631e5759162ef0b3fa8c4d13d502aee043c7ca57605676",
+  "oom_attempt": "a1a33631f21c4f4383c64733ba806650",
+  "files": {
+    "docs/guides/final-user-acceptance.md": {
+      "before": "2cbf69f76d93fcec1e8665cae0ae832ef9fa8df12ce3b47510d2a1118c668781",
+      "after": "dad9f544c36c0ff8f45024928569a7f9fafec638497654a7aa91ec8e9d6e32c0"
+    },
+    "hyso/benchmark/runner.py": {
+      "before": "adf2590f81f05ee3cded310c7fd848959ff0a89ad8ab415de5724eb1f7a7f9a9",
+      "after": "909a4ca3c7d80453459065c16fc861d966de5534a4fb22a6c79ff0edba4bde04"
+    },
+    "tests/test_benchmark_bounded_validation.py": {
+      "before": null,
+      "after": "91a5410834f3e0868dfd2370c82f30275bb3560c2ae05b04dcd4ea68439fe7ab"
+    },
+    "tools/user_acceptance/evidence.py": {
+      "before": "d4eb4a00bd2665030f91798acd601638f409485c9ad8d6a9eb10813807d0e5af",
+      "after": "2f8acfbb2c81d0e3313bc8b26516c384c3ce77009e1287270801901db05cb4bf"
+    },
+    "tools/user_acceptance/recovery_review.py": {
+      "before": "8fa355d49f702394abaff0d53465753596d9a3434e0e2b9b8b68ba0508089c2c",
+      "after": "f1f326c0ec061d31cd9e4a90bc0e8bd5ca8664b32f23dd71d11357cc36fb7556"
+    },
+    "tools/user_acceptance/runner.py": {
+      "before": "611585a556feaef2a5f5621a76f5d08eaf88e92aeef4274922b5688dfd8bf364",
+      "after": "da199a0aaf23cefe8ade7bc3288c6c2c8dd150d4c369878c6b2c7db1d7cef8dd"
+    },
+    "tools/user_acceptance/scenarios.py": {
+      "before": "3bd05ab03af4a018642893cee701faa528df47230cdd21cd8638a85916e66a01",
+      "after": "8e3f24ecb46cd68596ee53e96e6476b6c8e9f0e315a41d0dd34783558f0d58ef"
+    }
+  },
+  "targets": [
+    "U02",
+    "U05",
+    "U07"
+  ],
+  "retain_CPU_PASS": 14,
+  "retain_GPU_PASS": 9,
+  "impact": "Complete finite validation and exact canonical bit/hash semantics preserved; bounded validation scratch and host transfers only. No forward/timing protocol change.",
+  "recovery": "Verified original OOM cleanup; retain safety hold and exact retry; fresh admission per separate worker; run U07/U05 before U02.",
+  "limits": "Allocator 0.15, 3 GiB process, 6 GiB Job and all other limits unchanged",
+  "full_cuda_acceptance": false
+}

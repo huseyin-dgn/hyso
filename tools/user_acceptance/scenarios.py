@@ -133,17 +133,31 @@ def U02(j):
         # Estimate registered storage WITHOUT allocating real model tensors.
         with torch.device('meta'): meta = constructor(weights=None)
         logical = sum(t.numel()*t.element_size() for t in list(meta.parameters())+list(meta.buffers()))
-        del meta
+        parameters=sum(t.numel() for t in meta.parameters())
         allowance = 3*1024**3
+        working=logical*4;gpu_working=None;activation_bytes=None
+        validation_scratch=0
         if j.native:
-            allowance = min(allowance, int(j.native.runtime['total_device_bytes'] * .15 * .70))
-        if logical * 4 > allowance:
+            from hyso.benchmark.runner import _FINITE_VALIDATION_SCRATCH_BYTES
+            validation_scratch=_FINITE_VALIDATION_SCRATCH_BYTES
+            # Benchmark's guard and byte witnesses copy model tensors to CPU.
+            # They are host costs, not four simultaneous GPU model replicas.
+            activation_bytes=meta_activation_bytes(meta)
+            gpu_working=logical+3*32*32*4+activation_bytes+validation_scratch
+            allowance=int(j.native.runtime['total_device_bytes'] * .15 * .70)
+        del meta
+        if working>3*1024**3 or (gpu_working is not None and gpu_working>allowance):
             blocked.append(dict(model=name, status='BLOCKED', logical_bytes=logical,
-                estimated_working_bytes=logical*4, allowance=allowance, reason='pre-allocation budget'))
+                parameters=parameters,estimated_host_working_bytes=working,estimated_working_bytes=gpu_working or working,
+                activation_bytes=activation_bytes,validation_scratch_bytes=validation_scratch,
+                allowance=allowance,reason='scope resource budget; architecture support unchanged'))
             j.raw('architectures', dict(rows=rows, blocked=blocked)); continue
         m = constructor(weights=None).eval().to(j.device)
         x = torch.linspace(0,1,3*32*32, device=j.device).reshape(1,3,32,32)
-        try: rows.append(dict(model=name, weights=None, result=measured_forward(j,m,x,name)))
+        try: rows.append(dict(model=name, weights=None, logical_bytes=logical,parameters=parameters,
+            estimated_host_working_bytes=working,estimated_gpu_working_bytes=gpu_working,
+            activation_bytes=activation_bytes,validation_scratch_bytes=validation_scratch,
+            allowance=allowance,result=measured_forward(j,m,x,name)))
         except (AssertionError, ValueError, TypeError) as exc:
             rows.append(dict(model=name, status='FAIL', reason=str(exc)))
         del m, x
@@ -152,6 +166,26 @@ def U02(j):
     if blocked: raise MissingEvidence('architectures budget-blocked; see architectures-raw.json')
     assert len(rows) == 4
     return dict(rows=rows, blocked=blocked)
+
+
+def meta_activation_bytes(model):
+    """Allocation-free sum of ALL module outputs, a conservative live-tensor bound.
+
+    Batch one, 32x32 and eval mode match the actual architecture journey. The
+    existing 30% allocator headroom remains reserved for backend workspaces.
+    """
+    total=[0];handles=[]
+    def output_bytes(module,args,output):
+        if type(output) is not torch.Tensor or output.device.type!='meta':
+            raise MissingEvidence('architecture activation estimate requires ordinary meta Tensor outputs')
+        total[0]+=output.numel()*output.element_size()
+    model.eval()
+    try:
+        for module in model.modules():handles.append(module.register_forward_hook(output_bytes))
+        with torch.no_grad():model(torch.empty(1,3,32,32,device='meta'))
+    finally:
+        for handle in handles:handle.remove()
+    return total[0]
 
 
 def make_builder(kind='conv2d'):
@@ -224,9 +258,21 @@ def U05(j):
             opt=torch.optim.SGD(m.parameters(),lr=.03,momentum=.8)
             trainer=hyso.Trainer(m,optimizer=opt,loss_fn=nn.CrossEntropyLoss(),device=j.device,amp=amp)
             before=witness(m)['state']
-            d=perf.measure_gradient_diagnostics(trainer,loader(),epochs=1).to_dict()
+            node_observations=[];handles=[]
+            if name=='graph' and amp:
+                for node_id,node in m.graph.nodes.items():
+                    def capture(module,args,output,node_id=node_id):
+                        if len(node_observations)>=64:raise SafetyViolation('bounded Graph observation limit')
+                        node_observations.append(dict(node=node_id,shape=list(output.shape),dtype=str(output.dtype),device=str(output.device)))
+                    handles.append(node.register_forward_hook(capture))
+            try:d=perf.measure_gradient_diagnostics(trainer,loader(),epochs=1).to_dict()
+            except hyso.ModelConfigError as exc:
+                j.raw('training-contract-error',dict(model=name,amp=amp,device=j.device,error=exc.to_dict(),nodes=node_observations))
+                raise
+            finally:
+                for handle in handles:handle.remove()
             changed=before!=witness(m)['state']; applied=d['summary']['applied']
-            row=dict(model=name,amp=amp,applied=applied,weights_changed=changed,gradient_result=d)
+            row=dict(model=name,amp=amp,applied=applied,weights_changed=changed,gradient_result=d,node_observations=node_observations)
             episodes.append(row); j.raw('training-episodes',dict(episodes=episodes))
             assert applied>0 and changed and d['status']=='measured'
             source=d['source_p19']; history=trainer.history
@@ -289,7 +335,8 @@ def cohort():
 
 def U07(j):
     m=ExternalCNN();before=witness(m)
-    ev=hyso.evaluate_classification(m,loader(),class_names=['a','b'],split='user-holdout',device=j.device,capture_evidence=True).to_dict()
+    ev=hyso.evaluate_classification(m,loader(),class_names=['a','b'],split='user-holdout',device=j.device,
+        capture_evidence=True,capture_structure=bool(j.native)).to_dict()
     resident=copy.deepcopy(m).to(j.device);x=data()[0][:2].to(j.device)
     bench=benchmark(resident,x,j.device)
     throughput=perf.measure_throughput(resident,x,protocol=perf.ThroughputProtocol(device=j.device,

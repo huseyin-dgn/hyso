@@ -28,6 +28,59 @@ except importlib.metadata.PackageNotFoundError:
 
 _RUN_LOCK = threading.Lock()
 
+# Bound isfinite's floating/boolean intermediates, reduction scratch and allocator
+# rounding independently of the model tensor size (including FP64 validation).
+_FINITE_CHUNK_ELEMENTS = 65536
+_FINITE_VALIDATION_SCRATCH_BYTES = 8 * 1024**2
+
+
+def _finite_chunks(value, target=None):
+    """Cover logical tensor elements with views; never flatten a strided tensor."""
+    value=value.detach()
+    if value.is_contiguous() and (target is None or target.is_contiguous()):
+        flat=value.view(-1)
+        dest=None if target is None else target.view(-1)
+        for start in range(0,flat.numel(),_FINITE_CHUNK_ELEMENTS):
+            count=min(_FINITE_CHUNK_ELEMENTS,flat.numel()-start)
+            part=flat.narrow(0,start,count)
+            yield part if dest is None else (part,dest.narrow(0,start,count))
+        return
+    pending=[(value,target)]
+    while pending:
+        part,dest=pending.pop()
+        if part.numel()<=_FINITE_CHUNK_ELEMENTS:
+            yield part if dest is None else (part,dest)
+            continue
+        # First non-singleton dimension keeps chunk concatenation in canonical
+        # logical row-major order, including transposed and expanded views.
+        axis=next(i for i,size in enumerate(part.shape) if size>1)
+        half=part.shape[axis]//2
+        for start,count in ((half,part.shape[axis]-half),(0,half)):
+            pending.append((part.narrow(axis,start,count),None if dest is None else dest.narrow(axis,start,count)))
+
+
+def _host_copy(value):
+    """Snapshot registered values without an implicit full CUDA contiguous copy."""
+    value=value.detach()
+    target=torch.empty_like(value,device='cpu',memory_format=torch.preserve_format)
+    with torch.no_grad():
+        for source,dest in _finite_chunks(value,target):dest.copy_(source)
+    return target
+
+
+def _all_finite(value, *, host=False):
+    """Complete finite validation with bounded scratch, outside measured timing.
+
+    Output validation stays on CPU as before, but copies only a bounded view at
+    a time. Model/input checks use bounded native-device masks. No whole-tensor
+    contiguous conversion is performed for transposed/sliced/expanded tensors.
+    """
+    with torch.no_grad():
+        for chunk in _finite_chunks(value):
+            if not torch.isfinite(_host_copy(chunk) if host and chunk.device.type!='cpu' else chunk).all().item():
+                return False
+    return True
+
 
 class StateMutationError(RuntimeError):
     """Unsupported forward mutation; no successful benchmark result is available."""
@@ -38,7 +91,8 @@ def _type(value):
 
 
 def _bits(value):
-    return value.detach().cpu().contiguous().reshape(-1).view(torch.uint8)
+    value=value.detach() if value.device.type=='cpu' else _host_copy(value)
+    return value.contiguous().reshape(-1).view(torch.uint8)
 
 
 def _signature(value):
@@ -47,7 +101,8 @@ def _signature(value):
 
 
 def _same_bits(value, saved):
-    return value.shape == saved.shape and value.dtype == saved.dtype and torch.equal(_bits(value), _bits(saved))
+    if value.shape!=saved.shape or value.dtype!=saved.dtype:return False
+    return all(torch.equal(_bits(a),_bits(b)) for a,b in _finite_chunks(value,saved))
 
 
 def _shape(value):
@@ -68,7 +123,7 @@ def _tensor(value, dtype, *, parameter=False, input_tensor=False, device=torch.d
             raise ValueError("floating model/input dtype must match precision")
     elif parameter or input_tensor or value.is_complex():
         raise ValueError("parameters and inputs must be floating; integer/bool buffers are supported")
-    if not torch.isfinite(value).all():
+    if not _all_finite(value):
         raise ValueError("nonfinite model/input tensor")
     if input_tensor and (value.requires_grad or not value.is_contiguous()):
         raise ValueError("example_input must be contiguous and no-grad")
@@ -126,17 +181,21 @@ class _Snapshot:
                          for name in ("_parameters", "_buffers", "_modules")}, set(m._non_persistent_buffers_set))
                         for _, m in modules]
         unique = {id(t): t for _, _, t in entries}
-        self.tensors = [(t, _signature(t), t.detach().cpu().clone(), t._version) for t in unique.values()]
+        self.tensors = [(t, _signature(t), _host_copy(t), t._version) for t in unique.values()]
         parameters = {id(t): t for kind, _, t in entries if kind == "parameter"}
-        self.gradients = [(p, p.grad, None if p.grad is None else p.grad.detach().cpu().clone(),
+        self.gradients = [(p, p.grad, None if p.grad is None else _host_copy(p.grad),
                            None if p.grad is None else _signature(p.grad)) for p in parameters.values()]
         self.inputs = inputs
-        self.input_signature, self.input_copy, self.input_version = _signature(inputs), inputs.detach().cpu().clone(), inputs._version
+        self.input_signature, self.input_copy, self.input_version = _signature(inputs), _host_copy(inputs), inputs._version
 
     def check(self, *, full=False):
         try:
             self._check(full=full)
         except StateMutationError:
+            raise
+        except torch.OutOfMemoryError:
+            # Preserve the original resource failure for the owned worker's
+            # critical-error/safety-stop policy; never turn OOM into an assertion.
             raise
         except Exception as error:
             raise StateMutationError("forward made registered state uninspectable") from error
@@ -200,7 +259,8 @@ def _descriptor(modules, entries):
                     object_alias=object_alias, storage_alias=storage_alias, storage_offset=tensor.storage_offset())
         tensors.append(item)
         digest.update(str((kind, name, tuple(tensor.shape), str(tensor.dtype))).encode("utf-8"))
-        digest.update(_bits(tensor).numpy().tobytes())
+        for chunk in _finite_chunks(tensor):
+            digest.update(_bits(chunk).numpy().tobytes())
     module_descriptors = []
     def native_plain(value):
         return [native_plain(v) for v in value] if type(value) in (tuple, list) else _plain(value)
@@ -235,7 +295,7 @@ def _counts(entries):
 def _output(value, batch, expected=None, device=torch.device("cpu")):
     if (type(value) is not torch.Tensor or value.device != device or value.layout != torch.strided
             or not value.is_floating_point() or value.ndim == 0 or value.shape[0] != batch
-            or value.numel() == 0 or not torch.isfinite(value.detach().cpu()).all()):
+            or value.numel() == 0 or not _all_finite(value,host=True)):
         raise ValueError("forward must return one finite dense floating Tensor on selected device with matching batch")
     descriptor = dict(shape=list(value.shape), dtype=str(value.dtype), device=str(value.device))
     if expected is not None and descriptor != expected:

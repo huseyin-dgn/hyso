@@ -97,10 +97,10 @@ def _batch_input_hashes(data,sizes):
 
 
 def _autocast_state(device):
-    try:return torch.is_autocast_enabled(device),str(torch.get_autocast_dtype(device))
-    except (TypeError,AttributeError):
-        return ((torch.is_autocast_enabled(),str(torch.get_autocast_gpu_dtype())) if device=='cuda'
-                else (torch.is_autocast_cpu_enabled(),str(torch.get_autocast_cpu_dtype())))
+    # Share the active native dtype contract used by Graph AMP execution.
+    from .models.graph_ops import active_autocast_dtype
+    dtype=active_autocast_dtype(torch.device(device))
+    return dtype is not None,str(dtype) if dtype is not None else None
 
 
 class _CohortDataset(Dataset):
@@ -367,34 +367,57 @@ class _PrecisionAdapter(nn.Module):
                     weight_dtype=str(module.weight.dtype),output_dtype=str(out.dtype),device=str(out.device),
                     autocast_enabled=active,autocast_dtype=dtype if active else None))
             return observe
-        if collector is not None:
+        if enabled or collector is not None:
             for name,module in self.model.named_modules():
                 if isinstance(module,(nn.Conv2d,nn.Linear)):handles.append(module.register_forward_hook(hook(name)))
         try:
             with torch.autocast(device.type,dtype=low,enabled=enabled):
+                active,actual_low=_autocast_state(device.type)
+                if active!=enabled or (enabled and actual_low!=str(low)):
+                    raise ValueError('precision autocast policy not active')
                 out=self.model(x.double() if self.policy=='fp64' else x.float())
+                after,after_low=_autocast_state(device.type)
+                if after!=active or after_low!=actual_low:raise ValueError('precision autocast context changed')
         finally:
             for handle in handles:handle.remove()
-        if out.dtype!=expected:raise ValueError('precision fallback forbidden')
-        if collector is not None:
-            if enabled and not records:raise NotImplementedError('no supported precision operator execution observed')
-            master=torch.float64 if self.policy=='fp64' else torch.float32
-            if any(r['output_dtype']!=str(expected) or r['weight_dtype']!=str(master)
+        allowed=(expected,torch.float32) if enabled else (expected,)
+        if not isinstance(out,torch.Tensor) or out.dtype not in allowed:
+            raise ValueError('precision fallback forbidden: policy='+self.policy+' expected='+str(allowed)+' actual='+str(getattr(out,'dtype',type(out))))
+        if out.device!=device:raise ValueError('invalid native precision output device')
+        if enabled and not records:
+            if out.dtype==torch.float32:
+                raise ValueError('precision fallback forbidden: no supported precision operator execution observed')
+            raise NotImplementedError('no supported precision operator execution observed')
+        master=torch.float64 if self.policy=='fp64' else torch.float32
+        if any(r['output_dtype']!=str(expected) or r['weight_dtype']!=str(master)
+                   or r['input_dtype'] not in ((str(master),str(low)) if enabled else (str(master),))
                    or r['device']!=str(device) or r['autocast_enabled']!=enabled
                    or r['autocast_dtype']!=(str(low) if enabled else None) for r in records):
-                raise ValueError('precision operator fallback forbidden')
-            if out.device!=device or not torch.isfinite(out).all():raise ValueError('invalid native precision output')
+            raise ValueError('precision operator fallback forbidden')
+        if not torch.isfinite(out).all():raise ValueError('invalid native precision output')
+        if collector is not None:
             raw=x.detach().cpu().contiguous().numpy().tobytes()
             collector['input_hash'].update(raw)
             collector['batches'].append(dict(input_shape=list(x.shape),input_dtype=str(x.dtype),device=str(device),
                 input_sha256=hashlib.sha256(raw).hexdigest(),
                 output_shape=list(out.shape),native_output_dtype=str(out.dtype),finite=True,
-                autocast_enabled=enabled,autocast_dtype=str(low) if enabled else None,
+                autocast_enabled=active,autocast_dtype=actual_low if active else None,
                 operators=records,completion='output materialized by evaluation'))
         return out.float() if enabled else out
 
 
 _PRECISION_EXECUTION=ContextVar('hyso_precision_quality_execution',default=None)
+
+
+def _precision_execution_summary(policy,batches,rows=None):
+    """Legacy uniform dtype evidence, or version-3 actual mixed-output evidence."""
+    dtype={'fp32':'torch.float32','fp64':'torch.float64','bf16':'torch.bfloat16','amp_fp16':'torch.float16','int8_dynamic':'torch.float32'}[policy]
+    result=dict(batches=batches,native_output_dtype=dtype,
+        operators=['quantized::linear_dynamic'] if policy=='int8_dynamic' else [])
+    if rows is not None:
+        dtypes=[row['native_output_dtype'] for row in rows]
+        result.update(native_output_dtype=dtypes[0] if len(set(dtypes))==1 else None,native_output_dtypes=dtypes)
+    return result
 
 
 def _precision(model,policy,device='cpu'):
@@ -413,17 +436,19 @@ def _precision(model,policy,device='cpu'):
 
 def _precision_evaluation(adapter,proof,cohort,*,batch_size=16,device='cpu',strict=False):
     records=dict(batches=[],input_hash=hashlib.sha256())
-    token=_PRECISION_EXECUTION.set(records if strict and proof['policy']!='int8_dynamic' else None)
+    collect=(strict or proof['policy'] in ('amp_fp16','bf16')) and proof['policy']!='int8_dynamic'
+    token=_PRECISION_EXECUTION.set(records if collect else None)
     try:result=_evaluate(adapter,cohort,batch_size=batch_size,device=device).to_dict()
     finally:_PRECISION_EXECUTION.reset(token)
     # Success means every isolated inference batch passed the forward guards.
-    proof['verified_execution']=dict(batches=len(result['accounting']['batch_sizes']),
-        native_output_dtype={'fp32':'torch.float32','fp64':'torch.float64','bf16':'torch.bfloat16','amp_fp16':'torch.float16','int8_dynamic':'torch.float32'}[proof['policy']],
-        operators=['quantized::linear_dynamic'] if proof['policy']=='int8_dynamic' else [])
-    if strict and proof['policy']!='int8_dynamic':
+    proof['verified_execution']=_precision_execution_summary(proof['policy'],len(result['accounting']['batch_sizes']))
+    if collect:
         if len(records['batches'])!=len(result['accounting']['batch_sizes']):raise ValueError('missing precision batch proof')
         proof.update(execution_version=2,device=result['source']['device'],batch_observations=records['batches'],
             observed_input_stream_sha256=records['input_hash'].hexdigest())
+        if proof['policy'] in ('bf16','amp_fp16') and any(row['native_output_dtype']!=proof['verified_execution']['native_output_dtype'] for row in records['batches']):
+            proof['execution_version']=3
+            proof['verified_execution']=_precision_execution_summary(proof['policy'],len(records['batches']),records['batches'])
     return result
 
 
@@ -500,6 +525,13 @@ def evaluate_precision_quality(model: '_typing.Any',cohort: '_typing.Any', *, ca
     CPU: FP32/FP64/BF16/dynamic Linear INT8. CUDA opt-in: FP32/AMP FP16/BF16.
     Large cohorts stream lossless encoded slabs; metrics retain all labels/logits.
     No performance benchmark, training, fallback or statistical claim is made.
+    Autocast may legitimately return FP32 after FP32 arithmetic. Such results
+    use execution proof v3 with actual per-batch output dtypes, while observed
+    Conv2d/Linear calls must still execute in the requested low dtype with FP32
+    weights and active matching autocast. Output dtype alone is not AMP proof.
+    Uniform-output v2 and legacy retained readers remain compatible. Functional
+    or opaque operators without supported module observations remain unsupported;
+    these observations do not certify every operator or CUDA kernel instruction.
 
     Args:
         model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
@@ -768,28 +800,36 @@ def _precision_binding(evaluation,proof):
     if (proof['policy'] not in ('fp32','fp64','bf16','amp_fp16','int8_dynamic')
             or evaluation['source']['model_state_sha256']!=proof['adapter_state_sha256']):raise ValueError('precision/source mismatch')
     recipe=proof['p08_recipe']
-    expected=dict(batches=len(evaluation['accounting']['batch_sizes']),
-        native_output_dtype={'fp32':'torch.float32','fp64':'torch.float64','bf16':'torch.bfloat16','amp_fp16':'torch.float16','int8_dynamic':'torch.float32'}[proof['policy']],
-        operators=['quantized::linear_dynamic'] if proof['policy']=='int8_dynamic' else [])
+    version=proof.get('execution_version')
+    if version is not None and (type(version) is not int or version not in (2,3)):
+        raise ValueError('unsupported precision execution version')
+    expected=_precision_execution_summary(proof['policy'],len(evaluation['accounting']['batch_sizes']))
+    target=expected['native_output_dtype']
+    low=proof['policy'] in ('bf16','amp_fp16')
+    if version==3:
+        if not low:raise ValueError('mixed precision proof requires autocast policy')
+        expected=_precision_execution_summary(proof['policy'],expected['batches'],proof['batch_observations'])
     if _hash(proof['verified_execution'])!=_hash(expected):raise ValueError('missing/mismatched precision execution evidence')
     if proof['policy']=='int8_dynamic':
         if (recipe['quantization_recipe']!='dynamic_qint8_Linear' or recipe['execution_proof']['weight_dtype']!='torch.qint8'
                 or proof['execution_guard']!='per_batch_quantized::linear_dynamic'):raise ValueError('missing quantized execution guard')
     elif proof['execution_guard']!='per_batch_dtype':raise ValueError('missing dtype execution guard')
-    if proof.get('execution_version')==2:
-        rows=proof['batch_observations'];device=proof['device'];low=proof['policy'] in ('bf16','amp_fp16')
+    if version in (2,3):
+        rows=proof['batch_observations'];device=proof['device']
         if device!=evaluation['source']['device'] or len(rows)!=expected['batches']:raise ValueError('precision device/batch mismatch')
         for row,n in zip(rows,evaluation['accounting']['batch_sizes']):
             shape=row['output_shape'];classes=len(evaluation['configuration']['class_names'])
             valid_shape=(shape in ([n],[n,1]) if evaluation['configuration']['task']=='binary' else shape==[n,classes])
-            if (row['input_shape'][0]!=n or not valid_shape or row['native_output_dtype']!=expected['native_output_dtype']
-                    or row['device']!=device or row['finite'] is not True or row['autocast_enabled']!=low
-                    or row['autocast_dtype']!=(expected['native_output_dtype'] if low else None)
+            allowed=(target,'torch.float32') if version==3 else (target,)
+            if (row['input_shape'][0]!=n or not valid_shape or row['native_output_dtype'] not in allowed
+                    or row['device']!=device or row['finite'] is not True or row['autocast_enabled'] is not low
+                    or row['autocast_dtype']!=(target if low else None)
                     or (low and not row['operators'])):raise ValueError('invalid precision batch proof')
             master='torch.float64' if proof['policy']=='fp64' else 'torch.float32'
             if any(op['operator'] not in ('Conv2d','Linear') or op['device']!=device
-                   or op['output_dtype']!=expected['native_output_dtype'] or op['weight_dtype']!=master
-                   or op['autocast_enabled']!=low or op['autocast_dtype']!=(expected['native_output_dtype'] if low else None)
+                   or op['output_dtype']!=target or op['weight_dtype']!=master
+                   or op['input_dtype'] not in ((master,target) if low else (master,))
+                   or op['autocast_enabled'] is not low or op['autocast_dtype']!=(target if low else None)
                    for op in row['operators']):raise ValueError('invalid precision operator proof')
 
 

@@ -147,26 +147,27 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(ast.unparse(calls[0].args[2]),"request['campaign_id']")
 
     def test_cpu_ort_execution_requires_real_events_runtime_and_trace(self):
-        from tools.user_acceptance.cpu_onnx import verify_cpu_execution
+        from tools.user_acceptance.cpu_onnx import verify_cpu_execution,canonical_trace_hash
         from tools.cuda_acceptance.native_identity import canonical_path,DLLIntegrityError
         with tempfile.TemporaryDirectory() as directory:
-            root=Path(directory);trace=root/'trace.json';trace.write_text('[]')
+            root=Path(directory);trace=[{'name':'CPU node Ω','dur':2}]
             extension=root/'onnxruntime_pybind11_state.pyd';extension.write_bytes(b'offline fixture')
             expected=dict(site=str(root),version='test',allowed_binaries={canonical_path(extension):user.engine.file_hash(extension)})
             identity=dict(pid=42,admitted_pid='42',visible_uuid='-1',source=str(root/'onnxruntime/__init__.py'),
                 version='test',loaded_binaries=expected['allowed_binaries'])
             result=dict(analysis=dict(status='expected_execution_observed',events=[{'provider':'CPUExecutionProvider'}],
-                fallback_detected=False,uncovered_source_nodes=[],evidence_assessment={'node_coverage':{'status':'complete'}}),
+                fallback_detected=False,uncovered_source_nodes=[],evidence_assessment={'node_coverage':dict(status='complete',
+                    per_run_association='complete',events_per_source_node={'node':4},per_run_source_event_counts=[{'node':1} for _ in range(4)])}),
                 evidence=dict(controller=dict(exit_code=0,reason=None,cleanup={'active_processes':0},kill_on_close=True,launcher_pid=42),
-                    report=dict(completed_runs=4,session_providers=['CPUExecutionProvider'],trace=str(trace),
-                        trace_sha256=user.engine.file_hash(trace),runtime={'version':'test'},capture_context={'input_unchanged':True,'run_intervals':[1]*4})))
+                    report=dict(completed_runs=4,session_providers=['CPUExecutionProvider'],trace=trace,
+                        trace_sha256=canonical_trace_hash(trace),runtime={'version':'test'},capture_context={'input_unchanged':True,'run_intervals':[1]*4})))
             verify_cpu_execution(result,identity,expected)
             for changes in ({'events':[]},{'status':'unavailable'},{'fallback_detected':True},{'uncovered_source_nodes':['node']}):
                 bad=copy.deepcopy(result);bad['analysis'].update(changes)
                 with self.assertRaises(ValueError):verify_cpu_execution(bad,identity,expected)
             for changes in ({'version':'wrong'},{'pid':43},{'loaded_binaries':{}},{'visible_uuid':'GPU-fake'}):
                 with self.assertRaises(DLLIntegrityError):verify_cpu_execution(result,dict(identity,**changes),expected)
-            trace.write_text('changed')
+            trace[0]['dur']=3
             with self.assertRaises(ValueError):verify_cpu_execution(result,identity,expected)
 
     def test_cpu_ort_uses_prepared_runtime_and_rejects_changed_binary(self):
@@ -180,6 +181,15 @@ class RunnerTests(unittest.TestCase):
             self.assertEqual(options,dict(runtime_search_path=str(root)))
             binary.write_bytes(b'changed')
             with self.assertRaises(DLLIntegrityError):runtime_options({'cpu_ort_manifest':expected})
+
+    def test_git_tracking_change_requires_identical_sealed_bytes(self):
+        from tools.user_acceptance.recovery_review import tracking_only_changes
+        old={'user_files':{'known.py':'hash'},'source_sha256':{'known.py':'hash'}}
+        new={'user_files':{},'source_sha256':{'known.py':'hash'}}
+        self.assertEqual(tracking_only_changes(old,new,{'known.py'},{'known.py'}),{'known.py'})
+        self.assertEqual(tracking_only_changes(old,new,{'known.py'},set()),set())
+        new['source_sha256']['known.py']='changed'
+        self.assertEqual(tracking_only_changes(old,new,{'known.py'},{'known.py'}),set())
 
 
 if __name__=='__main__':unittest.main()

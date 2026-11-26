@@ -390,10 +390,15 @@ class GraphModel(nn.Module):
             try:
                 output=self.nodes['node_'+key](*args)
                 expected=self._report['nodes'][key]['output_shape'][1:]
+                target=graph_ops.active_autocast_dtype(self._contract.device)
+                allowed=(self._contract.dtype,)
+                if self._contract.dtype==torch.float32 and target is not None:allowed+=(target,)
                 if (not isinstance(output,torch.Tensor) or list(output.shape)!=[batch,*expected]
-                        or output.dtype!=self._contract.dtype or output.device!=self._contract.device):
-                    raise ModelConfigError('node output contract mismatch',code='GRAPH_SHAPE_ERROR',expected=[batch,*expected],
-                                           actual=list(output.shape) if isinstance(output,torch.Tensor) else type(output).__name__)
+                        or output.dtype not in allowed or output.device!=self._contract.device):
+                    raise ModelConfigError('node output contract mismatch',code='GRAPH_SHAPE_ERROR',
+                        expected=dict(shape=[batch,*expected],dtypes=[str(d) for d in allowed],device=str(self._contract.device)),
+                        actual=dict(shape=list(output.shape),dtype=str(output.dtype),device=str(output.device))
+                        if isinstance(output,torch.Tensor) else type(output).__name__)
             except (ValueError,RuntimeError) as exc:
                 if isinstance(exc,ModelConfigError):
                     exc.layer_id=key

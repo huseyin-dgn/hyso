@@ -7,6 +7,18 @@ from torch import nn
 NAMES = frozenset(('add','concat','multiply','weighted_sum'))
 
 
+def active_autocast_dtype(device):
+    """Only the active native autocast policy can admit mixed FP32/AMP tensors."""
+    if device.type not in ('cpu','cuda'):return None
+    try:enabled=torch.is_autocast_enabled(device.type)
+    except TypeError:
+        enabled=torch.is_autocast_enabled() if device.type=='cuda' else torch.is_autocast_cpu_enabled()
+    if not enabled:return None
+    getter=getattr(torch,'get_autocast_dtype',None)
+    target=getter(device.type) if getter else (torch.get_autocast_gpu_dtype() if device.type=='cuda' else torch.get_autocast_cpu_dtype())
+    return target if target in (torch.float16,torch.bfloat16) else None
+
+
 def parameters(name,params):
     from .registry import ModelConfigError,_plain
     p=_plain(params)
@@ -74,7 +86,10 @@ class Fusion(nn.Module):
         if any(not isinstance(x,torch.Tensor) or x.ndim not in (2,4) or min(x.shape)<1 or not x.is_floating_point() for x in inputs):
             raise ModelConfigError('fusion requires nonempty floating NC/NCHW',code='GRAPH_SHAPE_ERROR')
         fusion_shape(self.name,self.config,[tuple(x.shape[1:]) for x in inputs],ModelConfigError)
-        if any(x.shape[0]!=inputs[0].shape[0] or x.device!=inputs[0].device or x.dtype!=inputs[0].dtype for x in inputs):
+        mixed = len({x.dtype for x in inputs}) > 1
+        target = active_autocast_dtype(inputs[0].device)
+        promoted = target is not None and all(x.dtype in (torch.float32,target) for x in inputs)
+        if any(x.shape[0]!=inputs[0].shape[0] or x.device!=inputs[0].device for x in inputs) or (mixed and not promoted):
             raise ModelConfigError('fusion batch/device/dtype mismatch',code='GRAPH_SHAPE_ERROR')
         if self.name=='concat':return torch.cat(inputs,dim=self.config['axis'])
         result=inputs[0]*self.weights[0] if self.name=='weighted_sum' else inputs[0]

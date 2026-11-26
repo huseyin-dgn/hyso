@@ -1,0 +1,42 @@
+{
+  "baseline_plan_sha256": "9f8c1f4cbe03bdeec4f2ab8a3574098139d7d451bddb485d3ca63540be45d3aa",
+  "files": {
+    "docs/guides/final-user-acceptance.md": {
+      "before": "dad9f544c36c0ff8f45024928569a7f9fafec638497654a7aa91ec8e9d6e32c0",
+      "after": "46b972f14534093fcac75ee0567d20c46fa7bef13f4e0458985f1070d3e90434"
+    },
+    "hyso/quality.py": {
+      "before": "209959b8e21f7be6d872044863cc56e80340076512a93892ed159e3592e7c9c2",
+      "after": "7126b3b96eaab02617d30527cfec0967999fb17702dc452ec41736b7bcebf384"
+    },
+    "tests/test_precision_mixed_output.py": {
+      "before": null,
+      "after": "6397ddca65a3d04c20fd8a5b7d0f2d5702ee87ba8328afdfa10615bf567d2f37"
+    },
+    "tools/cuda_acceptance/feature_evidence.py": {
+      "before": "a35acecbce6a7cfb4faf0ae58aacfd8c8a02320ea8e007f84b273e8d4892ceb1",
+      "after": "5365433fcaac14f1393c619ccf3e0c347a9f7a204499f6ce814a482dbe4d25e5"
+    },
+    "tools/user_acceptance/recovery_review.py": {
+      "before": "f1f326c0ec061d31cd9e4a90bc0e8bd5ca8664b32f23dd71d11357cc36fb7556",
+      "after": "8ba0a92a40a9e04536d4d2e1eace12377ceef137c24fd2e640de643b31bdc42f"
+    },
+    "tools/user_acceptance/runner.py": {
+      "before": "da199a0aaf23cefe8ade7bc3288c6c2c8dd150d4c369878c6b2c7db1d7cef8dd",
+      "after": "60fc10ae9964ceb806671e7740439ff4249e83e3e0c4c8a063f7cdaf30b6c5f0"
+    }
+  },
+  "target": "U07",
+  "retained_CPU_PASS": 14,
+  "retained_GPU_PASS": 11,
+  "impact": "Accept observed mixed FP32 final outputs only with genuine active low-precision module execution; strict fp32/fp64 and uniform/legacy evidence semantics retained.",
+  "dtype_diagnosis": {
+    "old_expected": "torch.float16",
+    "head_autocast_dtype": "torch.float16",
+    "offset_buffer_dtype": "torch.float32",
+    "promoted_model_output": "torch.float32",
+    "historical_failure_did_not_record_output_dtype": true,
+    "CPU_FP16_proxy_observed": true,
+    "CUDA_revalidation_pending": true
+  }
+}

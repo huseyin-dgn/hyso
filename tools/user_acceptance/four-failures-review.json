@@ -1,0 +1,92 @@
+{
+  "baseline_plan_sha256": "2fc6fca53128b5278d66ba44b0181e4c189f1f7fa12dec2699cd03cf1da21d29",
+  "files": {
+    "docs/guides/final-user-acceptance.md": {
+      "before": "d7933a429293b602ff766c323de00edca78d35e213787c7668c027b8ad5a81f3",
+      "after": "2cbf69f76d93fcec1e8665cae0ae832ef9fa8df12ce3b47510d2a1118c668781"
+    },
+    "docs/guides/release-support.md": {
+      "before": null,
+      "after": "a442f074210e4e708ae52b268d702a33ea806544f062537b347898b89a77e253"
+    },
+    "hyso/_evaluation_structure.py": {
+      "before": "2476618bb882140911ad55981a9e71ed7256cb75c02d1c18a3b46ff07496d4f1",
+      "after": "fb6804ef09a7c651b4b919bf9d76a54edf5f372ab88914ec087b00ffe8a64048"
+    },
+    "hyso/evaluation.py": {
+      "before": "a02d05623168b3eb78f55184754a732e70ba5edd6041d133879b85546929be95",
+      "after": "fd9fc141d6f1790b3a72e60afac061336ecd8b63be19e5d97f86fc89a2b347da"
+    },
+    "hyso/models/graph.py": {
+      "before": "52d9762e953745d9b8155b62efac436cd437f602cf2212854e9773d70b2b17eb",
+      "after": "df818ddbbc21ce595f68210a56f09f3d1d478bfac21d61a6a5dc2523c47501a8"
+    },
+    "hyso/models/graph_ops.py": {
+      "before": "35fcdb8c8334711c13349908f4aea72bf016da9c491bb7c7d3c2ecdf2816b0f5",
+      "after": "4d77cb9d0daa44189b5743a93763f76b817f45e4ba49732b37bde40b5512b87e"
+    },
+    "tests/fixtures/acceptance-reviewed-bodies.json": {
+      "before": null,
+      "after": "2874117fb1e73518b97cc44db1ba0a5d83b3472e75084ac96bdfa05662a6d6f0"
+    },
+    "tests/test_release_support_scope.py": {
+      "before": null,
+      "after": "cc7dfc5e67f950cedc1ef361d31d24e2c5fa5f7575e0ff0f9c4d23df1334ae8d"
+    },
+    "tests/test_user_acceptance_four_fixes.py": {
+      "before": null,
+      "after": "c8789a48d92cac76d41cfe91f1118877680208679ee38817b0c28bbed28b5e66"
+    },
+    "tests/test_user_acceptance_runner.py": {
+      "before": "ce9ed60df0b4fdcbc9e915283b9ce0672e2f5c4bd2785af955b34957086d3a1b",
+      "after": "02cd7bb47320a9073fd05a8bb845e93a1b543845573a8c46b9685e759c436d95"
+    },
+    "tools/user_acceptance/cpu_onnx.py": {
+      "before": "4886055e8c5b6a0e2505d5af9d482234e552d87ec33df22eeb24f5d121c1e1e9",
+      "after": "da7808e6bd1dbd172fa777d33c788715a1efb9033aed6303102da48373d7fe27"
+    },
+    "tools/user_acceptance/evidence.py": {
+      "before": "5452095ede8be99b5bbc7eaec3b693e0fbe43f0cdc0000e6e06043c2f0082edc",
+      "after": "d4eb4a00bd2665030f91798acd601638f409485c9ad8d6a9eb10813807d0e5af"
+    },
+    "tools/user_acceptance/recovery_review.py": {
+      "before": "79cda6d0f670c470402ec06aad9874fc00365a7bf0851d508624b2f094a24b0c",
+      "after": "8fa355d49f702394abaff0d53465753596d9a3434e0e2b9b8b68ba0508089c2c"
+    },
+    "tools/user_acceptance/runner.py": {
+      "before": "348f5cccf8993f467e2a93bcae871484e46a3dd01d189dd99cda0894cbe03fc1",
+      "after": "611585a556feaef2a5f5621a76f5d08eaf88e92aeef4274922b5688dfd8bf364"
+    },
+    "tools/user_acceptance/scenarios.py": {
+      "before": "1f2eefc7535de4457a0734bdd99cdb0b8d5f786af27afd13d759f84990f7e1ed",
+      "after": "3bd05ab03af4a018642893cee701faa528df47230cdd21cd8638a85916e66a01"
+    }
+  },
+  "targets": [
+    "U02",
+    "U05",
+    "U07",
+    "CPU_U13"
+  ],
+  "preserve_cpu_pass": 13,
+  "preserve_gpu_pass": 9,
+  "preexisting_branch_changes_not_edited": [
+    "tests/test_release_support_scope.py",
+    "docs/guides/release-support.md",
+    "tests/fixtures/acceptance-reviewed-bodies.json"
+  ],
+  "impact": {
+    "U02": "CUDA estimate only; CPU host test behavior unchanged",
+    "U05": "Autocast-only Graph dtype policy; strict non-autocast profile unchanged",
+    "U07": "CUDA capture enabled; CPU capture and default schema unchanged; invalid cross-device imported structure now rejected",
+    "CPU_U13": "Canonical list trace hash and per-run coverage checks; GPU ORT execution unchanged"
+  },
+  "exclusions": [
+    "P18_advanced",
+    "P23_B4",
+    "P31_7200",
+    "P33_advanced",
+    "native_failfast",
+    "allocation_stress"
+  ]
+}

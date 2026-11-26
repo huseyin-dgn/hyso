@@ -56,6 +56,8 @@ def validate_structure_binding(binding, *, evaluation_id, source, evidence, acco
         if source['kind'] != 'model_inference' or accounting['expected_samples'] < 1:
             raise ValueError('structure binding requires successful nonempty model inference')
         snapshot = ModelStructureSnapshot(binding['snapshot'])
+        if any(t['device']!=source['device'] for t in snapshot.to_dict()['tensors']):
+            raise ValueError('receiver structure device differs from evaluation device')
         if snapshot.to_dict()['producer']['torch_version'] != provenance['torch']:
             raise ValueError('structure/evaluation Torch provenance mismatch')
         expected = _payload(snapshot, evaluation_id, source, evidence, accounting)

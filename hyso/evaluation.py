@@ -1,4 +1,4 @@
-"""P26 finite CPU classification evaluation, independent of training artifacts."""
+"""P26 finite explicit CPU/CUDA classification, independent of training artifacts."""
 import typing as _typing
 from dataclasses import dataclass
 import copy
@@ -436,7 +436,10 @@ def evaluate_classification(model: '_typing.Any', loader: '_typing.Any', *, clas
     RNG and loader generator are restored on success and every failure path.
     User-defined non-tensor Python state/external side effects are not sandboxed.
     CUDA moves only the isolated copy and materializes completed logits on CPU;
-    producer/structure capture remains CPU-only. The caller model is not moved.
+    producer and structure capture also support CUDA. Stream hashes identify
+    the validated CPU batches before transfer; receiver structure records its
+    actual CUDA device. The caller model is not moved. Receiver-runtime capture
+    and two-input named Graph evaluation remain CPU-only.
     capture_evidence=True emits schema 2 producer evidence v1 using this same
     iteration. Hashes identify ordered post-collation tensors independently of
     batch partitioning; they do not verify origin, split or preprocessing code.
@@ -483,6 +486,12 @@ def evaluate_classification(model: '_typing.Any', loader: '_typing.Any', *, clas
     Open: hyso docs open analysis.p26 --lang en
     """
     config = _metadata(task, class_names, split, zero_division)
+    if type(capture_evidence) is not bool:
+        raise ValueError("capture_evidence must be bool")
+    if type(capture_structure) is not bool:
+        raise ValueError("capture_structure must be bool")
+    if capture_structure and not capture_evidence:
+        raise ValueError("capture_structure requires capture_evidence=True")
     if type(capture_receiver_runtime) is not bool:
         raise ValueError('capture_receiver_runtime must be bool')
     if capture_receiver_runtime and (not capture_evidence or torch.device(device).type != 'cpu'):
@@ -494,15 +503,11 @@ def evaluate_classification(model: '_typing.Any', loader: '_typing.Any', *, clas
         raise NotImplementedError('named Graph evaluation requires CPU without receiver runtime capture')
     if execution_device.type not in ('cpu','cuda'):raise NotImplementedError('evaluation device unsupported')
     if execution_device.type=='cuda':
-        if capture_evidence or capture_structure:raise NotImplementedError('CUDA producer/structure capture unsupported')
+        # Producer stream hashes describe the validated CPU batches before
+        # transfer; model bytes and structure are observed on the actual CUDA
+        # forward receiver. The source device remains the real execution device.
         if not torch.cuda.is_available():raise NotImplementedError('CUDA unavailable; no CPU fallback')
         execution_device=torch.device('cuda',torch.cuda.current_device() if execution_device.index is None else execution_device.index)
-    if type(capture_evidence) is not bool:
-        raise ValueError("capture_evidence must be bool")
-    if type(capture_structure) is not bool:
-        raise ValueError("capture_structure must be bool")
-    if capture_structure and not capture_evidence:
-        raise ValueError("capture_structure requires capture_evidence=True")
     if type(max_samples) is not int or not 1 <= max_samples <= 1000000:
         raise ValueError("invalid finite sample budget")
     if not isinstance(model, nn.Module) or type(loader) is not DataLoader:
@@ -591,7 +596,7 @@ def evaluate_classification(model: '_typing.Any', loader: '_typing.Any', *, clas
                     receiver_capture.after(candidate, logits)
                 if (not isinstance(logits,torch.Tensor) or logits.device != execution_device
                         or logits.dtype not in (torch.float32,torch.float64) or not torch.isfinite(logits).all()):
-                    raise ValueError("finite CPU tensor logits required")
+                    raise ValueError("finite tensor logits on the selected evaluation device required")
                 # Materialization waits for real CUDA completion before recording.
                 logits=logits.detach().cpu()
                 raw = dict(targets=normalized, predictions=logits.tolist(), prediction_type="logits")

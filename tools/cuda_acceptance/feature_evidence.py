@@ -155,7 +155,18 @@ def verify_feature(feature,d,runtime):
             need(d['sources']['corruption']['calls']>0 and d['sources']['clean_cohort']['inputs']!=d['sources']['perturbed_cohort']['inputs'],'actual paired corruption')
         if feature=='P28':
             proof=d['sources']['candidate_precision'];rows=proof['batch_observations']
-            need(proof['policy']=='amp_fp16' and bool(rows) and all(r['device']=='cuda:0' and r['finite'] is True and r['native_output_dtype']=='torch.float16' and bool(r['operators']) for r in rows),'actual AMP operator/dtype observations')
+            version=proof.get('execution_version');allowed=('torch.float16','torch.float32') if version==3 else ('torch.float16',)
+            need(type(version) is int and version in (2,3) and proof['policy']=='amp_fp16' and bool(rows) and all(
+                r['device']=='cuda:0' and r['finite'] is True and r['native_output_dtype'] in allowed and
+                r['autocast_enabled'] is True and r['autocast_dtype']=='torch.float16' and bool(r['operators']) and all(
+                    op['operator'] in ('Conv2d','Linear') and op['device']=='cuda:0' and op['weight_dtype']=='torch.float32' and
+                    op['input_dtype'] in ('torch.float32','torch.float16') and op['output_dtype']=='torch.float16' and
+                    op['autocast_enabled'] is True and op['autocast_dtype']=='torch.float16' for op in r['operators'])
+                for r in rows),'actual AMP operator/dtype observations')
+            if version==3:
+                observed=[r['native_output_dtype'] for r in rows]
+                need(proof['verified_execution']==dict(batches=len(rows),native_output_dtype=observed[0] if len(set(observed))==1 else None,
+                    native_output_dtypes=observed,operators=[]),'actual mixed-precision output summary')
         if feature=='P29':
             need(d['sources']['comparison_version']==4 and d['analysis']['memory']['status']=='comparable','GPU comparison and allocator evidence')
             proofs=[d['sources'][s]['gpu_provenance'] for s in ('baseline','candidate')]
