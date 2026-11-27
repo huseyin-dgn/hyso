@@ -15,9 +15,10 @@ class Priority(str, Enum):
         An instance of Priority with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         Priority.SPEED
 
@@ -35,15 +36,17 @@ class Priority(str, Enum):
 
 
 class Metric(str, Enum):
-    """Select a supported metric identity; latency, throughput, quality, memory and energy retain distinct units and scopes.
+    """Select a supported metric identity; latency, throughput, quality, memory and energy retain distinct
+    units and scopes.
 
     Returns:
         An instance of Metric with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         Metric.RESIDENT_FORWARD_P95
 
@@ -52,7 +55,9 @@ class Metric(str, Enum):
     Open: hyso docs open metrics.interpretation --lang en
 
     Members:
-        RESIDENT_FORWARD_P95, E2E_P95, IMAGE_THROUGHPUT, CAMERA_FPS, TRAINING_THROUGHPUT, TRAINING_STEP_TIME, ACCURACY, ACCURACY_DROP, PROCESS_RSS_PEAK, CUDA_ALLOCATED_PEAK, CUDA_RESERVED_PEAK, LOGICAL_TENSOR_BYTES, ENERGY_PER_INFERENCE, POWER.
+        RESIDENT_FORWARD_P95, E2E_P95, IMAGE_THROUGHPUT, CAMERA_FPS, TRAINING_THROUGHPUT,
+        TRAINING_STEP_TIME, ACCURACY, ACCURACY_DROP, PROCESS_RSS_PEAK, CUDA_ALLOCATED_PEAK,
+        CUDA_RESERVED_PEAK, LOGICAL_TENSOR_BYTES, ENERGY_PER_INFERENCE, POWER.
 
     Metric boundaries:
         P95 is a latency quantile, not a deadline guarantee. images/s is not camera FPS.
@@ -83,9 +88,10 @@ class FindingKind(str, Enum):
         An instance of FindingKind with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         FindingKind.OBSERVATION
 
@@ -111,9 +117,10 @@ class InputValidity(str, Enum):
         An instance of InputValidity with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         InputValidity.VALID
 
@@ -136,9 +143,10 @@ class EvidenceSupport(str, Enum):
         An instance of EvidenceSupport with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         EvidenceSupport.SUPPORTED
 
@@ -161,9 +169,10 @@ class ObservedGoal(str, Enum):
         An instance of ObservedGoal with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ObservedGoal.MET
 
@@ -186,9 +195,10 @@ class Feasibility(str, Enum):
         An instance of Feasibility with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         Feasibility.DEMONSTRATED
 
@@ -211,9 +221,10 @@ class Consistency(str, Enum):
         An instance of Consistency with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         Consistency.NO_CONFLICT
 
@@ -294,15 +305,18 @@ class MetricScope(Contract):
 
     Args:
         phase (str): Explicit trace phase label. Required.
-        device (str | None): Optional device selector following this API's native placement/default rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
+        device (str | None): Optional device selector following this API's native placement/default
+            rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
         backend (str | None): Explicit runtime/backend identity. Default: None.
-        precision (str | None): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: None.
+        precision (str | None): Supported numerical format; runtime/task/device restrictions remain
+            authoritative. Default: None.
         batch (int | None): Batch dimension of the measured input. Default: None.
         input_shape (tuple): Per-sample (C, H, W) dimensions; batch is excluded. Default: ().
         workload_id (str | None): Exact workload identity for scope alignment. Default: None.
         dataset_id (str | None): Exact dataset identity used for evidence alignment. Default: None.
         split (str | None): Explicit dataset split label used in evaluation identity. Default: None.
-        preprocessing_id (str | None): Identity of the preprocessing used to produce this fixed cohort. Default: None.
+        preprocessing_id (str | None): Identity of the preprocessing used to produce this fixed cohort.
+            Default: None.
         clock_id (str | None): Clock-domain identity used for timing alignment. Default: None.
         model_id (str | None): Stable model label bound to this result/context. Default: None.
 
@@ -310,9 +324,10 @@ class MetricScope(Contract):
         An instance of MetricScope with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         MetricScope(phase=phase)
 
@@ -356,7 +371,8 @@ class EvaluationProtocol(Contract):
         protocol_id (str): Exact measurement/evaluation protocol identity. Required.
         version (int): Positive native schema/protocol/rule version. Required.
         description (str): Human-readable specification description. Required.
-        sample_policy (str | None): Sampling convention used by the measurement/evaluation. Default: None.
+        sample_policy (str | None): Sampling convention used by the measurement/evaluation. Default:
+            None.
         window (str | None): Exact measurement window definition. Default: None.
         evaluator (str | None): Explicit evaluation implementation/protocol identity. Default: None.
         averaging (str | None): Metric averaging convention, such as macro or per-class. Default: None.
@@ -365,9 +381,10 @@ class EvaluationProtocol(Contract):
         An instance of EvaluationProtocol with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         EvaluationProtocol(protocol_id=protocol_id, version=version, description=description)
 
@@ -420,13 +437,17 @@ class UserGoal(Contract):
 
     Args:
         goal_id (str): Exact user-goal identity. Required.
-        metric (Metric): Exact supported metric selector; units and missing-value status are preserved. Required.
+        metric (Metric): Exact supported metric selector; units and missing-value status are preserved.
+            Required.
         operator (str): Supported comparison operator for the goal. Required.
         target (float): Explicit target value/model/context required by this operation. Required.
-        unit (str): Recorded metric unit; fractions, percentages and percentage points are distinct. Required.
+        unit (str): Recorded metric unit; fractions, percentages and percentage points are distinct.
+            Required.
         constraint (str): Explicit restriction applied to the advisory request. Default: 'hard'.
-        scope (MetricScope | None): Exact measurement boundary/meaning; different scopes are not interchangeable. Default: None.
-        protocol (EvaluationProtocol | None): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: None.
+        scope (MetricScope | None): Exact measurement boundary/meaning; different scopes are not
+            interchangeable. Default: None.
+        protocol (EvaluationProtocol | None): Typed native measurement protocol; scope, budgets and
+            device guards remain unchanged. Default: None.
         value_basis (str): Evidence basis and interpretation of the reported value. Default: 'measured'.
         baseline_id (str | None): Exact retained baseline identity. Default: None.
 
@@ -434,9 +455,10 @@ class UserGoal(Contract):
         An instance of UserGoal with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         UserGoal(goal_id=goal_id, metric=metric, operator=operator, target=target, unit=unit)
 
@@ -489,7 +511,7 @@ class UserGoal(Contract):
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.input_validity
 
@@ -509,7 +531,7 @@ class UserGoal(Contract):
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.missing_scope_fields
 
@@ -539,28 +561,33 @@ class UserGoal(Contract):
 @register
 @dataclass(frozen=True)
 class ResourceBudget(Contract):
-    """Declare a resource budget and its enforcement/verification status; a declaration alone enforces nothing.
+    """Declare a resource budget and its enforcement/verification status; a declaration alone enforces
+    nothing.
 
     Args:
         budget_id (str): Stable resource-budget identity. Required.
         purpose (str): Explicit reason for the operation or evidence selection. Required.
         domain (str): Feature/metric domain, separate from runtime support. Required.
         limit (float): Bounded page/record count; native Manager limits still apply. Required.
-        unit (str): Recorded metric unit; fractions, percentages and percentage points are distinct. Required.
+        unit (str): Recorded metric unit; fractions, percentages and percentage points are distinct.
+            Required.
         allowed_devices (tuple): Explicit device choices permitted by this policy. Default: ().
         allowed_backends (tuple): Closed backend choices permitted by this request. Default: ().
         allowed_precisions (tuple): Explicit precision choices permitted by this request. Default: ().
         window_seconds (float | None): Window in seconds under the native protocol. Default: None.
-        enforcement (str): Declared enforcement mechanism; unsupported enforcement is not inferred. Default: 'not_evaluated'.
-        applicability (str): Conditions under which the finding/evidence applies. Default: 'not_evaluated'.
+        enforcement (str): Declared enforcement mechanism; unsupported enforcement is not inferred.
+            Default: 'not_evaluated'.
+        applicability (str): Conditions under which the finding/evidence applies. Default:
+            'not_evaluated'.
 
     Returns:
         An instance of ResourceBudget with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ResourceBudget(budget_id=budget_id, purpose=purpose, domain=domain, limit=limit, unit=unit)
 
@@ -606,7 +633,8 @@ class ResourceBudget(Contract):
 @register
 @dataclass(frozen=True)
 class AdvisorRequest(Contract):
-    """Describe the requested advisory mode, goals, allowed changes and constraints without authorizing execution.
+    """Describe the requested advisory mode, goals, allowed changes and constraints without authorizing
+    execution.
 
     Args:
         goals (tuple): Explicit user goals; unmet prerequisites are retained. Default: ().
@@ -617,9 +645,10 @@ class AdvisorRequest(Contract):
         An instance of AdvisorRequest with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         AdvisorRequest()
 
@@ -646,7 +675,7 @@ class AdvisorRequest(Contract):
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.request_id
 
@@ -666,7 +695,7 @@ class AdvisorRequest(Contract):
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.mode
 
@@ -690,9 +719,10 @@ class EvidenceBinding(Contract):
         An instance of EvidenceBinding with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         EvidenceBinding(field=field, authority=authority)
 
@@ -720,9 +750,11 @@ class EvidenceRef(Contract):
         artifact_sha256 (str): Exact serialized artifact digest. Required.
         payload_sha256 (str): Exact SHA-256 digest of the payload. Required.
         domain (str): Feature/metric domain, separate from runtime support. Required.
-        unit (str): Recorded metric unit; fractions, percentages and percentage points are distinct. Required.
+        unit (str): Recorded metric unit; fractions, percentages and percentage points are distinct.
+            Required.
         status (str): Exact lifecycle/status filter accepted by this API. Required.
-        bindings (tuple): Typed live/isolated/native bindings; identities and operation permissions must match the plan. Required.
+        bindings (tuple): Typed live/isolated/native bindings; identities and operation permissions must
+            match the plan. Required.
         sample_ref (str | None): Exact retained sample reference. Default: None.
         point_ref (str | None): Reference to the exact retained sweep/calibration point. Default: None.
         protocol_ref (str | None): Reference to the exact retained protocol. Default: None.
@@ -731,11 +763,14 @@ class EvidenceRef(Contract):
         An instance of EvidenceRef with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
-        EvidenceRef(report_id=report_id, record_id=record_id, metric_path=metric_path, artifact_sha256=artifact_sha256, payload_sha256=payload_sha256, domain=domain, unit=unit, status=status, bindings=bindings)
+        EvidenceRef(report_id=report_id, record_id=record_id, metric_path=metric_path,
+        artifact_sha256=artifact_sha256, payload_sha256=payload_sha256, domain=domain, unit=unit,
+        status=status, bindings=bindings)
 
     HYSo Guide: advisor.recommendations
     Offline: hyso docs show advisor.recommendations --lang en
@@ -779,19 +814,23 @@ class Finding(Contract):
         kind (FindingKind): Existing run or artifact kind accepted by this operation. Required.
         statement (str): Human-readable finding/observation statement. Required.
         evidence (tuple): Typed retained evidence; missing measurements remain unavailable. Default: ().
-        limitations (tuple): Explicit limitations of the evidence, comparison or proposed operation. Default: ().
+        limitations (tuple): Explicit limitations of the evidence, comparison or proposed operation.
+            Default: ().
         rule_id (str | None): Exact advisory rule identity. Default: None.
         rule_version (str | None): Exact advisory rule version. Default: None.
-        evidence_support (EvidenceSupport | None): Assessment of whether the supplied evidence supports the claim. Default: None.
-        verification (str): Retained verification state; declarations are not successful execution evidence. Default: 'not_evaluated'.
+        evidence_support (EvidenceSupport | None): Assessment of whether the supplied evidence supports
+            the claim. Default: None.
+        verification (str): Retained verification state; declarations are not successful execution
+            evidence. Default: 'not_evaluated'.
 
     Returns:
         An instance of Finding with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         Finding(finding_id=finding_id, kind=kind, statement=statement)
 
@@ -835,9 +874,12 @@ class GoalEvaluation(Contract):
     Args:
         goal_id (str): Exact user-goal identity. Required.
         input_validity (InputValidity): Retained input validity assessment. Required.
-        evidence_support (EvidenceSupport | None): Assessment of whether the supplied evidence supports the claim. Default: None.
-        observed (ObservedGoal): Observed outcome under the supplied evidence scope. Default: ObservedGoal.UNKNOWN.
-        feasibility (Feasibility): Feasibility assessment within the exact evidence scope. Default: Feasibility.UNKNOWN.
+        evidence_support (EvidenceSupport | None): Assessment of whether the supplied evidence supports
+            the claim. Default: None.
+        observed (ObservedGoal): Observed outcome under the supplied evidence scope. Default:
+            ObservedGoal.UNKNOWN.
+        feasibility (Feasibility): Feasibility assessment within the exact evidence scope. Default:
+            Feasibility.UNKNOWN.
         evidence (tuple): Typed retained evidence; missing measurements remain unavailable. Default: ().
         reasons (tuple): Structured eligibility/compatibility reasons. Default: ().
 
@@ -845,9 +887,10 @@ class GoalEvaluation(Contract):
         An instance of GoalEvaluation with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         GoalEvaluation(goal_id=goal_id, input_validity=input_validity)
 
@@ -894,9 +937,10 @@ class RequestValidation(Contract):
         An instance of RequestValidation with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         RequestValidation(goals=goals, consistency=consistency)
 
@@ -935,9 +979,10 @@ class RuleVersion(Contract):
         An instance of RuleVersion with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         RuleVersion(rule_id=rule_id, version=version)
 
@@ -961,28 +1006,36 @@ class AdvisorReport(Contract):
     Args:
         source_report_id (str): Exact source-report identity. Required.
         source_report_sha256 (str): Exact SHA-256 digest of the source report. Required.
-        request (AdvisorRequest): Validated advisory/selection request; does not authorize execution. Required.
+        request (AdvisorRequest): Validated advisory/selection request; does not authorize execution.
+            Required.
         findings (tuple): Typed retained advisory findings. Default: ().
-        goal_evaluations (tuple): Separate validity, support, outcome and feasibility assessments. Default: ().
+        goal_evaluations (tuple): Separate validity, support, outcome and feasibility assessments.
+            Default: ().
         evidence_limitations (tuple): Limitations attached to the retained evidence. Default: ().
         risks (tuple): Known limitations/risks attached to the proposal. Default: ().
         rule_versions (tuple): Exact rule identities/versions used by the report. Default: ().
         evidence_status (EvidenceSupport | None): Retained availability/coverage status. Default: None.
-        evaluation_status (str): Retained evaluation status, including unavailable or partial results. Default: 'not_evaluated'.
-        request_validation (RequestValidation | None): Retained validation and consistency results for the request. Default: None.
-        request_id (str): Optional idempotency key for the stored operation; not a model or artifact identity. Default: field(init=False).
+        evaluation_status (str): Retained evaluation status, including unavailable or partial results.
+            Default: 'not_evaluated'.
+        request_validation (RequestValidation | None): Retained validation and consistency results for
+            the request. Default: None.
+        request_id (str): Optional idempotency key for the stored operation; not a model or artifact
+            identity. Default: field(init=False).
         request_sha256 (str): Exact SHA-256 digest of the request. Default: field(init=False).
-        assessment_authority (str): Authority level of the assessment; caller claims are not producer attestation. Default: field(init=False, default='caller_supplied_not_verified').
+        assessment_authority (str): Authority level of the assessment; caller claims are not producer
+            attestation. Default: field(init=False, default='caller_supplied_not_verified').
 
     Returns:
         An instance of AdvisorReport with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
-        AdvisorReport(source_report_id=source_report_id, source_report_sha256=source_report_sha256, request=request)
+        AdvisorReport(source_report_id=source_report_id, source_report_sha256=source_report_sha256,
+        request=request)
 
     HYSo Guide: advisor.recommendations
     Offline: hyso docs show advisor.recommendations --lang en
@@ -1082,7 +1135,7 @@ class AdvisorReport(Contract):
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.report_id
 
@@ -1096,8 +1149,10 @@ class AdvisorReport(Contract):
         """Explicit readable export of this same report; never run analysis.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
-            language (str | None): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: None.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Default: None.
+            language (str | None): Presentation language supported by this API, normally tr/en; guide
+                languages do not expand report APIs. Default: None.
             audience (_typing.Any): Supported presentation audience/detail level. Default: None.
 
         Returns:
@@ -1107,7 +1162,7 @@ class AdvisorReport(Contract):
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_markdown()
 
@@ -1126,17 +1181,19 @@ class AdvisorReport(Contract):
         """Presentation-only localized JSON data; never canonical evidence.
 
         Args:
-            language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'en'.
+            language (str): Presentation language supported by this API, normally tr/en; guide languages do
+                not expand report APIs. Default: 'en'.
             audience (str): Supported presentation audience/detail level. Default: 'summary'.
 
         Returns:
             Localized presentation data; canonical comparison values and units are retained.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_display_dict()
 
@@ -1151,18 +1208,21 @@ class AdvisorReport(Contract):
         """Serialize localized display text while preserving the retained canonical data.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
-            language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'en'.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Default: None.
+            language (str): Presentation language supported by this API, normally tr/en; guide languages do
+                not expand report APIs. Default: 'en'.
             audience (str): Supported presentation audience/detail level. Default: 'summary'.
 
         Returns:
             The localized JSON string, also written to path when supplied.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_display_json()
 

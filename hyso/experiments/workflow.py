@@ -29,7 +29,27 @@ _MAX_RESULT_BYTES = 128 * 1024**2
 
 
 def workflow_config(stage: _typing.Literal['model', 'training', 'analysis', 'comparison'], model_ids, architectures, training_config, analysis, comparison,
-                    dataset, device, precision, protocol):
+                    dataset, device, precision, protocol) -> 'tuple[str, dict[str, _typing.Any]]':
+    """Workflow config using the explicitly supplied evidence.
+
+    Args:
+        stage (_typing.Literal['model', 'training', 'analysis', 'comparison']): Explicit experiment
+            workflow stage; records the requested operation only. Required.
+        model_ids: Ordered model labels used by the workflow. Required.
+        architectures: Explicit model architecture configurations; no source import or weight download.
+            Required.
+        training_config: Training settings stored separately from architecture and datasets. Required.
+        analysis: Explicit analysis request or retained analysis evidence. Required.
+        comparison: Explicit comparison request or saved comparison evidence. Required.
+        dataset: Caller-owned input cohort; labelled validation requires explicit (inputs, labels)
+            entries. Required.
+        device: Explicit execution device selector; passing a CUDA selector does not authorize or
+            validate native execution. Required.
+        precision: Requested fp32/fp16/int8 numerical policy; precision labels do not prove hardware
+            instruction selection. Required.
+        protocol: Measurement conditions for this operation; changing them can make evidence
+            incomparable. Required.
+    """
     from ..models.builder import ModelBuilder
     from ..models.graph import GraphModelBuilder
     from ..training import TrainingConfig
@@ -206,7 +226,15 @@ def _match_result(config, kind, data):
         _error("comparison_result_mismatch", "record_result")
 
 
-def record_result(run, result, input_artifact_ids):
+def record_result(run, result, input_artifact_ids) -> 'dict[str, _typing.Any]':
+    """Record result using the explicitly supplied evidence.
+
+    Args:
+        run: Existing experiment-run handle receiving the requested evidence. Required.
+        result: Retained HYSo result/evidence record; rendering/advice does not run measurements.
+            Required.
+        input_artifact_ids: Explicit source-artifact lineage for the recorded result. Required.
+    """
     manager = run._manager
     manager._b2()  # Before any partial metric/link write on schema1.
     if (type(input_artifact_ids) not in (list, tuple)
@@ -265,7 +293,17 @@ def record_result(run, result, input_artifact_ids):
     return artifact
 
 
-def run_details(manager, run_id, after_metric_seq, after_artifact_seq, limit):
+def run_details(manager, run_id, after_metric_seq, after_artifact_seq, limit) -> 'dict[str, _typing.Any]':
+    """Run details using the explicitly supplied evidence.
+
+    Args:
+        manager: Explicit ExperimentManager for the chosen experiment store. Required.
+        run_id: Stable experiment run identifier in the selected store. Required.
+        after_metric_seq: Exclusive metric sequence cursor for paginated reads. Required.
+        after_artifact_seq: Exclusive artifact sequence cursor for paginated reads. Required.
+        limit: Maximum records/bytes requested by this operation; the native API validates its specific
+            bound. Required.
+    """
     _page(after_metric_seq, limit, 100)
     _page(after_artifact_seq, limit, 100)
     run = manager.get_run(run_id)
@@ -288,7 +326,15 @@ def run_details(manager, run_id, after_metric_seq, after_artifact_seq, limit):
                 next_artifact_seq=artifacts[-1]["artifact"]["seq"] if len(artifacts) == limit else None)
 
 
-def open_result(manager, artifact_id, path):
+def open_result(manager, artifact_id, path) -> 'dict[str, _typing.Any]':
+    """Open result using the explicitly supplied evidence.
+
+    Args:
+        manager: Explicit ExperimentManager for the chosen experiment store. Required.
+        artifact_id: Stable identifier of a retained experiment artifact. Required.
+        path: Filesystem location read or written by this explicit operation; output parents must
+            already exist. Required.
+    """
     record = manager.get_artifact(artifact_id)
     outcome = dict(artifact=record, status="unavailable", reason=_REASONS["unavailable"], result=None)
     if record["ingest_state"] != "ready":

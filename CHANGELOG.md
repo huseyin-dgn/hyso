@@ -11,6 +11,9 @@
 - Separate CPU/GPU deployment extras and explicit Torch distribution selection.
 - Include the shared native identity helper required by installed CPU ONNX
   runtime verification in the commercial package inventory.
+- Expand public API parameter documentation and shape/range constraints; add
+  literal keyword overloads for builders/registry and typed training option maps.
+  Runtime argument names, defaults and model algorithms remain unchanged.
 - Installed API and release wheel/sdist checks are recorded in the release
   preparation evidence, separately from historical product acceptance.
 

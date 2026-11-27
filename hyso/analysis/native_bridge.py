@@ -14,6 +14,8 @@ from .feature_plan import FeaturePlan, FeaturePlanError
 
 
 class NativeBridgeError(ValueError):
+    """Report a rejected native bridge request.
+    """
     pass
 
 
@@ -25,20 +27,23 @@ class TrustedCPUExecutionPolicy:
     """Bounds operation counts and input size, NOT time/RAM/hangs/crashes.
 
     Args:
-        explicit_trusted_inprocess_consent (bool): Explicit trust/consent for this bounded in-process CPU operation. Default: False.
+        explicit_trusted_inprocess_consent (bool): Explicit trust/consent for this bounded in-process
+            CPU operation. Default: False.
         warmup_iterations (int): Unreported warmup iteration count before measured samples. Default: 1.
         batch_count (int): Number of batches within the explicit measurement boundary. Default: 2.
         repeats (int): Number of independently recorded measurement windows/repeats. Default: 1.
         queue_depth (int): Bound on in-flight pipeline work. Default: 2.
-        max_input_bytes (int): Max input in bytes; this does not imply a GPU hardware quota. Default: 8 * 1024 * 1024.
+        max_input_bytes (int): Max input in bytes; this does not imply a GPU hardware quota. Default: 8
+            * 1024 * 1024.
 
     Returns:
         An instance of TrustedCPUExecutionPolicy with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         TrustedCPUExecutionPolicy()
 
@@ -71,16 +76,19 @@ class LiveCPUModel:
 
     Args:
         model_id (str): Stable model label bound to this result/context. Required.
-        model (object): Caller-owned model; device, dtype and task must match the native operation. Required.
-        input_tensor (object): Caller-supplied input Tensor with the declared shape/device/dtype. Default: None.
+        model (object): Caller-owned model; device, dtype and task must match the native operation.
+            Required.
+        input_tensor (object): Caller-supplied input Tensor with the declared shape/device/dtype.
+            Default: None.
 
     Returns:
         An instance of LiveCPUModel with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         LiveCPUModel(model_id=model_id, model=model)
 
@@ -99,19 +107,61 @@ class LiveCPUModel:
 
 @dataclass(frozen=True)
 class CapturedNativeResult:
+    """Store captured native result evidence as an immutable typed record.
+
+    Args:
+        model_id (str): Caller label identifying a model within this evidence context; not a weight or
+            hardware identity. Required.
+        feature_id (str): P01–P35 catalog identifier for this evidence or plan item. Required.
+        status (str): Recorded evidence/coverage status; unavailable values must not be interpreted as
+            zero. Required.
+        source_sha256 (str): Digest of the exact source evidence content. Required.
+        result (str): Retained HYSo result/evidence record; rendering/advice does not run measurements.
+            Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     model_id: str
     feature_id: str
     status: str
     source_sha256: str
     result: str  # canonical JSON owned copy, not a shared mutable dictionary
 
-    def to_dict(self):
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return detached JSON-compatible evidence without rerunning the source workload.
+        """
         return dict(model_id=self.model_id, feature_id=self.feature_id, status=self.status,
                     source_sha256=self.source_sha256, native_result=json.loads(self.result))
 
 
 @dataclass(frozen=True)
 class ObservedModelDifference:
+    """Store observed model difference evidence as an immutable typed record.
+
+    Args:
+        feature_id (str): P01–P35 catalog identifier for this evidence or plan item. Required.
+        metric (str): Exact recorded metric whose baseline/candidate values are compared. Required.
+        baseline_model_id (str): Model label for the reference evidence. Required.
+        candidate_model_id (str): Model label for the candidate evidence. Required.
+        baseline (float | int | None): Reference evidence used as the denominator/origin of candidate
+            differences; missing/incompatible evidence is not inferred. Required.
+        candidate (float | int | None): Evidence or runtime being compared to the reference;
+            measurements remain bound to their recorded conditions. Required.
+        observed_difference (float | int | None): Recorded candidate-minus-baseline difference, limited
+            to the comparable evidence. Required.
+        status (str): Recorded evidence/coverage status; unavailable values must not be interpreted as
+            zero. Required.
+        reason (str): Recorded explanation for rejection, absence or incomplete evidence; None only
+            where the schema allows it. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     feature_id: str
     metric: str
     baseline_model_id: str
@@ -125,6 +175,27 @@ class ObservedModelDifference:
 
 @dataclass(frozen=True)
 class NativeBridgeReport:
+    """Store native bridge report evidence as an immutable typed record.
+
+    Args:
+        requested_feature_ids (tuple): Feature identifiers explicitly requested by the caller. Required.
+        executed_feature_ids (tuple): Feature identifiers actually executed by the native bridge.
+            Required.
+        omitted_features (tuple): Requested features not executed, with explicit reasons. Required.
+        captures (tuple): Captured source-bound native result records. Required.
+        comparisons (tuple): Explicit pairwise comparisons from compatible captured evidence. Required.
+        scope (str): Declared evidence coverage; does not authorize execution. Default:
+            'trusted_inprocess_cpu;not_isolated_no_hard_runtime_memory_limit'.
+        acceptance (str): Recorded acceptance scope; not a new execution or certification. Default:
+            'NOT_EVALUATED'.
+        authorization (str): Recorded caller authorization requirements; planning grants no execution
+            permission. Default: 'EXPLICIT_CPU_P02_P11_ONLY'.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     requested_feature_ids: tuple
     executed_feature_ids: tuple
     omitted_features: tuple  # explicit NOT_EXECUTED + reason, not successes
@@ -134,7 +205,9 @@ class NativeBridgeReport:
     acceptance: str = 'NOT_EVALUATED'
     authorization: str = 'EXPLICIT_CPU_P02_P11_ONLY'
 
-    def to_dict(self):
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return detached JSON-compatible evidence without rerunning the source workload.
+        """
         return dict(requested_feature_ids=list(self.requested_feature_ids),
                     executed_feature_ids=list(self.executed_feature_ids),
                     omitted_features=[dict(feature_id=f, status='NOT_EXECUTED', reason=r) for f,r in self.omitted_features],
@@ -252,18 +325,22 @@ def execute_scoped_cpu(plan: '_typing.Any', bindings: '_typing.Any', *, authoriz
 
     Args:
         plan (_typing.Any): Typed selection plan; a plan alone grants no execution permission. Required.
-        bindings (_typing.Any): Typed live/isolated/native bindings; identities and operation permissions must match the plan. Required.
-        authorized_features (_typing.Any): Explicit unique selected feature subset authorized for this call only. Required.
-        policy (_typing.Any): Existing protocol/resource policy; defaults do not grant additional consent. Default: TrustedCPUExecutionPolicy().
+        bindings (_typing.Any): Typed live/isolated/native bindings; identities and operation
+            permissions must match the plan. Required.
+        authorized_features (_typing.Any): Explicit unique selected feature subset authorized for this
+            call only. Required.
+        policy (_typing.Any): Existing protocol/resource policy; defaults do not grant additional
+            consent. Default: TrustedCPUExecutionPolicy().
 
     Returns:
         The retained execute scoped cpu value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         execute_scoped_cpu(plan, bindings, authorized_features=authorized_features)
 

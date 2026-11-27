@@ -4,6 +4,7 @@ Create the model, optimizer and scheduler before loading. Pass the scheduler
 itself (not LRSchedulerCallback). Only state_dict data and plain metadata are
 stored. Modes, gradients, loaders and callback state are caller responsibilities.
 """
+import typing as _typing
 
 from collections import OrderedDict
 import copy
@@ -269,13 +270,33 @@ def _validate(payload, model, optimizer, scheduler, scaler, ema, restore_rng):
 
 def save_training_checkpoint(path, model, *, optimizer=None, scheduler=None,
                              scaler=None, ema=None, completed_epochs=0,
-                             history=None, metrics=None, include_rng=False, graph_contract=False):
+                             history=None, metrics=None, include_rng=False, graph_contract=False) -> 'None':
     """Atomically save state. Omitted components are recorded as None.
 
     RNG capture is opt-in (Python, NumPy, CPU torch, and already-initialized CUDA).
     Call at a completed optimizer/epoch boundary; in-flight gradients are not saved.
     graph_contract=True explicitly selects checkpoint v2 for the bounded typed
     Graph CPU profile. Default v1 bytes/schema and legacy loading stay unchanged.
+
+    Args:
+        path: Filesystem location read or written by this explicit operation; output parents must
+            already exist. Required.
+        model: Caller-owned torch.nn.Module; must meet the operation device, dtype and input contract.
+            Required.
+        optimizer: Caller-created compatible optimizer; checkpoint loading restores its state only after
+            compatibility checks. Default: None.
+        scheduler: Existing native PyTorch scheduler; ReduceLROnPlateau consumes val_loss, other
+            schedulers step without a metric. Default: None.
+        scaler: Existing AMP gradient scaler, or None for non-AMP state. Default: None.
+        ema: Existing compatible EMA shadow object, or None when the checkpoint has no EMA state.
+            Default: None.
+        completed_epochs: Number of coherently completed epochs represented by the checkpoint. Default:
+            0.
+        history: Recorded training metric series for the completed epoch prefix. Default: None.
+        metrics: Recorded evaluation/training measurements to retain with the checkpoint. Default: None.
+        include_rng: Include supported RNG states in the saved checkpoint when True. Default: False.
+        graph_contract: Select bounded typed Graph checkpoint schema v2 when True; otherwise use the
+            existing standard checkpoint schema. Default: False.
     """
     if not isinstance(model, torch.nn.Module):
         raise TrainingCheckpointError("model must be a torch.nn.Module")
@@ -324,7 +345,7 @@ def save_training_checkpoint(path, model, *, optimizer=None, scheduler=None,
 
 def load_training_checkpoint(path, model, *, optimizer=None, scheduler=None,
                              scaler=None, ema=None, map_location="cpu", restore_rng=False,
-                             validate_metadata=None, capture_evidence=False, expected_sha256=None):
+                             validate_metadata=None, capture_evidence=False, expected_sha256=None) -> 'dict[str, _typing.Any]':
     """Strictly restore caller-created components and return epoch/history/metrics.
 
     Presence, component types, model tensor schemas and optimizer parameter order
@@ -339,6 +360,28 @@ def load_training_checkpoint(path, model, *, optimizer=None, scheduler=None,
     it is an integrity constraint, not proof of authorship. Explicit v2 Graph
     checkpoints also validate reconstructed contract metadata before mutation.
     Their receipt is queried separately through graph_checkpoint_evidence.
+
+    Args:
+        path: Filesystem location read or written by this explicit operation; output parents must
+            already exist. Required.
+        model: Caller-owned torch.nn.Module; must meet the operation device, dtype and input contract.
+            Required.
+        optimizer: Caller-created compatible optimizer; checkpoint loading restores its state only after
+            compatibility checks. Default: None.
+        scheduler: Existing native PyTorch scheduler; ReduceLROnPlateau consumes val_loss, other
+            schedulers step without a metric. Default: None.
+        scaler: Existing AMP gradient scaler, or None for non-AMP state. Default: None.
+        ema: Existing compatible EMA shadow object, or None when the checkpoint has no EMA state.
+            Default: None.
+        map_location: Explicit torch.load mapping for checkpoint tensors; does not move the live model
+            implicitly. Default: 'cpu'.
+        restore_rng: Restore retained RNG states when True, subject to checkpoint compatibility checks.
+            Default: False.
+        validate_metadata: Validate checkpoint metadata before applying retained state. Default: None.
+        capture_evidence: Hash the exact private snapshot of checkpoint bytes loaded and bind the
+            resulting evidence when True. Default: False.
+        expected_sha256: Expected lowercase SHA256 for the exact input bytes; mismatch is rejected
+            before applying state. Default: None.
     """
     if type(capture_evidence) is not bool:
         raise TrainingCheckpointError("capture_evidence must be bool")
@@ -432,8 +475,13 @@ def load_training_checkpoint(path, model, *, optimizer=None, scheduler=None,
             "metrics": payload["metrics"], "rng_state": payload["rng_state"], "rng_restored": bool(restore_rng)}
 
 
-def graph_checkpoint_evidence(model):
-    """Query separate process-local Graph v2 proof; legacy P26 v1 is unchanged."""
+def graph_checkpoint_evidence(model) -> 'dict[str, _typing.Any] | None':
+    """Query separate process-local Graph v2 proof; legacy P26 v1 is unchanged.
+
+    Args:
+        model: Caller-owned torch.nn.Module; must meet the operation device, dtype and input contract.
+            Required.
+    """
     from ._evaluation_evidence import graph_checkpoint_evidence as evidence
     return evidence(model)
 

@@ -134,6 +134,29 @@ def fp16(source: ExportResult, output_path: str | Path, *, keep_io_types: bool=T
 
     keep_io_types preserves caller FP32 feeds/outputs. Blocked operations remain
     FP32 with casts; this is mixed precision, not a claim of universal FP16.
+
+    Args:
+        source (ExportResult): Verified ONNX ExportResult; its manifest and referenced artifact files
+            are checked before transformation. Required.
+        output_path (str | Path): Destination for a separate inference artifact and sidecars; existing
+            outputs are refused unless config.overwrite permits replacement. Required.
+        keep_io_types (bool): Keep exported graph input/output dtypes unchanged when True; internal
+            conversion is still mixed precision. Default: True.
+        op_block_list (list[str] | None): ONNX operator types retained in FP32 during FP16 conversion;
+            None uses converter defaults. Default: None.
+        example_input (Mapping[str, Any] | None): Optional complete graph-name to CPU tensor/array feed
+            for runtime comparison. Without it, transformation alone cannot yield deployment
+            verification. Default: None.
+        config (ExportConfig): Configuration object or versioned mapping accepted by this API; loading
+            settings alone does not execute a workload. Default: ExportConfig(atol=0.001, rtol=0.01).
+
+    Returns:
+        ExportResult describing mixed operator precision. Read deployment_verified separately from
+        artifact/checker success.
+
+    Raises:
+        ExportError: Unsupported input, dependency, integrity, resource or evidence requirements fail.
+        OSError: Explicit artifact or report file access fails.
     """
     if type(keep_io_types) is not bool or op_block_list is not None and (type(op_block_list) is not list or any(type(n) is not str for n in op_block_list)):
         raise ExportError('PRECISION','boolean I/O policy and optional operation names required')
@@ -167,6 +190,42 @@ def quantize(source: ExportResult, output_path: str | Path, *, mode: Literal['dy
     Calibration is user supplied, finite, copied and content-hashed. The caller's
     representativeness declaration is recorded, never inferred from batch count.
     Dynamic quantization does not promise INT8 Conv or TensorRT compatibility.
+
+    Args:
+        source (ExportResult): Verified ONNX ExportResult; its manifest and referenced artifact files
+            are checked before transformation. Required.
+        output_path (str | Path): Destination for a separate inference artifact and sidecars; existing
+            outputs are refused unless config.overwrite permits replacement. Required.
+        mode (Literal['dynamic', 'static']): dynamic uses integer MatMul/Gemm without calibration;
+            static uses symmetric QDQ and requires calibration plus dataset_id. Default: 'dynamic'.
+        calibration (Iterable[Mapping[str, Any]] | None): Caller-supplied iterable of complete named CPU
+            input feeds. Static INT8 consumes copied, finite, shape/dtype-matching batches; dynamic mode
+            rejects calibration. Default: None.
+        dataset_id (str | None): Explicit bounded cohort identifier; static calibration requires a
+            nonempty string of at most 256 characters. Default: None.
+        representative (bool): Caller declaration that calibration data represents deployment inputs;
+            batch count never proves representativeness. Default: False.
+        min_calibration_batches (int): Minimum static calibration batches; must satisfy
+            2<=min_calibration_batches<=max_calibration_batches<=256. Default: 2.
+        max_calibration_batches (int): Maximum consumed calibration batches; exceeding the declared
+            bound raises rather than returning partial PASS. Default: 64.
+        op_types (list[str] | None): Quantized operator selection: dynamic permits MatMul/Gemm; static
+            permits Conv/MatMul/Gemm. None selects all permitted types. Default: None.
+        profiles (dict | None): Named dynamic input min/opt/max shape bounds; calibration feeds must lie
+            inside the declared range. Default: None.
+        example_input (Mapping[str, Any] | None): Optional complete graph-name to CPU tensor/array feed
+            for runtime comparison. Without it, transformation alone cannot yield deployment
+            verification. Default: None.
+        config (ExportConfig): Configuration object or versioned mapping accepted by this API; loading
+            settings alone does not execute a workload. Default: ExportConfig(atol=0.1, rtol=0.1).
+
+    Returns:
+        ExportResult with the actual quantized operators, calibration provenance and independent
+        validation statuses.
+
+    Raises:
+        ExportError: Unsupported input, dependency, integrity, resource or evidence requirements fail.
+        OSError: Explicit artifact or report file access fails.
     """
     if mode not in ('dynamic','static'):raise ExportError('QUANTIZATION','dynamic/static required')
     allowed={'MatMul','Gemm'} if mode=='dynamic' else {'Conv','MatMul','Gemm'}

@@ -23,7 +23,8 @@ class ArtifactSource:
     """Size/SHA-pinned file dependency. Paths are locators, hashes are identity.
 
     Args:
-        path (str): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+        path (str): Filesystem path for the specific reader/exporter; no configuration code is executed.
+            Required.
         sha256 (str): Exact canonical SHA-256 content digest. Required.
         bytes (int): Observed byte count under the declared metric scope. Required.
 
@@ -31,9 +32,10 @@ class ArtifactSource:
         An instance of ArtifactSource with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ArtifactSource(path=path, sha256=sha256, bytes=bytes)
 
@@ -57,16 +59,18 @@ class ArtifactSource:
         """Explicitly fingerprint an existing file without deserializing it.
 
         Args:
-            path (str | Path): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            path (str | Path): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
 
         Returns:
             A validated ArtifactSource instance reconstructed from the supplied data.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ArtifactSource.from_path(path)
 
@@ -88,10 +92,11 @@ class ArtifactSource:
             The retained verify value, without recomputing measurements.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.verify()
 
@@ -119,21 +124,28 @@ class OperationPolicy:
 
     Args:
         allow_capture (bool): Explicit permission for the supported capture operation. Default: False.
-        allow_training (bool): Explicit permission for the selected native training operation. Default: False.
-        allow_cuda (bool): Explicit CUDA permission flag; this alone does not satisfy GPU admission. Default: False.
-        allow_camera (bool): Explicit permission for the supported camera operation; source binding and guards still apply. Default: False.
+        allow_training (bool): Explicit permission for the selected native training operation. Default:
+            False.
+        allow_cuda (bool): Explicit CUDA permission flag; this alone does not satisfy GPU admission.
+            Default: False.
+        allow_camera (bool): Explicit permission for the supported camera operation; source binding and
+            guards still apply. Default: False.
         allow_long_run (bool): Explicit permission for the bounded long-run operation. Default: False.
-        allow_power_sampling (bool): Explicit permission for supported power-sensor sampling. Default: False.
-        allow_file_writes (bool): Explicit permission for native output file writes within the operation scope. Default: False.
-        peak_reset_pid (int | None): Process identity associated with peak-memory reset evidence. Default: None.
+        allow_power_sampling (bool): Explicit permission for supported power-sensor sampling. Default:
+            False.
+        allow_file_writes (bool): Explicit permission for native output file writes within the operation
+            scope. Default: False.
+        peak_reset_pid (int | None): Process identity associated with peak-memory reset evidence.
+            Default: None.
 
     Returns:
         An instance of OperationPolicy with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         OperationPolicy()
 
@@ -169,16 +181,19 @@ class RetainedSource:
 
     Args:
         payload (dict[str, Any]): Plain retained evidence payload. Required.
-        options (dict[str, Any]): Existing keyword options of the delegated API; unknown options are not silently inferred. Default: field(default_factory=dict).
-        companions (tuple[dict[str, Any], ...]): Related retained records required to interpret this evidence. Default: ().
+        options (dict[str, Any]): Existing keyword options of the delegated API; unknown options are not
+            silently inferred. Default: field(default_factory=dict).
+        companions (tuple[dict[str, Any], ...]): Related retained records required to interpret this
+            evidence. Default: ().
 
     Returns:
         An instance of RetainedSource with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         RetainedSource(payload=payload)
 
@@ -196,18 +211,22 @@ class InferenceSource:
     """Resident model/input or CPU master/input factory for explicit sweeps.
 
     Args:
-        model (Any): Caller-owned model; device, dtype and task must match the native operation. Required.
-        input_tensor (Any): Caller-supplied input Tensor with the declared shape/device/dtype. Default: None.
+        model (Any): Caller-owned model; device, dtype and task must match the native operation.
+            Required.
+        input_tensor (Any): Caller-supplied input Tensor with the declared shape/device/dtype. Default:
+            None.
         input_factory (Any): Trusted input factory bound to this measurement. Default: None.
-        options (dict[str, Any]): Existing keyword options of the delegated API; unknown options are not silently inferred. Default: field(default_factory=dict).
+        options (dict[str, Any]): Existing keyword options of the delegated API; unknown options are not
+            silently inferred. Default: field(default_factory=dict).
 
     Returns:
         An instance of InferenceSource with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         InferenceSource(model=model)
 
@@ -226,17 +245,21 @@ class PipelineSource:
     """Trusted sample source and explicit native pipeline stages.
 
     Args:
-        model (Any): Caller-owned model; device, dtype and task must match the native operation. Required.
-        source (Any): Typed native/retained source required by this API, not a declaration of producer authority. Required.
-        options (dict[str, Any]): Existing keyword options of the delegated API; unknown options are not silently inferred. Default: field(default_factory=dict).
+        model (Any): Caller-owned model; device, dtype and task must match the native operation.
+            Required.
+        source (Any): Typed native/retained source required by this API, not a declaration of producer
+            authority. Required.
+        options (dict[str, Any]): Existing keyword options of the delegated API; unknown options are not
+            silently inferred. Default: field(default_factory=dict).
 
     Returns:
         An instance of PipelineSource with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         PipelineSource(model=model, source=source)
 
@@ -254,17 +277,21 @@ class RecipeSource:
     """Native ColdStartRecipe or TrainingMemoryRecipe; factory import is deferred.
 
     Args:
-        recipe (Any): Trusted construction recipe; factory import/execution is governed by the existing operation contract. Required.
-        options (dict[str, Any]): Existing keyword options of the delegated API; unknown options are not silently inferred. Default: field(default_factory=dict).
-        analysis_options (dict[str, dict[str, Any]]): Closed options for the selected native analysis. Default: field(default_factory=dict).
+        recipe (Any): Trusted construction recipe; factory import/execution is governed by the existing
+            operation contract. Required.
+        options (dict[str, Any]): Existing keyword options of the delegated API; unknown options are not
+            silently inferred. Default: field(default_factory=dict).
+        analysis_options (dict[str, dict[str, Any]]): Closed options for the selected native analysis.
+            Default: field(default_factory=dict).
 
     Returns:
         An instance of RecipeSource with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         RecipeSource(recipe=recipe)
 
@@ -282,19 +309,25 @@ class EvaluationSource:
     """Classification model/loader or retained ordered targets/predictions.
 
     Args:
-        model (Any): Caller-owned model; device, dtype and task must match the native operation. Default: None.
-        loader (Any): Caller-owned finite DataLoader with the required input/target batch format. Default: None.
-        targets (Any): Ground-truth targets with the task’s required shape, dtype and label space. Default: None.
-        predictions (Any): Caller-supplied predictions with the declared label space and sample order. Default: None.
-        options (dict[str, Any]): Existing keyword options of the delegated API; unknown options are not silently inferred. Default: field(default_factory=dict).
+        model (Any): Caller-owned model; device, dtype and task must match the native operation.
+            Default: None.
+        loader (Any): Caller-owned finite DataLoader with the required input/target batch format.
+            Default: None.
+        targets (Any): Ground-truth targets with the task’s required shape, dtype and label space.
+            Default: None.
+        predictions (Any): Caller-supplied predictions with the declared label space and sample order.
+            Default: None.
+        options (dict[str, Any]): Existing keyword options of the delegated API; unknown options are not
+            silently inferred. Default: field(default_factory=dict).
 
     Returns:
         An instance of EvaluationSource with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         EvaluationSource()
 
@@ -314,19 +347,24 @@ class QualitySource:
     """Explicit cohort, models and task-specific perturbation or trainer factory.
 
     Args:
-        model (Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+        model (Any): Caller-owned model; device, dtype and task must match the native operation.
+            Required.
         cohort (Any): Fixed evaluation inputs, targets, labels and sample identity. Required.
-        candidate (Any): Validated retained candidate source or predictions required by this comparison. Default: None.
-        perturbation (Any): Explicit perturbed prediction/cohort evidence; no perturbation is synthesized implicitly. Default: None.
-        options (dict[str, Any]): Existing keyword options of the delegated API; unknown options are not silently inferred. Default: field(default_factory=dict).
+        candidate (Any): Validated retained candidate source or predictions required by this comparison.
+            Default: None.
+        perturbation (Any): Explicit perturbed prediction/cohort evidence; no perturbation is
+            synthesized implicitly. Default: None.
+        options (dict[str, Any]): Existing keyword options of the delegated API; unknown options are not
+            silently inferred. Default: field(default_factory=dict).
 
     Returns:
         An instance of QualitySource with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         QualitySource(model=model, cohort=cohort)
 
@@ -349,19 +387,25 @@ class TrainingSource:
     represent distinct episodes and must use distinct Trainer objects.
 
     Args:
-        trainer (Any): Caller-owned standard Trainer; a measurement may execute its fit lifecycle only when called explicitly. Required.
-        train_loader (Any): Finite training loader; batches must follow the task/model input contract. Default: None.
-        val_loader (Any): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
-        session (Any): Prepared caller-owned training session; binding it does not call fit(). Default: None.
-        options (dict[str, Any]): Existing keyword options of the delegated API; unknown options are not silently inferred. Default: field(default_factory=dict).
+        trainer (Any): Caller-owned standard Trainer; a measurement may execute its fit lifecycle only
+            when called explicitly. Required.
+        train_loader (Any): Finite training loader; batches must follow the task/model input contract.
+            Default: None.
+        val_loader (Any): Optional finite validation loader; must agree with the explicit validation
+            setting. Default: None.
+        session (Any): Prepared caller-owned training session; binding it does not call fit(). Default:
+            None.
+        options (dict[str, Any]): Existing keyword options of the delegated API; unknown options are not
+            silently inferred. Default: field(default_factory=dict).
 
     Returns:
         An instance of TrainingSource with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         TrainingSource(trainer=trainer)
 
@@ -381,16 +425,18 @@ class TrainingSource:
 
         Args:
             session (Any): Prepared caller-owned training session; binding it does not call fit(). Required.
-            options (dict[str, Any] | None): Existing keyword options of the delegated API; unknown options are not silently inferred. Default: None.
+            options (dict[str, Any] | None): Existing keyword options of the delegated API; unknown options
+                are not silently inferred. Default: None.
 
         Returns:
             A validated TrainingSource instance reconstructed from the supplied data.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             TrainingSource.from_session(session)
 
@@ -415,15 +461,17 @@ class ProtocolSource:
     """Model-free TransferProtocol or UtilizationProtocol resource.
 
     Args:
-        protocol (Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Required.
+        protocol (Any): Typed native measurement protocol; scope, budgets and device guards remain
+            unchanged. Required.
 
     Returns:
         An instance of ProtocolSource with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ProtocolSource(protocol=protocol)
 
@@ -443,16 +491,19 @@ class RooflineSource:
 
     Args:
         kind (str): Existing run or artifact kind accepted by this operation. Required.
-        source (Any): Typed native/retained source required by this API, not a declaration of producer authority. Required.
-        options (dict[str, Any]): Existing keyword options of the delegated API; unknown options are not silently inferred. Default: field(default_factory=dict).
+        source (Any): Typed native/retained source required by this API, not a declaration of producer
+            authority. Required.
+        options (dict[str, Any]): Existing keyword options of the delegated API; unknown options are not
+            silently inferred. Default: field(default_factory=dict).
 
     Returns:
         An instance of RooflineSource with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         RooflineSource(kind=kind, source=source)
 
@@ -473,19 +524,24 @@ class RuntimeSource:
     inputs. Creating this binding never opens the camera or imports the factory.
 
     Args:
-        recipe (Any): Trusted construction recipe; factory import/execution is governed by the existing operation contract. Default: None.
-        directory (str | None): Dedicated output/owned-run directory; existing overwrite and ownership rules apply. Default: None.
-        stream (Any): Explicit native stream selection; no stream or context is created by a declaration. Default: None.
+        recipe (Any): Trusted construction recipe; factory import/execution is governed by the existing
+            operation contract. Default: None.
+        directory (str | None): Dedicated output/owned-run directory; existing overwrite and ownership
+            rules apply. Default: None.
+        stream (Any): Explicit native stream selection; no stream or context is created by a
+            declaration. Default: None.
         devices (tuple[Any, ...]): Explicit device identities to compare. Default: ().
-        options (dict[str, Any]): Existing keyword options of the delegated API; unknown options are not silently inferred. Default: field(default_factory=dict).
+        options (dict[str, Any]): Existing keyword options of the delegated API; unknown options are not
+            silently inferred. Default: field(default_factory=dict).
 
     Returns:
         An instance of RuntimeSource with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         RuntimeSource()
 
@@ -518,20 +574,26 @@ class NativeBinding:
 
     Args:
         operation_id (str): Exact operation identity. Required.
-        model_ids (tuple[str, ...]): Explicit ordered model identities for the recorded workflow. Required.
-        features (tuple[str, ...]): Explicit feature IDs to compare/plan; prerequisites are never silently executed. Required.
-        source (Source): Typed native/retained source required by this API, not a declaration of producer authority. Required.
-        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
-        policy (OperationPolicy): Existing protocol/resource policy; defaults do not grant additional consent. Default: OperationPolicy().
+        model_ids (tuple[str, ...]): Explicit ordered model identities for the recorded workflow.
+            Required.
+        features (tuple[str, ...]): Explicit feature IDs to compare/plan; prerequisites are never
+            silently executed. Required.
+        source (Source): Typed native/retained source required by this API, not a declaration of
+            producer authority. Required.
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default:
+            'cpu'.
+        policy (OperationPolicy): Existing protocol/resource policy; defaults do not grant additional
+            consent. Default: OperationPolicy().
         artifacts (tuple[ArtifactSource, ...]): Explicit retained artifact references. Default: ().
 
     Returns:
         An instance of NativeBinding with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         NativeBinding(operation_id=operation_id, model_ids=model_ids, features=features, source=source)
 
@@ -574,10 +636,11 @@ class NativeBinding:
             The retained metadata value, without recomputing measurements.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.metadata()
 

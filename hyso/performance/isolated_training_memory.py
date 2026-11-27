@@ -55,22 +55,31 @@ class TrainingMemoryRecipe:
     executes arbitrary trusted Python in the child; this is not a security sandbox.
 
     Args:
-        factory (_typing.Any): Trusted importable factory identity required by the worker recipe. Required.
-        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
-        kwargs (_typing.Any): Keyword options forwarded only to the native target documented by this API. Default: None.
-        factory_search_path (_typing.Any): Explicit trusted factory import search directory. Default: None.
-        seed (int): Random seed recorded/applied by this operation; reproducibility still depends on the device/backend. Default: 0.
-        epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after resume. Default: 1.
-        save_last_to (_typing.Any): Explicit checkpoint destination; writing occurs only during the requested fit. Default: None.
-        resume_from (_typing.Any): Existing compatible checkpoint; model/data/settings and total budget must match. Default: None.
+        factory (_typing.Any): Trusted importable factory identity required by the worker recipe.
+            Required.
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default:
+            'cpu'.
+        kwargs (_typing.Any): Keyword options forwarded only to the native target documented by this
+            API. Default: None.
+        factory_search_path (_typing.Any): Explicit trusted factory import search directory. Default:
+            None.
+        seed (int): Random seed recorded/applied by this operation; reproducibility still depends on the
+            device/backend. Default: 0.
+        epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after
+            resume. Default: 1.
+        save_last_to (_typing.Any): Explicit checkpoint destination; writing occurs only during the
+            requested fit. Default: None.
+        resume_from (_typing.Any): Existing compatible checkpoint; model/data/settings and total budget
+            must match. Default: None.
 
     Returns:
         An instance of TrainingMemoryRecipe with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         TrainingMemoryRecipe(factory)
 
@@ -86,23 +95,32 @@ class TrainingMemoryRecipe:
         """Initialize TrainingMemoryRecipe with the supplied settings.
 
         Args:
-            factory (_typing.Any): Trusted importable factory identity required by the worker recipe. Required.
-            device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
-            kwargs (_typing.Any): Keyword options forwarded only to the native target documented by this API. Default: None.
-            factory_search_path (_typing.Any): Explicit trusted factory import search directory. Default: None.
-            seed (int): Random seed recorded/applied by this operation; reproducibility still depends on the device/backend. Default: 0.
-            epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after resume. Default: 1.
-            save_last_to (_typing.Any): Explicit checkpoint destination; writing occurs only during the requested fit. Default: None.
-            resume_from (_typing.Any): Existing compatible checkpoint; model/data/settings and total budget must match. Default: None.
+            factory (_typing.Any): Trusted importable factory identity required by the worker recipe.
+                Required.
+            device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default:
+                'cpu'.
+            kwargs (_typing.Any): Keyword options forwarded only to the native target documented by this
+                API. Default: None.
+            factory_search_path (_typing.Any): Explicit trusted factory import search directory. Default:
+                None.
+            seed (int): Random seed recorded/applied by this operation; reproducibility still depends on the
+                device/backend. Default: 0.
+            epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after
+                resume. Default: 1.
+            save_last_to (_typing.Any): Explicit checkpoint destination; writing occurs only during the
+                requested fit. Default: None.
+            resume_from (_typing.Any): Existing compatible checkpoint; model/data/settings and total budget
+                must match. Default: None.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             TrainingMemoryRecipe(factory)
 
@@ -165,12 +183,14 @@ class TrainingMemoryRecipe:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -190,28 +210,39 @@ class IsolatedTrainingMemoryProtocol:
 
     Args:
         timeout_seconds (float): Timeout in seconds under the native protocol. Default: 60.0.
-        process_memory_bytes (int | None): Per-process committed host-memory limit in bytes. Default: None.
-        job_memory_bytes (int | None): Aggregate Job committed host-memory limit in bytes; not a GPU VRAM quota. Default: None.
+        process_memory_bytes (int | None): Per-process committed host-memory limit in bytes. Default:
+            None.
+        job_memory_bytes (int | None): Aggregate Job committed host-memory limit in bytes; not a GPU
+            VRAM quota. Default: None.
         max_processes (int): Maximum contained process count. Default: 4.
-        cuda_memory_fraction (float | None): Requested CUDA allocator fraction; not a hardware VRAM quota or admission grant. Default: None.
-        max_result_bytes (int): Max result in bytes; this does not imply a GPU hardware quota. Default: 16 * 1024 ** 2.
+        cuda_memory_fraction (float | None): Requested CUDA allocator fraction; not a hardware VRAM
+            quota or admission grant. Default: None.
+        max_result_bytes (int): Max result in bytes; this does not imply a GPU hardware quota. Default:
+            16 * 1024 ** 2.
         max_log_bytes (int): Max log in bytes; this does not imply a GPU hardware quota. Default: 65536.
-        deterministic (bool): Request the supported deterministic backend settings; this is not a cross-device reproducibility guarantee. Default: True.
-        allow_peak_reset (bool): Explicit permission for peak-counter reset under the native guard. Default: False.
+        deterministic (bool): Request the supported deterministic backend settings; this is not a
+            cross-device reproducibility guarantee. Default: True.
+        allow_peak_reset (bool): Explicit permission for peak-counter reset under the native guard.
+            Default: False.
         max_windows (int): Maximum retained observation windows. Default: 10000.
-        saved_activation_lifetime (bool): Opt into saved-activation lifetime observation; the existing CUDA guard still applies. Default: False.
+        saved_activation_lifetime (bool): Opt into saved-activation lifetime observation; the existing
+            CUDA guard still applies. Default: False.
         max_saved_tensors (int): Bound on tracked saved tensors. Default: 10000.
         max_saved_tensor_events (int): Bound on retained saved-tensor events. Default: 40000.
-        memory_protocol (TrainingMemoryProtocol): Typed memory measurement settings; boundaries and device guards remain explicit. Default: TrainingMemoryProtocol().
-        timing_protocol (TrainingTimingProtocol): Typed timing measurement settings; boundaries and device guards remain explicit. Default: TrainingTimingProtocol().
+        memory_protocol (TrainingMemoryProtocol): Typed memory measurement settings; boundaries and
+            device guards remain explicit. Default: TrainingMemoryProtocol().
+        timing_protocol (TrainingTimingProtocol): Typed timing measurement settings; boundaries and
+            device guards remain explicit. Default: TrainingTimingProtocol().
 
     Returns:
-        An instance of IsolatedTrainingMemoryProtocol with the documented native validation and defaults.
+        An instance of IsolatedTrainingMemoryProtocol with the documented native validation and
+        defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         IsolatedTrainingMemoryProtocol()
 
@@ -460,7 +491,13 @@ def _run_recipe(request,*,_phase_trace=None):
             captured.clear();workload.clear()
 
 
-def sys_path_append(path):
+def sys_path_append(path) -> 'None':
+    """Sys path append using the explicitly supplied evidence.
+
+    Args:
+        path: Filesystem location read or written by this explicit operation; output parents must
+            already exist. Required.
+    """
     import sys
     sys.path.append(path)
 
@@ -593,18 +630,21 @@ def _validate(data):
 
 @dataclass(frozen=True,init=False)
 class IsolatedTrainingMemoryResult:
-    """Read and export validated P23 — Training memory results; unavailable measurements retain their native status.
+    """Read and export validated P23 — Training memory results; unavailable measurements retain their
+    native status.
 
     Args:
-        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+            version/schema validator. Required.
 
     Returns:
         An instance of IsolatedTrainingMemoryResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         IsolatedTrainingMemoryResult(data)
 
@@ -619,16 +659,18 @@ class IsolatedTrainingMemoryResult:
         """Initialize IsolatedTrainingMemoryResult with the supplied settings.
 
         Args:
-            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+                version/schema validator. Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             IsolatedTrainingMemoryResult(data)
 
@@ -648,12 +690,14 @@ class IsolatedTrainingMemoryResult:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -671,10 +715,11 @@ class IsolatedTrainingMemoryResult:
             The retained basic metrics value, without recomputing measurements.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.basic_metrics()
 
@@ -695,10 +740,11 @@ class IsolatedTrainingMemoryResult:
             The retained diagnostics value, without recomputing measurements.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.diagnostics()
 
@@ -721,8 +767,10 @@ class IsolatedTrainingMemoryResult:
         """Serialize this object using its native JSON format and overwrite policy.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             None after the native file export succeeds.
@@ -731,7 +779,7 @@ class IsolatedTrainingMemoryResult:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_json(path)
 
@@ -744,8 +792,10 @@ class IsolatedTrainingMemoryResult:
         """Export this object using its native CSV format and overwrite policy.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             None after the native file export succeeds.
@@ -754,7 +804,7 @@ class IsolatedTrainingMemoryResult:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_csv(path)
 
@@ -807,17 +857,20 @@ def measure_training_memory_isolated(recipe: '_typing.Any',*,protocol: '_typing.
     lifetime or physical VRAM coverage. No retry or parent allocator/RNG calls.
 
     Args:
-        recipe (_typing.Any): Trusted construction recipe; factory import/execution is governed by the existing operation contract. Required.
-        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: None.
+        recipe (_typing.Any): Trusted construction recipe; factory import/execution is governed by the
+            existing operation contract. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards
+            remain unchanged. Default: None.
 
     Returns:
         The retained measure training memory isolated value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         measure_training_memory_isolated(recipe)
 

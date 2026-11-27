@@ -18,9 +18,10 @@ class ComparisonStatus(str, Enum):
         An instance of ComparisonStatus with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ComparisonStatus.COMPARABLE
 
@@ -49,8 +50,10 @@ class ComparisonContract(Contract):
     """Declare the exact metric, scope, protocol and comparison requirements.
 
     Args:
-        metric (NativeMetric): Exact supported metric selector; units and missing-value status are preserved. Default: NativeMetric.FORWARD_P95.
-        allowed_changes (tuple): Explicit model/configuration changes that an advisory proposal may suggest; none are applied automatically. Default: ().
+        metric (NativeMetric): Exact supported metric selector; units and missing-value status are
+            preserved. Default: NativeMetric.FORWARD_P95.
+        allowed_changes (tuple): Explicit model/configuration changes that an advisory proposal may
+            suggest; none are applied automatically. Default: ().
         min_samples (int): Minimum observations required for the statistic. Default: 1000.
         min_tail_samples (int): Minimum tail observations required for a reported quantile. Default: 10.
 
@@ -58,9 +61,10 @@ class ComparisonContract(Contract):
         An instance of ComparisonContract with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ComparisonContract()
 
@@ -92,18 +96,22 @@ class P26QualityComparisonContract(Contract):
     """Explicit observed-stream quality policy; never general performance v1.
 
     Args:
-        metric (NativeMetric): Exact supported metric selector; units and missing-value status are preserved. Default: NativeMetric.TEST_ACCURACY.
-        allowed_changes (tuple): Explicit model/configuration changes that an advisory proposal may suggest; none are applied automatically. Default: ().
+        metric (NativeMetric): Exact supported metric selector; units and missing-value status are
+            preserved. Default: NativeMetric.TEST_ACCURACY.
+        allowed_changes (tuple): Explicit model/configuration changes that an advisory proposal may
+            suggest; none are applied automatically. Default: ().
         min_samples (int): Minimum observations required for the statistic. Default: 1.
-        policy (str): Existing protocol/resource policy; defaults do not grant additional consent. Default: 'p26_exact_observed_stream_v1'.
+        policy (str): Existing protocol/resource policy; defaults do not grant additional consent.
+            Default: 'p26_exact_observed_stream_v1'.
 
     Returns:
         An instance of P26QualityComparisonContract with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         P26QualityComparisonContract()
 
@@ -138,18 +146,23 @@ class P26BoundQualityComparisonContract(Contract):
     Equal state/structure metadata does not certify equal forward behavior.
 
     Args:
-        metric (NativeMetric): Exact supported metric selector; units and missing-value status are preserved. Default: NativeMetric.TEST_ACCURACY.
-        allowed_changes (tuple): Explicit model/configuration changes that an advisory proposal may suggest; none are applied automatically. Default: ().
+        metric (NativeMetric): Exact supported metric selector; units and missing-value status are
+            preserved. Default: NativeMetric.TEST_ACCURACY.
+        allowed_changes (tuple): Explicit model/configuration changes that an advisory proposal may
+            suggest; none are applied automatically. Default: ().
         min_samples (int): Minimum observations required for the statistic. Default: 1.
-        policy (str): Existing protocol/resource policy; defaults do not grant additional consent. Default: 'p26_bound_exact_observed_stream_v1'.
+        policy (str): Existing protocol/resource policy; defaults do not grant additional consent.
+            Default: 'p26_bound_exact_observed_stream_v1'.
 
     Returns:
-        An instance of P26BoundQualityComparisonContract with the documented native validation and defaults.
+        An instance of P26BoundQualityComparisonContract with the documented native validation and
+        defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         P26BoundQualityComparisonContract()
 
@@ -185,9 +198,10 @@ class ComparisonReason(Contract):
         An instance of ComparisonReason with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ComparisonReason(code=code, field=field)
 
@@ -208,7 +222,8 @@ class ComparisonReason(Contract):
 @register
 @dataclass(frozen=True)
 class ComparisonResult(Contract):
-    """Read and export validated Model Comparison results; unavailable measurements retain their native status.
+    """Read and export validated Model Comparison results; unavailable measurements retain their native
+    status.
 
     Args:
         status (ComparisonStatus): Exact lifecycle/status filter accepted by this API. Required.
@@ -216,16 +231,19 @@ class ComparisonResult(Contract):
         reasons (tuple): Structured eligibility/compatibility reasons. Required.
         left (EvidenceRef | None): Left retained input/source in this comparison. Default: None.
         right (EvidenceRef | None): Right retained input/source in this comparison. Default: None.
-        performance_effect (str): Retained or proposed performance effect with its evidence status. Default: 'not_computed'.
-        statistical_independence (str): Explicit evidence status for sample independence; sample count alone does not prove it. Default: 'not_certified'.
+        performance_effect (str): Retained or proposed performance effect with its evidence status.
+            Default: 'not_computed'.
+        statistical_independence (str): Explicit evidence status for sample independence; sample count
+            alone does not prove it. Default: 'not_certified'.
 
     Returns:
         An instance of ComparisonResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ComparisonResult(status=status, contract_sha256=contract_sha256, reasons=reasons)
 
@@ -264,6 +282,10 @@ class CapturedCPUComparisonContract(ComparisonContract):
     physical RAM, dataset provenance, independent samples or a speedup.
     V1 captures keep the original ComparisonContract unchanged.
 
+    Args:
+        footprint_policy (str): Policy distinguishing logical model footprint from measured
+            allocator/process memory. Default: 'exact_logical_inventory_or_verified_checkpoint_size'.
+
     Returns:
         A validated CapturedCPUComparisonContract for retained
         CPU comparison evidence.
@@ -272,7 +294,7 @@ class CapturedCPUComparisonContract(ComparisonContract):
         AdvisorError: An unsupported metric, footprint policy,
             or inherited comparison constraint is supplied.
 
-    Example:
+    Examples:
         Use CapturedCPUComparisonContract with the inherited
         ComparisonContract arguments and a supported CPU metric.
 
@@ -415,16 +437,18 @@ def compare_records(left_resolver: '_typing.Any', left_record_id: '_typing.Any',
         left_record_id (_typing.Any): Exact left evidence identity. Required.
         right_resolver (_typing.Any): Resolver for the right retained source. Required.
         right_record_id (_typing.Any): Exact right evidence identity. Required.
-        contract (_typing.Any): Typed comparison/evaluation contract required by the operation. Default: None.
+        contract (_typing.Any): Typed comparison/evaluation contract required by the operation. Default:
+            None.
 
     Returns:
         The retained compare records value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         compare_records(left_resolver, left_record_id, right_resolver, right_record_id)
 

@@ -74,16 +74,18 @@ def goal_context(resolver: '_typing.Any', record_id: '_typing.Any', metric: Metr
     Args:
         resolver (_typing.Any): Explicit resolver for the retained evidence. Required.
         record_id (_typing.Any): Exact retained evidence identity. Required.
-        metric (_typing.Any): Exact supported metric selector; units and missing-value status are preserved. Required.
+        metric (_typing.Any): Exact supported metric selector; units and missing-value status are
+            preserved. Required.
 
     Returns:
         The retained goal context value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         goal_context(resolver, record_id, metric)
 
@@ -156,10 +158,11 @@ def evaluate_goal(resolver: '_typing.Any', goal: '_typing.Any') -> 'GoalEvaluati
         The retained evaluate goal value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         evaluate_goal(resolver, goal)
 
@@ -225,20 +228,24 @@ def evaluate_goal(resolver: '_typing.Any', goal: '_typing.Any') -> 'GoalEvaluati
 
 
 def evaluate_goals(resolver: '_typing.Any', request: '_typing.Any') -> 'tuple[GoalEvaluation, ...]':
-    """Evaluate the supplied user goals against resolved retained evidence without running missing measurements.
+    """Evaluate the supplied user goals against resolved retained evidence without running missing
+    measurements.
 
     Args:
         resolver (_typing.Any): Explicit resolver for the retained evidence. Required.
-        request (_typing.Any): Validated advisory/selection request; does not authorize execution. Required.
+        request (_typing.Any): Validated advisory/selection request; does not authorize execution.
+            Required.
 
     Returns:
-        A tuple of GoalEvaluation records; validity, evidence support and observed outcome remain separate.
+        A tuple of GoalEvaluation records; validity, evidence support and observed outcome remain
+        separate.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         evaluate_goals(resolver, request)
 

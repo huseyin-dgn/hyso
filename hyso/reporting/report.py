@@ -26,9 +26,10 @@ class ReportError(ValueError):
         An instance of ReportError with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ReportError()
 
@@ -381,15 +382,17 @@ class PresentationReport:
     checks presentation integrity. Native evidence retains its original authority.
 
     Args:
-        data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+        data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema
+            validator. Required.
 
     Returns:
         An instance of PresentationReport with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         PresentationReport(data)
 
@@ -403,16 +406,18 @@ class PresentationReport:
         """Initialize PresentationReport with the supplied settings.
 
         Args:
-            data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema
+                validator. Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             PresentationReport(data)
 
@@ -441,12 +446,14 @@ class PresentationReport:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -460,8 +467,10 @@ class PresentationReport:
         """Export deterministic presentation JSON with all source and chart data.
 
         Args:
-            path (str | Path | None): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (str | Path | None): Filesystem path for the specific reader/exporter; no configuration
+                code is executed. Default: None.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             A JSON string when path is None, otherwise None after writing the file.
@@ -470,7 +479,7 @@ class PresentationReport:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_json()
 
@@ -488,7 +497,8 @@ class PresentationReport:
         """Read bounded presentation JSON and verify its presentation digest.
 
         Args:
-            path (str | Path): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            path (str | Path): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
 
         Returns:
             A validated PresentationReport instance reconstructed from the supplied data.
@@ -497,7 +507,7 @@ class PresentationReport:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             PresentationReport.from_json(path)
 
@@ -512,8 +522,10 @@ class PresentationReport:
         """Render explanatory metric tables and native statuses.
 
         Args:
-            path (str | Path | None): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (str | Path | None): Filesystem path for the specific reader/exporter; no configuration
+                code is executed. Default: None.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             The localized Markdown report string.
@@ -522,7 +534,7 @@ class PresentationReport:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_markdown()
 
@@ -540,8 +552,10 @@ class PresentationReport:
         """Render a self-contained HTML document with embedded Matplotlib SVG charts.
 
         Args:
-            path (str | Path | None): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (str | Path | None): Filesystem path for the specific reader/exporter; no configuration
+                code is executed. Default: None.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             The retained to html value, without recomputing measurements.
@@ -550,7 +564,7 @@ class PresentationReport:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_html()
 
@@ -574,20 +588,24 @@ def create_report(*results: Any, language: _typing.Literal['tr', 'en', 'de', 'es
     Levels are beginner, technical, expert. Missing values keep their source statuses.
 
     Args:
-        language (str): Presentation language: tr/en/de/es; free-form evidence text stays unchanged. Default: 'tr'.
-        level (str): Existing beginner, technical or expert presentation detail level. Default: 'technical'.
+        language (str): Presentation language: tr/en/de/es; free-form evidence text stays unchanged.
+            Default: 'tr'.
+        level (str): Existing beginner, technical or expert presentation detail level. Default:
+            'technical'.
         title (str): Human-readable report title. Default: 'HYSo'.
-        context (AnalysisContext | None): Explicit analysis/evaluation context; caller declarations are not producer attestation. Default: None.
+        context (AnalysisContext | None): Explicit analysis/evaluation context; caller declarations are
+            not producer attestation. Default: None.
         results (Any): Existing typed retained results to present; no workload is rerun. Required.
 
     Returns:
         The retained create report value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         create_report()
 
@@ -638,20 +656,24 @@ def report_experiment(manager: ExperimentManager, experiment_id: str, *, languag
     Retained execution artifacts use the experiment's recorded caller context.
 
     Args:
-        manager (ExperimentManager): Open ExperimentManager instance used for existing history and artifacts. Required.
+        manager (ExperimentManager): Open ExperimentManager instance used for existing history and
+            artifacts. Required.
         experiment_id (str): Exact existing experiment identifier. Required.
-        language (str): Presentation language: tr/en/de/es; free-form evidence text stays unchanged. Default: 'tr'.
-        level (str): Existing beginner, technical or expert presentation detail level. Default: 'technical'.
+        language (str): Presentation language: tr/en/de/es; free-form evidence text stays unchanged.
+            Default: 'tr'.
+        level (str): Existing beginner, technical or expert presentation detail level. Default:
+            'technical'.
         title (str): Human-readable report title. Default: 'HYSo'.
 
     Returns:
         The retained report experiment value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         report_experiment(manager, experiment_id)
 

@@ -112,6 +112,23 @@ def tensorrt(model_path: str | Path | ExportResult, output_path: str | Path, *,
     without it conversion can succeed but deployment remains unverified. Workspace
     is separate from the capped GPU allocator budget. Engine portability is limited
     to the recorded GPU/platform/TRT version. No runtime/SDK is installed.
+
+    Args:
+        model_path (str | Path | ExportResult): Existing inference model artifact path; source
+            verification precedes runtime use. Required.
+        output_path (str | Path): Destination for a separate inference artifact and sidecars; existing
+            outputs are refused unless config.overwrite permits replacement. Required.
+        precision (Literal['fp32', 'fp16', 'int8']): Requested fp32/fp16/int8 numerical policy;
+            precision labels do not prove hardware instruction selection. Default: 'fp32'.
+        profiles (dict[str, dict[str, list[int]]] | None): Named dynamic input min/opt/max shape bounds;
+            calibration feeds must lie inside the declared range. Default: None.
+        example_input (dict[str, Any] | None): Representative input tensor or ordered tensor collection
+            for this explicit operation; source model/device must match. Default: None.
+        native (NativeConfig | None): Explicit NativeConfig for owned GPU execution. Omission grants no
+            accelerator admission; experimental support limits remain in force. Default: None.
+        config (ExportConfig): Configuration object or versioned mapping accepted by this API; loading
+            settings alone does not execute a workload. Default: ExportConfig().
+
     HYSo Guide: export.overview
     """
     if precision not in ('fp32','fp16','int8'):raise ExportError('PRECISION','fp32/fp16 or explicit INT8 QDQ required')
@@ -210,6 +227,29 @@ def pytorch_tensorrt(model: Any, example_input: Any, output_path: str | Path, *,
     Direct Torch-TensorRT compilation is a distinct unavailable backend in this
     profile. Intermediate retention is mandatory in E04; unverified cleanup is never
     attempted. An absent TensorRT dependency is detected before any repeated export.
+
+    Args:
+        model (Any): Caller-owned torch.nn.Module; must meet the operation device, dtype and input
+            contract. Required.
+        example_input (Any): Representative input tensor or ordered tensor collection for this explicit
+            operation; source model/device must match. Required.
+        output_path (str | Path): Destination for a separate inference artifact and sidecars; existing
+            outputs are refused unless config.overwrite permits replacement. Required.
+        backend (Literal['onnx', 'torch_tensorrt']): onnx selects the retained ONNX chain;
+            torch_tensorrt remains an unavailable distinct backend, with no fallback. Default: 'onnx'.
+        onnx_artifact (ExportResult | None): Existing verified ONNX ExportResult used as the conversion
+            intermediate. Default: None.
+        retain_intermediate (bool): Keep the explicitly generated ONNX intermediate when True; ownership
+            and cleanup rules remain in force. Default: True.
+        native (NativeConfig | None): Explicit NativeConfig for owned GPU execution. Omission grants no
+            accelerator admission; experimental support limits remain in force. Default: None.
+        config (ExportConfig): Configuration object or versioned mapping accepted by this API; loading
+            settings alone does not execute a workload. Default: ExportConfig().
+        precision (Literal['fp32', 'fp16', 'int8']): Requested fp32/fp16/int8 numerical policy;
+            precision labels do not prove hardware instruction selection. Default: 'fp32'.
+        profiles (dict[str, dict[str, list[int]]] | None): Named dynamic input min/opt/max shape bounds;
+            calibration feeds must lie inside the declared range. Default: None.
+
     HYSo Guide: export.overview
     """
     if backend!='onnx':blocked('UNSUPPORTED_BACKEND','direct Torch-TensorRT compilation is not admitted in E01–E06','torch_tensorrt')
@@ -238,6 +278,17 @@ def aotinductor(exported_program: ExportResult, output_path: str | Path, *,confi
     Windows/Torch 2.5 native AOT deployment is unsupported. Other platforms are
     capability-detected but not admitted by this Windows-owned release adapter.
     No compiler/SDK download or in-process compilation is attempted.
+
+    Args:
+        exported_program (ExportResult): Existing ExportedProgram artifact to compile explicitly;
+            unsupported platforms fail closed. Required.
+        output_path (str | Path): Destination for a separate inference artifact and sidecars; existing
+            outputs are refused unless config.overwrite permits replacement. Required.
+        config (ExportConfig): Configuration object or versioned mapping accepted by this API; loading
+            settings alone does not execute a workload. Default: ExportConfig().
+        native (NativeConfig | None): Explicit NativeConfig for owned GPU execution. Omission grants no
+            accelerator admission; experimental support limits remain in force. Default: None.
+
     HYSo Guide: export.overview
     """
     exported_program.verify()

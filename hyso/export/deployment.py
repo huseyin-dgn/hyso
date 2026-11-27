@@ -13,6 +13,22 @@ def benchmark(runtime: Runtime, inputs: Any, *, warmup: int=2, iterations: int=1
 
     Disk and process RSS observations have distinct scopes. GPU timing, transfers,
     peaks, and engine build time are unavailable, never inferred from host time.
+
+    Args:
+        runtime (Runtime): Explicit Runtime handle; runtime loading/validation is outside timed
+            inference samples. Required.
+        inputs (Any): Tensor inputs matching the selected runtime input names, shapes and dtypes.
+            Required.
+        warmup (int): Untimed inference calls before sampling; integer in 0..100. Default: 2.
+        iterations (int): Timed inference calls; integer in 1..1000 for export.benchmark. Default: 10.
+
+    Returns:
+        Detached deployment benchmark dictionary with real samples, scope, conditions and explicitly
+        unavailable fields.
+
+    Raises:
+        ExportError: Unsupported input, dependency, integrity, resource or evidence requirements fail.
+        OSError: Explicit artifact or report file access fails.
     """
     from ..benchmark.result import _statistics,_throughput
     from ._model import tensors,outputs
@@ -78,7 +94,24 @@ def benchmark(runtime: Runtime, inputs: Any, *, warmup: int=2, iterations: int=1
 
 
 def compare(baseline: dict, candidate: dict, *, validation: dict | None=None) -> dict[str,Any]:
-    """Compare saved measurements only when workload, scope and hardware match."""
+    """Compare saved measurements only when workload, scope and hardware match.
+
+    Args:
+        baseline (dict): Reference evidence used as the denominator/origin of candidate differences;
+            missing/incompatible evidence is not inferred. Required.
+        candidate (dict): Evidence or runtime being compared to the reference; measurements remain bound
+            to their recorded conditions. Required.
+        validation (dict | None): Matching validation evidence or validation requirement, as declared by
+            this API; absent evidence remains NOT_TESTED. Default: None.
+
+    Returns:
+        Detached comparison dictionary; BLOCKED with incompatibilities when measurement conditions do
+        not match.
+
+    Raises:
+        ExportError: Unsupported input, dependency, integrity, resource or evidence requirements fail.
+        OSError: Explicit artifact or report file access fails.
+    """
     from ..analysis._codec import digest
     for row in (baseline,candidate):
         if row.get('format')!='hyso.export.benchmark' or row.get('status')!='PASS':raise ExportError('COMPARISON_SPEC','completed deployment benchmarks required')

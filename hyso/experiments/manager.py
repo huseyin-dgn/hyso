@@ -35,10 +35,35 @@ else:
 
 
 class ExperimentError(RuntimeError):
-    """Safe domain error. Payloads and underlying storage messages are omitted."""
+    """Safe domain error. Payloads and underlying storage messages are omitted.
+
+    Args:
+        code: Stable machine-readable diagnostic code; distinct from the human-readable reason.
+            Required.
+        operation: Store operation that raised the diagnostic. Required.
+        entity_id: Experiment entity identifier associated with this diagnostic. Default: None.
+        request_id: Identifier for correlating the requested store operation. Default: None.
+        event_id: Identifier of the retained store event, when available. Default: None.
+        retryable: Whether the failure explicitly permits a caller-controlled retry. Default: False.
+        commit_state: Recorded store commit outcome; uncertain commits must not be silently retried.
+            Default: 'not_committed'.
+    """
 
     def __init__(self, code, operation, *, entity_id=None, request_id=None,
-                 event_id=None, retryable=False, commit_state="not_committed"):
+                 event_id=None, retryable=False, commit_state="not_committed") -> 'None':
+        """Initialize ExperimentError from the supplied settings or evidence.
+
+        Args:
+            code: Stable machine-readable diagnostic code; distinct from the human-readable reason.
+                Required.
+            operation: Store operation that raised the diagnostic. Required.
+            entity_id: Experiment entity identifier associated with this diagnostic. Default: None.
+            request_id: Identifier for correlating the requested store operation. Default: None.
+            event_id: Identifier of the retained store event, when available. Default: None.
+            retryable: Whether the failure explicitly permits a caller-controlled retry. Default: False.
+            commit_state: Recorded store commit outcome; uncertain commits must not be silently retried.
+                Default: 'not_committed'.
+        """
         super().__init__(f"{operation}: {code}")
         self.code = code
         self.operation = operation
@@ -306,8 +331,10 @@ class ExperimentManager:
     known OneDrive roots, network drives and reparse points are rejected.
 
     Args:
-        root_dir (str | _PathLike[str]): Dedicated local ExperimentManager directory outside synchronized folders. Required.
-        max_metrics_per_run (int): Maximum persisted metric observation count per run. Default: _MAX_METRICS.
+        root_dir (str | _PathLike[str]): Dedicated local ExperimentManager directory outside
+            synchronized folders. Required.
+        max_metrics_per_run (int): Maximum persisted metric observation count per run. Default:
+            _MAX_METRICS.
 
     Returns:
         An instance of ExperimentManager with the documented native validation and defaults.
@@ -316,7 +343,7 @@ class ExperimentManager:
         ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
         OSError: Native filesystem access fails.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         manager = ExperimentManager("C:/local-hyso/store")
 
@@ -345,7 +372,7 @@ class ExperimentManager:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ExperimentManager(root_dir)
 
@@ -504,7 +531,7 @@ class ExperimentManager:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.close()
 
@@ -539,8 +566,10 @@ class ExperimentManager:
         request_id is an optional idempotency key, not a model identifier.
 
         Args:
-            name (str): Registered component name, exact metric label, or stored entity name in this API. Required.
-            request_id (str | None): Optional idempotency key for the stored operation; not a model or artifact identity. Default: None.
+            name (str): Registered component name, exact metric label, or stored entity name in this API.
+                Required.
+            request_id (str | None): Optional idempotency key for the stored operation; not a model or
+                artifact identity. Default: None.
 
         Returns:
             The retained create experiment value, without recomputing measurements.
@@ -549,7 +578,7 @@ class ExperimentManager:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.create_experiment(name)
 
@@ -584,7 +613,7 @@ class ExperimentManager:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.get_experiment(id)
 
@@ -604,7 +633,8 @@ class ExperimentManager:
         kind/status match the same run. Existing run states remain authoritative.
 
         Args:
-            name (str | None): Registered component name, exact metric label, or stored entity name in this API. Default: None.
+            name (str | None): Registered component name, exact metric label, or stored entity name in this
+                API. Default: None.
             kind (str | None): Existing run or artifact kind accepted by this operation. Default: None.
             status (str | None): Exact lifecycle/status filter accepted by this API. Default: None.
             after_seq (int | None): Exclusive sequence cursor from the previous page. Default: None.
@@ -617,7 +647,7 @@ class ExperimentManager:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.list_experiments()
 
@@ -664,16 +694,24 @@ class ExperimentManager:
         Args:
             experiment_id (str): Exact existing experiment identifier. Required.
             stage (str): Workflow stage or timing-stage identity for this operation. Required.
-            model_ids (_typing.Sequence[str]): Explicit ordered model identities for the recorded workflow. Required.
-            architectures (dict[str, ModelBuilder | GraphModelBuilder] | None): Plain architecture configurations to compare. Default: None.
-            training_config (TrainingConfig | None): Retained training settings to record; this does not start training. Default: None.
+            model_ids (_typing.Sequence[str]): Explicit ordered model identities for the recorded workflow.
+                Required.
+            architectures (dict[str, ModelBuilder | GraphModelBuilder] | None): Plain architecture
+                configurations to compare. Default: None.
+            training_config (TrainingConfig | None): Retained training settings to record; this does not
+                start training. Default: None.
             analysis (AnalysisDryRun | None): Retained analysis selection/context metadata. Default: None.
             comparison (ModelComparisonResult | None): Retained comparison configuration. Default: None.
-            dataset (dict[str, _typing.Any] | None): Caller-owned finite Dataset used by the loader or trace wrapper. Default: None.
-            device (str | None): Optional device selector following this API's native placement/default rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
-            precision (str | None): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: None.
-            protocol (dict[str, _typing.Any] | None): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: None.
-            request_id (str | None): Optional idempotency key for the stored operation; not a model or artifact identity. Default: None.
+            dataset (dict[str, _typing.Any] | None): Caller-owned finite Dataset used by the loader or trace
+                wrapper. Default: None.
+            device (str | None): Optional device selector following this API's native placement/default
+                rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
+            precision (str | None): Supported numerical format; runtime/task/device restrictions remain
+                authoritative. Default: None.
+            protocol (dict[str, _typing.Any] | None): Typed native measurement protocol; scope, budgets and
+                device guards remain unchanged. Default: None.
+            request_id (str | None): Optional idempotency key for the stored operation; not a model or
+                artifact identity. Default: None.
 
         Returns:
             The retained create workflow run value, without recomputing measurements.
@@ -682,7 +720,7 @@ class ExperimentManager:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.create_workflow_run(experiment_id, stage, model_ids=model_ids)
 
@@ -715,7 +753,7 @@ class ExperimentManager:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.get_experiment_history(experiment_id)
 
@@ -748,7 +786,8 @@ class ExperimentManager:
 
         Args:
             run_id (str): Exact existing run identifier; never a process ID. Required.
-            after_metric_seq (int | None): Exclusive metric sequence cursor for the next page. Default: None.
+            after_metric_seq (int | None): Exclusive metric sequence cursor for the next page. Default:
+                None.
             after_artifact_seq (int | None): Exclusive artifact cursor for the next page. Default: None.
             limit (int): Bounded page/record count; native Manager limits still apply. Default: 100.
 
@@ -759,7 +798,7 @@ class ExperimentManager:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.get_run_details(run_id)
 
@@ -784,7 +823,8 @@ class ExperimentManager:
 
         Args:
             artifact_id (str): Exact registered artifact identifier. Required.
-            path (str | _PathLike[str] | None): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+            path (str | _PathLike[str] | None): Filesystem path for the specific reader/exporter; no
+                configuration code is executed. Default: None.
 
         Returns:
             The retained open result value, without recomputing measurements.
@@ -793,7 +833,7 @@ class ExperimentManager:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.open_result(artifact_id)
 
@@ -811,12 +851,18 @@ class ExperimentManager:
         Args:
             experiment_id (str): Exact existing experiment identifier. Required.
             kind (str): Existing run or artifact kind accepted by this operation. Required.
-            config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained state. Required.
-            provenance (_typing.Any): Plain origin/environment metadata; declarations are not producer attestation. Default: None.
-            redact_paths (_typing.Sequence[int]): Paths within configuration/provenance to redact before persistence. Default: ().
-            retry_of_run_id (str | None): Explicit previous attempt identity; this records lineage and never retries automatically. Default: None.
-            resume_artifact_id (str | None): Registered checkpoint artifact identity used for resume lineage. Default: None.
-            request_id (str | None): Optional idempotency key for the stored operation; not a model or artifact identity. Default: None.
+            config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained
+                state. Required.
+            provenance (_typing.Any): Plain origin/environment metadata; declarations are not producer
+                attestation. Default: None.
+            redact_paths (_typing.Sequence[int]): Paths within configuration/provenance to redact before
+                persistence. Default: ().
+            retry_of_run_id (str | None): Explicit previous attempt identity; this records lineage and never
+                retries automatically. Default: None.
+            resume_artifact_id (str | None): Registered checkpoint artifact identity used for resume
+                lineage. Default: None.
+            request_id (str | None): Optional idempotency key for the stored operation; not a model or
+                artifact identity. Default: None.
 
         Returns:
             An ExperimentRun handle bound to this manager and the exact stored run.
@@ -825,7 +871,7 @@ class ExperimentManager:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.create_run(experiment_id, kind, config)
 
@@ -918,7 +964,8 @@ class ExperimentManager:
         Backups remain after any failure; no automatic restore/delete is performed.
 
         Args:
-            root_dir (_typing.Any): Dedicated local ExperimentManager directory outside synchronized folders. Required.
+            root_dir (_typing.Any): Dedicated local ExperimentManager directory outside synchronized
+                folders. Required.
 
         Returns:
             The retained migrate store value, without recomputing measurements.
@@ -927,7 +974,7 @@ class ExperimentManager:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ExperimentManager.migrate_store(root_dir)
 
@@ -1022,7 +1069,8 @@ class ExperimentManager:
         Args:
             run_id (str): Exact existing run identifier; never a process ID. Required.
             expected_revision (int): Expected stored revision for optimistic concurrency checks. Required.
-            reason (str): Explicit human-readable lifecycle reason; not an automatic workload diagnosis. Required.
+            reason (str): Explicit human-readable lifecycle reason; not an automatic workload diagnosis.
+                Required.
 
         Returns:
             The retained recover interrupted value, without recomputing measurements.
@@ -1031,7 +1079,7 @@ class ExperimentManager:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.recover_interrupted(run_id, expected_revision, reason)
 
@@ -1083,7 +1131,7 @@ class ExperimentManager:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.get_artifact(artifact_id)
 
@@ -1110,7 +1158,7 @@ class ExperimentManager:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.list_artifacts()
 
@@ -1167,7 +1215,7 @@ class ExperimentManager:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.link_artifact(run_id, artifact_id)
 
@@ -1359,7 +1407,8 @@ class ExperimentManager:
 
         Args:
             artifact_id (str): Exact registered artifact identifier. Required.
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Default: None.
 
         Returns:
             The retained verify artifact value, without recomputing measurements.
@@ -1368,7 +1417,7 @@ class ExperimentManager:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.verify_artifact(artifact_id)
 
@@ -1404,7 +1453,7 @@ class ExperimentManager:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.reconcile_storage()
 
@@ -1491,7 +1540,7 @@ class ExperimentManager:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.get_run(id)
 
@@ -1535,7 +1584,7 @@ class ExperimentManager:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.list_runs()
 
@@ -1562,7 +1611,8 @@ class ExperimentRun:
     """Manager-created runtime handle; all reads reflect persisted records.
 
     Args:
-        manager (_typing.Any): Open ExperimentManager instance used for existing history and artifacts. Required.
+        manager (_typing.Any): Open ExperimentManager instance used for existing history and artifacts.
+            Required.
         identity (_typing.Any): Exact stored or measured identity bound to this object. Required.
 
     Returns:
@@ -1572,7 +1622,7 @@ class ExperimentRun:
         ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
         OSError: Native filesystem access fails.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ExperimentRun(manager, identity)
 
@@ -1585,7 +1635,8 @@ class ExperimentRun:
         """Initialize ExperimentRun with the supplied settings.
 
         Args:
-            manager (ExperimentManager): Open ExperimentManager instance used for existing history and artifacts. Required.
+            manager (ExperimentManager): Open ExperimentManager instance used for existing history and
+                artifacts. Required.
             identity (str): Exact stored or measured identity bound to this object. Required.
 
         Returns:
@@ -1595,7 +1646,7 @@ class ExperimentRun:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ExperimentRun(manager, identity)
 
@@ -1616,7 +1667,7 @@ class ExperimentRun:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.id
 
@@ -1630,12 +1681,14 @@ class ExperimentRun:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -1690,14 +1743,18 @@ class ExperimentRun:
         """Register a file by reference or managed copy under the store ownership rules.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
             kind (str): Existing run or artifact kind accepted by this operation. Default: 'checkpoint'.
-            ownership (str): Reference or managed-copy ownership policy; artifact identity checks remain unchanged. Default: 'reference'.
+            ownership (str): Reference or managed-copy ownership policy; artifact identity checks remain
+                unchanged. Default: 'reference'.
             role (str): Input, output or report relation accepted by this operation. Default: 'output'.
-            request_id (str | None): Optional idempotency key for the stored operation; not a model or artifact identity. Default: None.
+            request_id (str | None): Optional idempotency key for the stored operation; not a model or
+                artifact identity. Default: None.
             metadata (_typing.Any): Plain JSON-compatible descriptive metadata. Default: None.
             retain_locator (bool): Retain the source locator in artifact metadata. Default: False.
-            max_size_bytes (_typing.Any): Max size in bytes; this does not imply a GPU hardware quota. Default: 1024 ** 3.
+            max_size_bytes (_typing.Any): Max size in bytes; this does not imply a GPU hardware quota.
+                Default: 1024 ** 3.
 
         Returns:
             The registered artifact record; a reference does not copy or load the source file.
@@ -1706,7 +1763,7 @@ class ExperimentRun:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.add_artifact(path)
 
@@ -1728,8 +1785,10 @@ class ExperimentRun:
         Run lifecycle remains explicit, including after a storage/logging failure.
 
         Args:
-            result (TrainingResult | AnalysisExecutionResult | ModelComparisonResult): Retained typed result required by this operation. Required.
-            input_artifact_ids (_typing.Sequence[str]): Existing input artifacts to link to the recorded result. Default: ().
+            result (TrainingResult | AnalysisExecutionResult | ModelComparisonResult): Retained typed result
+                required by this operation. Required.
+            input_artifact_ids (_typing.Sequence[str]): Existing input artifacts to link to the recorded
+                result. Default: ().
 
         Returns:
             The retained record result value, without recomputing measurements.
@@ -1738,7 +1797,7 @@ class ExperimentRun:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.record_result(result)
 
@@ -1753,7 +1812,8 @@ class ExperimentRun:
         """Transition this run to running and record the lifecycle event.
 
         Args:
-            request_id (str | None): Optional idempotency key for the stored operation; not a model or artifact identity. Default: None.
+            request_id (str | None): Optional idempotency key for the stored operation; not a model or
+                artifact identity. Default: None.
 
         Returns:
             The recorded transition reason dictionary; lifecycle preconditions remain enforced.
@@ -1762,7 +1822,7 @@ class ExperimentRun:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.start()
 
@@ -1776,8 +1836,10 @@ class ExperimentRun:
         """Mark this run completed; this records status and does not verify workload success independently.
 
         Args:
-            reason (str): Explicit human-readable lifecycle reason; not an automatic workload diagnosis. Default: 'completed'.
-            request_id (str | None): Optional idempotency key for the stored operation; not a model or artifact identity. Default: None.
+            reason (str): Explicit human-readable lifecycle reason; not an automatic workload diagnosis.
+                Default: 'completed'.
+            request_id (str | None): Optional idempotency key for the stored operation; not a model or
+                artifact identity. Default: None.
 
         Returns:
             The recorded transition reason dictionary; lifecycle preconditions remain enforced.
@@ -1786,7 +1848,7 @@ class ExperimentRun:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.finish()
 
@@ -1802,8 +1864,10 @@ class ExperimentRun:
         Args:
             code (str): Explicit failure/status code. Required.
             failure_domain (str): Failure classification recorded by the caller. Default: 'workload'.
-            workload_outcome (str): Caller-declared workload outcome; store metadata alone does not attest success. Default: 'failed'.
-            request_id (str | None): Optional idempotency key for the stored operation; not a model or artifact identity. Default: None.
+            workload_outcome (str): Caller-declared workload outcome; store metadata alone does not attest
+                success. Default: 'failed'.
+            request_id (str | None): Optional idempotency key for the stored operation; not a model or
+                artifact identity. Default: None.
 
         Returns:
             The recorded transition reason dictionary; lifecycle preconditions remain enforced.
@@ -1812,7 +1876,7 @@ class ExperimentRun:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.fail(code)
 
@@ -1829,8 +1893,10 @@ class ExperimentRun:
         """Record this run as interrupted with the supplied reason.
 
         Args:
-            reason (str): Explicit human-readable lifecycle reason; not an automatic workload diagnosis. Default: 'interrupted'.
-            request_id (str | None): Optional idempotency key for the stored operation; not a model or artifact identity. Default: None.
+            reason (str): Explicit human-readable lifecycle reason; not an automatic workload diagnosis.
+                Default: 'interrupted'.
+            request_id (str | None): Optional idempotency key for the stored operation; not a model or
+                artifact identity. Default: None.
 
         Returns:
             The recorded transition reason dictionary; lifecycle preconditions remain enforced.
@@ -1839,7 +1905,7 @@ class ExperimentRun:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.interrupt()
 
@@ -1895,15 +1961,20 @@ class ExperimentRun:
         """Persist one metric observation on an explicit epoch/update/observation axis.
 
         Args:
-            name (str): Registered component name, exact metric label, or stored entity name in this API. Required.
-            value (int | float): Finite observed metric value; this store does not accept unavailable/null observations. Required.
-            unit (str): Recorded metric unit; fractions, percentages and percentage points are distinct. Required.
-            source (str): Typed native/retained source required by this API, not a declaration of producer authority. Required.
+            name (str): Registered component name, exact metric label, or stored entity name in this API.
+                Required.
+            value (int | float): Finite observed metric value; this store does not accept unavailable/null
+                observations. Required.
+            unit (str): Recorded metric unit; fractions, percentages and percentage points are distinct.
+                Required.
+            source (str): Typed native/retained source required by this API, not a declaration of producer
+                authority. Required.
             epoch (int | None): One-based training epoch context where applicable. Default: None.
             step (int | None): Nonnegative index on the explicitly named metric axis. Default: None.
             step_kind (_typing.Any): Supported update/attempt/microbatch/observation axis. Default: None.
             event_id (str | None): Optional idempotency identity for this metric event. Default: None.
-            observed_at_utc (_typing.Any): Optional UTC observation timestamp; persistence time is recorded separately. Default: None.
+            observed_at_utc (_typing.Any): Optional UTC observation timestamp; persistence time is recorded
+                separately. Default: None.
 
         Returns:
             Persisted metric record(s), including their sequence identities.
@@ -1912,7 +1983,7 @@ class ExperimentRun:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.log_metric(name=name, value=value, unit=unit, source=source)
 
@@ -1943,7 +2014,7 @@ class ExperimentRun:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.log_metrics(records)
 
@@ -2005,7 +2076,8 @@ class ExperimentRun:
         """Read a bounded page of recorded metric observations without recomputing them.
 
         Args:
-            name (str | None): Registered component name, exact metric label, or stored entity name in this API. Default: None.
+            name (str | None): Registered component name, exact metric label, or stored entity name in this
+                API. Default: None.
             after_seq (int | None): Exclusive sequence cursor from the previous page. Default: None.
             limit (int): Bounded page/record count; native Manager limits still apply. Default: 1000.
 
@@ -2016,7 +2088,7 @@ class ExperimentRun:
             ExperimentError: The existing identity, lifecycle, concurrency or storage contract is rejected.
             OSError: Native filesystem access fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.read_metrics()
 

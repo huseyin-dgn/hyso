@@ -8,8 +8,20 @@ class NamedTensorDataset(Dataset):
 
     Names bind tensors explicitly. Dictionary insertion order is immaterial.
     Checkpoint admission additionally validates the exact Graph/task/dtype contract.
+
+    Args:
+        inputs: Tensor inputs matching the selected runtime input names, shapes and dtypes. Required.
+        targets: Classification targets aligned with the named input samples; no automatic task/loss
+            inference. Required.
     """
-    def __init__(self, inputs, targets):
+    def __init__(self, inputs, targets) -> 'None':
+        """Initialize NamedTensorDataset from the supplied settings or evidence.
+
+        Args:
+            inputs: Tensor inputs matching the selected runtime input names, shapes and dtypes. Required.
+            targets: Classification targets aligned with the named input samples; no automatic task/loss
+                inference. Required.
+        """
         if (type(inputs) is not dict or len(inputs) != 2
                 or any(type(name) is not str or not name for name in inputs)):
             raise ValueError('NamedTensorDataset requires exactly two explicit input names')
@@ -32,8 +44,20 @@ class NamedTargetDataset(Dataset):
     """One Tensor or two named CPU inputs; exactly two named classification targets.
 
     Automatic multi-loss resume requires the closed CPU fp32 loader/config profile.
+
+    Args:
+        inputs: Tensor inputs matching the selected runtime input names, shapes and dtypes. Required.
+        targets: Classification targets aligned with the named input samples; no automatic task/loss
+            inference. Required.
     """
-    def __init__(self, inputs, targets):
+    def __init__(self, inputs, targets) -> 'None':
+        """Initialize NamedTargetDataset from the supplied settings or evidence.
+
+        Args:
+            inputs: Tensor inputs matching the selected runtime input names, shapes and dtypes. Required.
+            targets: Classification targets aligned with the named input samples; no automatic task/loss
+                inference. Required.
+        """
         if (type(targets) is not dict or len(targets) != 2
                 or any(type(k) is not str or not k for k in targets)):
             raise ValueError('two explicit target names required')

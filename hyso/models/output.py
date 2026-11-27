@@ -24,7 +24,8 @@ class GraphTensorOutput(nn.Module):
     Args:
         graph (_typing.Any): Validated GraphModel used by this output selector. Required.
         output_name (_typing.Any): Exact named Graph output to expose. Required.
-        task (str | None): Explicit supported task; classification metrics do not imply detection or segmentation support. Default: None.
+        task (str | None): Explicit supported task; classification metrics do not imply detection or
+            segmentation support. Default: None.
         named_inputs (bool): Explicit named tensor inputs matching the graph contract. Default: False.
 
     Returns:
@@ -34,7 +35,7 @@ class GraphTensorOutput(nn.Module):
         ValueError, TypeError: Native configuration, shape or input validation rejects the request.
         RuntimeError: A requested native construction/forward operation fails.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         GraphTensorOutput(graph, output_name)
 
@@ -49,7 +50,8 @@ class GraphTensorOutput(nn.Module):
         Args:
             graph (_typing.Any): Validated GraphModel used by this output selector. Required.
             output_name (_typing.Any): Exact named Graph output to expose. Required.
-            task (str | None): Explicit supported task; classification metrics do not imply detection or segmentation support. Default: None.
+            task (str | None): Explicit supported task; classification metrics do not imply detection or
+                segmentation support. Default: None.
             named_inputs (bool): Explicit named tensor inputs matching the graph contract. Default: False.
 
         Returns:
@@ -59,7 +61,7 @@ class GraphTensorOutput(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             GraphTensorOutput(graph, output_name)
 
@@ -109,7 +111,8 @@ class GraphTensorOutput(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            inputs (_typing.Any): Named input specifications for the builder, ordered references for add(), or supported runtime inputs for forward(). Required.
+            inputs (_typing.Any): Named input specifications for the builder, ordered references for add(),
+                or supported runtime inputs for forward(). Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -118,7 +121,7 @@ class GraphTensorOutput(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(inputs)
 

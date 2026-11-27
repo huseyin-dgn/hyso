@@ -28,10 +28,11 @@ def evaluation_capabilities() -> 'dict[str, _typing.Any]':
         A plain capability description of the supported tasks, input types and metrics.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         evaluation_capabilities()
 
@@ -133,18 +134,21 @@ def _metrics(raw, config):
 
 @dataclass(frozen=True, init=False)
 class EvaluationResult:
-    """Read and export validated P26 — Classification quality results; unavailable measurements retain their native status.
+    """Read and export validated P26 — Classification quality results; unavailable measurements retain
+    their native status.
 
     Args:
-        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+            version/schema validator. Required.
 
     Returns:
         An instance of EvaluationResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         EvaluationResult(data)
 
@@ -159,16 +163,18 @@ class EvaluationResult:
         """Initialize EvaluationResult with the supplied settings.
 
         Args:
-            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+                version/schema validator. Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             EvaluationResult(data)
 
@@ -241,12 +247,14 @@ class EvaluationResult:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -266,7 +274,7 @@ class EvaluationResult:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.structure_snapshot
 
@@ -284,8 +292,10 @@ class EvaluationResult:
         """Serialize this object using its native JSON format and overwrite policy.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             None after the native file export succeeds.
@@ -294,7 +304,7 @@ class EvaluationResult:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_json(path)
 
@@ -309,8 +319,10 @@ class EvaluationResult:
         """Export this object using its native CSV format and overwrite policy.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             None after the native file export succeeds.
@@ -319,7 +331,7 @@ class EvaluationResult:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_csv(path)
 
@@ -370,11 +382,15 @@ def evaluate_predictions(targets: '_typing.Any', predictions: '_typing.Any', *, 
     absent classes participate in macro; zero denominators use 0 or 1 explicitly.
 
     Args:
-        targets (_typing.Any): Ground-truth targets with the task’s required shape, dtype and label space. Required.
-        predictions (_typing.Any): Caller-supplied predictions with the declared label space and sample order. Required.
-        class_names (_typing.Any): Ordered class labels matching the prediction class dimension. Required.
+        targets (_typing.Any): Ground-truth targets with the task’s required shape, dtype and label
+            space. Required.
+        predictions (_typing.Any): Caller-supplied predictions with the declared label space and sample
+            order. Required.
+        class_names (_typing.Any): Ordered class labels matching the prediction class dimension.
+            Required.
         split (_typing.Any): Explicit dataset split label used in evaluation identity. Required.
-        task (str): Explicit supported task; classification metrics do not imply detection or segmentation support. Default: 'multiclass'.
+        task (str): Explicit supported task; classification metrics do not imply detection or
+            segmentation support. Default: 'multiclass'.
         prediction_type (str): Supported logits/probabilities/labels interpretation. Default: 'labels'.
         zero_division (int): Policy for undefined ratios with a zero denominator. Default: 0.
         source_id (_typing.Any): Stable identity of the measured/retained source. Default: None.
@@ -383,10 +399,11 @@ def evaluate_predictions(targets: '_typing.Any', predictions: '_typing.Any', *, 
         The retained evaluate predictions value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         evaluate_predictions(targets, predictions, class_names=class_names, split=split)
 
@@ -457,27 +474,36 @@ def evaluate_classification(model: '_typing.Any', loader: '_typing.Any', *, clas
     binding does not change EvaluationResult schema1/2/3 or legacy P26 evidence.
 
     Args:
-        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
-        loader (_typing.Any): Caller-owned finite DataLoader with the required input/target batch format. Required.
-        class_names (_typing.Any): Ordered class labels matching the prediction class dimension. Required.
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation.
+            Required.
+        loader (_typing.Any): Caller-owned finite DataLoader with the required input/target batch
+            format. Required.
+        class_names (_typing.Any): Ordered class labels matching the prediction class dimension.
+            Required.
         split (_typing.Any): Explicit dataset split label used in evaluation identity. Required.
-        task (str): Explicit supported task; classification metrics do not imply detection or segmentation support. Default: 'multiclass'.
+        task (str): Explicit supported task; classification metrics do not imply detection or
+            segmentation support. Default: 'multiclass'.
         zero_division (int): Policy for undefined ratios with a zero denominator. Default: 0.
         source_id (_typing.Any): Stable identity of the measured/retained source. Default: None.
         max_samples (int): Upper bound on collected samples. Default: 1000000.
-        capture_evidence (bool): Retain the supported evidence payload; this does not add missing measurements. Default: False.
-        capture_structure (bool): Request supported structure evidence in the explicit operation. Default: False.
-        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
-        capture_receiver_runtime (bool): Request supported receiver runtime evidence in the explicit operation. Default: False.
+        capture_evidence (bool): Retain the supported evidence payload; this does not add missing
+            measurements. Default: False.
+        capture_structure (bool): Request supported structure evidence in the explicit operation.
+            Default: False.
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default:
+            'cpu'.
+        capture_receiver_runtime (bool): Request supported receiver runtime evidence in the explicit
+            operation. Default: False.
 
     Returns:
         The retained evaluate classification value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         evaluate_classification(model, loader, class_names=class_names, split=split)
 

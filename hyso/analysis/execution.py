@@ -37,9 +37,10 @@ class AnalysisExecutionError(ValueError):
         An instance of AnalysisExecutionError with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         AnalysisExecutionError()
 
@@ -65,20 +66,26 @@ class CPUAnalysisPolicy:
         batch_count (int): Number of batches within the explicit measurement boundary. Default: 2.
         repeats (int): Number of independently recorded measurement windows/repeats. Default: 1.
         queue_depth (int): Bound on in-flight pipeline work. Default: 2.
-        quantiles (tuple[float, ...]): Requested latency quantiles; tail adequacy is checked separately. Default: (0.5, 0.95, 0.99).
-        max_input_bytes (int): Max input in bytes; this does not imply a GPU hardware quota. Default: 8 * 1024 ** 2.
-        max_model_bytes (int): Max model in bytes; this does not imply a GPU hardware quota. Default: 256 * 1024 ** 2.
-        min_available_memory_bytes (int): Min available memory in bytes; this does not imply a GPU hardware quota. Default: 128 * 1024 ** 2.
-        min_available_commit_bytes (int): Min available commit in bytes; this does not imply a GPU hardware quota. Default: 256 * 1024 ** 2.
+        quantiles (tuple[float, ...]): Requested latency quantiles; tail adequacy is checked separately.
+            Default: (0.5, 0.95, 0.99).
+        max_input_bytes (int): Max input in bytes; this does not imply a GPU hardware quota. Default: 8
+            * 1024 ** 2.
+        max_model_bytes (int): Max model in bytes; this does not imply a GPU hardware quota. Default:
+            256 * 1024 ** 2.
+        min_available_memory_bytes (int): Min available memory in bytes; this does not imply a GPU
+            hardware quota. Default: 128 * 1024 ** 2.
+        min_available_commit_bytes (int): Min available commit in bytes; this does not imply a GPU
+            hardware quota. Default: 256 * 1024 ** 2.
 
     Returns:
         An instance of CPUAnalysisPolicy with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         CPUAnalysisPolicy()
 
@@ -119,18 +126,22 @@ class AnalysisPlan:
     """Pure selection and policy snapshot. to_dict() performs no native preflight.
 
     Args:
-        request (FeaturePlanRequest): Validated advisory/selection request; does not authorize execution. Required.
+        request (FeaturePlanRequest): Validated advisory/selection request; does not authorize
+            execution. Required.
         device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Required.
-        execution_mode (str): Supported execution profile; selection does not authorize a workload. Required.
-        policy (CPUAnalysisPolicy): Existing protocol/resource policy; defaults do not grant additional consent. Required.
+        execution_mode (str): Supported execution profile; selection does not authorize a workload.
+            Required.
+        policy (CPUAnalysisPolicy): Existing protocol/resource policy; defaults do not grant additional
+            consent. Required.
 
     Returns:
         An instance of AnalysisPlan with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         AnalysisPlan(request=request, device=device, execution_mode=execution_mode, policy=policy)
 
@@ -161,7 +172,7 @@ class AnalysisPlan:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.selected_features
 
@@ -176,12 +187,14 @@ class AnalysisPlan:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -217,22 +230,30 @@ def plan_analysis(models: ModelContext | Sequence[ModelContext] | FeaturePlanReq
     Profiles choose IDs, not permissions. Existing G1 dependency semantics remain.
 
     Args:
-        models (ModelContext | Sequence[ModelContext] | FeaturePlanRequest): Explicit model contexts or architecture definitions required by this planner/comparison. Required.
-        features (str | Sequence[str] | None): Explicit feature IDs to compare/plan; prerequisites are never silently executed. Default: None.
-        profile (str | None): Retained calibration/profile evidence with its exact identity and scope. Default: None.
-        capabilities (Sequence[str]): Explicit supported runtime/provider capabilities used by preflight. Default: ().
-        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
-        execution_mode (str): Supported execution profile; selection does not authorize a workload. Default: 'trusted_cpu'.
-        policy (CPUAnalysisPolicy): Existing protocol/resource policy; defaults do not grant additional consent. Default: CPUAnalysisPolicy().
+        models (ModelContext | Sequence[ModelContext] | FeaturePlanRequest): Explicit model contexts or
+            architecture definitions required by this planner/comparison. Required.
+        features (str | Sequence[str] | None): Explicit feature IDs to compare/plan; prerequisites are
+            never silently executed. Default: None.
+        profile (str | None): Retained calibration/profile evidence with its exact identity and scope.
+            Default: None.
+        capabilities (Sequence[str]): Explicit supported runtime/provider capabilities used by
+            preflight. Default: ().
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default:
+            'cpu'.
+        execution_mode (str): Supported execution profile; selection does not authorize a workload.
+            Default: 'trusted_cpu'.
+        policy (CPUAnalysisPolicy): Existing protocol/resource policy; defaults do not grant additional
+            consent. Default: CPUAnalysisPolicy().
 
     Returns:
         The retained plan analysis value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         plan_analysis(models)
 
@@ -279,17 +300,21 @@ class AnalysisDryRun:
 
     Args:
         plan (_typing.Any): Typed selection plan; a plan alone grants no execution permission. Required.
-        bindings (_typing.Any): Typed live/isolated/native bindings; identities and operation permissions must match the plan. Required.
-        isolated_policy (_typing.Any): Explicit existing isolation/resource policy; not a generic Python security sandbox. Required.
-        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+        bindings (_typing.Any): Typed live/isolated/native bindings; identities and operation
+            permissions must match the plan. Required.
+        isolated_policy (_typing.Any): Explicit existing isolation/resource policy; not a generic Python
+            security sandbox. Required.
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+            version/schema validator. Required.
 
     Returns:
         An instance of AnalysisDryRun with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         AnalysisDryRun(plan, bindings, isolated_policy, data)
 
@@ -302,18 +327,22 @@ class AnalysisDryRun:
 
         Args:
             plan (_typing.Any): Typed selection plan; a plan alone grants no execution permission. Required.
-            bindings (_typing.Any): Typed live/isolated/native bindings; identities and operation permissions must match the plan. Required.
-            isolated_policy (_typing.Any): Explicit existing isolation/resource policy; not a generic Python security sandbox. Required.
-            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            bindings (_typing.Any): Typed live/isolated/native bindings; identities and operation
+                permissions must match the plan. Required.
+            isolated_policy (_typing.Any): Explicit existing isolation/resource policy; not a generic Python
+                security sandbox. Required.
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+                version/schema validator. Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             AnalysisDryRun(plan, bindings, isolated_policy, data)
 
@@ -329,12 +358,14 @@ class AnalysisDryRun:
         """Return detached per-model support, reasons, costs, limits and OS estimates.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -355,9 +386,10 @@ class AnalysisDryRun:
             The retained tracking config value, without recomputing measurements.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.tracking_config()
 
@@ -449,18 +481,23 @@ def preflight_analysis(plan: AnalysisPlan, bindings: Sequence[LiveCPUModel | Tru
     In-process byte/operation limits do not bound arbitrary trusted Python runtime.
 
     Args:
-        plan (AnalysisPlan): Typed selection plan; a plan alone grants no execution permission. Required.
-        bindings (Sequence[LiveCPUModel | TrustedFactoryBinding | NativeBinding]): Typed live/isolated/native bindings; identities and operation permissions must match the plan. Default: ().
-        isolated_policy (IsolatedCPUExecutionPolicy): Explicit existing isolation/resource policy; not a generic Python security sandbox. Default: IsolatedCPUExecutionPolicy().
+        plan (AnalysisPlan): Typed selection plan; a plan alone grants no execution permission.
+            Required.
+        bindings (Sequence[LiveCPUModel | TrustedFactoryBinding | NativeBinding]): Typed
+            live/isolated/native bindings; identities and operation permissions must match the plan.
+            Default: ().
+        isolated_policy (IsolatedCPUExecutionPolicy): Explicit existing isolation/resource policy; not a
+            generic Python security sandbox. Default: IsolatedCPUExecutionPolicy().
 
     Returns:
         The retained preflight analysis value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         preflight_analysis(plan)
 
@@ -571,15 +608,17 @@ class AnalysisExecutionResult:
     """Detached execution outcomes and native evidence, without acceptance claims.
 
     Args:
-        _payload: Canonical serialized payload required by this existing low-level constructor; prefer the public parser/factory. Required.
+        _payload: Canonical serialized payload required by this existing low-level constructor; prefer
+            the public parser/factory. Required.
 
     Returns:
         An instance of AnalysisExecutionResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         result = execute_analysis(dry_run, authorized_features=features)
 
@@ -593,12 +632,14 @@ class AnalysisExecutionResult:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -612,8 +653,10 @@ class AnalysisExecutionResult:
         """Explicit no-clobber export. No files are written by execution itself.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             None after the native file export succeeds.
@@ -622,7 +665,7 @@ class AnalysisExecutionResult:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_json(path)
 
@@ -637,16 +680,18 @@ class AnalysisExecutionResult:
         """Reopen through the existing Manager result validation, without execution.
 
         Args:
-            data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema
+                validator. Required.
 
         Returns:
             A validated AnalysisExecutionResult instance reconstructed from the supplied data.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             AnalysisExecutionResult.from_dict(data)
 
@@ -662,7 +707,8 @@ class AnalysisExecutionResult:
         """Read a bounded execution snapshot through the same native readers.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
 
         Returns:
             A validated AnalysisExecutionResult instance reconstructed from the supplied data.
@@ -671,7 +717,7 @@ class AnalysisExecutionResult:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             AnalysisExecutionResult.from_json(path)
 
@@ -690,10 +736,11 @@ class AnalysisExecutionResult:
             The retained artifact sources value, without recomputing measurements.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.artifact_sources()
 
@@ -717,10 +764,11 @@ class AnalysisExecutionResult:
             The retained verify artifacts value, without recomputing measurements.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.verify_artifacts()
 
@@ -737,10 +785,11 @@ class AnalysisExecutionResult:
             The retained to evidence index value, without recomputing measurements.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_evidence_index()
 
@@ -763,16 +812,18 @@ class AnalysisExecutionResult:
         """Convert completed selections to a unified report under an explicit analysis context.
 
         Args:
-            context (AnalysisContext): Explicit analysis/evaluation context; caller declarations are not producer attestation. Required.
+            context (AnalysisContext): Explicit analysis/evaluation context; caller declarations are not
+                producer attestation. Required.
 
         Returns:
             A unified report for completed native selections; blocked/missing features are not fabricated.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_unified_report(context=context)
 
@@ -795,18 +846,22 @@ def execute_analysis(dry_run: AnalysisDryRun, *, authorized_features: _typing.Se
     use the existing isolated CPU route where a hard Job deadline is required.
 
     Args:
-        dry_run (AnalysisDryRun): Typed preflight result; missing prerequisites remain blocking. Required.
-        authorized_features (Sequence[str]): Explicit unique selected feature subset authorized for this call only. Required.
-        explicit_authorization (bool): Explicit permission for the selected operation; prerequisites and guards still apply. Default: False.
+        dry_run (AnalysisDryRun): Typed preflight result; missing prerequisites remain blocking.
+            Required.
+        authorized_features (Sequence[str]): Explicit unique selected feature subset authorized for this
+            call only. Required.
+        explicit_authorization (bool): Explicit permission for the selected operation; prerequisites and
+            guards still apply. Default: False.
 
     Returns:
         The retained execute analysis value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         execute_analysis(dry_run, authorized_features=authorized_features)
 

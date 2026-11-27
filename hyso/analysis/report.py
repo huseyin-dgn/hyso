@@ -33,20 +33,26 @@ class AnalysisContext:
 
     Args:
         workload_id (_typing.Any): Exact workload identity for scope alignment. Required.
-        task (str): Explicit supported task; classification metrics do not imply detection or segmentation support. Required.
-        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
-        dataset (_typing.Any): Caller-owned finite Dataset used by the loader or trace wrapper. Required.
-        training (_typing.Any): Explicit training settings/evidence required by this operation. Default: None.
+        task (str): Explicit supported task; classification metrics do not imply detection or
+            segmentation support. Required.
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation.
+            Required.
+        dataset (_typing.Any): Caller-owned finite Dataset used by the loader or trace wrapper.
+            Required.
+        training (_typing.Any): Explicit training settings/evidence required by this operation. Default:
+            None.
         source_revision (_typing.Any): Exact source code/configuration revision. Default: None.
-        references (_typing.Sequence[int]): Named output-to-node references; selecting an output does not prune other nodes. Default: ().
+        references (_typing.Sequence[int]): Named output-to-node references; selecting an output does
+            not prune other nodes. Default: ().
 
     Returns:
         An instance of AnalysisContext with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         AnalysisContext(workload_id=workload_id, task=task, model=model, dataset=dataset)
 
@@ -62,21 +68,27 @@ class AnalysisContext:
 
         Args:
             workload_id (_typing.Any): Exact workload identity for scope alignment. Required.
-            task (str): Explicit supported task; classification metrics do not imply detection or segmentation support. Required.
-            model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
-            dataset (_typing.Any): Caller-owned finite Dataset used by the loader or trace wrapper. Required.
-            training (_typing.Any): Explicit training settings/evidence required by this operation. Default: None.
+            task (str): Explicit supported task; classification metrics do not imply detection or
+                segmentation support. Required.
+            model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation.
+                Required.
+            dataset (_typing.Any): Caller-owned finite Dataset used by the loader or trace wrapper.
+                Required.
+            training (_typing.Any): Explicit training settings/evidence required by this operation. Default:
+                None.
             source_revision (_typing.Any): Exact source code/configuration revision. Default: None.
-            references (_typing.Sequence[_typing.Any]): Named output-to-node references; selecting an output does not prune other nodes. Default: ().
+            references (_typing.Sequence[_typing.Any]): Named output-to-node references; selecting an output
+                does not prune other nodes. Default: ().
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             AnalysisContext(workload_id=workload_id, task=task, model=model, dataset=dataset)
 
@@ -97,12 +109,14 @@ class AnalysisContext:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -168,18 +182,21 @@ def _derive(index, context, title, risks):
 
 @dataclass(frozen=True, init=False)
 class UnifiedAnalysisReport:
-    """Validate and export retained analysis records under one explicit context without rerunning measurements.
+    """Validate and export retained analysis records under one explicit context without rerunning
+    measurements.
 
     Args:
-        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+            version/schema validator. Required.
 
     Returns:
         An instance of UnifiedAnalysisReport with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         UnifiedAnalysisReport(data)
 
@@ -193,16 +210,18 @@ class UnifiedAnalysisReport:
         """Initialize UnifiedAnalysisReport with the supplied settings.
 
         Args:
-            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+                version/schema validator. Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             UnifiedAnalysisReport(data)
 
@@ -236,7 +255,8 @@ class UnifiedAnalysisReport:
 
         Args:
             index (_typing.Any): Retained EvidenceIndex; adding a source does not run it. Required.
-            context (_typing.Any): Explicit analysis/evaluation context; caller declarations are not producer attestation. Required.
+            context (_typing.Any): Explicit analysis/evaluation context; caller declarations are not
+                producer attestation. Required.
             title (str): Human-readable report title. Default: 'HYSo unified analysis'.
             risks (_typing.Sequence[str]): Known limitations/risks attached to the proposal. Default: ().
 
@@ -244,10 +264,11 @@ class UnifiedAnalysisReport:
             A validated UnifiedAnalysisReport combining the supplied retained index and caller context.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             UnifiedAnalysisReport.build(index, context=context)
 
@@ -266,12 +287,14 @@ class UnifiedAnalysisReport:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -285,8 +308,10 @@ class UnifiedAnalysisReport:
         """Serialize this object using its native JSON format and overwrite policy.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             None after the native file export succeeds.
@@ -295,7 +320,7 @@ class UnifiedAnalysisReport:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_json(path)
 
@@ -310,7 +335,8 @@ class UnifiedAnalysisReport:
         """Read and validate this type from a local JSON file.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
 
         Returns:
             A validated UnifiedAnalysisReport instance reconstructed from the supplied data.
@@ -319,7 +345,7 @@ class UnifiedAnalysisReport:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             UnifiedAnalysisReport.from_json(path)
 
@@ -334,8 +360,10 @@ class UnifiedAnalysisReport:
         """Render human explanations and exact scalar references from this report.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             None after writing the Markdown report to the required path.
@@ -344,7 +372,7 @@ class UnifiedAnalysisReport:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_markdown(path)
 

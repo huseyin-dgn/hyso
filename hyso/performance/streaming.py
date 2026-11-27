@@ -25,17 +25,20 @@ class StreamSource:
     Args:
         kind (str): Existing run or artifact kind accepted by this operation. Required.
         location (str | int): Explicit source locator. Required.
-        provenance (str): Plain origin/environment metadata; declarations are not producer attestation. Required.
-        camera_binding (dict | None): Explicit permitted camera/source binding; no device discovery is inferred. Default: None.
+        provenance (str): Plain origin/environment metadata; declarations are not producer attestation.
+            Required.
+        camera_binding (dict | None): Explicit permitted camera/source binding; no device discovery is
+            inferred. Default: None.
 
     Returns:
         An instance of StreamSource with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         StreamSource(kind=kind, location=location, provenance=provenance)
 
@@ -68,23 +71,33 @@ class StreamProtocol:
     """Finite experiment plan. Defaults describe a smoke run, not hardware limits.
 
     Args:
+        process_memory_bytes (int | None): Per-process host-memory budget in bytes, at most 3 GiB for
+            NativeConfig. Default: None.
+        job_memory_bytes (int | None): Whole-job host-memory budget in bytes, at most 6 GiB for
+            NativeConfig; must cover the process budget. Default: None.
+        max_processes (int | None): Maximum processes in the owned native job, at most 4 for
+            NativeConfig. Default: None.
         max_frames (int): Upper bound on frames retained/accepted by this operation. Default: 16.
         queue_capacity (int): Maximum queued streaming frames. Default: 2.
         queue_policy (str): Explicit supported queue overflow policy. Default: 'block'.
         late_after_seconds (float): Late after in seconds under the native protocol. Default: 0.1.
         pace_video (bool): Pace video delivery according to source timestamps. Default: False.
-        startup_timeout_seconds (float): Startup timeout in seconds under the native protocol. Default: 45.0.
-        heartbeat_timeout_seconds (float): Heartbeat timeout in seconds under the native protocol. Default: 5.0.
+        startup_timeout_seconds (float): Startup timeout in seconds under the native protocol. Default:
+            45.0.
+        heartbeat_timeout_seconds (float): Heartbeat timeout in seconds under the native protocol.
+            Default: 5.0.
         max_runtime_seconds (float): Max runtime in seconds under the native protocol. Default: 30.0.
-        max_journal_bytes (int): Max journal in bytes; this does not imply a GPU hardware quota. Default: 128 * 1024 ** 2.
+        max_journal_bytes (int): Max journal in bytes; this does not imply a GPU hardware quota.
+            Default: 128 * 1024 ** 2.
 
     Returns:
         An instance of StreamProtocol with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         StreamProtocol()
 
@@ -118,19 +131,24 @@ def measure_streaming(source: '_typing.Any', processor_recipe: '_typing.Any', di
     """Run an explicitly requested bounded streaming workload in its owned worker.
 
     Args:
-        source (_typing.Any): Typed native/retained source required by this API, not a declaration of producer authority. Required.
-        processor_recipe (_typing.Any): Trusted processor construction recipe for the owned streaming worker. Required.
-        directory (_typing.Any): Dedicated output/owned-run directory; existing overwrite and ownership rules apply. Required.
-        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: StreamProtocol().
+        source (_typing.Any): Typed native/retained source required by this API, not a declaration of
+            producer authority. Required.
+        processor_recipe (_typing.Any): Trusted processor construction recipe for the owned streaming
+            worker. Required.
+        directory (_typing.Any): Dedicated output/owned-run directory; existing overwrite and ownership
+            rules apply. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards
+            remain unchanged. Default: StreamProtocol().
 
     Returns:
         A validated RuntimeResult retaining actual evidence, coverage and unavailable-status fields.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         measure_streaming(source, processor_recipe, directory)
 
@@ -306,17 +324,25 @@ class FrameInferenceProcessor:
     """BGR uint8 -> CPU preprocessing -> explicitly selected CPU/CUDA owned inference.
 
     Args:
-        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
-        size (_typing.Sequence[int]): Explicit byte count or shape extent required by this API. Default: (32, 32).
+        device (str): Explicit execution device selector; passing a CUDA selector does not authorize or
+            validate native execution. Default: 'cpu'.
+        gpu_uuid (_typing.Any): Canonical physical GPU-<UUID>, not an ordinal index. Default: None.
+        cuda_memory_fraction (_typing.Any): Positive bounded fraction for the selected CUDA allocator;
+            not evidence of total GPU memory usage. Default: None.
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation.
+            Required.
+        size (_typing.Sequence[int]): Explicit byte count or shape extent required by this API. Default:
+            (32, 32).
 
     Returns:
         An instance of FrameInferenceProcessor with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         FrameInferenceProcessor(model)
 
@@ -328,17 +354,25 @@ class FrameInferenceProcessor:
         """Initialize FrameInferenceProcessor with the supplied settings.
 
         Args:
-            model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
-            size (_typing.Sequence[int]): Explicit byte count or shape extent required by this API. Default: (32, 32).
+            device (str): Explicit execution device selector; passing a CUDA selector does not authorize or
+                validate native execution. Default: 'cpu'.
+            gpu_uuid (_typing.Any): Canonical physical GPU-<UUID>, not an ordinal index. Default: None.
+            cuda_memory_fraction (_typing.Any): Positive bounded fraction for the selected CUDA allocator;
+                not evidence of total GPU memory usage. Default: None.
+            model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation.
+                Required.
+            size (_typing.Sequence[int]): Explicit byte count or shape extent required by this API. Default:
+                (32, 32).
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             FrameInferenceProcessor(model)
 
@@ -378,10 +412,11 @@ class FrameInferenceProcessor:
             The implementation's per-step output under this explicit worker protocol.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.process(frame)
 
@@ -416,10 +451,11 @@ class FrameInferenceProcessor:
             None. The owned store/sampler resources are closed according to the existing lifecycle.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.close()
 

@@ -18,6 +18,8 @@ from .feature_plan import FeaturePlanRequest, plan_features
 
 
 class IsolatedBridgeError(ValueError):
+    """Report a rejected isolated bridge request.
+    """
     pass
 
 
@@ -74,15 +76,17 @@ class TrustedFactoryBinding:
         source_file (str): Local retained source-evidence path. Required.
         source_sha256 (str): Exact SHA-256 digest of the source. Required.
         factory_name (str): Trusted importable factory name. Default: 'build'.
-        kwargs (dict): Keyword options forwarded only to the native target documented by this API. Default: field(default_factory=dict).
+        kwargs (dict): Keyword options forwarded only to the native target documented by this API.
+            Default: field(default_factory=dict).
 
     Returns:
         An instance of TrustedFactoryBinding with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         TrustedFactoryBinding(model_id=model_id, source_file=source_file, source_sha256=source_sha256)
 
@@ -124,22 +128,26 @@ class IsolatedCPUExecutionPolicy:
     """Bound explicitly authorized CPU workers; this is not a general security sandbox or GPU admission.
 
     Args:
-        explicit_authorization (bool): Explicit permission for the selected operation; prerequisites and guards still apply. Default: False.
+        explicit_authorization (bool): Explicit permission for the selected operation; prerequisites and
+            guards still apply. Default: False.
         timeout_seconds (int): Timeout in seconds under the native protocol. Default: 45.
-        job_memory_limit_bytes (int): Job memory limit in bytes; this does not imply a GPU hardware quota. Default: 2 * 1024 ** 3.
+        job_memory_limit_bytes (int): Job memory limit in bytes; this does not imply a GPU hardware
+            quota. Default: 2 * 1024 ** 3.
         warmup_iterations (int): Unreported warmup iteration count before measured samples. Default: 1.
         batch_count (int): Number of batches within the explicit measurement boundary. Default: 2.
         repeats (int): Number of independently recorded measurement windows/repeats. Default: 1.
         queue_depth (int): Bound on in-flight pipeline work. Default: 2.
-        max_input_bytes (int): Max input in bytes; this does not imply a GPU hardware quota. Default: 8 * 1024 ** 2.
+        max_input_bytes (int): Max input in bytes; this does not imply a GPU hardware quota. Default: 8
+            * 1024 ** 2.
 
     Returns:
         An instance of IsolatedCPUExecutionPolicy with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         IsolatedCPUExecutionPolicy()
 
@@ -173,6 +181,29 @@ class IsolatedCPUExecutionPolicy:
 
 @dataclass(frozen=True)
 class IsolatedCPUReport:
+    """Store isolated c p u report evidence as an immutable typed record.
+
+    Args:
+        status (str): Recorded evidence/coverage status; unavailable values must not be interpreted as
+            zero. Required.
+        reason (str | None): Recorded explanation for rejection, absence or incomplete evidence; None
+            only where the schema allows it. Required.
+        worker_receipt (dict | None): Retained owned-worker lifecycle and cleanup evidence. Required.
+        native_bridge_report (dict | None): Recorded native evidence projection; never fabricated from a
+            plan. Required.
+        requested_feature_ids (tuple): Feature identifiers explicitly requested by the caller. Required.
+        authorized_feature_ids (tuple): Requested features with explicit execution authorization.
+            Required.
+        scope (str): Declared evidence coverage; does not authorize execution. Default:
+            'trusted_factory_windows_hard_job;not_adversarial_code_sandbox'.
+        acceptance (str): Recorded acceptance scope; not a new execution or certification. Default:
+            'NOT_EVALUATED'.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     status: str
     reason: str | None
     worker_receipt: dict | None
@@ -182,7 +213,9 @@ class IsolatedCPUReport:
     scope: str = 'trusted_factory_windows_hard_job;not_adversarial_code_sandbox'
     acceptance: str = 'NOT_EVALUATED'
 
-    def to_dict(self):
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return detached JSON-compatible evidence without rerunning the source workload.
+        """
         return json.loads(_canonical(asdict(self)))
 
 
@@ -293,19 +326,24 @@ def execute_isolated_cpu(request: '_typing.Any', bindings: '_typing.Any', *, aut
     timeout. Distinct worker-created model objects; no original model objects.
 
     Args:
-        request (_typing.Any): Validated advisory/selection request; does not authorize execution. Required.
-        bindings (_typing.Any): Typed live/isolated/native bindings; identities and operation permissions must match the plan. Required.
-        authorized_features (_typing.Any): Explicit unique selected feature subset authorized for this call only. Required.
-        policy (_typing.Any): Existing protocol/resource policy; defaults do not grant additional consent. Default: IsolatedCPUExecutionPolicy().
+        request (_typing.Any): Validated advisory/selection request; does not authorize execution.
+            Required.
+        bindings (_typing.Any): Typed live/isolated/native bindings; identities and operation
+            permissions must match the plan. Required.
+        authorized_features (_typing.Any): Explicit unique selected feature subset authorized for this
+            call only. Required.
+        policy (_typing.Any): Existing protocol/resource policy; defaults do not grant additional
+            consent. Default: IsolatedCPUExecutionPolicy().
 
     Returns:
         The retained execute isolated cpu value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         execute_isolated_cpu(request, bindings, authorized_features=authorized_features)
 

@@ -19,28 +19,36 @@ from .stability import WorkloadRecipe, _run_owned, _load, _atomic, _factory
 
 @dataclass(frozen=True)
 class DeviceProtocol:
-    """Configure P34 — Actual-device comparison measurement boundaries and resource limits; construction does not run the analysis.
+    """Configure P34 — Actual-device comparison measurement boundaries and resource limits; construction
+    does not run the analysis.
 
     Args:
         warmup (int): Warmup settings/count outside reported samples. Default: 3.
         samples (int): Explicit observations/sample count required by this API. Default: 20.
-        precision (str): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: 'float32'.
-        seed (int): Random seed recorded/applied by this operation; reproducibility still depends on the device/backend. Default: 0.
-        startup_timeout_seconds (float): Startup timeout in seconds under the native protocol. Default: 45.0.
+        precision (str): Supported numerical format; runtime/task/device restrictions remain
+            authoritative. Default: 'float32'.
+        seed (int): Random seed recorded/applied by this operation; reproducibility still depends on the
+            device/backend. Default: 0.
+        startup_timeout_seconds (float): Startup timeout in seconds under the native protocol. Default:
+            45.0.
         step_timeout_seconds (float): Step timeout in seconds under the native protocol. Default: 10.0.
         max_runtime_seconds (float): Max runtime in seconds under the native protocol. Default: 60.0.
-        cuda_memory_fraction (float | None): Requested CUDA allocator fraction; not a hardware VRAM quota or admission grant. Default: None.
-        process_memory_bytes (int | None): Per-process committed host-memory limit in bytes. Default: None.
-        job_memory_bytes (int | None): Aggregate Job committed host-memory limit in bytes; not a GPU VRAM quota. Default: None.
+        cuda_memory_fraction (float | None): Requested CUDA allocator fraction; not a hardware VRAM
+            quota or admission grant. Default: None.
+        process_memory_bytes (int | None): Per-process committed host-memory limit in bytes. Default:
+            None.
+        job_memory_bytes (int | None): Aggregate Job committed host-memory limit in bytes; not a GPU
+            VRAM quota. Default: None.
         max_processes (int | None): Maximum contained process count. Default: None.
 
     Returns:
         An instance of DeviceProtocol with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         DeviceProtocol()
 
@@ -111,19 +119,23 @@ def compare_devices(recipe: '_typing.Any', devices: '_typing.Any', directory: '_
     those fields without being presented as the original verifiable artifact.
 
     Args:
-        recipe (_typing.Any): Trusted construction recipe; factory import/execution is governed by the existing operation contract. Required.
+        recipe (_typing.Any): Trusted construction recipe; factory import/execution is governed by the
+            existing operation contract. Required.
         devices (_typing.Any): Explicit device identities to compare. Required.
-        directory (_typing.Any): Dedicated output/owned-run directory; existing overwrite and ownership rules apply. Required.
-        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: DeviceProtocol().
+        directory (_typing.Any): Dedicated output/owned-run directory; existing overwrite and ownership
+            rules apply. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards
+            remain unchanged. Default: DeviceProtocol().
 
     Returns:
         The retained compare devices value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         compare_devices(recipe, devices, directory)
 

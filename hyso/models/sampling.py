@@ -79,19 +79,33 @@ class Resize(nn.Module):
     """NCHW interpolation with exactly one target and explicit floor scale geometry.
 
     Args:
-        output_size (_typing.Any): Explicit target spatial size; resizing cannot restore lost detail. Default: None.
-        scale_factor (_typing.Any): Explicit positive resize scale, mutually exclusive with output_size where required. Default: None.
-        mode (str): Supported interpolation or operation mode of this API. Default: 'nearest'.
-        align_corners (_typing.Any): Supported interpolation alignment choice; only valid for compatible modes. Default: None.
+        output_size (int | tuple[int, int] | list[int] | None): Target H/W grid; integer means a square.
+            Resize requires exactly one of output_size and scale_factor. None or integer/HW pair, each
+            in 1..8192. Default: None.
+        scale_factor (_typing.Any): Positive H/W resize multipliers, each <=8192. Exactly one of this
+            and output_size must be provided. None or positive scalar/HW factors, each <=8192. Default:
+            None.
+        mode (_typing.Literal['nearest', 'bilinear', 'bicubic', 'area']): Resize interpolation method;
+            nearest/area require align_corners=None. Choices: 'nearest', 'bilinear', 'bicubic', 'area'.
+            Default: 'nearest'.
+        align_corners (_typing.Any): Align endpoint pixel centers for bilinear/bicubic resizing; must be
+            None for nearest/area. Boolean or None. Default: None.
 
     Returns:
-        An instance of Resize with the documented native validation and defaults.
+        A Resize module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating nonempty NCHW.
+        Floating NCHW with explicit resize or pixel rearrangement geometry.
+        resize requires exactly one target
+        pixel factors require divisibility
+        reshape preserves sample element count
+        heads are terminal, in_features is inferred by Builder
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         Resize()
 
@@ -103,19 +117,33 @@ class Resize(nn.Module):
         """Initialize Resize with the supplied settings.
 
         Args:
-            output_size (int | tuple[int, int] | list[int] | None): Explicit target spatial size; resizing cannot restore lost detail. Default: None.
-            scale_factor (_typing.Any): Explicit positive resize scale, mutually exclusive with output_size where required. Default: None.
-            mode (str): Supported interpolation or operation mode of this API. Default: 'nearest'.
-            align_corners (_typing.Any): Supported interpolation alignment choice; only valid for compatible modes. Default: None.
+            output_size (int | tuple[int, int] | list[int] | None): Target H/W grid; integer means a square.
+                Resize requires exactly one of output_size and scale_factor. None or integer/HW pair, each
+                in 1..8192. Default: None.
+            scale_factor (_typing.Any): Positive H/W resize multipliers, each <=8192. Exactly one of this
+                and output_size must be provided. None or positive scalar/HW factors, each <=8192. Default:
+                None.
+            mode (_typing.Literal['nearest', 'bilinear', 'bicubic', 'area']): Resize interpolation method;
+                nearest/area require align_corners=None. Choices: 'nearest', 'bilinear', 'bicubic', 'area'.
+                Default: 'nearest'.
+            align_corners (_typing.Any): Align endpoint pixel centers for bilinear/bicubic resizing; must be
+                None for nearest/area. Boolean or None. Default: None.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW.
+            Floating NCHW with explicit resize or pixel rearrangement geometry.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             Resize()
 
@@ -131,7 +159,8 @@ class Resize(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -140,7 +169,7 @@ class Resize(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -160,16 +189,25 @@ class Permute(nn.Module):
     """Keep N/C axes fixed and optionally exchange spatial H/W axes.
 
     Args:
-        dims (_typing.Sequence[int]): Explicit axis permutation/order. Default: (0, 1, 3, 2).
+        dims (_typing.Sequence[int]): Permutation of NCHW axes; only (0,1,2,3) and (0,1,3,2) are
+            accepted, preserving batch/channel axes. Only identity or spatial-axis swap is supported.
+            Default: (0, 1, 3, 2).
 
     Returns:
-        An instance of Permute with the documented native validation and defaults.
+        A Permute module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating NCHW with preserved batch axis.
+        NCHW or terminal NF for flatten, see shape_contract.
+        resize requires exactly one target
+        pixel factors require divisibility
+        reshape preserves sample element count
+        heads are terminal, in_features is inferred by Builder
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         Permute()
 
@@ -181,16 +219,25 @@ class Permute(nn.Module):
         """Initialize Permute with the supplied settings.
 
         Args:
-            dims (_typing.Sequence[int]): dims Default: (0, 1, 3, 2).
+            dims (_typing.Sequence[int]): Permutation of NCHW axes; only (0,1,2,3) and (0,1,3,2) are
+                accepted, preserving batch/channel axes. Only identity or spatial-axis swap is supported.
+                Default: (0, 1, 3, 2).
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW with preserved batch axis.
+            NCHW or terminal NF for flatten, see shape_contract.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             Permute()
 
@@ -206,7 +253,8 @@ class Permute(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -215,7 +263,7 @@ class Permute(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -231,16 +279,24 @@ class Reshape(nn.Module):
     """Reinterpret each sample as explicit positive CHW, preserving batch and elements.
 
     Args:
-        shape (_typing.Any): Explicit target tensor shape; element-count and batch-preservation rules apply. Required.
+        shape (_typing.Any): Target per-sample CHW dimensions; reshape must preserve the number of
+            sample elements and every dimension is 1..8192. Three integers in 1..8192. Required.
 
     Returns:
-        An instance of Reshape with the documented native validation and defaults.
+        A Reshape module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating NCHW with preserved batch axis.
+        NCHW or terminal NF for flatten, see shape_contract.
+        resize requires exactly one target
+        pixel factors require divisibility
+        reshape preserves sample element count
+        heads are terminal, in_features is inferred by Builder
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         Reshape(shape)
 
@@ -252,16 +308,24 @@ class Reshape(nn.Module):
         """Initialize Reshape with the supplied settings.
 
         Args:
-            shape (_typing.Any): Explicit target tensor shape; element-count and batch-preservation rules apply. Required.
+            shape (_typing.Any): Target per-sample CHW dimensions; reshape must preserve the number of
+                sample elements and every dimension is 1..8192. Three integers in 1..8192. Required.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW with preserved batch axis.
+            NCHW or terminal NF for flatten, see shape_contract.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             Reshape(shape)
 
@@ -277,7 +341,8 @@ class Reshape(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -286,7 +351,7 @@ class Reshape(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -303,14 +368,23 @@ class Reshape(nn.Module):
 class Flatten(nn.Flatten):
     """Flatten CHW to one feature axis, preserving symbolic N.
 
+    Args:
+
     Returns:
-        An instance of Flatten with the documented native validation and defaults.
+        A Flatten module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating NCHW with preserved batch axis.
+        NCHW or terminal NF for flatten, see shape_contract.
+        resize requires exactly one target
+        pixel factors require divisibility
+        reshape preserves sample element count
+        heads are terminal, in_features is inferred by Builder
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         Flatten()
 
@@ -321,14 +395,23 @@ class Flatten(nn.Flatten):
     def __init__(self) -> 'None':
         """Initialize Flatten with the supplied settings.
 
+        Args:
+
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW with preserved batch axis.
+            NCHW or terminal NF for flatten, see shape_contract.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             Flatten()
 
@@ -342,7 +425,8 @@ class Flatten(nn.Flatten):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -351,7 +435,7 @@ class Flatten(nn.Flatten):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -381,19 +465,31 @@ class PredictionHead(nn.Module):
     """Project pooled features to the declared output width; training task support is separate.
 
     Args:
-        in_features: in features. Required.
-        pooling: pooling. Default: 'avg'.
-        num_classes: num classes. Required.
-        dropout: dropout. Default: 0.0.
+        in_features (int): Linear-head input width after pooling/flattening; must match the inferred
+            feature width. Integer in 1..8192; bool is rejected. Required.
+        pooling (_typing.Literal['avg', 'max', 'none']): avg/max globally pool NCHW before flattening;
+            none flattens NCHW or consumes flat NF. NF requires none. Choices: 'avg', 'max', 'none'.
+            Default: 'avg'.
+        num_classes (int): Number of output class logits. Outputs are unnormalized scores, not
+            probabilities. Integer in 1..8192; bool is rejected. Required.
+        dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+            number in [0,1). Default: 0.0.
 
     Returns:
-        An instance of PredictionHead with the documented native validation and defaults.
+        A PredictionHead module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating NCHW or NF with pooling=none.
+        Floating NF prediction, head type controls output semantics.
+        resize requires exactly one target
+        pixel factors require divisibility
+        reshape preserves sample element count
+        heads are terminal, in_features is inferred by Builder
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         PredictionHead(in_features=4, num_classes=2)
 
@@ -407,15 +503,31 @@ class PredictionHead(nn.Module):
         """Construct PredictionHead through its existing registry validator.
 
         Args:
-            in_features: in features.
-            pooling: pooling.
-            num_classes: num classes.
-            dropout: dropout.
+            in_features (int): Linear-head input width after pooling/flattening; must match the inferred
+                feature width. Integer in 1..8192; bool is rejected. Required.
+            pooling (_typing.Literal['avg', 'max', 'none']): avg/max globally pool NCHW before flattening;
+                none flattens NCHW or consumes flat NF. NF requires none. Choices: 'avg', 'max', 'none'.
+                Default: 'avg'.
+            num_classes (int): Number of output class logits. Outputs are unnormalized scores, not
+                probabilities. Integer in 1..8192; bool is rejected. Required.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
+
         Returns:
-            None; initializes the existing native module with the supplied options.
+            None; initializes the module.
+
         Raises:
-            ValueError, TypeError: Native component parameter validation fails.
-        Example:
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
+
+        Notes:
+            Floating NCHW or NF with pooling=none.
+            Floating NF prediction, head type controls output semantics.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+
+        Examples:
             model = PredictionHead(in_features=4, num_classes=2)
 
         HYSo Guide: components.heads
@@ -456,7 +568,8 @@ class PredictionHead(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -465,7 +578,7 @@ class PredictionHead(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -488,14 +601,30 @@ class PredictionHead(nn.Module):
 class RegressionHead(PredictionHead):
     """Produce numeric predictions; the public Trainer remains classification-only.
 
+    Args:
+        in_features (int): Linear-head input width after pooling/flattening; must match the inferred
+            feature width. Integer in 1..8192; bool is rejected. Required.
+        pooling (_typing.Literal['avg', 'max', 'none']): avg/max globally pool NCHW before flattening;
+            none flattens NCHW or consumes flat NF. NF requires none. Choices: 'avg', 'max', 'none'.
+            Default: 'avg'.
+        output_features (int): Width of the unrestricted numeric regression output; no classification
+            objective is inferred. Integer in 1..8192; bool is rejected. Required.
+
     Returns:
-        An instance of RegressionHead with the documented native validation and defaults.
+        A RegressionHead module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating NCHW or NF with pooling=none.
+        Floating NF prediction, head type controls output semantics.
+        resize requires exactly one target
+        pixel factors require divisibility
+        reshape preserves sample element count
+        heads are terminal, in_features is inferred by Builder
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         RegressionHead(in_features=4, output_features=4)
 
@@ -509,14 +638,29 @@ class RegressionHead(PredictionHead):
         """Construct RegressionHead through its existing registry validator.
 
         Args:
-            in_features: in features.
-            pooling: pooling.
-            output_features: output features.
+            in_features (int): Linear-head input width after pooling/flattening; must match the inferred
+                feature width. Integer in 1..8192; bool is rejected. Required.
+            pooling (_typing.Literal['avg', 'max', 'none']): avg/max globally pool NCHW before flattening;
+                none flattens NCHW or consumes flat NF. NF requires none. Choices: 'avg', 'max', 'none'.
+                Default: 'avg'.
+            output_features (int): Width of the unrestricted numeric regression output; no classification
+                objective is inferred. Integer in 1..8192; bool is rejected. Required.
+
         Returns:
-            None; initializes the existing native module with the supplied options.
+            None; initializes the module.
+
         Raises:
-            ValueError, TypeError: Native component parameter validation fails.
-        Example:
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
+
+        Notes:
+            Floating NCHW or NF with pooling=none.
+            Floating NF prediction, head type controls output semantics.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+
+        Examples:
             model = RegressionHead(in_features=4, output_features=4)
 
         HYSo Guide: components.heads
@@ -529,14 +673,34 @@ class RegressionHead(PredictionHead):
 class EmbeddingHead(PredictionHead):
     """Produce feature embeddings; the public Trainer does not infer an embedding objective.
 
+    Args:
+        in_features (int): Linear-head input width after pooling/flattening; must match the inferred
+            feature width. Integer in 1..8192; bool is rejected. Required.
+        pooling (_typing.Literal['avg', 'max', 'none']): avg/max globally pool NCHW before flattening;
+            none flattens NCHW or consumes flat NF. NF requires none. Choices: 'avg', 'max', 'none'.
+            Default: 'avg'.
+        embedding_dim (int): Output embedding width for a head, or internal attention projection width
+            as declared by this component. Integer in 1..8192; bool is rejected. Required.
+        normalize (bool): Apply safe per-sample L2 normalization to output embeddings. Boolean only.
+            Default: False.
+        eps (float): Positive numerical stabilizer used in normalization. Embedding normalization also
+            floors it at the dtype tiny value. Finite positive number. Default: 1e-12.
+
     Returns:
-        An instance of EmbeddingHead with the documented native validation and defaults.
+        A EmbeddingHead module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating NCHW or NF with pooling=none.
+        Floating NF prediction, head type controls output semantics.
+        resize requires exactly one target
+        pixel factors require divisibility
+        reshape preserves sample element count
+        heads are terminal, in_features is inferred by Builder
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         EmbeddingHead(in_features=4, embedding_dim=2)
 
@@ -550,16 +714,33 @@ class EmbeddingHead(PredictionHead):
         """Construct EmbeddingHead through its existing registry validator.
 
         Args:
-            in_features: in features.
-            pooling: pooling.
-            embedding_dim: embedding dim.
-            normalize: normalize.
-            eps: eps.
+            in_features (int): Linear-head input width after pooling/flattening; must match the inferred
+                feature width. Integer in 1..8192; bool is rejected. Required.
+            pooling (_typing.Literal['avg', 'max', 'none']): avg/max globally pool NCHW before flattening;
+                none flattens NCHW or consumes flat NF. NF requires none. Choices: 'avg', 'max', 'none'.
+                Default: 'avg'.
+            embedding_dim (int): Output embedding width for a head, or internal attention projection width
+                as declared by this component. Integer in 1..8192; bool is rejected. Required.
+            normalize (bool): Apply safe per-sample L2 normalization to output embeddings. Boolean only.
+                Default: False.
+            eps (float): Positive numerical stabilizer used in normalization. Embedding normalization also
+                floors it at the dtype tiny value. Finite positive number. Default: 1e-12.
+
         Returns:
-            None; initializes the existing native module with the supplied options.
+            None; initializes the module.
+
         Raises:
-            ValueError, TypeError: Native component parameter validation fails.
-        Example:
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
+
+        Notes:
+            Floating NCHW or NF with pooling=none.
+            Floating NF prediction, head type controls output semantics.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+
+        Examples:
             model = EmbeddingHead(in_features=4, embedding_dim=2)
 
         HYSo Guide: components.heads

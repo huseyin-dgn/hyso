@@ -121,24 +121,31 @@ class EvaluationCohort:
     """Explicit paired IDs, labels, order, split, preprocessing and input content.
 
     Args:
-        inputs (_typing.Any): Named input specifications for the builder, ordered references for add(), or supported runtime inputs for forward(). Required.
-        targets (_typing.Any): Ground-truth targets with the task’s required shape, dtype and label space. Required.
+        inputs (_typing.Any): Named input specifications for the builder, ordered references for add(),
+            or supported runtime inputs for forward(). Required.
+        targets (_typing.Any): Ground-truth targets with the task’s required shape, dtype and label
+            space. Required.
         sample_ids (_typing.Any): Unique ordered sample identities for cohort alignment. Required.
-        class_names (_typing.Any): Ordered class labels matching the prediction class dimension. Required.
+        class_names (_typing.Any): Ordered class labels matching the prediction class dimension.
+            Required.
         split (_typing.Any): Explicit dataset split label used in evaluation identity. Required.
-        preprocessing_id (_typing.Any): Identity of the preprocessing used to produce this fixed cohort. Required.
-        task (str): Explicit supported task; classification metrics do not imply detection or segmentation support. Default: 'multiclass'.
+        preprocessing_id (_typing.Any): Identity of the preprocessing used to produce this fixed cohort.
+            Required.
+        task (str): Explicit supported task; classification metrics do not imply detection or
+            segmentation support. Default: 'multiclass'.
 
     Returns:
         An instance of EvaluationCohort with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
-        EvaluationCohort(inputs, targets, sample_ids=sample_ids, class_names=class_names, split=split, preprocessing_id=preprocessing_id)
+        EvaluationCohort(inputs, targets, sample_ids=sample_ids, class_names=class_names, split=split,
+        preprocessing_id=preprocessing_id)
 
     HYSo Guide: analysis.p26
     Offline: hyso docs show analysis.p26 --lang en
@@ -151,24 +158,31 @@ class EvaluationCohort:
         """Initialize EvaluationCohort with the supplied settings.
 
         Args:
-            inputs (_typing.Any): Named input specifications for the builder, ordered references for add(), or supported runtime inputs for forward(). Required.
-            targets (_typing.Any): Ground-truth targets with the task’s required shape, dtype and label space. Required.
+            inputs (_typing.Any): Named input specifications for the builder, ordered references for add(),
+                or supported runtime inputs for forward(). Required.
+            targets (_typing.Any): Ground-truth targets with the task’s required shape, dtype and label
+                space. Required.
             sample_ids (_typing.Any): Unique ordered sample identities for cohort alignment. Required.
-            class_names (_typing.Any): Ordered class labels matching the prediction class dimension. Required.
+            class_names (_typing.Any): Ordered class labels matching the prediction class dimension.
+                Required.
             split (_typing.Any): Explicit dataset split label used in evaluation identity. Required.
-            preprocessing_id (_typing.Any): Identity of the preprocessing used to produce this fixed cohort. Required.
-            task (str): Explicit supported task; classification metrics do not imply detection or segmentation support. Default: 'multiclass'.
+            preprocessing_id (_typing.Any): Identity of the preprocessing used to produce this fixed cohort.
+                Required.
+            task (str): Explicit supported task; classification metrics do not imply detection or
+                segmentation support. Default: 'multiclass'.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
-            EvaluationCohort(inputs, targets, sample_ids=sample_ids, class_names=class_names, split=split, preprocessing_id=preprocessing_id)
+            EvaluationCohort(inputs, targets, sample_ids=sample_ids, class_names=class_names, split=split,
+            preprocessing_id=preprocessing_id)
 
         HYSo Guide: analysis.p26
         Offline: hyso docs show analysis.p26 --lang en
@@ -206,12 +220,14 @@ class EvaluationCohort:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -231,7 +247,7 @@ class EvaluationCohort:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.sha256
 
@@ -248,10 +264,11 @@ class EvaluationCohort:
             Defensive clones of the fixed input and target tensors.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.tensors()
 
@@ -463,30 +480,33 @@ def _quality_device(device):
 
 
 def evaluate_robustness(model: '_typing.Any',cohort: '_typing.Any',perturbation: '_typing.Any', *, corruption_id: '_typing.Any', severity: '_typing.Any', seed: '_typing.Any', device: 'str'='cpu') -> 'QualityExperimentResult':
-    """
-
-    CPU perturbations remain on the immutable cohort; inference uses the explicit CPU/CUDA device.
+    """CPU perturbations remain on the immutable cohort; inference uses the explicit CPU/CUDA device.
     Evaluate clean and perturbed predictions under the paired robustness contract.
 
     Args:
-        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation.
+            Required.
         cohort (_typing.Any): Fixed evaluation inputs, targets, labels and sample identity. Required.
-        perturbation (_typing.Any): Explicit perturbed prediction/cohort evidence; no perturbation is synthesized implicitly. Required.
+        perturbation (_typing.Any): Explicit perturbed prediction/cohort evidence; no perturbation is
+            synthesized implicitly. Required.
         corruption_id (_typing.Any): Stable identifier of the applied corruption. Required.
         severity (_typing.Any): Explicit corruption severity recorded in the comparison. Required.
-        seed (_typing.Any): Random seed recorded/applied by this operation; reproducibility still depends on the device/backend. Required.
+        seed (_typing.Any): Random seed recorded/applied by this operation; reproducibility still
+            depends on the device/backend. Required.
 
         device (str): Explicit CPU or indexed CUDA device, without CPU fallback. Default: 'cpu'.
     Returns:
         A QualityExperimentResult with the explicit perturbation and baseline evidence.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
-        evaluate_robustness(model, cohort, perturbation, corruption_id=corruption_id, severity=severity, seed=seed)
+        evaluate_robustness(model, cohort, perturbation, corruption_id=corruption_id, severity=severity,
+        seed=seed)
 
     HYSo Guide: analysis.p27
     Offline: hyso docs show analysis.p27 --lang en
@@ -534,20 +554,25 @@ def evaluate_precision_quality(model: '_typing.Any',cohort: '_typing.Any', *, ca
     these observations do not certify every operator or CUDA kernel instruction.
 
     Args:
-        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation.
+            Required.
         cohort (_typing.Any): Fixed evaluation inputs, targets, labels and sample identity. Required.
-        candidate (str): Validated retained candidate source or predictions required by this comparison. Default: 'int8_dynamic'.
-        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
-        batch_size (int): Positive batch-size setting or metadata assumption; no implicit batch search. Default: 16.
+        candidate (str): Validated retained candidate source or predictions required by this comparison.
+            Default: 'int8_dynamic'.
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default:
+            'cpu'.
+        batch_size (int): Positive batch-size setting or metadata assumption; no implicit batch search.
+            Default: 16.
 
     Returns:
         The retained evaluate precision quality value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         evaluate_precision_quality(model, cohort)
 
@@ -571,28 +596,31 @@ def evaluate_precision_quality(model: '_typing.Any',cohort: '_typing.Any', *, ca
 
 
 def measure_time_to_quality(factory: '_typing.Any',cohort: '_typing.Any', *, seeds: '_typing.Any', target: '_typing.Any', epochs: 'int'=3,cadence: 'int'=1,metric: _typing.Literal['accuracy', 'macro_f1']='accuracy',device: 'str'='cpu') -> 'QualityExperimentResult':
-    """
-
-    The factory must return a fresh Trainer on the selected device; CUDA evaluation is synchronized by its native reader.2..8 fresh CPU fits, <=10 epochs/seed, <=256 train/eval samples.
+    """The factory must return a fresh Trainer on the selected device; CUDA evaluation is synchronized by
+    its native reader.2..8 fresh CPU fits, <=10 epochs/seed, <=256 train/eval samples.
 
     Args:
-        factory (_typing.Any): Trusted importable factory identity required by the worker recipe. Required.
+        factory (_typing.Any): Trusted importable factory identity required by the worker recipe.
+            Required.
         cohort (_typing.Any): Fixed evaluation inputs, targets, labels and sample identity. Required.
         seeds (_typing.Any): Explicit trial seeds. Required.
         target (_typing.Any): Explicit target value/model/context required by this operation. Required.
-        epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after resume. Default: 3.
+        epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after
+            resume. Default: 3.
         cadence (int): Observation cadence under this protocol. Default: 1.
-        metric (str): Exact supported metric selector; units and missing-value status are preserved. Default: 'accuracy'.
+        metric (str): Exact supported metric selector; units and missing-value status are preserved.
+            Default: 'accuracy'.
 
         device (str): Explicit CPU or indexed CUDA device, without CPU fallback. Default: 'cpu'.
     Returns:
         The retained measure time to quality value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         measure_time_to_quality(factory, cohort, seeds=seeds, target=target)
 
@@ -716,9 +744,7 @@ def _bundle(model,cohort,precision,iterations,memory_metric='logical_model_bytes
 def compare_performance_quality(baseline: '_typing.Any',candidate: '_typing.Any',cohort: '_typing.Any', *, precision: _typing.Literal['fp32', 'fp64']='fp32',iterations: 'int'=5,
         metric: _typing.Literal['accuracy', 'macro_f1']='accuracy',min_quality: 'float'=0.,max_quality_drop: 'float'=.01,max_latency_regression: 'float'=.05,independent_samples: 'bool'=False,
         memory_metric: _typing.Literal[None, 'logical_model_bytes', 'cpu_rss_sampled_peak_bytes', 'cuda_allocated_peak_bytes', 'cuda_reserved_peak_bytes', 'physical_vram_bytes']='logical_model_bytes',max_memory_regression: 'float'=.05,memory_protocol: '_typing.Any'=None,batch_size: '_typing.Any'=None,device: 'str'='cpu',allow_cuda_peak_reset: 'bool'=False) -> 'QualityExperimentResult':
-    """
-
-    Observed quality/latency/memory with explicit same-device protocols.
+    """Observed quality/latency/memory with explicit same-device protocols.
     CUDA uses comparison_version=4 and device-bound native evidence;
     allocator peak reset is opt-in and irreversible.
 
@@ -731,31 +757,45 @@ def compare_performance_quality(baseline: '_typing.Any',candidate: '_typing.Any'
     they are never automatically submitted as one inference batch.
 
     Args:
-        baseline (_typing.Any): Validated retained baseline source or predictions required by this comparison. Required.
-        candidate (_typing.Any): Validated retained candidate source or predictions required by this comparison. Required.
+        baseline (_typing.Any): Validated retained baseline source or predictions required by this
+            comparison. Required.
+        candidate (_typing.Any): Validated retained candidate source or predictions required by this
+            comparison. Required.
         cohort (_typing.Any): Fixed evaluation inputs, targets, labels and sample identity. Required.
-        precision (str): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: 'fp32'.
+        precision (str): Supported numerical format; runtime/task/device restrictions remain
+            authoritative. Default: 'fp32'.
         iterations (int): Explicit iteration count within the measurement protocol. Default: 5.
-        metric (str): Exact supported metric selector; units and missing-value status are preserved. Default: 'accuracy'.
-        min_quality (float): Minimum required quality under the selected metric and its native unit. Default: 0.0.
-        max_quality_drop (float): Maximum allowed quality decrease under the selected quality metric. Default: 0.01.
-        max_latency_regression (float): Maximum allowed latency regression under the native comparison convention. Default: 0.05.
-        independent_samples (bool): Declare whether the supplied evidence represents independent samples; not inferred from counts. Default: False.
-        memory_metric (str): Exact retained memory metric selected for the comparison. Default: 'logical_model_bytes'.
-        max_memory_regression (float): Maximum allowed regression under the selected memory metric. Default: 0.05.
-        memory_protocol (_typing.Any): Typed memory measurement settings; boundaries and device guards remain explicit. Default: None.
-        batch_size (_typing.Any): Positive batch-size setting or metadata assumption; no implicit batch search. Default: None.
+        metric (str): Exact supported metric selector; units and missing-value status are preserved.
+            Default: 'accuracy'.
+        min_quality (float): Minimum required quality under the selected metric and its native unit.
+            Default: 0.0.
+        max_quality_drop (float): Maximum allowed quality decrease under the selected quality metric.
+            Default: 0.01.
+        max_latency_regression (float): Maximum allowed latency regression under the native comparison
+            convention. Default: 0.05.
+        independent_samples (bool): Declare whether the supplied evidence represents independent
+            samples; not inferred from counts. Default: False.
+        memory_metric (str): Exact retained memory metric selected for the comparison. Default:
+            'logical_model_bytes'.
+        max_memory_regression (float): Maximum allowed regression under the selected memory metric.
+            Default: 0.05.
+        memory_protocol (_typing.Any): Typed memory measurement settings; boundaries and device guards
+            remain explicit. Default: None.
+        batch_size (_typing.Any): Positive batch-size setting or metadata assumption; no implicit batch
+            search. Default: None.
 
         device (str): Explicit CPU or indexed CUDA device, without CPU fallback. Default: 'cpu'.
-        allow_cuda_peak_reset (bool): Explicit consent for native allocator peak reset in an exclusive owned process. Default: False.
+        allow_cuda_peak_reset (bool): Explicit consent for native allocator peak reset in an exclusive
+            owned process. Default: False.
     Returns:
         The retained compare performance quality value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         compare_performance_quality(baseline, candidate, cohort)
 
@@ -1037,18 +1077,21 @@ def _derive(feature,s):
 
 @dataclass(frozen=True,init=False)
 class QualityExperimentResult:
-    """Read and export validated P29 — Quality/speed/memory tradeoffs results; unavailable measurements retain their native status.
+    """Read and export validated P29 — Quality/speed/memory tradeoffs results; unavailable measurements
+    retain their native status.
 
     Args:
-        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+            version/schema validator. Required.
 
     Returns:
         An instance of QualityExperimentResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         QualityExperimentResult(data)
 
@@ -1064,16 +1107,18 @@ class QualityExperimentResult:
         """Initialize QualityExperimentResult with the supplied settings.
 
         Args:
-            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+                version/schema validator. Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             QualityExperimentResult(data)
 
@@ -1099,12 +1144,14 @@ class QualityExperimentResult:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -1118,8 +1165,10 @@ class QualityExperimentResult:
         """Serialize this object using its native JSON format and overwrite policy.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             None after the native file export succeeds.
@@ -1128,7 +1177,7 @@ class QualityExperimentResult:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_json(path)
 
@@ -1142,8 +1191,10 @@ class QualityExperimentResult:
         """Export this object using its native CSV format and overwrite policy.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             None after the native file export succeeds.
@@ -1152,7 +1203,7 @@ class QualityExperimentResult:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_csv(path)
 

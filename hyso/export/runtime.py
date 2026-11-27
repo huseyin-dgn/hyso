@@ -1,19 +1,48 @@
 """Output equivalence bound to the existing P35 completed provider capture."""
+from __future__ import annotations
+
+from typing import Any, Literal, ContextManager, Callable
 import base64
 import hashlib
 import json
 import os
 import sys
 from pathlib import Path
-from .contracts import ExportError
+import torch
+from .contracts import ExportError, NativeConfig, ExportResult
 
 class Runtime:
-    """Explicit CPU deployment handle; construction never loads an artifact.
+    """Describe an eager model or verified export artifact for explicit runtime calls.
 
-    ``source`` is an eager Module or verified ExportResult. GPU execution remains
-    behind the existing owned native worker and is never enabled by this handle.
+    ``source`` is an eager Module or verified ExportResult. CPU sessions are explicit. CUDA handles
+    require NativeConfig and an evidence directory; run() delegates to the owned native worker. Resident
+    GPU execution is forbidden.
+
+    Args:
+        source: Existing source evidence/artifact; verification is separate from execution. Required.
+        precision: Requested fp32/fp16/int8 numerical policy; precision labels do not prove hardware
+            instruction selection. Default: 'fp32'.
+        device: Explicit execution device selector; passing a CUDA selector does not authorize or
+            validate native execution. Default: 'cpu'.
+        native: Explicit NativeConfig for owned GPU execution. Omission grants no accelerator admission;
+            experimental support limits remain in force. Default: None.
+        evidence_directory: Existing or explicitly owned directory for runtime evidence; output
+            ownership checks still apply. Default: None.
     """
-    def __init__(self, source, *, precision='fp32', device='cpu',native=None,evidence_directory=None):
+    def __init__(self, source: torch.nn.Module | ExportResult, *, precision: Literal['fp32','fp16','int8']='fp32', device: Literal['cpu','cuda']='cpu',native: NativeConfig | None=None,evidence_directory: str | Path | None=None) -> None:
+        """Initialize Runtime from the supplied settings or evidence.
+
+        Args:
+            source: Existing source evidence/artifact; verification is separate from execution. Required.
+            precision: Requested fp32/fp16/int8 numerical policy; precision labels do not prove hardware
+                instruction selection. Default: 'fp32'.
+            device: Explicit execution device selector; passing a CUDA selector does not authorize or
+                validate native execution. Default: 'cpu'.
+            native: Explicit NativeConfig for owned GPU execution. Omission grants no accelerator admission;
+                experimental support limits remain in force. Default: None.
+            evidence_directory: Existing or explicitly owned directory for runtime evidence; output
+                ownership checks still apply. Default: None.
+        """
         from .contracts import ExportResult
         if precision not in ('fp32','fp16','int8') or device not in ('cpu','cuda'):
             raise ExportError('RUNTIME_SPEC','explicit precision and cpu/cuda required')
@@ -32,12 +61,21 @@ class Runtime:
             self.info=dict(backend='pytorch',precision=precision,device=device,artifact_sha256=None,artifact_bytes=None)
 
     @staticmethod
-    def input_identity(inputs):
+    def input_identity(inputs: Any) -> list[dict[str, Any]]:
+        """Input identity using the explicitly supplied evidence.
+
+        Args:
+            inputs: Tensor inputs matching the selected runtime input names, shapes and dtypes. Required.
+        """
         from ._model import tensors,fingerprint
         return [fingerprint(t) for t in tensors(inputs)]
 
-    def session(self, inputs):
-        """Context-managed load/isolated model and independent working inputs."""
+    def session(self, inputs: Any) -> ContextManager[tuple[Callable[[], Any], float]]:
+        """Context-managed load/isolated model and independent working inputs.
+
+        Args:
+            inputs: Tensor inputs matching the selected runtime input names, shapes and dtypes. Required.
+        """
         from contextlib import contextmanager
         @contextmanager
         def opened():
@@ -94,16 +132,26 @@ class Runtime:
                 if isinstance(self.source,ExportResult):self.source.verify()
         return opened()
 
-    def run(self, inputs):
-        """Run a small explicit CPU request; returns validated flat tensors."""
+    def run(self, inputs: Any) -> list[torch.Tensor]:
+        """Run a small explicit CPU request; returns validated flat tensors.
+
+        Args:
+            inputs: Tensor inputs matching the selected runtime input names, shapes and dtypes. Required.
+        """
         from ._model import outputs
         if self.device=='cuda' and self.info['backend']=='tensorrt_engine':
             report,_=self.measure_native(inputs,warmup=0,iterations=1)
             return outputs(decode_arrays(report['outputs']))
         with self.session(inputs) as (call,_):return outputs(call())
 
-    def measure_native(self,inputs,*,warmup=2,iterations=10):
-        """Explicit native request. Evidence is retained; no automatic retry."""
+    def measure_native(self,inputs: Any,*,warmup: int=2,iterations: int=10) -> tuple[dict[str, Any], dict[str, Any]]:
+        """Explicit native request. Evidence is retained; no automatic retry.
+
+        Args:
+            inputs: Tensor inputs matching the selected runtime input names, shapes and dtypes. Required.
+            warmup: Untimed inference calls before sampling; integer in 0..100. Default: 2.
+            iterations: Timed inference calls; integer in 1..1000 for export.benchmark. Default: 10.
+        """
         from .contracts import NativeConfig,ExportResult
         from ._model import tensors
         from .native import run_owned

@@ -112,7 +112,8 @@ def read_ncu_counters(csv_path: '_typing.Any', *, receipt_path: '_typing.Any', s
         session_id (_typing.Any): Exact calibration/profiler session identity. Required.
         role (_typing.Any): Input, output or report relation accepted by this operation. Required.
         kernel_name (_typing.Any): Explicit kernel identity for evidence selection. Required.
-        number_format (str): Explicit supported numeric representation in imported evidence. Default: 'decimal_point'.
+        number_format (str): Explicit supported numeric representation in imported evidence. Default:
+            'decimal_point'.
         source_paths (_typing.Any): Local retained input-evidence paths. Default: None.
         sensor_paths (_typing.Any): Local retained sensor-evidence paths. Default: None.
         report_path (_typing.Any): Explicit output report path. Default: None.
@@ -121,12 +122,14 @@ def read_ncu_counters(csv_path: '_typing.Any', *, receipt_path: '_typing.Any', s
         The retained read ncu counters value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
-        read_ncu_counters(csv_path, receipt_path=receipt_path, session_id=session_id, role=role, kernel_name=kernel_name)
+        read_ncu_counters(csv_path, receipt_path=receipt_path, session_id=session_id, role=role,
+        kernel_name=kernel_name)
 
     HYSo Guide: analysis.p18
     Offline: hyso docs show analysis.p18 --lang en
@@ -369,17 +372,19 @@ def analyze_counter_roofline(target: '_typing.Any', *, compute_sessions: '_typin
 
     Args:
         target (_typing.Any): Explicit target value/model/context required by this operation. Required.
-        compute_sessions (_typing.Sequence[dict[str, _typing.Any]]): Retained compute calibration sessions. Default: ().
+        compute_sessions (_typing.Sequence[dict[str, _typing.Any]]): Retained compute calibration
+            sessions. Default: ().
         memory_session (_typing.Any): Retained memory-bandwidth calibration session. Default: None.
 
     Returns:
         The retained analyze counter roofline value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         analyze_counter_roofline(target)
 
@@ -409,17 +414,20 @@ def plot_counter_roofline(result: '_typing.Any', path: '_typing.Any', *, overwri
 
     Args:
         result (_typing.Any): Retained typed result required by this operation. Required.
-        path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
-        overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+        path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+            executed. Required.
+        overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+            protected. Default: False.
 
     Returns:
         The retained plot counter roofline value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         plot_counter_roofline(result, path)
 

@@ -201,18 +201,21 @@ def _derive(data):
 
 @dataclass(frozen=True, init=False)
 class WorkerTaskAnalysisResult:
-    """Read and export validated P21 — DataLoader waiting results; unavailable measurements retain their native status.
+    """Read and export validated P21 — DataLoader waiting results; unavailable measurements retain their
+    native status.
 
     Args:
-        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+            version/schema validator. Required.
 
     Returns:
         An instance of WorkerTaskAnalysisResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         WorkerTaskAnalysisResult(data)
 
@@ -227,16 +230,18 @@ class WorkerTaskAnalysisResult:
         """Initialize WorkerTaskAnalysisResult with the supplied settings.
 
         Args:
-            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+                version/schema validator. Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             WorkerTaskAnalysisResult(data)
 
@@ -269,12 +274,14 @@ class WorkerTaskAnalysisResult:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -297,10 +304,11 @@ class WorkerTaskAnalysisResult:
             The retained diagnostics value, without recomputing measurements.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.diagnostics()
 
@@ -339,8 +347,10 @@ class WorkerTaskAnalysisResult:
         """Serialize this object using its native JSON format and overwrite policy.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             None after the native file export succeeds.
@@ -349,7 +359,7 @@ class WorkerTaskAnalysisResult:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_json(path)
 
@@ -370,17 +380,19 @@ def analyze_worker_tasks(loader_result: '_typing.Any', loader: '_typing.Any', *,
 
     Args:
         loader_result (_typing.Any): Retained loader-training result with trace identity. Required.
-        loader (_typing.Any): Caller-owned finite DataLoader with the required input/target batch format. Required.
+        loader (_typing.Any): Caller-owned finite DataLoader with the required input/target batch
+            format. Required.
         worker_states (_typing.Any): Retained worker identity/state evidence. Default: None.
 
     Returns:
         The retained analyze worker tasks value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         analyze_worker_tasks(loader_result, loader)
 

@@ -14,16 +14,18 @@ def validate_request(request: '_typing.Any') -> 'RequestValidation':
     contradiction here. A missing match or conflict is no feasibility proof.
 
     Args:
-        request (_typing.Any): Validated advisory/selection request; does not authorize execution. Required.
+        request (_typing.Any): Validated advisory/selection request; does not authorize execution.
+            Required.
 
     Returns:
         The retained validate request value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         validate_request(request)
 

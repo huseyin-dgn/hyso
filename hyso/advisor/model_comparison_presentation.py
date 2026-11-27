@@ -11,7 +11,14 @@ from ..analysis._codec import export
 
 
 def to_display_dict(result, *, language: _typing.Literal['tr', 'en', 'de', 'es'] = 'en') -> dict[str,Any]:
-    """Translate presentation only; never change eligibility, evidence or policy."""
+    """Translate presentation only; never change eligibility, evidence or policy.
+
+    Args:
+        result: Retained HYSo result/evidence record; rendering/advice does not run measurements.
+            Required.
+        language (_typing.Literal['tr', 'en', 'de', 'es']): Presentation language: tr, en, de or es.
+            Technical keys/status codes remain stable. Default: 'en'.
+    """
     from ..analysis.model_comparison import ModelComparisonResult, ModelComparisonSource, _selected_report
     if type(result) is not ModelComparisonResult:
         raise AdvisorError('typed_two_model_comparison_required')
@@ -198,7 +205,18 @@ def _comp_word(language, tr, en, de, es):
     return {'tr':tr, 'en':en, 'de':de, 'es':es}[language]
 
 def to_markdown(result, path=None, *, language: _typing.Literal['tr', 'en', 'de', 'es'] = 'en', overwrite: bool = False) -> str:
-    """Render native differences and existing per-model Advisor observations."""
+    """Render native differences and existing per-model Advisor observations.
+
+    Args:
+        result: Retained HYSo result/evidence record; rendering/advice does not run measurements.
+            Required.
+        path: Filesystem location read or written by this explicit operation; output parents must
+            already exist. Default: None.
+        language (_typing.Literal['tr', 'en', 'de', 'es']): Presentation language: tr, en, de or es.
+            Technical keys/status codes remain stable. Default: 'en'.
+        overwrite (bool): Permit replacement of an existing destination when True; False retains
+            no-clobber publication. Default: False.
+    """
     view = to_display_dict(result,language=language); tr = language=='tr'
     words = {
         'tr':('HYSo iki model karşılaştırması','Özellik / metrik','Durum','Mutlak fark B−A','Göreli değişim (%)','Açıklama'),

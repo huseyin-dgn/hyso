@@ -19,17 +19,19 @@ class TracedDataset(Dataset):
         dataset (Dataset): Caller-owned finite Dataset used by the loader or trace wrapper. Required.
         recorder (WorkerTimingRecorder | None): Existing bounded evidence recorder. Default: None.
         channel (_typing.Any): Explicit worker-trace evidence channel. Default: None.
-        max_events_per_sample (int): Upper bound on events per sample retained/accepted by this operation. Default: 64.
+        max_events_per_sample (int): Upper bound on events per sample retained/accepted by this
+            operation. Default: 64.
         trace_batches (bool): Observe the explicitly selected batch trace profile. Default: False.
 
     Returns:
         An instance of TracedDataset with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         TracedDataset(dataset)
 
@@ -51,17 +53,19 @@ class TracedDataset(Dataset):
             dataset (Dataset): Caller-owned finite Dataset used by the loader or trace wrapper. Required.
             recorder (WorkerTimingRecorder | None): Existing bounded evidence recorder. Default: None.
             channel (_typing.Any): Explicit worker-trace evidence channel. Default: None.
-            max_events_per_sample (int): Upper bound on events per sample retained/accepted by this operation. Default: 64.
+            max_events_per_sample (int): Upper bound on events per sample retained/accepted by this
+                operation. Default: 64.
             trace_batches (bool): Observe the explicitly selected batch trace profile. Default: False.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             TracedDataset(dataset)
 

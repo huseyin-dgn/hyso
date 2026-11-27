@@ -18,10 +18,11 @@ class RetentionTracker:
         An instance of RetentionTracker with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         RetentionTracker()
 
@@ -39,10 +40,11 @@ class RetentionTracker:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             RetentionTracker()
 
@@ -56,17 +58,19 @@ class RetentionTracker:
         """Register a tensor for this recorder's bounded lifetime observations.
 
         Args:
-            tensor (_typing.Any): Caller-supplied tensor to observe without changing its numerical behavior. Required.
+            tensor (_typing.Any): Caller-supplied tensor to observe without changing its numerical behavior.
+                Required.
             label (_typing.Any): Human-readable label for this observation. Required.
 
         Returns:
             None after the operation succeeds.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.watch(tensor, label=label)
 
@@ -89,10 +93,11 @@ class RetentionTracker:
             The retained snapshot value, without recomputing measurements.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.snapshot()
 
@@ -141,19 +146,23 @@ def analyze_memory_trend(stability_result: '_typing.Any', *, warmup_seconds: 'fl
     """Analyze retained stability memory samples for growth and plateau evidence.
 
     Args:
-        stability_result (_typing.Any): Existing retained long-run result; continuity and source identity must remain valid. Required.
+        stability_result (_typing.Any): Existing retained long-run result; continuity and source
+            identity must remain valid. Required.
         warmup_seconds (float): Warmup in seconds under the native protocol. Default: 0.0.
-        plateau_range_bytes (_typing.Any): Maximum byte range for the native plateau rule. Default: 1024 ** 2.
-        slope_tolerance_bytes_per_second (float): Tolerance on the fitted memory-growth slope in bytes per second. Default: 1024.0.
+        plateau_range_bytes (_typing.Any): Maximum byte range for the native plateau rule. Default: 1024
+            ** 2.
+        slope_tolerance_bytes_per_second (float): Tolerance on the fitted memory-growth slope in bytes
+            per second. Default: 1024.0.
 
     Returns:
         A validated RuntimeResult retaining actual evidence, coverage and unavailable-status fields.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         analyze_memory_trend(stability_result)
 

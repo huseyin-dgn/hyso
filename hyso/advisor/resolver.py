@@ -20,9 +20,10 @@ class NativeMetric(str, Enum):
         An instance of NativeMetric with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         NativeMetric.FORWARD_P50
 
@@ -31,7 +32,10 @@ class NativeMetric(str, Enum):
     Open: hyso docs open metrics.interpretation --lang en
 
     Members:
-        FORWARD_P50, FORWARD_P95, FORWARD_P99, COMPLETED_IMAGES_PER_SECOND, E2E_P50, E2E_P95, E2E_P99, PRECISION_MEAN, PRECISION_THROUGHPUT, RSS_BASELINE, RSS_CURRENT, RSS_SAMPLED_PEAK, RSS_LIFETIME_HWM, PARAMETER_BYTES, BUFFER_BYTES, MODEL_LOGICAL_BYTES, ARTIFACT_BYTES, TEST_ACCURACY, TEST_MACRO_F1.
+        FORWARD_P50, FORWARD_P95, FORWARD_P99, COMPLETED_IMAGES_PER_SECOND, E2E_P50, E2E_P95, E2E_P99,
+        PRECISION_MEAN, PRECISION_THROUGHPUT, RSS_BASELINE, RSS_CURRENT, RSS_SAMPLED_PEAK,
+        RSS_LIFETIME_HWM, PARAMETER_BYTES, BUFFER_BYTES, MODEL_LOGICAL_BYTES, ARTIFACT_BYTES,
+        TEST_ACCURACY, TEST_MACRO_F1.
     """
     FORWARD_P50 = 'resident_forward_p50'
     FORWARD_P95 = 'resident_forward_p95'
@@ -60,25 +64,31 @@ class ResolvedMetric(Contract):
     """A detached metric description; construction alone is not certification.
 
     Args:
-        metric (NativeMetric): Exact supported metric selector; units and missing-value status are preserved. Required.
-        value (float): Observed metric value; unavailable values retain their native null/status policy. Required.
+        metric (NativeMetric): Exact supported metric selector; units and missing-value status are
+            preserved. Required.
+        value (float): Observed metric value; unavailable values retain their native null/status policy.
+            Required.
         reference (EvidenceRef): Exact retained reference evidence/identity. Required.
         record_scope_json (str): Canonical metric scope serialized as JSON. Required.
         protocol_json (str): Canonical protocol metadata serialized as JSON. Required.
         native_context_json (str): Canonical native context serialized as JSON. Required.
         origin (str): Explicit evidence origin/provenance. Required.
-        limitations (tuple): Explicit limitations of the evidence, comparison or proposed operation. Default: ().
+        limitations (tuple): Explicit limitations of the evidence, comparison or proposed operation.
+            Default: ().
         resolver_version (str): Exact resolver/rule version. Default: RESOLVER_VERSION.
 
     Returns:
         An instance of ResolvedMetric with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
-        ResolvedMetric(metric=metric, value=value, reference=reference, record_scope_json=record_scope_json, protocol_json=protocol_json, native_context_json=native_context_json, origin=origin)
+        ResolvedMetric(metric=metric, value=value, reference=reference,
+        record_scope_json=record_scope_json, protocol_json=protocol_json,
+        native_context_json=native_context_json, origin=origin)
 
     HYSo Guide: metrics.interpretation
     Offline: hyso docs show metrics.interpretation --lang en
@@ -122,7 +132,7 @@ class ResolvedMetric(Contract):
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.record_scope
 
@@ -142,7 +152,7 @@ class ResolvedMetric(Contract):
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.protocol
 
@@ -162,7 +172,7 @@ class ResolvedMetric(Contract):
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.native_context
 
@@ -180,16 +190,18 @@ class MetricResolution(Contract):
 
     Args:
         status (str): Exact lifecycle/status filter accepted by this API. Required.
-        resolved (ResolvedMetric | None): Retained resolved value/status under the requested scope. Default: None.
+        resolved (ResolvedMetric | None): Retained resolved value/status under the requested scope.
+            Default: None.
         reasons (tuple): Structured eligibility/compatibility reasons. Default: ().
 
     Returns:
         An instance of MetricResolution with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         MetricResolution(status=status)
 
@@ -216,15 +228,17 @@ class NativeObservation(Finding):
     """Add structured scalar/context to Finding without changing its v1 fields.
 
     Args:
-        resolved_metric (ResolvedMetric | None): Native resolved metric retaining unit and scope. Default: None.
+        resolved_metric (ResolvedMetric | None): Native resolved metric retaining unit and scope.
+            Default: None.
 
     Returns:
         An instance of NativeObservation with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         NativeObservation(finding_id, kind, statement)
 
@@ -257,9 +271,10 @@ class EvidenceEligibility(Contract):
         An instance of EvidenceEligibility with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         EvidenceEligibility(status=status, claim=claim)
 
@@ -313,9 +328,10 @@ class NativeMetricResolver:
         An instance of NativeMetricResolver with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         NativeMetricResolver(report)
 
@@ -338,10 +354,11 @@ class NativeMetricResolver:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             NativeMetricResolver(report)
 
@@ -372,7 +389,7 @@ class NativeMetricResolver:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.report
 
@@ -392,10 +409,11 @@ class NativeMetricResolver:
             The retained record value, without recomputing measurements.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.record(record_id)
 
@@ -413,17 +431,19 @@ class NativeMetricResolver:
 
         Args:
             record_id (_typing.Any): Exact retained evidence identity. Required.
-            metric (_typing.Any): Exact supported metric selector; units and missing-value status are preserved. Required.
+            metric (_typing.Any): Exact supported metric selector; units and missing-value status are
+                preserved. Required.
             point_id (_typing.Any): Exact sweep/calibration point identity. Default: None.
 
         Returns:
             A MetricResolution with the native value/unit/scope or explicit unavailability reasons.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.resolve(record_id, metric)
 
@@ -579,18 +599,21 @@ class NativeMetricResolver:
 
         Args:
             reference (_typing.Any): Exact retained reference evidence/identity. Required.
-            metric (_typing.Any): Exact supported metric selector; units and missing-value status are preserved. Required.
+            metric (_typing.Any): Exact supported metric selector; units and missing-value status are
+                preserved. Required.
             required_native (_typing.Sequence[str]): Exact native evidence prerequisites. Default: ().
-            artifact_bytes (_typing.Any): Artifact in bytes; this does not imply a GPU hardware quota. Default: None.
+            artifact_bytes (_typing.Any): Artifact in bytes; this does not imply a GPU hardware quota.
+                Default: None.
 
         Returns:
             The retained check reference value, without recomputing measurements.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.check_reference(reference, metric)
 
@@ -635,10 +658,11 @@ class NativeMetricResolver:
             The retained check metric value, without recomputing measurements.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.check_metric(resolved)
 
@@ -666,10 +690,11 @@ class NativeMetricResolver:
             The retained compare value, without recomputing measurements.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.compare(left, left_metric, right, right_metric)
 

@@ -33,10 +33,11 @@ class TailPolicy:
         An instance of TailPolicy with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         TailPolicy()
 
@@ -54,25 +55,31 @@ class TailPolicy:
 
 @dataclass(frozen=True)
 class ThroughputProtocol:
-    """Configure P02 — Completed inference throughput measurement boundaries and resource limits; construction does not run the analysis.
+    """Configure P02 — Completed inference throughput measurement boundaries and resource limits;
+    construction does not run the analysis.
 
     Args:
-        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
-        precision (str): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: 'fp32'.
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default:
+            'cpu'.
+        precision (str): Supported numerical format; runtime/task/device restrictions remain
+            authoritative. Default: 'fp32'.
         warmup_iterations (int): Unreported warmup iteration count before measured samples. Default: 10.
-        batch_count (int | None): Number of batches within the explicit measurement boundary. Default: 100.
+        batch_count (int | None): Number of batches within the explicit measurement boundary. Default:
+            100.
         duration_seconds (float | None): Duration in seconds under the native protocol. Default: None.
         repeats (int): Number of independently recorded measurement windows/repeats. Default: 3.
         queue_depth (int): Bound on in-flight pipeline work. Default: 16.
-        concurrency (int): Explicit supported in-flight concurrency; it is not inferred from throughput. Default: 1.
+        concurrency (int): Explicit supported in-flight concurrency; it is not inferred from throughput.
+            Default: 1.
 
     Returns:
         An instance of ThroughputProtocol with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ThroughputProtocol()
 
@@ -126,18 +133,22 @@ def analyze_latency(benchmark_result: '_typing.Any', *, quantiles: '_typing.Any'
     establishes independent repeats, effective sample size or a confidence interval.
 
     Args:
-        benchmark_result (_typing.Any): Existing BenchmarkResult; the function analyzes retained samples without rerunning inference. Required.
-        quantiles (_typing.Any): Requested latency quantiles; tail adequacy is checked separately. Default: (0.99,).
-        tail_policy (_typing.Any): Minimum sample/tail requirements; insufficient observations remain unavailable. Default: TailPolicy().
+        benchmark_result (_typing.Any): Existing BenchmarkResult; the function analyzes retained samples
+            without rerunning inference. Required.
+        quantiles (_typing.Any): Requested latency quantiles; tail adequacy is checked separately.
+            Default: (0.99,).
+        tail_policy (_typing.Any): Minimum sample/tail requirements; insufficient observations remain
+            unavailable. Default: TailPolicy().
 
     Returns:
         The retained analyze latency value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         analyze_latency(benchmark_result)
 
@@ -296,18 +307,22 @@ def measure_throughput(model: '_typing.Any', input_source: '_typing.Any', *, pro
     Hidden cross-stream/device work and concurrent caller activity are unsupported.
 
     Args:
-        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
-        input_source (_typing.Any): Caller-supplied resident batches/iterator; completion and sample accounting follow the protocol. Required.
-        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: ThroughputProtocol().
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation.
+            Required.
+        input_source (_typing.Any): Caller-supplied resident batches/iterator; completion and sample
+            accounting follow the protocol. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards
+            remain unchanged. Default: ThroughputProtocol().
 
     Returns:
         The retained measure throughput value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         measure_throughput(model, input_source)
 

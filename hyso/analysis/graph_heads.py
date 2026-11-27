@@ -41,11 +41,15 @@ class GraphHeadSpec(_RequiredGraphHeadSpec, total=False):
     task and class_names must satisfy the existing evaluator's label contract.
     zero_division is optional and defaults to zero in the native validator.
 
+    Args:
+        zero_division (int): Value used for undefined precision/recall; use the evaluator-supported
+            choices. Required.
+
     Returns:
         A plain dictionary; creating it does not evaluate or modify a graph.
     Raises:
         No runtime validation here; evaluate_graph_heads validates the supplied data.
-    Example:
+    Examples:
         head = GraphHeadSpec(target='label', task='multiclass', class_names=['a', 'b'],
                              split='test', dataset_id='sample', preprocessing_id='v1')
 
@@ -74,15 +78,18 @@ class MultiHeadGraphEvaluationResult(_Export):
     """Separate existing GraphEvaluationResults; no aggregate accuracy or receipt.
 
     Args:
-        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+            version/schema validator. Required.
 
     Returns:
-        An instance of MultiHeadGraphEvaluationResult with the documented native validation and defaults.
+        An instance of MultiHeadGraphEvaluationResult with the documented native validation and
+        defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         MultiHeadGraphEvaluationResult(data)
 
@@ -96,16 +103,18 @@ class MultiHeadGraphEvaluationResult(_Export):
         """Initialize MultiHeadGraphEvaluationResult with the supplied settings.
 
         Args:
-            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+                version/schema validator. Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             MultiHeadGraphEvaluationResult(data)
 
@@ -162,12 +171,14 @@ class MultiHeadGraphEvaluationResult(_Export):
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -189,10 +200,11 @@ class MultiHeadGraphEvaluationResult(_Export):
             The retained head value, without recomputing measurements.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.head(output)
 
@@ -210,16 +222,18 @@ class MultiHeadGraphEvaluationResult(_Export):
 
         Args:
             model_id (_typing.Any): Stable model label bound to this result/context. Required.
-            head (_typing.Any): Explicit prediction-head kind, such as classification, regression or embedding. Required.
+            head (_typing.Any): Explicit prediction-head kind, such as classification, regression or
+                embedding. Required.
 
         Returns:
             The retained analysis source value, without recomputing measurements.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.analysis_source(model_id, head=head)
 
@@ -240,20 +254,26 @@ def evaluate_graph_heads(model: '_typing.Any', loader: '_typing.Any', *, heads: 
     advice or comparison calls this execution function implicitly.
 
     Args:
-        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
-        loader (_typing.Any): Caller-owned finite DataLoader with the required input/target batch format. Required.
-        heads (_typing.Any): Explicit named Graph outputs and their classification evaluation contracts. Required.
-        capture_structure (bool): Request supported structure evidence in the explicit operation. Default: False.
-        expected_checkpoint_sha256 (_typing.Any): Exact SHA-256 digest of the expected checkpoint. Default: None.
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation.
+            Required.
+        loader (_typing.Any): Caller-owned finite DataLoader with the required input/target batch
+            format. Required.
+        heads (_typing.Any): Explicit named Graph outputs and their classification evaluation contracts.
+            Required.
+        capture_structure (bool): Request supported structure evidence in the explicit operation.
+            Default: False.
+        expected_checkpoint_sha256 (_typing.Any): Exact SHA-256 digest of the expected checkpoint.
+            Default: None.
 
     Returns:
         The retained evaluate graph heads value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         evaluate_graph_heads(model, loader, heads=heads)
 
@@ -328,21 +348,27 @@ def compare_graph_heads(baseline: '_typing.Any', candidate: '_typing.Any', *, he
     Returns separate existing ModelComparisonResults, never a model-wide winner.
 
     Args:
-        baseline (_typing.Any): Validated retained baseline source or predictions required by this comparison. Required.
-        candidate (_typing.Any): Validated retained candidate source or predictions required by this comparison. Required.
+        baseline (_typing.Any): Validated retained baseline source or predictions required by this
+            comparison. Required.
+        candidate (_typing.Any): Validated retained candidate source or predictions required by this
+            comparison. Required.
         head_pairs (_typing.Any): Explicit baseline/candidate named-output pairings. Required.
-        model_ids (_typing.Any): Explicit ordered model identities for the recorded workflow. Default: ('A', 'B').
-        features (_typing.Any): Explicit feature IDs to compare/plan; prerequisites are never silently executed. Default: ('P26', 'P12').
-        include_structure (bool): Whether to include supported retained structure comparisons. Default: True.
+        model_ids (_typing.Any): Explicit ordered model identities for the recorded workflow. Default:
+            ('A', 'B').
+        features (_typing.Any): Explicit feature IDs to compare/plan; prerequisites are never silently
+            executed. Default: ('P26', 'P12').
+        include_structure (bool): Whether to include supported retained structure comparisons. Default:
+            True.
 
     Returns:
         The retained compare graph heads value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         compare_graph_heads(baseline, candidate, head_pairs=head_pairs)
 
@@ -364,8 +390,17 @@ def compare_graph_heads(baseline: '_typing.Any', candidate: '_typing.Any', *, he
         include_structure=include_structure,context_policy='strict') for a,b in head_pairs.items()}
 
 
-def report_section(result, language: _typing.Literal['tr', 'en'], level, catalog):
-    """Use existing P26 presentation and rendering with explicit per-head labels."""
+def report_section(result, language: _typing.Literal['tr', 'en'], level, catalog) -> 'dict[str, _typing.Any]':
+    """Use existing P26 presentation and rendering with explicit per-head labels.
+
+    Args:
+        result: Retained HYSo result/evidence record; rendering/advice does not run measurements.
+            Required.
+        language (_typing.Literal['tr', 'en']): Presentation language: tr, en, de or es. Technical
+            keys/status codes remain stable. Required.
+        level: Heading level used when embedding a report section. Required.
+        catalog: Translation/metric catalog used to render stable recorded fields. Required.
+    """
     from .graph_evidence import report_section as single_section, _LIMITS
     from ..reporting.report import _metric
     data = result.to_dict();metrics=[];charts=[];features=[]

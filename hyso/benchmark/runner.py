@@ -375,27 +375,36 @@ class BenchmarkRunner:
     No model movement, training, file export or comparison occurs.
 
     Args:
-        model (nn.Module): Caller-owned model; device, dtype and task must match the native operation. Required.
-        device (str | torch.device): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
-        input_shape (tuple[int, ...] | list[int] | None): Four positive (N, C, H, W) dimensions, including batch. Default: None.
-        example_input (torch.Tensor | None): Caller-supplied example tensor/input with the declared shape/device/dtype. Default: None.
-        precision (str): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: 'fp32'.
+        model (nn.Module): Caller-owned model; device, dtype and task must match the native operation.
+            Required.
+        device (str | torch.device): Explicit cpu or cuda:index device; this setting grants no GPU
+            admission. Default: 'cpu'.
+        input_shape (tuple[int, ...] | list[int] | None): Four positive (N, C, H, W) dimensions,
+            including batch. Default: None.
+        example_input (torch.Tensor | None): Caller-supplied example tensor/input with the declared
+            shape/device/dtype. Default: None.
+        precision (str): Supported numerical format; runtime/task/device restrictions remain
+            authoritative. Default: 'fp32'.
         warmup_iterations (int): Unreported warmup iteration count before measured samples. Default: 10.
         measure_iterations (int): Measured iteration count per repeat. Default: 50.
         repeats (int): Number of independently recorded measurement windows/repeats. Default: 3.
-        seed (int): Random seed recorded/applied by this operation; reproducibility still depends on the device/backend. Default: 0.
+        seed (int): Random seed recorded/applied by this operation; reproducibility still depends on the
+            device/backend. Default: 0.
         model_name (str | None): Human-readable model label. Default: None.
-        model_config (_typing.Any): Separate exact architecture metadata for supported checkpoint/restore contracts. Default: None.
-        measure_cuda_memory (bool): Request CUDA memory counters under the existing measurement guard. Default: False.
+        model_config (_typing.Any): Separate exact architecture metadata for supported
+            checkpoint/restore contracts. Default: None.
+        measure_cuda_memory (bool): Request CUDA memory counters under the existing measurement guard.
+            Default: False.
 
     Returns:
         An instance of BenchmarkRunner with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         BenchmarkRunner(model)
 
@@ -426,16 +435,19 @@ class BenchmarkRunner:
             measure_cuda_memory: Opt-in owned memory probe; False by default.
 
         Defaults:
-            device='cpu'; input_shape=None; example_input=None; precision='fp32'; warmup_iterations=10; measure_iterations=50; repeats=3; seed=0; model_name=None; model_config=None; measure_cuda_memory=False.
+            device='cpu'; input_shape=None; example_input=None; precision='fp32'; warmup_iterations=10;
+            measure_iterations=50; repeats=3; seed=0; model_name=None; model_config=None;
+            measure_cuda_memory=False.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             BenchmarkRunner(model)
 
@@ -502,13 +514,15 @@ class BenchmarkRunner:
         observed unsupported model mutation; does not silently retry.
 
         Returns:
-            A BenchmarkResult with actual forward-latency samples and the recorded native scope; this call runs inference.
+            A BenchmarkResult with actual forward-latency samples and the recorded native scope; this call
+            runs inference.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.run()
 

@@ -51,6 +51,25 @@ class ModelStructureComparisonError(ModelStructureError):
 
 @dataclass(frozen=True)
 class StructureSnapshotRef:
+    """Store structure snapshot ref evidence as an immutable typed record.
+
+    Args:
+        content_sha256 (str): Digest of the exact canonical evidence content; not a model-weight hash.
+            Required.
+        format (str): Output representation; use the choices declared for this renderer. Required.
+        schema_version (int): Recorded serialization schema version. Required.
+        producer_method (str): Recorded evidence producer identifier. Required.
+        producer_version (int): Recorded evidence producer version. Required.
+        classification_version (int): Version of the exact-type structural classification policy.
+            Required.
+        torch_version (str): Recorded PyTorch provenance; not runtime compatibility certification.
+            Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     content_sha256: str
     format: str
     schema_version: int
@@ -62,6 +81,21 @@ class StructureSnapshotRef:
 
 @dataclass(frozen=True)
 class StructureComparisonPolicy:
+    """Store structure comparison policy evidence as an immutable typed record.
+
+    Args:
+        id (str): Stable policy or rule identifier. Required.
+        version (int): Version of this evidence policy or rule. Required.
+        matching (str): Declared comparison matching policy; literal paths are not semantic equivalence.
+            Required.
+        aliases (str): Declared policy for comparing within-snapshot registration alias groups.
+            Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     id: str
     version: int
     matching: str
@@ -70,6 +104,27 @@ class StructureComparisonPolicy:
 
 @dataclass(frozen=True)
 class ComparedQuantity:
+    """Store compared quantity evidence as an immutable typed record.
+
+    Args:
+        status (str): Recorded evidence/coverage status; unavailable values must not be interpreted as
+            zero. Required.
+        value (int | None): Observed or derived value; None records unavailable evidence where allowed
+            by the schema. Required.
+        known_subtotal (int | None): Sum over supported observed entries only; not a complete total when
+            coverage is partial. Required.
+        unsupported_tensor_ids (tuple): Local tensor identifiers omitted from a complete quantity
+            because metadata is unsupported. Required.
+        source (str): Existing source evidence/artifact; verification is separate from execution.
+            Required.
+        reason (str | None): Recorded explanation for rejection, absence or incomplete evidence; None
+            only where the schema allows it. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     status: str
     value: int | None
     known_subtotal: int | None
@@ -80,6 +135,31 @@ class ComparedQuantity:
 
 @dataclass(frozen=True)
 class StructureNumericDifference:
+    """Store structure numeric difference evidence as an immutable typed record.
+
+    Args:
+        metric (str): Exact recorded metric whose baseline/candidate values are compared. Required.
+        unit (str): Unit attached to the numeric quantity or difference. Required.
+        baseline (ComparedQuantity): Reference evidence used as the denominator/origin of candidate
+            differences; missing/incompatible evidence is not inferred. Required.
+        candidate (ComparedQuantity): Evidence or runtime being compared to the reference; measurements
+            remain bound to their recorded conditions. Required.
+        status (str): Recorded evidence/coverage status; unavailable values must not be interpreted as
+            zero. Required.
+        difference (int | None): Candidate minus baseline where both quantities are comparable and
+            complete. Required.
+        percent_change (float | None): Relative candidate-minus-baseline change, or None when
+            unavailable/undefined. Required.
+        percent_reason (str | None): Reason a percentage cannot be computed; a zero baseline is not
+            silently replaced. Required.
+        known_subtotal_difference (int | None): Difference of incomplete known subtotals; distinct from
+            a complete metric difference. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     metric: str
     unit: str
     baseline: ComparedQuantity
@@ -93,6 +173,21 @@ class StructureNumericDifference:
 
 @dataclass(frozen=True)
 class StructureObservation:
+    """Store structure observation evidence as an immutable typed record.
+
+    Args:
+        status (str): Recorded evidence/coverage status; unavailable values must not be interpreted as
+            zero. Required.
+        value (object): Observed or derived value; None records unavailable evidence where allowed by
+            the schema. Required.
+        reason (str | None): Recorded explanation for rejection, absence or incomplete evidence; None
+            only where the schema allows it. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     status: str
     value: object
     reason: str | None
@@ -100,6 +195,22 @@ class StructureObservation:
 
 @dataclass(frozen=True)
 class StructureFieldDifference:
+    """Store structure field difference evidence as an immutable typed record.
+
+    Args:
+        field (str): Source metadata field path used by this observation. Required.
+        baseline (StructureObservation): Reference evidence used as the denominator/origin of candidate
+            differences; missing/incompatible evidence is not inferred. Required.
+        candidate (StructureObservation): Evidence or runtime being compared to the reference;
+            measurements remain bound to their recorded conditions. Required.
+        status (str): Recorded evidence/coverage status; unavailable values must not be interpreted as
+            zero. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     field: str
     baseline: StructureObservation
     candidate: StructureObservation
@@ -108,6 +219,22 @@ class StructureFieldDifference:
 
 @dataclass(frozen=True)
 class StructurePathDifference:
+    """Store structure path difference evidence as an immutable typed record.
+
+    Args:
+        path (str): Filesystem location read or written by this explicit operation; output parents must
+            already exist. Required.
+        baseline_type (str): Recorded qualified type at the baseline registration path. Required.
+        candidate_type (str): Recorded qualified type at the candidate registration path. Required.
+        metadata_changes (tuple): Recorded changes to supported static type/metadata fields. Required.
+        configuration_changes (tuple): Recorded changes to supported static constructor settings.
+            Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     path: str
     baseline_type: str
     candidate_type: str
@@ -117,6 +244,20 @@ class StructurePathDifference:
 
 @dataclass(frozen=True)
 class StructureTensorDifference:
+    """Store structure tensor difference evidence as an immutable typed record.
+
+    Args:
+        owner_path (str): Exact registered module path owning this tensor/alias endpoint. Required.
+        kind (str): Recorded entity/registration kind, such as parameter or buffer. Required.
+        name (str): Exact registered component identifier; names outside the active distribution profile
+            are rejected. Required.
+        changes (tuple): Explicit changed fields between the matched evidence entries. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     owner_path: str
     kind: str
     name: str
@@ -125,6 +266,21 @@ class StructureTensorDifference:
 
 @dataclass(frozen=True)
 class StructureDistributionDifference:
+    """Store structure distribution difference evidence as an immutable typed record.
+
+    Args:
+        name (str): Exact registered component identifier; names outside the active distribution profile
+            are rejected. Required.
+        unique_modules (StructureNumericDifference): Count/difference of distinct registered module
+            objects, not executed operations. Required.
+        registered_paths (StructureNumericDifference): Count/difference of registered paths, including
+            aliases. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     name: str
     unique_modules: StructureNumericDifference
     registered_paths: StructureNumericDifference
@@ -132,6 +288,23 @@ class StructureDistributionDifference:
 
 @dataclass(frozen=True)
 class StructureDtypeDifference:
+    """Store structure dtype difference evidence as an immutable typed record.
+
+    Args:
+        kind (str): Recorded entity/registration kind, such as parameter or buffer. Required.
+        dtype (str | None): Recorded tensor dtype; no tensor conversion is performed. Required.
+        tensor_count (StructureNumericDifference): Count/difference of unique tensors in this dtype
+            group. Required.
+        elements (StructureNumericDifference): Number of logical tensor elements, if supported.
+            Required.
+        logical_bytes (StructureNumericDifference): Logical element count times element size; not
+            allocator use, RSS or checkpoint file size. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     kind: str
     dtype: str | None
     tensor_count: StructureNumericDifference
@@ -141,6 +314,19 @@ class StructureDtypeDifference:
 
 @dataclass(frozen=True)
 class RegistrationEndpoint:
+    """Store registration endpoint evidence as an immutable typed record.
+
+    Args:
+        owner_path (str): Exact registered module path owning this tensor/alias endpoint. Required.
+        kind (str): Recorded entity/registration kind, such as parameter or buffer. Required.
+        name (str): Exact registered component identifier; names outside the active distribution profile
+            are rejected. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     owner_path: str
     kind: str
     name: str
@@ -148,12 +334,49 @@ class RegistrationEndpoint:
 
 @dataclass(frozen=True)
 class StructureAliasGroup:
+    """Store structure alias group evidence as an immutable typed record.
+
+    Args:
+        kind (str): Recorded entity/registration kind, such as parameter or buffer. Required.
+        members (tuple): Registration endpoints forming one observed alias group. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     kind: str
     members: tuple
 
 
 @dataclass(frozen=True)
 class StructureAliasDifference:
+    """Store structure alias difference evidence as an immutable typed record.
+
+    Args:
+        kind (str): Recorded entity/registration kind, such as parameter or buffer. Required.
+        status (str): Recorded evidence/coverage status; unavailable values must not be interpreted as
+            zero. Required.
+        matching_scope (str): Endpoints considered comparable by the declared matching policy. Required.
+        baseline_groups (tuple): Observed baseline alias groups on the comparison scope. Required.
+        candidate_groups (tuple): Observed candidate alias groups on the comparison scope. Required.
+        removed_groups (tuple): Baseline alias groups absent from comparable candidate evidence.
+            Required.
+        added_groups (tuple): Candidate alias groups absent from comparable baseline evidence. Required.
+        unmatched_baseline_endpoints (tuple): Baseline registrations without a matching candidate
+            endpoint. Required.
+        unmatched_candidate_endpoints (tuple): Candidate registrations without a matching baseline
+            endpoint. Required.
+        unassessed_baseline_endpoints (tuple): Baseline endpoints with unsupported alias metadata.
+            Required.
+        unassessed_candidate_endpoints (tuple): Candidate endpoints with unsupported alias metadata.
+            Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     kind: str
     status: str
     matching_scope: str
@@ -169,6 +392,25 @@ class StructureAliasDifference:
 
 @dataclass(frozen=True)
 class StructureEvidenceGap:
+    """Store structure evidence gap evidence as an immutable typed record.
+
+    Args:
+        side (str): Evidence side, baseline or candidate. Required.
+        owner_path (str): Exact registered module path owning this tensor/alias endpoint. Required.
+        kind (str): Recorded entity/registration kind, such as parameter or buffer. Required.
+        name (str): Exact registered component identifier; names outside the active distribution profile
+            are rejected. Required.
+        status (str): Recorded evidence/coverage status; unavailable values must not be interpreted as
+            zero. Required.
+        fields (tuple): Source metadata field paths associated with the evidence gap. Required.
+        reason (str): Recorded explanation for rejection, absence or incomplete evidence; None only
+            where the schema allows it. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     side: str
     owner_path: str
     kind: str
@@ -469,15 +711,17 @@ class ModelStructureComparison:
     """Inspect observed structural differences between two retained model snapshots.
 
     Args:
-        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+            version/schema validator. Required.
 
     Returns:
         An instance of ModelStructureComparison with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ModelStructureComparison(data)
 
@@ -492,16 +736,18 @@ class ModelStructureComparison:
         """Initialize ModelStructureComparison with the supplied settings.
 
         Args:
-            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+                version/schema validator. Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ModelStructureComparison(data)
 
@@ -526,12 +772,14 @@ class ModelStructureComparison:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -550,7 +798,7 @@ class ModelStructureComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.content_sha256
 
@@ -569,7 +817,7 @@ class ModelStructureComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.baseline
 
@@ -588,7 +836,7 @@ class ModelStructureComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.candidate
 
@@ -607,7 +855,7 @@ class ModelStructureComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.summary_differences
 
@@ -626,7 +874,7 @@ class ModelStructureComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.module_type_differences
 
@@ -646,7 +894,7 @@ class ModelStructureComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.category_differences
 
@@ -666,7 +914,7 @@ class ModelStructureComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.dtype_differences
 
@@ -686,7 +934,7 @@ class ModelStructureComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.added_paths
 
@@ -705,7 +953,7 @@ class ModelStructureComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.removed_paths
 
@@ -724,7 +972,7 @@ class ModelStructureComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.changed_paths
 
@@ -744,7 +992,7 @@ class ModelStructureComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.tensor_differences
 
@@ -764,7 +1012,7 @@ class ModelStructureComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.alias_differences
 
@@ -783,7 +1031,7 @@ class ModelStructureComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.evidence_gaps
 
@@ -802,7 +1050,7 @@ class ModelStructureComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.provenance_differences
 
@@ -821,7 +1069,7 @@ class ModelStructureComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.coverage
 
@@ -840,7 +1088,7 @@ class ModelStructureComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.has_observed_changes
 
@@ -859,7 +1107,7 @@ class ModelStructureComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.limitations
 
@@ -878,7 +1126,7 @@ class ModelStructureComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.policy
 
@@ -897,7 +1145,7 @@ class ModelStructureComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.baseline_snapshot
 
@@ -916,7 +1164,7 @@ class ModelStructureComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.candidate_snapshot
 
@@ -930,7 +1178,8 @@ class ModelStructureComparison:
         """Serialize this object using its native JSON format and overwrite policy.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Default: None.
 
         Returns:
             A JSON string when path is None, otherwise None after writing the file.
@@ -939,7 +1188,7 @@ class ModelStructureComparison:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_json()
 
@@ -955,7 +1204,8 @@ class ModelStructureComparison:
         """Read and validate this type from a local JSON file.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
 
         Returns:
             A validated ModelStructureComparison instance reconstructed from the supplied data.
@@ -964,7 +1214,7 @@ class ModelStructureComparison:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ModelStructureComparison.from_json(path)
 
@@ -983,19 +1233,23 @@ def compare_model_structures(baseline: '_typing.Any', candidate: '_typing.Any', 
     exceeding them raises instead of returning an incomplete/truncated result.
 
     Args:
-        baseline (_typing.Any): Validated retained baseline source or predictions required by this comparison. Required.
-        candidate (_typing.Any): Validated retained candidate source or predictions required by this comparison. Required.
-        max_entries (_typing.Any): Upper bound on entries retained/accepted by this operation. Default: _MAX_ENTRIES.
+        baseline (_typing.Any): Validated retained baseline source or predictions required by this
+            comparison. Required.
+        candidate (_typing.Any): Validated retained candidate source or predictions required by this
+            comparison. Required.
+        max_entries (_typing.Any): Upper bound on entries retained/accepted by this operation. Default:
+            _MAX_ENTRIES.
         max_bytes (_typing.Any): Maximum accepted or retained byte count. Default: _MAX_BYTES.
 
     Returns:
         The retained compare model structures value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         compare_model_structures(baseline, candidate)
 

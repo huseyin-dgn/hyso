@@ -15,10 +15,58 @@ if TYPE_CHECKING:
     from .session import TrainingSession
 
 
-class TrainingConfigError(ValueError):
-    """Invalid/unsupported settings or a preparation contract mismatch."""
+class _OptimizerOptions(_typing.TypedDict, total=False):
+    momentum: float
+    dampening: float
+    weight_decay: float
+    nesterov: bool
+    betas: list[float]
+    eps: float
 
-    def __init__(self, *messages, suggestion=None):
+
+class _SchedulerOptions(_typing.TypedDict, total=False):
+    step_size: int
+    gamma: float
+    t_max: int
+    eta_min: float
+    max_lr: float
+    pct_start: float
+    div_factor: float
+    final_div_factor: float
+    cycle_momentum: bool
+    factor: float
+    patience: int
+    threshold: float
+    cooldown: int
+    min_lr: float
+    eps: float
+
+
+class _EarlyStoppingOptions(_typing.TypedDict, total=False):
+    patience: int
+    delta: float
+    restore_best_weights: bool
+
+
+class TrainingConfigError(ValueError):
+    """Invalid/unsupported settings or a preparation contract mismatch.
+
+    Args:
+        suggestion: Optional manual corrective action; it does not trigger retries or modify user state.
+            Default: None.
+        messages: Positional exception messages passed unchanged to the base exception. Variable
+            positional arguments.
+    """
+
+    def __init__(self, *messages, suggestion=None) -> 'None':
+        """Initialize TrainingConfigError from the supplied settings or evidence.
+
+        Args:
+            suggestion: Optional manual corrective action; it does not trigger retries or modify user state.
+                Default: None.
+            messages: Positional exception messages passed unchanged to the base exception. Variable
+                positional arguments.
+        """
         super().__init__(*messages)
         self.suggestion = suggestion
 
@@ -127,16 +175,29 @@ class TrainingConfig:
         batch_size: Positive batch size; supplied loaders must match exactly.
         optimizer: sgd, adam or adamw; standard native PyTorch implementations.
         learning_rate: Positive optimizer-construction LR, not necessarily a scheduled LR.
-        optimizer_params: Whitelisted native options; default weight_decay is explicitly 0.
+        optimizer_params: None uses native-profile defaults. SGD accepts momentum=0,
+            dampening=0, weight_decay=0 (all finite, nonnegative) and nesterov=False.
+            Nesterov requires momentum>0 and dampening=0. Adam/AdamW accept
+            betas=[0.9,0.999] (two values in [0,1)), eps=1e-8 (positive) and
+            weight_decay=0 (nonnegative). Keys from the wrong optimizer are rejected.
         scheduler: None, step, cosine, onecycle or plateau (validation loss, min).
-        scheduler_params: Whitelisted settings; OneCycle requires max_lr. Effective
-            initial LR and resolved defaults are exposed by session.settings().
+        scheduler_params: None uses defaults for the selected scheduler. step accepts
+            step_size=1 (positive int), gamma=0.1 (nonnegative). cosine accepts
+            t_max=epochs (positive int), eta_min=0 (nonnegative). onecycle requires
+            positive max_lr; defaults pct_start=0.3 (0<pct_start<1), div_factor=25,
+            final_div_factor=10000 (positive), cycle_momentum=False. plateau requires
+            validation=True; factor=0.1 ([0,1)), patience=10 and cooldown=0
+            (nonnegative integers), threshold=1e-4, min_lr=0 and eps=1e-8
+            (nonnegative). Unknown keys are rejected; scheduler=None permits only
+            scheduler_params=None or {}. Effective initial LR is exposed by session.settings().
         device: cpu or explicit cuda:index; caller moves the model before prepare.
         precision: fp32, fp64 or CUDA amp_fp16 (FP32 master weights).
         accum_steps: Positive Trainer gradient-accumulation count.
         grad_clip: Optional positive gradient-norm bound.
         ema_decay: Optional [0,1] EMA decay.
-        early_stopping: Optional patience/delta/restore_best_weights dictionary.
+        early_stopping: None disables it. Otherwise accepts patience=7 (positive int),
+            delta=0 (nonnegative) and restore_best_weights=True (bool); requires
+            validation=True. Unknown keys are rejected.
         validation: Require a matching validation loader when True.
         shuffle: Standard RandomSampler when True, SequentialSampler otherwise.
         drop_last: Explicit training-loader policy; validation never drops samples.
@@ -150,16 +211,20 @@ class TrainingConfig:
     dtype cast or model movement is silently applied. Use torch.manual_seed yourself.
 
     Defaults:
-        epochs=5; batch_size=32; optimizer='adamw'; learning_rate=0.001; optimizer_params=None; scheduler=None; scheduler_params=None; device='cpu'; precision='fp32'; accum_steps=1; grad_clip=None; ema_decay=None; early_stopping=None; validation=False; shuffle=False; drop_last=False; num_workers=0; task='multiclass'; save_last_to=None; resume_from=None.
+        epochs=5; batch_size=32; optimizer='adamw'; learning_rate=0.001; optimizer_params=None;
+        scheduler=None; scheduler_params=None; device='cpu'; precision='fp32'; accum_steps=1;
+        grad_clip=None; ema_decay=None; early_stopping=None; validation=False; shuffle=False;
+        drop_last=False; num_workers=0; task='multiclass'; save_last_to=None; resume_from=None.
 
     Returns:
         An instance of TrainingConfig with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         config = TrainingConfig(epochs=1, batch_size=2)
 
@@ -170,45 +235,62 @@ class TrainingConfig:
     _payload: str
 
     def __init__(self, *, epochs: int=5, batch_size: int=32, optimizer: _typing.Literal['sgd', 'adam', 'adamw']='adamw',
-                 learning_rate: float=1e-3, optimizer_params: dict[str,Any] | None=None,
-                 scheduler: _typing.Literal['step', 'cosine', 'onecycle', 'plateau', None]=None, scheduler_params: dict[str,Any] | None=None,
+                 learning_rate: float=1e-3, optimizer_params: _OptimizerOptions | None=None,
+                 scheduler: _typing.Literal['step', 'cosine', 'onecycle', 'plateau', None]=None, scheduler_params: _SchedulerOptions | None=None,
                  device: str='cpu', precision: _typing.Literal['fp32', 'fp64', 'amp_fp16']='fp32', accum_steps: int=1,
                  grad_clip: float | None=None, ema_decay: float | None=None,
-                 early_stopping: dict[str,Any] | None=None, validation: bool=False,
+                 early_stopping: _EarlyStoppingOptions | None=None, validation: bool=False,
                  shuffle: bool=False, drop_last: bool=False, num_workers: int=0,
                  task: _typing.Literal['multiclass', 'binary']='multiclass', save_last_to: str | None=None, resume_from: str | None=None) -> None:
         """Initialize TrainingConfig with the supplied settings.
 
         Args:
-            epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after resume. Default: 5.
-            batch_size (int): Positive batch-size setting or metadata assumption; no implicit batch search. Default: 32.
-            optimizer (str): Existing supported optimizer or a closed optimizer name, according to this API. Default: 'adamw'.
-            learning_rate (float): Positive optimizer-construction learning rate, before any scheduler adjustment. Default: 0.001.
-            optimizer_params (dict[str, Any] | None): Closed native optimizer keyword options; unknown options are rejected. Default: None.
-            scheduler (str | None): Supported native scheduler or closed scheduler name; stepping remains owned by Trainer. Default: None.
-            scheduler_params (dict[str, Any] | None): Closed scheduler settings; required scheduler-specific options remain mandatory. Default: None.
-            device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
-            precision (str): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: 'fp32'.
-            accum_steps (int): Positive microbatch accumulation count per attempted optimizer update. Default: 1.
+            epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after
+                resume. Default: 5.
+            batch_size (int): Positive batch-size setting or metadata assumption; no implicit batch search.
+                Default: 32.
+            optimizer (str): Existing supported optimizer or a closed optimizer name, according to this API.
+                Default: 'adamw'.
+            learning_rate (float): Positive optimizer-construction learning rate, before any scheduler
+                adjustment. Default: 0.001.
+            optimizer_params (_OptimizerOptions | None): SGD momentum/dampening/weight_decay/nesterov
+                or Adam/AdamW betas/eps/weight_decay. Defaults and cross-key constraints
+                are documented on TrainingConfig. Wrong-optimizer keys are rejected. Default: None.
+            scheduler (str | None): Supported native scheduler or closed scheduler name; stepping remains
+                owned by Trainer. Default: None.
+            scheduler_params (_SchedulerOptions | None): Closed options for step/cosine/onecycle/plateau;
+                see TrainingConfig for every default and bound. OneCycle requires max_lr;
+                plateau requires validation=True. Default: None.
+            device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default:
+                'cpu'.
+            precision (str): Supported numerical format; runtime/task/device restrictions remain
+                authoritative. Default: 'fp32'.
+            accum_steps (int): Positive microbatch accumulation count per attempted optimizer update.
+                Default: 1.
             grad_clip (float | None): Optional positive gradient-norm clipping bound. Default: None.
             ema_decay (float | None): Optional decay for the smoothed evaluation model. Default: None.
-            early_stopping (dict[str, Any] | None): Supported early-stopping configuration/object; validation requirements still apply. Default: None.
+            early_stopping (_EarlyStoppingOptions | None): patience=7, delta=0 and
+                restore_best_weights=True; requires validation=True. Default: None.
             validation (bool): Whether a matching validation dataset/loader is required. Default: False.
             shuffle (bool): Training-loader RandomSampler choice; no hidden seed reset. Default: False.
             drop_last (bool): Whether the training loader drops an incomplete final batch. Default: False.
             num_workers (int): Loader worker count; TrainingConfig currently admits zero only. Default: 0.
-            task (str): Explicit supported task; classification metrics do not imply detection or segmentation support. Default: 'multiclass'.
-            save_last_to (str | None): Explicit checkpoint destination; writing occurs only during the requested fit. Default: None.
-            resume_from (str | None): Existing compatible checkpoint; model/data/settings and total budget must match. Default: None.
+            task (str): Explicit supported task; classification metrics do not imply detection or
+                segmentation support. Default: 'multiclass'.
+            save_last_to (str | None): Explicit checkpoint destination; writing occurs only during the
+                requested fit. Default: None.
+            resume_from (str | None): Existing compatible checkpoint; model/data/settings and total budget
+                must match. Default: None.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             TrainingConfig()
 
@@ -241,7 +323,7 @@ class TrainingConfig:
             A new validated immutable configuration; no workload is prepared or started.
         Raises:
             TrainingConfigError: The existing native settings/validation contract fails.
-        Example:
+        Examples:
             config = TrainingConfig().with_sgd(momentum=0.9, nesterov=True)
 
         HYSo Guide: training.configuration
@@ -262,7 +344,7 @@ class TrainingConfig:
             A new validated immutable configuration; no workload is prepared or started.
         Raises:
             TrainingConfigError: The existing native settings/validation contract fails.
-        Example:
+        Examples:
             config = TrainingConfig().with_adam(eps=1e-7)
 
         HYSo Guide: training.configuration
@@ -283,7 +365,7 @@ class TrainingConfig:
             A new validated immutable configuration; no workload is prepared or started.
         Raises:
             TrainingConfigError: The existing native settings/validation contract fails.
-        Example:
+        Examples:
             config = TrainingConfig().with_adamw(weight_decay=0.01)
 
         HYSo Guide: training.configuration
@@ -302,7 +384,7 @@ class TrainingConfig:
             A new validated immutable configuration; no workload is prepared or started.
         Raises:
             TrainingConfigError: The existing native settings/validation contract fails.
-        Example:
+        Examples:
             config = TrainingConfig().with_step_scheduler(step_size=2)
 
         HYSo Guide: training.configuration
@@ -321,7 +403,7 @@ class TrainingConfig:
             A new validated immutable configuration; no workload is prepared or started.
         Raises:
             TrainingConfigError: The existing native settings/validation contract fails.
-        Example:
+        Examples:
             config = TrainingConfig().with_cosine_scheduler(eta_min=1e-6)
 
         HYSo Guide: training.configuration
@@ -346,7 +428,7 @@ class TrainingConfig:
             A new validated immutable configuration; no workload is prepared or started.
         Raises:
             TrainingConfigError: The existing native settings/validation contract fails.
-        Example:
+        Examples:
             config = TrainingConfig().with_onecycle_scheduler(max_lr=0.01)
 
         HYSo Guide: training.configuration
@@ -369,7 +451,7 @@ class TrainingConfig:
             A new validated immutable configuration; no workload is prepared or started.
         Raises:
             TrainingConfigError: The existing native settings/validation contract fails.
-        Example:
+        Examples:
             config = TrainingConfig(validation=True).with_plateau_scheduler(patience=3)
 
         HYSo Guide: training.configuration
@@ -389,7 +471,7 @@ class TrainingConfig:
             A new validated immutable configuration; no workload is prepared or started.
         Raises:
             TrainingConfigError: The existing native settings/validation contract fails.
-        Example:
+        Examples:
             config = TrainingConfig(validation=True).with_early_stopping(patience=3)
 
         HYSo Guide: training.configuration
@@ -402,12 +484,14 @@ class TrainingConfig:
         """Return a detached request, including user-supplied option dictionaries.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -422,16 +506,18 @@ class TrainingConfig:
         """Load exact schema1 fields; unknown fields/objects are rejected.
 
         Args:
-            data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema
+                validator. Required.
 
         Returns:
             A validated TrainingConfig instance reconstructed from the supplied data.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             TrainingConfig.from_dict(data)
 
@@ -450,8 +536,10 @@ class TrainingConfig:
         """Write settings only; refuse an existing file by default.
 
         Args:
-            path (str | Path): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (str | Path): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             None after the native file export succeeds.
@@ -460,7 +548,7 @@ class TrainingConfig:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_json(path)
 
@@ -477,7 +565,8 @@ class TrainingConfig:
         """Read <=64 KiB UTF-8 JSON; reject duplicates/nonfinite values, never code.
 
         Args:
-            path (str | Path): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            path (str | Path): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
 
         Returns:
             A validated TrainingConfig instance reconstructed from the supplied data.
@@ -486,7 +575,7 @@ class TrainingConfig:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             TrainingConfig.from_json(path)
 
@@ -510,17 +599,20 @@ class TrainingConfig:
         """Construct ordinary finite CPU-side loaders; do not iterate or seed them.
 
         Args:
-            train_dataset (Dataset): Finite nonempty map-style training Dataset; no data is iterated during preparation. Required.
-            val_dataset (Dataset | None): Optional validation Dataset; must match the explicit validation flag. Default: None.
+            train_dataset (Dataset): Finite nonempty map-style training Dataset; no data is iterated during
+                preparation. Required.
+            val_dataset (Dataset | None): Optional validation Dataset; must match the explicit validation
+                flag. Default: None.
 
         Returns:
             A training DataLoader and an optional validation DataLoader; neither is iterated.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.make_loaders(train_dataset)
 
@@ -553,22 +645,30 @@ class TrainingConfig:
         no scheduler/EMA/early stopping/accumulation/clipping or callbacks.
 
         Args:
-            model (nn.Module): Caller-owned model; device, dtype and task must match the native operation. Required.
-            train_loader (DataLoader): Finite training loader; batches must follow the task/model input contract. Required.
-            val_loader (DataLoader | None): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
-            model_config (dict[str, Any] | None): Separate exact architecture metadata for supported checkpoint/restore contracts. Default: None.
-            loss_fn (_typing.Any): Classification loss object, or the explicitly supported two-Graph-head loss mapping. Default: None.
-            loss_weights (dict[str, float] | None): Positive weights matching the explicit named classification losses. Default: None.
-            on_epoch (Callable[[dict[str, Any]], None] | None): Optional synchronous observer receiving an independent epoch-log dictionary. Default: None.
+            model (nn.Module): Caller-owned model; device, dtype and task must match the native operation.
+                Required.
+            train_loader (DataLoader): Finite training loader; batches must follow the task/model input
+                contract. Required.
+            val_loader (DataLoader | None): Optional finite validation loader; must agree with the explicit
+                validation setting. Default: None.
+            model_config (dict[str, Any] | None): Separate exact architecture metadata for supported
+                checkpoint/restore contracts. Default: None.
+            loss_fn (_typing.Any): Classification loss object, or the explicitly supported two-Graph-head
+                loss mapping. Default: None.
+            loss_weights (dict[str, float] | None): Positive weights matching the explicit named
+                classification losses. Default: None.
+            on_epoch (Callable[[dict[str, Any]], None] | None): Optional synchronous observer receiving an
+                independent epoch-log dictionary. Default: None.
 
         Returns:
             A prepared TrainingSession; fit() has not been called.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.prepare(model, train_loader)
 
@@ -591,22 +691,30 @@ class TrainingConfig:
         Supply existing loaders to prepare() when custom loader control is needed.
 
         Args:
-            model (nn.Module): Caller-owned model; device, dtype and task must match the native operation. Required.
-            train_dataset (Dataset): Finite nonempty map-style training Dataset; no data is iterated during preparation. Required.
-            val_dataset (Dataset | None): Optional validation Dataset; must match the explicit validation flag. Default: None.
-            model_config (dict[str, Any] | None): Separate exact architecture metadata for supported checkpoint/restore contracts. Default: None.
-            loss_fn (_typing.Any): Classification loss object, or the explicitly supported two-Graph-head loss mapping. Default: None.
-            loss_weights (dict[str, float] | None): Positive weights matching the explicit named classification losses. Default: None.
-            on_epoch (Callable[[dict[str, Any]], None] | None): Optional synchronous observer receiving an independent epoch-log dictionary. Default: None.
+            model (nn.Module): Caller-owned model; device, dtype and task must match the native operation.
+                Required.
+            train_dataset (Dataset): Finite nonempty map-style training Dataset; no data is iterated during
+                preparation. Required.
+            val_dataset (Dataset | None): Optional validation Dataset; must match the explicit validation
+                flag. Default: None.
+            model_config (dict[str, Any] | None): Separate exact architecture metadata for supported
+                checkpoint/restore contracts. Default: None.
+            loss_fn (_typing.Any): Classification loss object, or the explicitly supported two-Graph-head
+                loss mapping. Default: None.
+            loss_weights (dict[str, float] | None): Positive weights matching the explicit named
+                classification losses. Default: None.
+            on_epoch (Callable[[dict[str, Any]], None] | None): Optional synchronous observer receiving an
+                independent epoch-log dictionary. Default: None.
 
         Returns:
             A prepared TrainingSession using the unchanged make_loaders/prepare contracts.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.prepare_datasets(model, train_dataset)
 

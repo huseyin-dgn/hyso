@@ -14,8 +14,27 @@ from ..analysis._codec import digest
 STAGES=('dependencies','admission','conversion','artifact','runtime_loading','runtime_execution','equivalence','preservation','cleanup')
 
 class ExportError(ValueError):
-    """Export failure with a stable code/message key and retained partial stages."""
+    """Export failure with a stable code/message key and retained partial stages.
+
+    Args:
+        code (str): Stable machine-readable diagnostic code; distinct from the human-readable reason.
+            Required.
+        reason (str): Recorded explanation for rejection, absence or incomplete evidence; None only
+            where the schema allows it. Required.
+        result (dict[str, Any] | None): Retained HYSo result/evidence record; rendering/advice does not
+            run measurements. Default: None.
+    """
     def __init__(self, code: str, reason: str, *, result: dict[str,Any] | None=None) -> None:
+        """Initialize ExportError from the supplied settings or evidence.
+
+        Args:
+            code (str): Stable machine-readable diagnostic code; distinct from the human-readable reason.
+                Required.
+            reason (str): Recorded explanation for rejection, absence or incomplete evidence; None only
+                where the schema allows it. Required.
+            result (dict[str, Any] | None): Retained HYSo result/evidence record; rendering/advice does not
+                run measurements. Default: None.
+        """
         self.code=code;self.message_key='export.'+code.lower()
         self.result=dict(result or {})
         if 'stages' not in self.result:
@@ -35,6 +54,21 @@ class ExportConfig:
     atol/rtol are explicit elementwise equivalence bounds. max_model_bytes bounds
     the supported resident profile before copying; it is not an OS memory quota.
     Native work additionally requires an owned worker and NativeConfig.
+
+    Args:
+        overwrite (bool): Permit replacement of an existing destination when True; False retains
+            no-clobber publication. Default: False.
+        validate_runtime (bool): Request runtime loading, execution and equivalence checking. False can
+            produce an artifact but cannot yield deployment_verified=True. Default: True.
+        atol (float): Finite nonnegative absolute output tolerance. Default: 1e-05.
+        rtol (float): Finite nonnegative relative output tolerance; relative comparison uses a small
+            denominator floor. Default: 0.0001.
+        max_model_bytes (int): Resident model byte budget before conversion; positive integer capped at
+            256 MiB. Default: 64 * 1024 ** 2.
+        max_input_bytes (int): Example-input byte budget; positive integer capped at 64 MiB. Default: 16
+            * 1024 ** 2.
+        max_artifact_bytes (int): Total artifact/sidecar byte budget; positive integer capped at 512
+            MiB. Default: 256 * 1024 ** 2.
     """
     overwrite: bool=False
     validate_runtime: bool=True
@@ -56,6 +90,27 @@ class NativeConfig:
 
     GPU execution requires physical UUID, allocator cap and predeclared DLL hashes.
     Known compiler/SDK/platform gaps remain BLOCKED, never a fallback backend.
+
+    Args:
+        gpu_uuid (str): Canonical physical GPU-<UUID>, not an ordinal index. Required.
+        allowed_binaries (dict[str, str]): Nonempty mapping of absolute admitted DLL paths to lowercase
+            64-character SHA256 digests. Required.
+        workspace_bytes (int): Native build workspace budget, at most 256 MiB and strictly below
+            max_gpu_bytes; not total VRAM. Default: 64 * 1024 ** 2.
+        max_gpu_bytes (int): Native device allocation budget, at most 512 MiB. Default: 384 * 1024 ** 2.
+        allocator_fraction (float): Positive CUDA allocator fraction, at most 0.15. Default: 0.15.
+        timeout_seconds (float): Positive native worker deadline, at most 120 seconds. Default: 90.0.
+        process_memory_bytes (int): Per-process host-memory budget in bytes, at most 3 GiB for
+            NativeConfig. Default: 3 * 1024 ** 3.
+        job_memory_bytes (int): Whole-job host-memory budget in bytes, at most 6 GiB for NativeConfig;
+            must cover the process budget. Default: 6 * 1024 ** 3.
+        max_processes (int): Maximum processes in the owned native job, at most 4 for NativeConfig.
+            Default: 4.
+        runtime_search_path (str | None): Explicit native runtime directory used only within the
+            admitted loading scope; no global PATH modification. Default: None.
+        dependency_identities (dict[str, dict]): Admitted binary path to {file_id, bytes} metadata; keys
+            must belong to allowed_binaries and values are nonnegative integers. Default:
+            field(default_factory=dict).
     """
     gpu_uuid: str
     allowed_binaries: dict[str,str]
@@ -88,6 +143,9 @@ def availability() -> dict[str,Any]:
 
     Importable means only Python discovery, never working provider/compiler proof.
     No dependency is installed. Versions refer to the current interpreter paths.
+
+    Returns:
+        Discovered module paths/versions and runtime_verified=False; discovery is not backend admission.
     """
     rows={}
     for name,dist in (('torch','torch'),('onnx','onnx'),('onnxruntime','onnxruntime'),('onnxscript','onnxscript'),('tensorrt','tensorrt'),('torch_tensorrt','torch-tensorrt')):
@@ -107,10 +165,20 @@ class ExportResult:
 
     from_json verifies its digest and every artifact hash before returning. Loading
     metadata never executes a model; runtime loading is a separate explicit action.
+
+    Args:
+        data (dict[str, Any]): Detached schema-compatible result mapping, including recorded status and
+            integrity fields. Required.
     """
     __slots__=('_payload',)
     _payload: str
     def __init__(self, data: dict[str,Any]) -> None:
+        """Initialize ExportResult from the supplied settings or evidence.
+
+        Args:
+            data (dict[str, Any]): Detached schema-compatible result mapping, including recorded status and
+                integrity fields. Required.
+        """
         body=json.loads(json.dumps(data,allow_nan=False))
         if body.get('schema_version')!=1 or body.get('format')!='hyso.export' or set(body.get('stages',{}))!=set(STAGES):raise ExportError('RESULT_SCHEMA','invalid export metadata')
         if body.get('content_sha256')!=digest({k:v for k,v in body.items() if k!='content_sha256'}):raise ExportError('RESULT_INTEGRITY','metadata digest mismatch')
@@ -142,14 +210,26 @@ class ExportResult:
         from .artifacts import verify_files
         verify_files(self.to_dict())
     def to_json(self, path: str | Path | None=None, *, overwrite: bool=False) -> str:
-        """Save detached metadata, refusing existing paths unless explicitly chosen."""
+        """Save detached metadata, refusing existing paths unless explicitly chosen.
+
+        Args:
+            path (str | Path | None): Filesystem location read or written by this explicit operation; output
+                parents must already exist. Default: None.
+            overwrite (bool): Permit replacement of an existing destination when True; False retains
+                no-clobber publication. Default: False.
+        """
         from ..benchmark.result import _write_export
         text=json.dumps(self.to_dict(),ensure_ascii=False,allow_nan=False,indent=2)+'\n'
         if path is not None:_write_export(path,text,overwrite)
         return text
     @classmethod
     def from_json(cls, path: str | Path) -> ExportResult:
-        """Read metadata and require intact artifact files; no native deserialization."""
+        """Read metadata and require intact artifact files; no native deserialization.
+
+        Args:
+            path (str | Path): Filesystem location read or written by this explicit operation; output
+                parents must already exist. Required.
+        """
         p=Path(path)
         if p.is_symlink() or p.stat().st_size>16*1024**2:raise ExportError('RESULT_INTEGRITY','linked/oversized metadata')
         result=cls(json.loads(p.read_text(encoding='utf-8')));result.verify();return result

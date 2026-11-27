@@ -67,17 +67,19 @@ def trace_data_stage(stage: _typing.Literal['load', 'decode', 'transform'], oper
     Args:
         stage (_typing.Any): Workflow stage or timing-stage identity for this operation. Required.
         operation (_typing.Any): Supported operation name. Required.
-        value (_typing.Any): Observed metric value; unavailable values retain their native null/status policy. Required.
+        value (_typing.Any): Observed metric value; unavailable values retain their native null/status
+            policy. Required.
         sample_id (_typing.Any): Stable sample identity for correlation. Default: None.
 
     Returns:
         The retained trace data stage value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         trace_data_stage(stage, operation, value)
 

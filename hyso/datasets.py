@@ -5,6 +5,7 @@ or grayscale source channels, deterministic resize/ToTensor and optional explici
 normalization. Content checks detect exact decoded/preprocessed cross-split reuse,
 not semantic near-duplicates or independent dataset origin.
 """
+import typing as _typing
 
 from dataclasses import dataclass
 from functools import partial
@@ -24,9 +25,20 @@ from .model_checks import preflight_model
 
 
 class ImageDatasetError(ValueError):
-    """Invalid file/data/model contract; original Core diagnostics are retained."""
+    """Invalid file/data/model contract; original Core diagnostics are retained.
 
-    def __init__(self, message, *, diagnostics=None):
+    Args:
+        message: Human-readable exception explanation. Required.
+        diagnostics: Structured validation details attached to a failure. Default: None.
+    """
+
+    def __init__(self, message, *, diagnostics=None) -> 'None':
+        """Initialize ImageDatasetError from the supplied settings or evidence.
+
+        Args:
+            message: Human-readable exception explanation. Required.
+            diagnostics: Structured validation details attached to a failure. Default: None.
+        """
         super().__init__(message)
         self.diagnostics = diagnostics
 
@@ -79,7 +91,16 @@ def _checked_loader(path, *, channels, expected):
 
 @dataclass(frozen=True)
 class ImageClassificationSplits:
-    """Standard ImageFolder datasets plus a defensive content/preprocessing manifest."""
+    """Standard ImageFolder datasets plus a defensive content/preprocessing manifest.
+
+    Args:
+        train (datasets.ImageFolder): Training split dataset; samples are separate from validation/test.
+            Required.
+        val (datasets.ImageFolder | None): Validation split dataset used only when explicitly requested.
+            Required.
+        test (datasets.ImageFolder | None): Held-out test split dataset; not used to tune training
+            settings automatically. Required.
+    """
 
     train: datasets.ImageFolder
     val: datasets.ImageFolder | None
@@ -87,14 +108,24 @@ class ImageClassificationSplits:
     _manifest_json: str
 
     @property
-    def classes(self):
+    def classes(self) -> 'tuple[str, ...]':
+        """Classes using the explicitly supplied evidence.
+        """
         return tuple(self.to_dict()["classes"])
 
-    def to_dict(self):
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return detached JSON-compatible evidence without rerunning the source workload.
+        """
         return json.loads(self._manifest_json)
 
-    def make_loaders(self, training, *, seed):
-        """Reuse TrainingConfig loaders; explicitly seed independent CPU generators."""
+    def make_loaders(self, training, *, seed) -> 'tuple[_typing.Any, _typing.Any, _typing.Any]':
+        """Reuse TrainingConfig loaders; explicitly seed independent CPU generators.
+
+        Args:
+            training: Validated TrainingConfig used to construct or check compatible loaders. Required.
+            seed: Explicit independent CPU loader-generator seed, integer in 0..2**63-1; does not reset
+                global RNG state. Required.
+        """
         settings = training.to_dict()
         if type(seed) is not int or not 0 <= seed < 2**63:
             raise ImageDatasetError("seed must be a nonnegative integer below 2**63")
@@ -126,8 +157,14 @@ class ImageClassificationSplits:
                     loader.sampler.generator = loader.generator
         return train, val, test
 
-    def validate_model(self, config, *, output_name=None):
-        """Reuse Core preflight, then match dataset geometry/class vocabulary."""
+    def validate_model(self, config, *, output_name=None) -> 'dict[str, _typing.Any]':
+        """Reuse Core preflight, then match dataset geometry/class vocabulary.
+
+        Args:
+            config: Configuration object or versioned mapping accepted by this API; loading settings alone
+                does not execute a workload. Required.
+            output_name: Exact named graph output selected for the classification task. Default: None.
+        """
         report = preflight_model(config)
         if not report["valid"]:
             raise ImageDatasetError(
@@ -179,13 +216,24 @@ def load_image_splits(
     mean=None,
     std=None,
     max_samples_per_split=128,
-):
+) -> 'ImageClassificationSplits':
     """Validate train/optional val/test folders without mixing or modifying files.
 
     Every present split must have the same nonempty class folders. Train defines
     the sorted vocabulary. No implicit validation/test split is created. A changed
     source file is rejected when read again. Strict source modes are RGB/L; no
     implicit channel conversion. Files <=32 MiB, Pillow decompression guards.
+
+    Args:
+        root: Existing dataset/store directory; no implicit download or file discovery outside its
+            contract. Required.
+        image_size: Target image H/W after explicit preprocessing. Default: (8, 8).
+        channels: Feature channels C; gates and normalization preserve this channel count. Default: 3.
+        mean: Per-channel input normalization means; length must match channels. Default: None.
+        std: Standard deviation of training-only zero-mean Gaussian noise; finite, nonnegative and at
+            most 1e6. Default: None.
+        max_samples_per_split: Upper bound per train/validation/test split; exceeding it is rejected.
+            Default: 128.
     """
     root = Path(root).resolve()
     if channels not in (1, 3) or type(channels) is not int:

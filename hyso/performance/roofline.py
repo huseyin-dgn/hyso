@@ -22,18 +22,21 @@ def _hash(data):
 
 @dataclass(frozen=True)
 class RooflineProtocol:
-    """Configure P18 — Roofline and arithmetic intensity measurement boundaries and resource limits; construction does not run the analysis.
+    """Configure P18 — Roofline and arithmetic intensity measurement boundaries and resource limits;
+    construction does not run the analysis.
 
     Args:
-        traffic (str): Retained memory-traffic evidence for the roofline calculation. Default: 'dispatch_payload_estimate'.
+        traffic (str): Retained memory-traffic evidence for the roofline calculation. Default:
+            'dispatch_payload_estimate'.
 
     Returns:
         An instance of RooflineProtocol with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         RooflineProtocol()
 
@@ -57,20 +60,25 @@ class RooflineReference:
 
     Args:
         profile_sha256 (str): Exact calibration profile digest. Required.
-        compute_flops_per_second (float): Calibrated compute throughput in FLOP/s, not a guessed device peak. Required.
+        compute_flops_per_second (float): Calibrated compute throughput in FLOP/s, not a guessed device
+            peak. Required.
         memory_bytes_per_second (float): Calibrated memory bandwidth in bytes/s. Required.
-        source (str): Typed native/retained source required by this API, not a declaration of producer authority. Required.
+        source (str): Typed native/retained source required by this API, not a declaration of producer
+            authority. Required.
 
     Returns:
         An instance of RooflineReference with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
-        RooflineReference(profile_sha256=profile_sha256, compute_flops_per_second=compute_flops_per_second, memory_bytes_per_second=memory_bytes_per_second, source=source)
+        RooflineReference(profile_sha256=profile_sha256,
+        compute_flops_per_second=compute_flops_per_second,
+        memory_bytes_per_second=memory_bytes_per_second, source=source)
 
     HYSo Guide: analysis.p18
     Offline: hyso docs show analysis.p18 --lang en
@@ -93,21 +101,26 @@ class RooflineReference:
         """Construct a roofline protocol bound to the supplied calibration profile.
 
         Args:
-            profile (_typing.Any): Retained calibration/profile evidence with its exact identity and scope. Required.
-            compute_flops_per_second (_typing.Any): Calibrated compute throughput in FLOP/s, not a guessed device peak. Required.
+            profile (_typing.Any): Retained calibration/profile evidence with its exact identity and scope.
+                Required.
+            compute_flops_per_second (_typing.Any): Calibrated compute throughput in FLOP/s, not a guessed
+                device peak. Required.
             memory_bytes_per_second (_typing.Any): Calibrated memory bandwidth in bytes/s. Required.
-            source (_typing.Any): Typed native/retained source required by this API, not a declaration of producer authority. Required.
+            source (_typing.Any): Typed native/retained source required by this API, not a declaration of
+                producer authority. Required.
 
         Returns:
             A RooflineProtocol bound to the exact supplied calibration identity.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
-            RooflineReference.for_profile(profile, compute_flops_per_second=compute_flops_per_second, memory_bytes_per_second=memory_bytes_per_second, source=source)
+            RooflineReference.for_profile(profile, compute_flops_per_second=compute_flops_per_second,
+            memory_bytes_per_second=memory_bytes_per_second, source=source)
 
         HYSo Guide: analysis.p18
         Offline: hyso docs show analysis.p18 --lang en
@@ -248,18 +261,21 @@ def analyze_roofline(source: '_typing.Any',*,protocol: '_typing.Any'=RooflinePro
     calibrated hardware roofs, bottleneck and valid hardware gap stay unsupported.
 
     Args:
-        source (_typing.Any): Typed native/retained source required by this API, not a declaration of producer authority. Required.
-        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: RooflineProtocol().
+        source (_typing.Any): Typed native/retained source required by this API, not a declaration of
+            producer authority. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards
+            remain unchanged. Default: RooflineProtocol().
         reference (_typing.Any): Exact retained reference evidence/identity. Default: None.
 
     Returns:
         The retained analyze roofline value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         analyze_roofline(source)
 
@@ -286,18 +302,22 @@ def measure_roofline(recipe: '_typing.Any',*,protocol: '_typing.Any'=RooflinePro
     No external profiler install or hardware calibration stress is performed.
 
     Args:
-        recipe (_typing.Any): Trusted construction recipe; factory import/execution is governed by the existing operation contract. Required.
-        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: RooflineProtocol().
-        profiling_protocol (_typing.Any): Typed profiling measurement settings; boundaries and device guards remain explicit. Default: None.
+        recipe (_typing.Any): Trusted construction recipe; factory import/execution is governed by the
+            existing operation contract. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards
+            remain unchanged. Default: RooflineProtocol().
+        profiling_protocol (_typing.Any): Typed profiling measurement settings; boundaries and device
+            guards remain explicit. Default: None.
 
     Returns:
         The retained measure roofline value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         measure_roofline(recipe)
 

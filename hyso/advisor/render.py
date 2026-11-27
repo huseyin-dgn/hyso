@@ -8,7 +8,15 @@ from .resolver import NativeObservation, NativeMetric
 from .planning import PlannedFinding
 
 
-def render_markdown(report, path=None):
+def render_markdown(report, path=None) -> 'str':
+    """Render markdown using the explicitly supplied evidence.
+
+    Args:
+        report: Existing validated analysis/advice report; rendering reads recorded evidence without
+            rerunning workloads. Required.
+        path: Filesystem location read or written by this explicit operation; output parents must
+            already exist. Default: None.
+    """
     if type(report) is not AdvisorReport:
         raise AdvisorError('typed_advisor_report_required')
     esc = lambda value: html.escape(str(value), quote=False).replace('\r', ' ').replace('\n', ' ')

@@ -37,16 +37,18 @@ def advise(report: UnifiedAnalysisReport, request: AdvisorRequest | None = None)
 
     Args:
         report (UnifiedAnalysisReport): Validated retained analysis/advisory report. Required.
-        request (AdvisorRequest | None): Validated advisory/selection request; does not authorize execution. Default: None.
+        request (AdvisorRequest | None): Validated advisory/selection request; does not authorize
+            execution. Default: None.
 
     Returns:
         The retained advise value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         advise(report)
 
@@ -179,16 +181,18 @@ def validate_advisor_report(result: '_typing.Any', source: '_typing.Any') -> '_t
 
     Args:
         result (_typing.Any): Retained typed result required by this operation. Required.
-        source (_typing.Any): Typed native/retained source required by this API, not a declaration of producer authority. Required.
+        source (_typing.Any): Typed native/retained source required by this API, not a declaration of
+            producer authority. Required.
 
     Returns:
         The retained validate advisor report value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         validate_advisor_report(result, source)
 

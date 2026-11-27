@@ -27,23 +27,25 @@ def _check_input(x, channels):
 class ECAAttention(nn.Module):
     """Global spatial mean -> channel-axis Conv1d -> sigmoid reweighting.
 
-    kernel_size is an explicit positive odd integer, default 3; there is no
-    implicit adaptive kernel selection or channel reduction. Padding preserves
-    the C-element descriptor even for C < kernel_size. Parameters are created
-    once; device/dtype follow normal Module.to(), including CPU float32/float64.
-
     Args:
-        channels (_typing.Any): Feature-channel count required by this block. Required.
-        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+        channels (int): Feature channels C; gates and normalization preserve this channel count.
+            Positive integer; the Registry/Builder profile additionally caps it at 8192. Required.
+        kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+            both axes. Positive odd integer; the Registry/Builder profile additionally caps it at 8192.
+            Default: 3.
 
     Returns:
-        An instance of ECAAttention with the documented native validation and defaults.
+        A ECAAttention module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ValueError, TypeError: Constructor channel, shape or option validation fails; native PyTorch
+        errors propagate.
 
-    Example:
+    Notes:
+        Floating [N,channels,H,W], all dimensions positive.
+        Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ECAAttention(channels)
 
@@ -56,17 +58,24 @@ class ECAAttention(nn.Module):
         """Initialize ECAAttention with the supplied settings.
 
         Args:
-            channels (int): Feature-channel count required by this block. Required.
-            kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
+            channels (int): Feature channels C; gates and normalization preserve this channel count.
+                Positive integer; the Registry/Builder profile additionally caps it at 8192. Required.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Positive odd integer; the Registry/Builder profile additionally caps it at 8192.
+                Default: 3.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ValueError, TypeError: Constructor channel, shape or option validation fails; native PyTorch
+            errors propagate.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ECAAttention(channels)
 
@@ -87,7 +96,8 @@ class ECAAttention(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -96,7 +106,7 @@ class ECAAttention(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -113,24 +123,25 @@ class ECAAttention(nn.Module):
 class CoordinateAttention(nn.Module):
     """Separate height/width descriptors and gates, preserving NCHW shape.
 
-    The shared width is max(8, channels // reduction), as in the authors'
-    implementation. A 1x1 convolution, BatchNorm2d and h-swish transform the
-    concatenated H+W descriptors. Gate convolutions preserve channels. For
-    B=1,H=W=1 the shared BN still sees two spatial values (H+W=2); no small-batch
-    fallback or frozen statistics are used. Train/eval retain normal BN semantics.
-
     Args:
-        channels (_typing.Any): Feature-channel count required by this block. Required.
-        reduction (int): Channel reduction ratio used by the attention bottleneck. Default: 32.
+        channels (int): Feature channels C; gates and normalization preserve this channel count.
+            Positive integer; the Registry/Builder profile additionally caps it at 8192. Required.
+        reduction (int): Channel-gate reduction divisor; hidden width is max(1,C//reduction), or
+            max(8,C//reduction) for coordinate attention. Positive integer; the Registry/Builder profile
+            additionally caps it at 8192. Default: 32.
 
     Returns:
-        An instance of CoordinateAttention with the documented native validation and defaults.
+        A CoordinateAttention module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ValueError, TypeError: Constructor channel, shape or option validation fails; native PyTorch
+        errors propagate.
 
-    Example:
+    Notes:
+        Floating [N,channels,H,W], all dimensions positive.
+        Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         CoordinateAttention(channels)
 
@@ -143,17 +154,24 @@ class CoordinateAttention(nn.Module):
         """Initialize CoordinateAttention with the supplied settings.
 
         Args:
-            channels (int): Feature-channel count required by this block. Required.
-            reduction (int): Channel reduction ratio used by the attention bottleneck. Default: 32.
+            channels (int): Feature channels C; gates and normalization preserve this channel count.
+                Positive integer; the Registry/Builder profile additionally caps it at 8192. Required.
+            reduction (int): Channel-gate reduction divisor; hidden width is max(1,C//reduction), or
+                max(8,C//reduction) for coordinate attention. Positive integer; the Registry/Builder profile
+                additionally caps it at 8192. Default: 32.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ValueError, TypeError: Constructor channel, shape or option validation fails; native PyTorch
+            errors propagate.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             CoordinateAttention(channels)
 
@@ -177,7 +195,8 @@ class CoordinateAttention(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -186,7 +205,7 @@ class CoordinateAttention(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 

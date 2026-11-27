@@ -18,8 +18,14 @@ from torchsummary import summary
 
 # Summary helper
 # -----------------------
-def model_summary(model, input_size):
-    """Simple summary print like Keras."""
+def model_summary(model, input_size) -> 'None':
+    """Simple summary print like Keras.
+
+    Args:
+        model: Caller-owned torch.nn.Module; must meet the operation device, dtype and input contract.
+            Required.
+        input_size: Per-sample model input dimensions used for an explicit summary forward. Required.
+    """
     try:
         summary(model, input_size)
     except:
@@ -34,6 +40,11 @@ class CNNSENormalWithFit(CEMO):
     """Construct the legacy CNN with squeeze-and-excitation attention and its fit interface.
 
     Args:
+        input_channels (int): Input image channels C; must match the first model stage. Default: 3.
+        num_classes (int): Number of output class logits. Outputs are unnormalized scores, not
+            probabilities. Default: 10.
+        conv_channels (_typing.Sequence[int]): Ordered feature-channel widths in the legacy classifier.
+            Default: [64, 128, 256].
         args (_typing.Any): Positional arguments forwarded to this native operation. Required.
         residuals_per_stage (int): CEMO residual block count. Default: 2.
             se_reduction (int): SE reduction factor. Default: 8.
@@ -50,7 +61,7 @@ class CNNSENormalWithFit(CEMO):
         ValueError, TypeError: Native configuration, shape or input validation rejects the request.
         RuntimeError: A requested native construction/forward operation fails.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         CNNSENormalWithFit()
 
@@ -62,6 +73,11 @@ class CNNSENormalWithFit(CEMO):
         """Initialize CNNSENormalWithFit with the supplied settings.
 
         Args:
+            input_channels (int): Input image channels C; must match the first model stage. Default: 3.
+            num_classes (int): Number of output class logits. Outputs are unnormalized scores, not
+                probabilities. Default: 10.
+            conv_channels (_typing.Sequence[int]): Ordered feature-channel widths in the legacy classifier.
+                Default: [64, 128, 256].
             args (_typing.Any): Positional arguments forwarded to this native operation. Required.
             residuals_per_stage (int): CEMO residual block count. Default: 2.
             se_reduction (int): SE reduction factor. Default: 8.
@@ -78,7 +94,7 @@ class CNNSENormalWithFit(CEMO):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             CNNSENormalWithFit()
 
@@ -107,10 +123,14 @@ class CNNSENormalWithFit(CEMO):
         """Install the supported callback configuration for subsequent fit calls.
 
         Args:
-            optimizer (str): Existing supported optimizer or a closed optimizer name, according to this API. Default: 'Adam'.
-            optimizer_params (dict[str, _typing.Any] | None): Closed native optimizer keyword options; unknown options are rejected. Default: None.
-            scheduler (_typing.Any): Supported native scheduler or closed scheduler name; stepping remains owned by Trainer. Default: None.
-            scheduler_params (dict[str, _typing.Any] | None): Closed scheduler settings; required scheduler-specific options remain mandatory. Default: None.
+            optimizer (str): Existing supported optimizer or a closed optimizer name, according to this API.
+                Default: 'Adam'.
+            optimizer_params (dict[str, _typing.Any] | None): Closed native optimizer keyword options;
+                unknown options are rejected. Default: None.
+            scheduler (_typing.Any): Supported native scheduler or closed scheduler name; stepping remains
+                owned by Trainer. Default: None.
+            scheduler_params (dict[str, _typing.Any] | None): Closed scheduler settings; required
+                scheduler-specific options remain mandatory. Default: None.
             model_checkpoint (bool): Legacy checkpoint callback configuration. Default: False.
             earlystop (_typing.Any): Legacy early-stopping callback configuration. Default: None.
             lr (float): Optimizer learning rate. Default: 0.001.
@@ -123,7 +143,7 @@ class CNNSENormalWithFit(CEMO):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.callbacks()
 
@@ -176,9 +196,12 @@ class CNNSENormalWithFit(CEMO):
         """Train this legacy model using its native loader and optimizer contract.
 
         Args:
-            train_loader (_typing.Any): Finite training loader; batches must follow the task/model input contract. Required.
-            val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
-            epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after resume. Default: 10.
+            train_loader (_typing.Any): Finite training loader; batches must follow the task/model input
+                contract. Required.
+            val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit
+                validation setting. Default: None.
+            epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after
+                resume. Default: 10.
             lr (float): Optimizer learning rate. Default: 0.001.
             use_ema (bool): Enable the supported EMA evaluation shadow. Default: False.
 
@@ -189,7 +212,7 @@ class CNNSENormalWithFit(CEMO):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.fit(train_loader)
 

@@ -23,17 +23,24 @@ class ChannelShuffle(nn.Module):
     """Reshape/transpose channel groups while preserving NCHW dimensions.
 
     Args:
-        channels (int): Feature-channel count required by this block. Required.
-        groups (int): Convolution/group count; divisibility requirements remain unchanged. Default: 2.
+        channels (int): Feature channels C; gates and normalization preserve this channel count.
+            Positive integer; the Registry/Builder profile additionally caps it at 8192. Required.
+        groups (int): Channel partitions; must divide both convolution channel counts. ChannelShuffle
+            requires channels % groups == 0. Positive integer; the Registry/Builder profile additionally
+            caps it at 8192. Default: 2.
 
     Returns:
-        An instance of ChannelShuffle with the documented native validation and defaults.
+        A ChannelShuffle module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ValueError, TypeError: Constructor channel, shape or option validation fails; native PyTorch
+        errors propagate.
 
-    Example:
+    Notes:
+        Floating NCHW with matching channels.
+        Same NCHW shape; validated channel partition.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ChannelShuffle(channels)
 
@@ -45,17 +52,24 @@ class ChannelShuffle(nn.Module):
         """Initialize ChannelShuffle with the supplied settings.
 
         Args:
-            channels (int): Feature-channel count required by this block. Required.
-            groups (int): Convolution/group count; divisibility requirements remain unchanged. Default: 2.
+            channels (int): Feature channels C; gates and normalization preserve this channel count.
+                Positive integer; the Registry/Builder profile additionally caps it at 8192. Required.
+            groups (int): Channel partitions; must divide both convolution channel counts. ChannelShuffle
+                requires channels % groups == 0. Positive integer; the Registry/Builder profile additionally
+                caps it at 8192. Default: 2.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ValueError, TypeError: Constructor channel, shape or option validation fails; native PyTorch
+            errors propagate.
 
-        Example:
+        Notes:
+            Floating NCHW with matching channels.
+            Same NCHW shape; validated channel partition.
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ChannelShuffle(channels)
 
@@ -75,7 +89,8 @@ class ChannelShuffle(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -84,7 +99,7 @@ class ChannelShuffle(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -99,23 +114,25 @@ class ChannelShuffle(nn.Module):
 class DropBlock2D(nn.Module):
     """Explicit contiguous spatial regularization with per-tensor mask normalization.
 
-    block_size is clipped to H/W, including even spatial extents. Valid top-left
-    seed positions spread into exact square blocks. gamma is clipped to one.
-    p=1 yields zeros, p=0 and eval return the input. An all-dropped mask yields
-    finite zeros. Half-precision mask statistics accumulate in float32.
-
     Args:
-        p (float): Probability of dropping an element/path during training. Default: 0.1.
-        block_size (int): Spatial side length of the dropped block. Default: 3.
+        p (float): Probability of dropping elements, channels or paths during training; evaluation
+            disables masking. Number in [0,1]. Default: 0.1.
+        block_size (int): Requested spatial square side for contiguous DropBlock masks; runtime clips it
+            to min(block_size,H,W). Positive integer; the Registry/Builder profile additionally caps it
+            at 8192. Default: 3.
 
     Returns:
-        An instance of DropBlock2D with the documented native validation and defaults.
+        A DropBlock2D module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ValueError, TypeError: Constructor channel, shape or option validation fails; native PyTorch
+        errors propagate.
 
-    Example:
+    Notes:
+        Nonempty floating NCHW.
+        Same shape and dtype; explicit training-only masking.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         DropBlock2D()
 
@@ -127,17 +144,24 @@ class DropBlock2D(nn.Module):
         """Initialize DropBlock2D with the supplied settings.
 
         Args:
-            p (float): p Default: 0.1.
-            block_size (int): block size Default: 3.
+            p (float): Probability of dropping elements, channels or paths during training; evaluation
+                disables masking. Number in [0,1]. Default: 0.1.
+            block_size (int): Requested spatial square side for contiguous DropBlock masks; runtime clips it
+                to min(block_size,H,W). Positive integer; the Registry/Builder profile additionally caps it
+                at 8192. Default: 3.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ValueError, TypeError: Constructor channel, shape or option validation fails; native PyTorch
+            errors propagate.
 
-        Example:
+        Notes:
+            Nonempty floating NCHW.
+            Same shape and dtype; explicit training-only masking.
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             DropBlock2D()
 
@@ -155,7 +179,8 @@ class DropBlock2D(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -164,7 +189,7 @@ class DropBlock2D(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 

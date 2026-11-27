@@ -54,24 +54,34 @@ class MetricDifference(Contract):
     """Values and source contexts; direct construction is not certification.
 
     Args:
-        baseline (ResolvedMetric): Validated retained baseline source or predictions required by this comparison. Required.
-        candidate (ResolvedMetric): Validated retained candidate source or predictions required by this comparison. Required.
+        baseline (ResolvedMetric): Validated retained baseline source or predictions required by this
+            comparison. Required.
+        candidate (ResolvedMetric): Validated retained candidate source or predictions required by this
+            comparison. Required.
         difference (float): Observed difference under the declared metric convention. Required.
-        percent_change (float | None): Relative change in percent; unavailable for an invalid/zero baseline under the native rule. Required.
-        percentage_point_change (float | None): Absolute difference between percentage-valued quality metrics, in percentage points. Required.
-        preferred_direction (str): Whether smaller or larger values are preferred for this metric. Required.
+        percent_change (float | None): Relative change in percent; unavailable for an invalid/zero
+            baseline under the native rule. Required.
+        percentage_point_change (float | None): Absolute difference between percentage-valued quality
+            metrics, in percentage points. Required.
+        preferred_direction (str): Whether smaller or larger values are preferred for this metric.
+            Required.
         observed_direction (str): Direction actually observed for this metric. Required.
-        metric_effect (str): Expected or retained metric effect under the declared evidence status. Required.
+        metric_effect (str): Expected or retained metric effect under the declared evidence status.
+            Required.
 
     Returns:
         An instance of MetricDifference with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
-        MetricDifference(baseline=baseline, candidate=candidate, difference=difference, percent_change=percent_change, percentage_point_change=percentage_point_change, preferred_direction=preferred_direction, observed_direction=observed_direction, metric_effect=metric_effect)
+        MetricDifference(baseline=baseline, candidate=candidate, difference=difference,
+        percent_change=percent_change, percentage_point_change=percentage_point_change,
+        preferred_direction=preferred_direction, observed_direction=observed_direction,
+        metric_effect=metric_effect)
 
     HYSo Guide: metrics.interpretation
     Offline: hyso docs show metrics.interpretation --lang en
@@ -136,22 +146,29 @@ class PerformanceComparison(Contract):
     """Retain comparable metric differences and explicit incompatible or unavailable evidence.
 
     Args:
-        contract (ComparisonContract | P26QualityComparisonContract | P26BoundQualityComparisonContract): Typed comparison/evaluation contract required by the operation. Required.
+        contract: ComparisonContract, CapturedCPUComparisonContract,
+            P26QualityComparisonContract or P26BoundQualityComparisonContract,
+            matching the retained metric and context. Required.
         eligibility (ComparisonResult): Retained evidence eligibility assessment. Required.
-        difference (MetricDifference | None): Observed difference under the declared metric convention. Required.
+        difference (MetricDifference | None): Observed difference under the declared metric convention.
+            Required.
         warnings (tuple): Retained warnings and evidence limitations. Required.
-        limitations (tuple): Explicit limitations of the evidence, comparison or proposed operation. Default: _LIMITS.
-        missing_evidence (tuple): Explicit missing prerequisites; these are not filled by guesses. Default: _MISSING.
+        limitations (tuple): Explicit limitations of the evidence, comparison or proposed operation.
+            Default: _LIMITS.
+        missing_evidence (tuple): Explicit missing prerequisites; these are not filled by guesses.
+            Default: _MISSING.
 
     Returns:
         An instance of PerformanceComparison with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
-        PerformanceComparison(contract=contract, eligibility=eligibility, difference=difference, warnings=warnings)
+        PerformanceComparison(contract=contract, eligibility=eligibility, difference=difference,
+        warnings=warnings)
 
     HYSo Guide: metrics.interpretation
     Offline: hyso docs show metrics.interpretation --lang en
@@ -198,16 +215,18 @@ def compare_performance(left_resolver: '_typing.Any', left_record_id: '_typing.A
         left_record_id (_typing.Any): Exact left evidence identity. Required.
         right_resolver (_typing.Any): Resolver for the right retained source. Required.
         right_record_id (_typing.Any): Exact right evidence identity. Required.
-        contract (_typing.Any): Typed comparison/evaluation contract required by the operation. Default: None.
+        contract (_typing.Any): Typed comparison/evaluation contract required by the operation. Default:
+            None.
 
     Returns:
         The retained compare performance value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         compare_performance(left_resolver, left_record_id, right_resolver, right_record_id)
 

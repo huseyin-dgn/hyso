@@ -43,10 +43,11 @@ def observe_nvidia_power(device_id: '_typing.Any', *, clock_id: '_typing.Any', t
         The retained observe nvidia power value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         observe_nvidia_power(device_id, clock_id=clock_id)
 
@@ -111,7 +112,8 @@ def analyze_energy(stability_result: '_typing.Any', *, max_gap_seconds: 'float'=
     """Analyze retained stability sensor evidence and energy coverage without rerunning the workload.
 
     Args:
-        stability_result (_typing.Any): Existing retained long-run result; continuity and source identity must remain valid. Required.
+        stability_result (_typing.Any): Existing retained long-run result; continuity and source
+            identity must remain valid. Required.
         max_gap_seconds (float): Max gap in seconds under the native protocol. Default: 2.0.
         idle_max_age_seconds (float): Idle max age in seconds under the native protocol. Default: 60.0.
 
@@ -119,10 +121,11 @@ def analyze_energy(stability_result: '_typing.Any', *, max_gap_seconds: 'float'=
         A validated RuntimeResult retaining actual evidence, coverage and unavailable-status fields.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         analyze_energy(stability_result)
 

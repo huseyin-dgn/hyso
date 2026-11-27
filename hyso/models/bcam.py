@@ -250,18 +250,27 @@ class CBAMBlock(nn.Module):
     """Reweight convolutional features using channel attention followed by spatial attention.
 
     Args:
-        channels (_typing.Any): Feature-channel count required by this block. Required.
-        reduction (int): Channel reduction ratio used by the attention bottleneck. Default: 16.
-        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 7.
+        channels (int): Feature channels C; gates and normalization preserve this channel count.
+            Positive integer; the Registry/Builder profile additionally caps it at 8192. Required.
+        reduction (int): Channel-gate reduction divisor; hidden width is max(1,C//reduction), or
+            max(8,C//reduction) for coordinate attention. Positive integer; the Registry/Builder profile
+            additionally caps it at 8192. Default: 16.
+        kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+            both axes. Positive odd integer; the Registry/Builder profile additionally caps it at 8192.
+            Default: 7.
 
     Returns:
-        An instance of CBAMBlock with the documented native validation and defaults.
+        A CBAMBlock module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ValueError, TypeError: Constructor channel, shape or option validation fails; native PyTorch
+        errors propagate.
 
-    Example:
+    Notes:
+        Floating [N,channels,H,W], all dimensions positive.
+        Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         CBAMBlock(channels)
 
@@ -273,18 +282,27 @@ class CBAMBlock(nn.Module):
         """Initialize CBAMBlock with the supplied settings.
 
         Args:
-            channels (int): Feature-channel count required by this block. Required.
-            reduction (int): Channel reduction ratio used by the attention bottleneck. Default: 16.
-            kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 7.
+            channels (int): Feature channels C; gates and normalization preserve this channel count.
+                Positive integer; the Registry/Builder profile additionally caps it at 8192. Required.
+            reduction (int): Channel-gate reduction divisor; hidden width is max(1,C//reduction), or
+                max(8,C//reduction) for coordinate attention. Positive integer; the Registry/Builder profile
+                additionally caps it at 8192. Default: 16.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Positive odd integer; the Registry/Builder profile additionally caps it at 8192.
+                Default: 7.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ValueError, TypeError: Constructor channel, shape or option validation fails; native PyTorch
+            errors propagate.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             CBAMBlock(channels)
 
@@ -303,7 +321,8 @@ class CBAMBlock(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -312,7 +331,7 @@ class CBAMBlock(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -346,7 +365,16 @@ def _find_group_count(channels, preferred=8):
         g -= 1
     return 1
 
-def stochastic_depth(x, drop_prob: float, training: bool):
+def stochastic_depth(x, drop_prob: float, training: bool) -> 'torch.Tensor':
+    """Stochastic depth using the explicitly supplied evidence.
+
+    Args:
+        x: Input tensor with the module shape, dtype and device contract; forward performs the
+            computation. Required.
+        drop_prob (float): Training-only stochastic-depth drop probability. Required.
+        training (bool): Validated TrainingConfig used to construct or check compatible loaders.
+            Required.
+    """
     if not training or drop_prob <= 0.0:
         return x
     keep_prob = 1.0 - drop_prob
@@ -355,12 +383,44 @@ def stochastic_depth(x, drop_prob: float, training: bool):
     return x.div(keep_prob) * torch.floor(random_tensor)
 
 class BottleneckResidualBlock(nn.Module):
+    """Construct the legacy CBAM bottleneck with explicit normalization and shortcut.
+
+    Args:
+        in_channels: Input feature channels; must match the incoming tensor C dimension. Required.
+        out_channels: Output feature channels after this convolution or block. Required.
+        stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling
+            resolution. Default: 1.
+        use_projection: Use the explicit residual projection branch when True. Default: False.
+        bottleneck_ratio: Ratio controlling the legacy residual branch hidden width. Default: 0.25.
+        p_drop: Training-only residual stochastic-depth probability. Default: 0.0.
+        att_reduction: Channel-attention hidden-width reduction factor. Default: 16.
+        norm_type (_typing.Literal['auto', 'batch', 'group']): Legacy normalization selector,
+            interpreted by this module constructor. Default: 'auto'.
+        use_depthwise: Replace the legacy spatial convolution path with depthwise followed by pointwise
+            filtering when True. Default: False.
+
+    Returns:
+        A trainable NCHW module; construction allocates weights.
+    """
     def __init__(self, in_channels, out_channels, stride=1,
                  use_projection=False, bottleneck_ratio=0.25,
                  p_drop=0.0, att_reduction=16, norm_type: _typing.Literal['auto', 'batch', 'group']='auto',
-                 use_depthwise=False):
-        """
-        use_depthwise: if True, use depthwise separable conv for the 3x3 conv path (faster, less params)
+                 use_depthwise=False) -> 'None':
+        """Initialize the legacy bottleneck and its optional depthwise spatial path.
+
+        Args:
+            use_depthwise (bool): Use depthwise and pointwise filtering for the
+                spatial path when True. Default: False.
+            in_channels: Input feature channels; must match the incoming tensor C dimension. Required.
+            out_channels: Output feature channels after this convolution or block. Required.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling
+                resolution. Default: 1.
+            use_projection: Use the explicit residual projection branch when True. Default: False.
+            bottleneck_ratio: Ratio controlling the legacy residual branch hidden width. Default: 0.25.
+            p_drop: Training-only residual stochastic-depth probability. Default: 0.0.
+            att_reduction: Channel-attention hidden-width reduction factor. Default: 16.
+            norm_type (_typing.Literal['auto', 'batch', 'group']): Legacy normalization selector,
+                interpreted by this module constructor. Default: 'auto'.
         """
         super().__init__()
         self.p_drop = p_drop
@@ -407,7 +467,13 @@ class BottleneckResidualBlock(nn.Module):
 
         self.attention = CBAMBlock(out_channels, reduction=att_reduction)
 
-    def forward(self, x):
+    def forward(self, x) -> 'torch.Tensor':
+        """Compute the module output from explicit caller-supplied tensors.
+
+        Args:
+            x: Input tensor with the module shape, dtype and device contract; forward performs the
+                computation. Required.
+        """
         identity = self.shortcut(x)
 
         out = F.silu(self.bn1(self.conv1(x)))
@@ -431,8 +497,10 @@ class ELO(nn.Module):
 
     Args:
         input_channels (int): Number of input image/feature channels. Default: 3.
-        num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 10.
-        conv_channels (_typing.Sequence[int]): Ordered channel widths for the convolutional stages. Default: [64, 128, 256, 512].
+        num_classes (int): Classifier output width; binary/multiclass loss requirements must match.
+            Default: 10.
+        conv_channels (_typing.Sequence[int]): Ordered channel widths for the convolutional stages.
+            Default: [64, 128, 256, 512].
         residual_per_block (int): Number of residual units in each stage. Default: 2.
         p_drop (float): Drop probability used by this component. Default: 0.0.
         att_reduction (int): Channel-attention bottleneck reduction ratio. Default: 16.
@@ -446,7 +514,7 @@ class ELO(nn.Module):
         ValueError, TypeError: Native configuration, shape or input validation rejects the request.
         RuntimeError: A requested native construction/forward operation fails.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ELO()
 
@@ -462,8 +530,10 @@ class ELO(nn.Module):
 
         Args:
             input_channels (int): Number of input image/feature channels. Default: 3.
-            num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 10.
-            conv_channels (_typing.Sequence[int]): Ordered channel widths for the convolutional stages. Default: [64, 128, 256, 512].
+            num_classes (int): Classifier output width; binary/multiclass loss requirements must match.
+                Default: 10.
+            conv_channels (_typing.Sequence[int]): Ordered channel widths for the convolutional stages.
+                Default: [64, 128, 256, 512].
             residual_per_block (int): Number of residual units in each stage. Default: 2.
             p_drop (float): Drop probability used by this component. Default: 0.0.
             att_reduction (int): Channel-attention bottleneck reduction ratio. Default: 16.
@@ -477,7 +547,7 @@ class ELO(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ELO()
 
@@ -518,7 +588,8 @@ class ELO(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -527,7 +598,7 @@ class ELO(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -552,13 +623,16 @@ class EBO(nn.Module):
 
     Args:
         input_channels (int): Number of input image/feature channels. Default: 3.
-        num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 10.
-        conv_channels (_typing.Sequence[int]): Ordered channel widths for the convolutional stages. Default: [32, 64, 128, 256].
+        num_classes (int): Classifier output width; binary/multiclass loss requirements must match.
+            Default: 10.
+        conv_channels (_typing.Sequence[int]): Ordered channel widths for the convolutional stages.
+            Default: [32, 64, 128, 256].
         residual_per_block (int): Number of residual units in each stage. Default: 2.
         p_drop (float): Drop probability used by this component. Default: 0.0.
         att_reduction (int): Channel-attention bottleneck reduction ratio. Default: 16.
         norm_type (str): Supported normalization family selected by this architecture. Default: 'auto'.
-        device (str | None): Optional device selector following this API's native placement/default rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
+        device (str | None): Optional device selector following this API's native placement/default
+            rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
         use_depthwise (bool): Select depthwise filtering where supported. Default: False.
 
     Returns:
@@ -568,7 +642,7 @@ class EBO(nn.Module):
         ValueError, TypeError: Native configuration, shape or input validation rejects the request.
         RuntimeError: A requested native construction/forward operation fails.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         model = EBO(device="cpu")
 
@@ -584,13 +658,16 @@ class EBO(nn.Module):
 
         Args:
             input_channels (int): Number of input image/feature channels. Default: 3.
-            num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 10.
-            conv_channels (_typing.Sequence[int]): Ordered channel widths for the convolutional stages. Default: [32, 64, 128, 256].
+            num_classes (int): Classifier output width; binary/multiclass loss requirements must match.
+                Default: 10.
+            conv_channels (_typing.Sequence[int]): Ordered channel widths for the convolutional stages.
+                Default: [32, 64, 128, 256].
             residual_per_block (int): Number of residual units in each stage. Default: 2.
             p_drop (float): Drop probability used by this component. Default: 0.0.
             att_reduction (int): Channel-attention bottleneck reduction ratio. Default: 16.
             norm_type (str): Supported normalization family selected by this architecture. Default: 'auto'.
-            device (str | None): Optional device selector following this API's native placement/default rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
+            device (str | None): Optional device selector following this API's native placement/default
+                rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
             use_depthwise (bool): Select depthwise filtering where supported. Default: False.
 
         Returns:
@@ -600,7 +677,7 @@ class EBO(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             EBO()
 
@@ -630,7 +707,8 @@ class EBO(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -639,7 +717,7 @@ class EBO(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -660,10 +738,14 @@ class EBO(nn.Module):
         """Install the supported callback configuration for subsequent fit calls.
 
         Args:
-            optimizer (str): Existing supported optimizer or a closed optimizer name, according to this API. Default: 'Adam'.
-            optimizer_params (dict[str, _typing.Any] | None): Closed native optimizer keyword options; unknown options are rejected. Default: None.
-            scheduler (_typing.Any): Supported native scheduler or closed scheduler name; stepping remains owned by Trainer. Default: None.
-            scheduler_params (dict[str, _typing.Any] | None): Closed scheduler settings; required scheduler-specific options remain mandatory. Default: None.
+            optimizer (str): Existing supported optimizer or a closed optimizer name, according to this API.
+                Default: 'Adam'.
+            optimizer_params (dict[str, _typing.Any] | None): Closed native optimizer keyword options;
+                unknown options are rejected. Default: None.
+            scheduler (_typing.Any): Supported native scheduler or closed scheduler name; stepping remains
+                owned by Trainer. Default: None.
+            scheduler_params (dict[str, _typing.Any] | None): Closed scheduler settings; required
+                scheduler-specific options remain mandatory. Default: None.
             model_checkpoint (bool): Legacy checkpoint callback configuration. Default: False.
             earlystop (_typing.Any): Legacy early-stopping callback configuration. Default: None.
             lr (float): Optimizer learning rate. Default: 0.001.
@@ -676,7 +758,7 @@ class EBO(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.callbacks()
 
@@ -757,21 +839,28 @@ class EBO(nn.Module):
         must match. Image identity uses paths/size/mtime, not image-content hashing.
 
         Args:
-            train_loader (_typing.Any): Finite training loader; batches must follow the task/model input contract. Required.
-            val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
-            epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after resume. Default: 10.
+            train_loader (_typing.Any): Finite training loader; batches must follow the task/model input
+                contract. Required.
+            val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit
+                validation setting. Default: None.
+            epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after
+                resume. Default: 10.
             lr (float): Optimizer learning rate. Default: 0.001.
             optimizer_name (str): Closed supported optimizer name. Default: 'adamw'.
             weight_decay (float): Optimizer weight-decay coefficient. Default: 0.0001.
             use_ema (bool): Enable the supported EMA evaluation shadow. Default: False.
             use_amp (bool): Enable the legacy supported mixed-precision path. Default: True.
             grad_clip (_typing.Any): Optional positive gradient-norm clipping bound. Default: None.
-            accum_steps (int): Positive microbatch accumulation count per attempted optimizer update. Default: 1.
+            accum_steps (int): Positive microbatch accumulation count per attempted optimizer update.
+                Default: 1.
             scheduler_name (_typing.Any): Closed supported scheduler name. Default: None.
-            scheduler_params (dict[str, _typing.Any] | None): Closed scheduler settings; required scheduler-specific options remain mandatory. Default: None.
+            scheduler_params (dict[str, _typing.Any] | None): Closed scheduler settings; required
+                scheduler-specific options remain mandatory. Default: None.
             max_lr (_typing.Any): Peak learning rate of the selected scheduler. Default: None.
-            resume_from (_typing.Any): Existing compatible checkpoint; model/data/settings and total budget must match. Default: None.
-            save_last_to (_typing.Any): Explicit checkpoint destination; writing occurs only during the requested fit. Default: None.
+            resume_from (_typing.Any): Existing compatible checkpoint; model/data/settings and total budget
+                must match. Default: None.
+            save_last_to (_typing.Any): Explicit checkpoint destination; writing occurs only during the
+                requested fit. Default: None.
 
         Returns:
             The existing native history/result for this explicit training call; no automatic retry.
@@ -780,7 +869,7 @@ class EBO(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.fit(train_loader)
 

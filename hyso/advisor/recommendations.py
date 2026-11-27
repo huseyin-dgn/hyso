@@ -211,15 +211,17 @@ class RecommendationReport:
     derivation from the supplied snapshot, not the authenticity of external files.
 
     Args:
-        data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+        data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema
+            validator. Required.
 
     Returns:
         An instance of RecommendationReport with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         RecommendationReport(data)
 
@@ -233,16 +235,18 @@ class RecommendationReport:
         """Initialize RecommendationReport with the supplied settings.
 
         Args:
-            data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema
+                validator. Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             RecommendationReport(data)
 
@@ -270,12 +274,14 @@ class RecommendationReport:
         """Return a detached neutral snapshot, including original Advisor reports.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -289,8 +295,10 @@ class RecommendationReport:
         """Export deterministic neutral JSON; preserve existing files by default.
 
         Args:
-            path (str | Path | None): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (str | Path | None): Filesystem path for the specific reader/exporter; no configuration
+                code is executed. Default: None.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             A JSON string when path is None, otherwise None after writing the file.
@@ -299,7 +307,7 @@ class RecommendationReport:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_json()
 
@@ -317,7 +325,8 @@ class RecommendationReport:
         """Reopen bounded JSON without executing a measurement or applying changes.
 
         Args:
-            path (str | Path): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            path (str | Path): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
 
         Returns:
             A validated RecommendationReport instance reconstructed from the supplied data.
@@ -326,7 +335,7 @@ class RecommendationReport:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             RecommendationReport.from_json(path)
 
@@ -344,17 +353,20 @@ class RecommendationReport:
         unchanged. Coverage prompts explicitly distinguish gaps from measurements.
 
         Args:
-            language (str): Presentation language supported by this API, tr/en/de/es for this presentation; guide languages do not expand unrelated APIs. Default: 'tr'.
-            level (str): Existing beginner, technical or expert presentation detail level. Default: 'technical'.
+            language (str): Presentation language supported by this API, tr/en/de/es for this presentation;
+                guide languages do not expand unrelated APIs. Default: 'tr'.
+            level (str): Existing beginner, technical or expert presentation detail level. Default:
+                'technical'.
 
         Returns:
             Localized presentation data; canonical comparison values and units are retained.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_display_dict()
 
@@ -415,10 +427,14 @@ class RecommendationReport:
         """Render through the existing Stage 8 presentation contract.
 
         Args:
-            path (str | Path | None): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
-            language (str): Presentation language supported by this API, tr/en/de/es for this presentation; guide languages do not expand unrelated APIs. Default: 'tr'.
-            level (str): Existing beginner, technical or expert presentation detail level. Default: 'technical'.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (str | Path | None): Filesystem path for the specific reader/exporter; no configuration
+                code is executed. Default: None.
+            language (str): Presentation language supported by this API, tr/en/de/es for this presentation;
+                guide languages do not expand unrelated APIs. Default: 'tr'.
+            level (str): Existing beginner, technical or expert presentation detail level. Default:
+                'technical'.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             The localized Markdown report string.
@@ -427,7 +443,7 @@ class RecommendationReport:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_markdown()
 
@@ -443,10 +459,14 @@ class RecommendationReport:
         """Export portable HTML with source evidence and manual verification links.
 
         Args:
-            path (str | Path | None): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
-            language (str): Presentation language supported by this API, tr/en/de/es for this presentation; guide languages do not expand unrelated APIs. Default: 'tr'.
-            level (str): Existing beginner, technical or expert presentation detail level. Default: 'technical'.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (str | Path | None): Filesystem path for the specific reader/exporter; no configuration
+                code is executed. Default: None.
+            language (str): Presentation language supported by this API, tr/en/de/es for this presentation;
+                guide languages do not expand unrelated APIs. Default: 'tr'.
+            level (str): Existing beginner, technical or expert presentation detail level. Default:
+                'technical'.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             The retained to html value, without recomputing measurements.
@@ -455,7 +475,7 @@ class RecommendationReport:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_html()
 
@@ -478,18 +498,22 @@ def recommend(source: UnifiedAnalysisReport | EvidenceIndex | ModelComparisonRes
     Other domains receive evidence reviews, not unvalidated optimization recipes.
 
     Args:
-        source (UnifiedAnalysisReport | EvidenceIndex | ModelComparisonResult): Typed native/retained source required by this API, not a declaration of producer authority. Required.
-        request (AdvisorRequest | None): Validated advisory/selection request; does not authorize execution. Default: None.
-        context (AnalysisContext | None): Explicit analysis/evaluation context; caller declarations are not producer attestation. Default: None.
+        source (UnifiedAnalysisReport | EvidenceIndex | ModelComparisonResult): Typed native/retained
+            source required by this API, not a declaration of producer authority. Required.
+        request (AdvisorRequest | None): Validated advisory/selection request; does not authorize
+            execution. Default: None.
+        context (AnalysisContext | None): Explicit analysis/evaluation context; caller declarations are
+            not producer attestation. Default: None.
 
     Returns:
         The retained recommend value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         recommend(source)
 

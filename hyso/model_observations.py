@@ -4,6 +4,7 @@ Threshold rules migrated from the retired UI. Findings are hypotheses, never
 causal proof or automatic model changes. No storage, service or workload launch.
 Use existing analysis.compare_models for authoritative binary evidence comparison.
 """
+import typing as _typing
 
 from dataclasses import dataclass
 import hashlib
@@ -41,12 +42,26 @@ def observe_result(
     split=None,
     observed_at=None,
     head_mapping=None,
-):
+) -> 'ResultObservation':
     """Bind native Training/Evaluation/Performance results without touching a store.
 
     Identity labels/data split are caller declarations, not producer proof.
     Native constructors validate payload consistency. Chronological comparison
     requires explicit UTC observation time; missing context prevents comparisons.
+
+    Args:
+        result: Retained HYSo result/evidence record; rendering/advice does not run measurements.
+            Required.
+        config: Configuration object or versioned mapping accepted by this API; loading settings alone
+            does not execute a workload. Required.
+        model_id: Caller label identifying a model within this evidence context; not a weight or
+            hardware identity. Required.
+        dataset: Caller-owned input cohort; labelled validation requires explicit (inputs, labels)
+            entries. Default: None.
+        split: Explicit evaluation split label recorded in evidence; it does not select or partition
+            data. Default: None.
+        observed_at: Caller-supplied observation timestamp retained as provenance. Default: None.
+        head_mapping: Explicit association of graph output names with task heads. Default: None.
     """
     from .experiments.workflow import _restore_result
     from .analysis._native import restore_native
@@ -98,8 +113,12 @@ def observe_result(
     return ResultObservation(json.dumps(record, sort_keys=True, allow_nan=False))
 
 
-def diagnose_results(observations):
-    """Read native observations; no data capture, new execution or automatic repair."""
+def diagnose_results(observations) -> 'list[dict[str, _typing.Any]]':
+    """Read native observations; no data capture, new execution or automatic repair.
+
+    Args:
+        observations: Retained static evidence observations used by the rule. Required.
+    """
     if not isinstance(observations, (list, tuple)) or any(
         type(o) is not ResultObservation for o in observations
     ):
@@ -107,8 +126,15 @@ def diagnose_results(observations):
     return _diagnose([json.loads(o._json) for o in observations])
 
 
-def observe_model_checks(checks, *, model_id, observed_at=None):
-    """Bind explicit Python smoke results; no pytest/JUnit or database envelope."""
+def observe_model_checks(checks, *, model_id, observed_at=None) -> 'ResultObservation':
+    """Bind explicit Python smoke results; no pytest/JUnit or database envelope.
+
+    Args:
+        checks: Existing model-check or audit observations; no measurement is inferred. Required.
+        model_id: Caller label identifying a model within this evidence context; not a weight or
+            hardware identity. Required.
+        observed_at: Caller-supplied observation timestamp retained as provenance. Default: None.
+    """
     if checks.get("format") != "hyso.model_checks" or checks.get("schema_version") != 1:
         raise ValueError("Expected run_model_checks result")
     if any(c.get("status") not in ("PASS", "FAIL", "SKIP") for c in checks["cases"]):
@@ -132,8 +158,13 @@ def observe_model_checks(checks, *, model_id, observed_at=None):
     return ResultObservation(json.dumps(record, sort_keys=True, allow_nan=False))
 
 
-def suggest_model_corrections(config):
-    """Explain Core diagnostics; validate channel candidates on copies, never apply."""
+def suggest_model_corrections(config) -> 'list[dict[str, _typing.Any]]':
+    """Explain Core diagnostics; validate channel candidates on copies, never apply.
+
+    Args:
+        config: Configuration object or versioned mapping accepted by this API; loading settings alone
+            does not execute a workload. Required.
+    """
     import copy
     from .model_checks import preflight_model
 
@@ -173,8 +204,16 @@ def suggest_model_corrections(config):
     return items
 
 
-def explain_diagnostic(diagnostic, config, report):
-    """Translate only conditions explicitly reported by Core; retain original evidence."""
+def explain_diagnostic(diagnostic, config, report) -> 'dict[str, _typing.Any]':
+    """Translate only conditions explicitly reported by Core; retain original evidence.
+
+    Args:
+        diagnostic: Structured diagnostic to explain using the matching configuration. Required.
+        config: Configuration object or versioned mapping accepted by this API; loading settings alone
+            does not execute a workload. Required.
+        report: Existing validated analysis/advice report; rendering reads recorded evidence without
+            rerunning workloads. Required.
+    """
     node_id = diagnostic.get("layer_id")
     node = next((row for row in config.get("nodes", []) if row["id"] == node_id), {})
     name = node.get("component")

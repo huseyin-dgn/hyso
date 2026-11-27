@@ -16,18 +16,22 @@ def compare_architectures(configs: '_typing.Any', *, names: '_typing.Any'=None, 
     quality value is derived from architecture metadata.
 
     Args:
-        configs (_typing.Any): Plain architecture configurations; no executable source strings. Required.
-        names (_typing.Any): Explicit model/component labels corresponding to the supplied inputs. Default: None.
-        exact_parameters (bool): Request exact static parameter accounting where supported. Default: False.
+        configs (_typing.Any): Plain architecture configurations; no executable source strings.
+            Required.
+        names (_typing.Any): Explicit model/component labels corresponding to the supplied inputs.
+            Default: None.
+        exact_parameters (bool): Request exact static parameter accounting where supported. Default:
+            False.
 
     Returns:
         The retained compare architectures value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         compare_architectures(configs)
 

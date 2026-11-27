@@ -53,7 +53,44 @@ def onnx(model: torch.nn.Module, example_input: Any, output_path: str | Path, *,
     a checked artifact with deployment_verified=False. No packages are installed.
 
     Raises ExportError for unsupported input/operators, budgets, integrity or mismatch.
+
+    Args:
+        model (torch.nn.Module): Caller-owned torch.nn.Module; must meet the operation device, dtype and
+            input contract. Required.
+        example_input (Any): Representative input tensor or ordered tensor collection for this explicit
+            operation; source model/device must match. Required.
+        output_path (str | Path): Destination for a separate inference artifact and sidecars; existing
+            outputs are refused unless config.overwrite permits replacement. Required.
+        config (ExportConfig): Configuration object or versioned mapping accepted by this API; loading
+            settings alone does not execute a workload. Default: ExportConfig().
+        backend (Literal['legacy', 'dynamo']): Explicit exporter backend; ONNX accepts legacy or dynamo
+            with no hidden fallback. Default: 'legacy'.
+        opset_version (int): Integer ONNX operator-set version in 13..20; actual emitted opsets are
+            recorded. Default: 17.
+        input_names (Sequence[str] | None): Ordered names for exported graph inputs; count must match
+            flattened example tensors. Default: None.
+        output_names (Sequence[str] | None): Ordered graph output names; count must match flattened
+            source outputs. Default: None.
+        dynamic_shapes (dict[str, dict[int, dict[str, Any]]] | None): Explicit per-input symbolic
+            dimensions with min/max bounds; symbolic ONNX axes alone do not enforce runtime bounds.
+            Default: None.
+        runtime_device (Literal['cpu', 'cuda']): cpu or cuda runtime validation target; CUDA requires a
+            validated native configuration and owned worker. Default: 'cpu'.
+        native (NativeConfig | None): Explicit NativeConfig for owned GPU execution. Omission grants no
+            accelerator admission; experimental support limits remain in force. Default: None.
+
+    Returns:
+        ExportResult with separate conversion, artifact, runtime, equivalence and preservation statuses.
+
     HYSo Guide: export.overview
+
+    Raises:
+        ExportError: Unsupported input, dependency, integrity, resource or evidence requirements fail.
+        OSError: Explicit artifact or report file access fails.
+
+    Notes:
+        Dynamo may fail strict provider-node coverage for graphs whose shape/constant nodes are folded
+        by the runtime. A converted artifact is not deployment PASS when full coverage is unavailable.
     """
     if backend not in ('legacy','dynamo') or type(opset_version) is not int or not 13<=opset_version<=20:raise ExportError('BACKEND','explicit legacy/dynamo and opset 13..20 required')
     if runtime_device not in ('cpu','cuda'):raise ExportError('DEVICE','cpu/cuda runtime device required')
@@ -154,7 +191,31 @@ def libtorch(model: torch.nn.Module, example_input: Any, output_path: str | Path
     Script compiles supported source syntax. TorchScript is the legacy LibTorch path.
     Python torch.jit.load success never establishes C++ runtime acceptance. The supplied
     CMake example must be compiled/executed separately in an admitted campaign.
+
+    Args:
+        model (torch.nn.Module): Caller-owned torch.nn.Module; must meet the operation device, dtype and
+            input contract. Required.
+        example_input (Any): Representative input tensor or ordered tensor collection for this explicit
+            operation; source model/device must match. Required.
+        output_path (str | Path): Destination for a separate inference artifact and sidecars; existing
+            outputs are refused unless config.overwrite permits replacement. Required.
+        method (Literal['trace', 'script']): TorchScript capture strategy: trace records the example
+            path; script compiles supported source. Default: 'trace'.
+        config (ExportConfig): Configuration object or versioned mapping accepted by this API; loading
+            settings alone does not execute a workload. Default: ExportConfig().
+        runtime_device (Literal['cpu', 'cuda']): cpu or cuda runtime validation target; CUDA requires a
+            validated native configuration and owned worker. Default: 'cpu'.
+        native (NativeConfig | None): Explicit NativeConfig for owned GPU execution. Omission grants no
+            accelerator admission; experimental support limits remain in force. Default: None.
+
+    Returns:
+        ExportResult describing the TorchScript file and its independently verified runtime stages.
+
     HYSo Guide: export.overview
+
+    Raises:
+        ExportError: Unsupported input, dependency, integrity, resource or evidence requirements fail.
+        OSError: Explicit artifact or report file access fails.
     """
     if method not in ('trace','script'):raise ExportError('METHOD','trace or script required')
     if runtime_device not in ('cpu','cuda'):raise ExportError('DEVICE','cpu/cuda runtime device required')
@@ -189,7 +250,30 @@ def torch_export(model: torch.nn.Module, example_input: Any, output_path: str | 
     Uses installed torch.export.export/save/load, strict=True. This artifact is not
     directly loadable by LibTorch C++; AOTInductor is a separate compilation request.
     Dynamic shape names/min/max are translated to this version's native Dim API.
+
+    Args:
+        model (torch.nn.Module): Caller-owned torch.nn.Module; must meet the operation device, dtype and
+            input contract. Required.
+        example_input (Any): Representative input tensor or ordered tensor collection for this explicit
+            operation; source model/device must match. Required.
+        output_path (str | Path): Destination for a separate inference artifact and sidecars; existing
+            outputs are refused unless config.overwrite permits replacement. Required.
+        config (ExportConfig): Configuration object or versioned mapping accepted by this API; loading
+            settings alone does not execute a workload. Default: ExportConfig().
+        dynamic_shapes (dict[str, dict[int, dict[str, Any]]] | None): Explicit per-input symbolic
+            dimensions with min/max bounds; symbolic ONNX axes alone do not enforce runtime bounds.
+            Default: None.
+        input_names (Sequence[str] | None): Ordered names for exported graph inputs; count must match
+            flattened example tensors. Default: None.
+
+    Returns:
+        ExportResult for the serialized ExportedProgram and native shape constraints.
+
     HYSo Guide: export.overview
+
+    Raises:
+        ExportError: Unsupported input, dependency, integrity, resource or evidence requirements fail.
+        OSError: Explicit artifact or report file access fails.
     """
     ins=tensors(example_input);inn=names(input_names,len(ins),'input');dyn=dynamic_spec(dynamic_shapes,ins,inn)
     def produce(tx,owned,inputs,reference,body,mark):

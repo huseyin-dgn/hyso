@@ -32,19 +32,31 @@ class PointwiseConv2D(nn.Conv2d):
     """1x1 channel mixing with zero padding and configurable stride/bias.
 
     Args:
-        in_channels (_typing.Any): Expected input feature-channel count. Required.
-        out_channels (_typing.Any): Number of output feature channels. Required.
-        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
-        bias (bool): Whether the component includes an additive trainable bias. Default: True.
+        in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+            in 1..8192; bool is rejected. Required.
+        out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+            bool is rejected. Required.
+        stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+            reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+            Default: 1.
+        bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+            Default: True.
 
     Returns:
-        An instance of PointwiseConv2D with the documented native validation and defaults.
+        A PointwiseConv2D module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating [N,in_channels,H,W]; groups divides both channel counts.
+        Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+        parameter_dependencies and preflight.
+        Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+        transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+        Multi-stage blocks validate every intermediate shape.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         PointwiseConv2D(in_channels, out_channels)
 
@@ -56,19 +68,31 @@ class PointwiseConv2D(nn.Conv2d):
         """Initialize PointwiseConv2D with the supplied settings.
 
         Args:
-            in_channels (int): Expected input feature-channel count. Required.
-            out_channels (int): Number of output feature channels. Required.
-            stride (int | tuple[int, int] | list[int]): Spatial sampling step; must produce a valid output shape. Default: 1.
-            bias (bool): Whether the component includes an additive trainable bias. Default: True.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+                Default: True.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             PointwiseConv2D(in_channels, out_channels)
 
@@ -85,22 +109,41 @@ class DepthwiseConv2D(nn.Conv2d):
     """Independent spatial filters, groups=C and output=C*depth_multiplier.
 
     Args:
-        in_channels (_typing.Any): Expected input feature-channel count. Required.
-        depth_multiplier (int): Number of independent depthwise output filters per input channel. Default: 1.
-        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
-        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
-        padding (int): Spatial padding under the closed registered component contract. Default: 1.
-        dilation (int): Spacing between filter taps; native output-shape rules remain applicable. Default: 1.
-        bias (bool): Whether the component includes an additive trainable bias. Default: True.
+        in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+            in 1..8192; bool is rejected. Required.
+        depth_multiplier (int): Independent filters per input channel; depthwise output/intermediate C
+            equals in_channels*depth_multiplier and must not exceed 8192. Integer in 1..8192; bool is
+            rejected. Default: 1.
+        kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+            integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+        stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+            reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+            Default: 1.
+        padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+            output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+            Default: 1.
+        dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+            is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+        bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+            Default: True.
 
     Returns:
-        An instance of DepthwiseConv2D with the documented native validation and defaults.
+        A DepthwiseConv2D module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating [N,in_channels,H,W]; groups divides both channel counts.
+        Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+        parameter_dependencies and preflight.
+        groups=in_channels
+        out_channels=in_channels*depth_multiplier
+        Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+        transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+        Multi-stage blocks validate every intermediate shape.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         DepthwiseConv2D(in_channels)
 
@@ -113,22 +156,41 @@ class DepthwiseConv2D(nn.Conv2d):
         """Initialize DepthwiseConv2D with the supplied settings.
 
         Args:
-            in_channels (int): Expected input feature-channel count. Required.
-            depth_multiplier (int): Number of independent depthwise output filters per input channel. Default: 1.
-            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
-            stride (int | tuple[int, int] | list[int]): Spatial sampling step; must produce a valid output shape. Default: 1.
-            padding (int | tuple[int, int] | list[int]): Spatial padding under the closed registered component contract. Default: 1.
-            dilation (int | tuple[int, int] | list[int]): Spacing between filter taps; native output-shape rules remain applicable. Default: 1.
-            bias (bool): Whether the component includes an additive trainable bias. Default: True.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            depth_multiplier (int): Independent filters per input channel; depthwise output/intermediate C
+                equals in_channels*depth_multiplier and must not exceed 8192. Integer in 1..8192; bool is
+                rejected. Default: 1.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+                Default: True.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            groups=in_channels
+            out_channels=in_channels*depth_multiplier
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             DepthwiseConv2D(in_channels)
 
@@ -146,23 +208,42 @@ class DepthwiseSeparableConv2D(nn.Module):
     """Depthwise spatial filtering followed by dense 1x1 channel mixing.
 
     Args:
-        in_channels (_typing.Any): Expected input feature-channel count. Required.
-        out_channels (_typing.Any): Number of output feature channels. Required.
-        depth_multiplier (int): Number of independent depthwise output filters per input channel. Default: 1.
-        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
-        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
-        padding (int): Spatial padding under the closed registered component contract. Default: 1.
-        dilation (int): Spacing between filter taps; native output-shape rules remain applicable. Default: 1.
-        bias (bool): Whether the component includes an additive trainable bias. Default: True.
+        in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+            in 1..8192; bool is rejected. Required.
+        out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+            bool is rejected. Required.
+        depth_multiplier (int): Independent filters per input channel; depthwise output/intermediate C
+            equals in_channels*depth_multiplier and must not exceed 8192. Integer in 1..8192; bool is
+            rejected. Default: 1.
+        kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+            integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+        stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+            reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+            Default: 1.
+        padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+            output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+            Default: 1.
+        dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+            is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+        bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+            Default: True.
 
     Returns:
-        An instance of DepthwiseSeparableConv2D with the documented native validation and defaults.
+        A DepthwiseSeparableConv2D module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating [N,in_channels,H,W]; groups divides both channel counts.
+        Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+        parameter_dependencies and preflight.
+        intermediate_channels=in_channels*depth_multiplier
+        Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+        transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+        Multi-stage blocks validate every intermediate shape.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         DepthwiseSeparableConv2D(in_channels, out_channels)
 
@@ -175,23 +256,42 @@ class DepthwiseSeparableConv2D(nn.Module):
         """Initialize DepthwiseSeparableConv2D with the supplied settings.
 
         Args:
-            in_channels (int): Expected input feature-channel count. Required.
-            out_channels (int): Number of output feature channels. Required.
-            depth_multiplier (int): Number of independent depthwise output filters per input channel. Default: 1.
-            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
-            stride (int | tuple[int, int] | list[int]): Spatial sampling step; must produce a valid output shape. Default: 1.
-            padding (int | tuple[int, int] | list[int]): Spatial padding under the closed registered component contract. Default: 1.
-            dilation (int | tuple[int, int] | list[int]): Spacing between filter taps; native output-shape rules remain applicable. Default: 1.
-            bias (bool): Whether the component includes an additive trainable bias. Default: True.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            depth_multiplier (int): Independent filters per input channel; depthwise output/intermediate C
+                equals in_channels*depth_multiplier and must not exceed 8192. Integer in 1..8192; bool is
+                rejected. Default: 1.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+                Default: True.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            intermediate_channels=in_channels*depth_multiplier
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             DepthwiseSeparableConv2D(in_channels, out_channels)
 
@@ -212,7 +312,8 @@ class DepthwiseSeparableConv2D(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -221,7 +322,7 @@ class DepthwiseSeparableConv2D(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -236,23 +337,42 @@ class SpatialSeparableConv2D(nn.Module):
     """(kH,1) -> (1,kW), with separate H/W stride, padding and dilation.
 
     Args:
-        in_channels (_typing.Any): Expected input feature-channel count. Required.
-        out_channels (_typing.Any): Number of output feature channels. Required.
-        intermediate_channels (_typing.Any): Internal feature width between projections. Required.
-        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
-        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
-        padding (int): Spatial padding under the closed registered component contract. Default: 1.
-        dilation (int): Spacing between filter taps; native output-shape rules remain applicable. Default: 1.
-        bias (bool): Whether the component includes an additive trainable bias. Default: True.
+        in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+            in 1..8192; bool is rejected. Required.
+        out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+            bool is rejected. Required.
+        intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+            min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+            1..8192; bool is rejected. Required.
+        kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+            integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+        stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+            reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+            Default: 1.
+        padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+            output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+            Default: 1.
+        dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+            is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+        bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+            Default: True.
 
     Returns:
-        An instance of SpatialSeparableConv2D with the documented native validation and defaults.
+        A SpatialSeparableConv2D module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating [N,in_channels,H,W]; groups divides both channel counts.
+        Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+        parameter_dependencies and preflight.
+        H settings apply to the vertical stage, W settings to the horizontal stage
+        Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+        transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+        Multi-stage blocks validate every intermediate shape.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         SpatialSeparableConv2D(in_channels, out_channels, intermediate_channels)
 
@@ -265,23 +385,42 @@ class SpatialSeparableConv2D(nn.Module):
         """Initialize SpatialSeparableConv2D with the supplied settings.
 
         Args:
-            in_channels (int): Expected input feature-channel count. Required.
-            out_channels (int): Number of output feature channels. Required.
-            intermediate_channels (int): intermediate channels Required.
-            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
-            stride (int | tuple[int, int] | list[int]): Spatial sampling step; must produce a valid output shape. Default: 1.
-            padding (int | tuple[int, int] | list[int]): Spatial padding under the closed registered component contract. Default: 1.
-            dilation (int | tuple[int, int] | list[int]): Spacing between filter taps; native output-shape rules remain applicable. Default: 1.
-            bias (bool): Whether the component includes an additive trainable bias. Default: True.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+                min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+                1..8192; bool is rejected. Required.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+                Default: True.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            H settings apply to the vertical stage, W settings to the horizontal stage
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             SpatialSeparableConv2D(in_channels, out_channels, intermediate_channels)
 
@@ -306,7 +445,8 @@ class SpatialSeparableConv2D(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -315,7 +455,7 @@ class SpatialSeparableConv2D(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -329,28 +469,44 @@ class SpatialSeparableConv2D(nn.Module):
 class FactorizedConv2D(nn.Module):
     """Dense 1x1 channel bottleneck -> dense KxK spatial convolution.
 
-    intermediate_channels must not exceed either boundary channel count.
-    Spatial stride/padding/dilation belong exclusively to the second operator.
-    There is no hidden normalization, activation or residual connection.
-
     Args:
-        in_channels (_typing.Any): Expected input feature-channel count. Required.
-        out_channels (_typing.Any): Number of output feature channels. Required.
-        intermediate_channels (_typing.Any): Internal feature width between projections. Required.
-        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
-        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
-        padding (int): Spatial padding under the closed registered component contract. Default: 1.
-        dilation (int): Spacing between filter taps; native output-shape rules remain applicable. Default: 1.
-        bias (bool): Whether the component includes an additive trainable bias. Default: True.
+        in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+            in 1..8192; bool is rejected. Required.
+        out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+            bool is rejected. Required.
+        intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+            min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+            1..8192; bool is rejected. Required.
+        kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+            integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+        stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+            reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+            Default: 1.
+        padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+            output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+            Default: 1.
+        dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+            is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+        bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+            Default: True.
 
     Returns:
-        An instance of FactorizedConv2D with the documented native validation and defaults.
+        A FactorizedConv2D module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating [N,in_channels,H,W]; groups divides both channel counts.
+        Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+        parameter_dependencies and preflight.
+        intermediate_channels <= min(in_channels,out_channels)
+        1x1 reduction then KxK convolution
+        Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+        transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+        Multi-stage blocks validate every intermediate shape.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         FactorizedConv2D(in_channels, out_channels, intermediate_channels)
 
@@ -363,23 +519,43 @@ class FactorizedConv2D(nn.Module):
         """Initialize FactorizedConv2D with the supplied settings.
 
         Args:
-            in_channels (int): Expected input feature-channel count. Required.
-            out_channels (int): Number of output feature channels. Required.
-            intermediate_channels (int): intermediate channels Required.
-            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
-            stride (int | tuple[int, int] | list[int]): Spatial sampling step; must produce a valid output shape. Default: 1.
-            padding (int | tuple[int, int] | list[int]): Spatial padding under the closed registered component contract. Default: 1.
-            dilation (int | tuple[int, int] | list[int]): Spacing between filter taps; native output-shape rules remain applicable. Default: 1.
-            bias (bool): Whether the component includes an additive trainable bias. Default: True.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+                min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+                1..8192; bool is rejected. Required.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+                Default: True.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            intermediate_channels <= min(in_channels,out_channels)
+            1x1 reduction then KxK convolution
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             FactorizedConv2D(in_channels, out_channels, intermediate_channels)
 
@@ -399,7 +575,8 @@ class FactorizedConv2D(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -408,7 +585,7 @@ class FactorizedConv2D(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -422,22 +599,27 @@ class FactorizedConv2D(nn.Module):
 class ChannelLayerNorm(nn.Module):
     """Normalize C independently at each (N,H,W), preserving public NCHW layout.
 
-    An internal movedim exposes C to torch LayerNorm, then restores NCHW.
-    This differs from LayerNorm over the entire CHW sample.
-
     Args:
-        channels (_typing.Any): Feature-channel count required by this block. Required.
-        eps (float): Small numerical stabilizer for normalization. Default: 1e-05.
-        affine (bool): Learn a normalization scale and offset. Default: True.
+        channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+            in 1..8192; bool is rejected. Required.
+        eps (float): Positive numerical stabilizer used in normalization. Embedding normalization also
+            floors it at the dtype tiny value. Finite positive number. Default: 1e-05.
+        affine (bool): Learn per-channel scale and bias when True; otherwise use normalization without
+            learned affine parameters. Boolean only. Default: True.
 
     Returns:
-        An instance of ChannelLayerNorm with the documented native validation and defaults.
+        A ChannelLayerNorm module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating NCHW; C matches num_features, num_channels or channels. GroupNorm groups divide C.
+        Same NCHW shape; channel LayerNorm normalizes C per spatial position. Native statistics
+        constraints apply.
+        normalizes C at each N,H,W position, external layout stays NCHW
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ChannelLayerNorm(channels)
 
@@ -449,18 +631,26 @@ class ChannelLayerNorm(nn.Module):
         """Initialize ChannelLayerNorm with the supplied settings.
 
         Args:
-            channels (int): Feature-channel count required by this block. Required.
-            eps (float): eps Default: 1e-05.
-            affine (bool): affine Default: True.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            eps (float): Positive numerical stabilizer used in normalization. Embedding normalization also
+                floors it at the dtype tiny value. Finite positive number. Default: 1e-05.
+            affine (bool): Learn per-channel scale and bias when True; otherwise use normalization without
+                learned affine parameters. Boolean only. Default: True.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW; C matches num_features, num_channels or channels. GroupNorm groups divide C.
+            Same NCHW shape; channel LayerNorm normalizes C per spatial position. Native statistics
+            constraints apply.
+            normalizes C at each N,H,W position, external layout stays NCHW
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ChannelLayerNorm(channels)
 
@@ -477,7 +667,8 @@ class ChannelLayerNorm(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -486,7 +677,7 @@ class ChannelLayerNorm(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -502,20 +693,30 @@ class InstanceNorm2D(nn.InstanceNorm2d):
     """NCHW InstanceNorm with mandatory channel matching even without affine.
 
     Args:
-        num_features (_typing.Any): Channel count normalized by this component. Required.
-        eps (float): Small numerical stabilizer for normalization. Default: 1e-05.
-        momentum (float): Running-statistic update factor in normalization. Default: 0.1.
-        affine (bool): Learn a normalization scale and offset. Default: False.
-        track_running_stats (bool): Maintain running mean/variance for evaluation. Default: False.
+        num_features (int): Normalization channel count; must match input C. Integer in 1..8192; bool is
+            rejected. Required.
+        eps (float): Positive numerical stabilizer used in normalization. Embedding normalization also
+            floors it at the dtype tiny value. Finite positive number. Default: 1e-05.
+        momentum (float): Running-statistic update factor; None selects cumulative averaging for
+            BatchNorm. Number in [0,1]. Default: 0.1.
+        affine (bool): Learn per-channel scale and bias when True; otherwise use normalization without
+            learned affine parameters. Boolean only. Default: False.
+        track_running_stats (bool): Track running mean/variance for evaluation. Without tracking,
+            input-statistic sample requirements also apply in eval. Boolean only. Default: False.
 
     Returns:
-        An instance of InstanceNorm2D with the documented native validation and defaults.
+        A InstanceNorm2D module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating NCHW; C matches num_features, num_channels or channels. GroupNorm groups divide C.
+        Same NCHW shape; channel LayerNorm normalizes C per spatial position. Native statistics
+        constraints apply.
+        spatial sample count H*W > 1 when using input statistics
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         InstanceNorm2D(num_features)
 
@@ -527,20 +728,30 @@ class InstanceNorm2D(nn.InstanceNorm2d):
         """Initialize InstanceNorm2D with the supplied settings.
 
         Args:
-            num_features (int): Channel count normalized by this component. Required.
-            eps (float): eps Default: 1e-05.
-            momentum (float): momentum Default: 0.1.
-            affine (bool): affine Default: False.
-            track_running_stats (bool): track running stats Default: False.
+            num_features (int): Normalization channel count; must match input C. Integer in 1..8192; bool is
+                rejected. Required.
+            eps (float): Positive numerical stabilizer used in normalization. Embedding normalization also
+                floors it at the dtype tiny value. Finite positive number. Default: 1e-05.
+            momentum (float): Running-statistic update factor; None selects cumulative averaging for
+                BatchNorm. Number in [0,1]. Default: 0.1.
+            affine (bool): Learn per-channel scale and bias when True; otherwise use normalization without
+                learned affine parameters. Boolean only. Default: False.
+            track_running_stats (bool): Track running mean/variance for evaluation. Without tracking,
+                input-statistic sample requirements also apply in eval. Boolean only. Default: False.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW; C matches num_features, num_channels or channels. GroupNorm groups divide C.
+            Same NCHW shape; channel LayerNorm normalizes C per spatial position. Native statistics
+            constraints apply.
+            spatial sample count H*W > 1 when using input statistics
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             InstanceNorm2D(num_features)
 
@@ -556,7 +767,8 @@ class InstanceNorm2D(nn.InstanceNorm2d):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -565,7 +777,7 @@ class InstanceNorm2D(nn.InstanceNorm2d):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -580,14 +792,19 @@ class InstanceNorm2D(nn.InstanceNorm2d):
 class GlobalAveragePool2D(nn.AdaptiveAvgPool2d):
     """Average spatial axes and retain [N,C,1,1].
 
+    Args:
+
     Returns:
-        An instance of GlobalAveragePool2D with the documented native validation and defaults.
+        A GlobalAveragePool2D module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating nonempty NCHW; legal window/padding or positive adaptive output_size.
+        Floating NCHW with unchanged channels; global average returns [N,C,1,1].
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         GlobalAveragePool2D()
 
@@ -598,14 +815,19 @@ class GlobalAveragePool2D(nn.AdaptiveAvgPool2d):
     def __init__(self) -> 'None':
         """Initialize GlobalAveragePool2D with the supplied settings.
 
+        Args:
+
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW; legal window/padding or positive adaptive output_size.
+            Floating NCHW with unchanged channels; global average returns [N,C,1,1].
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             GlobalAveragePool2D()
 

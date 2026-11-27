@@ -8,6 +8,15 @@ selection, isolated model checks and architecture comparison. The web product
 is retired; the Python API and CLI (including export) are the product interfaces.
 Use the [first-release guide](first-release.md) for current dependencies and limits.
 
+The [complete builder parameter reference](public-api-parameters.md) lists the
+57 commercial registry components and their 222 parameter slots, including
+defaults, ranges, shape effects and cross-parameter requirements. Public help uses
+Google-style `Args`, `Returns`, `Raises`, `Notes` and `Examples` sections. In an
+IDE, prefer named methods such as `builder.conv2d(out_channels=4)` for focused
+parameter help; `add("conv2d", ...)` also exposes the closed keyword schema through
+literal overloads. See the [installed API/IDE verification report](../reports/public-api-ide-20261128.md)
+for actual provider results and their limits.
+
 Türkçe [kullanım ve kabul rehberi](python-first-acceptance-and-limits.md), strict
 opt-in, state/protocol kimlikleri, evaluation/reporting ve artifact migration
 tarifleriyle Python–CLI destek farklarını tek yerde toplar.

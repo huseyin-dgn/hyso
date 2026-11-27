@@ -20,12 +20,27 @@ class ModelArchitectureAuditError(ModelStructureError):
 
 
 class ArchitectureFindingClass(str, Enum):
+    """Closed ArchitectureFindingClass labels: STATIC_INCONSISTENCY, OBSERVATION, COVERAGE_GAP.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     STATIC_INCONSISTENCY = 'STATIC_INCONSISTENCY'
     OBSERVATION = 'OBSERVATION'
     COVERAGE_GAP = 'COVERAGE_GAP'
 
 
 class ArchitectureCoverageStatus(str, Enum):
+    """Closed ArchitectureCoverageStatus labels: APPLICABLE, NOT_APPLICABLE, UNASSESSED_BY_RULESET,
+    COVERAGE_GAP.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     APPLICABLE = 'APPLICABLE'
     NOT_APPLICABLE = 'NOT_APPLICABLE'
     UNASSESSED_BY_RULESET = 'UNASSESSED_BY_RULESET'
@@ -34,26 +49,89 @@ class ArchitectureCoverageStatus(str, Enum):
 
 @dataclass(frozen=True)
 class AuditEvidence:
+    """Store audit evidence evidence as an immutable typed record.
+
+    Args:
+        field (str): Source metadata field path used by this observation. Required.
+        status (str): Recorded evidence/coverage status; unavailable values must not be interpreted as
+            zero. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     field: str
     status: str
     _value_json: str
 
     @property
-    def value(self): return json.loads(self._value_json)
+    def value(self) -> '_typing.Any':
+        """Decode and return the retained JSON evidence value.
+        """
+        return json.loads(self._value_json)
 
 
 @dataclass(frozen=True)
 class AuditDerivedValue:
+    """Store audit derived value evidence as an immutable typed record.
+
+    Args:
+        method (str): TorchScript capture strategy: trace records the example path; script compiles
+            supported source. Required.
+        source_fields (tuple): Exact metadata field paths used to derive or assess this evidence.
+            Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     method: str
     source_fields: tuple
     _value_json: str
 
     @property
-    def value(self): return json.loads(self._value_json)
+    def value(self) -> '_typing.Any':
+        """Decode and return the retained JSON evidence value.
+        """
+        return json.loads(self._value_json)
 
 
 @dataclass(frozen=True)
 class ArchitectureAuditFinding:
+    """Store architecture audit finding evidence as an immutable typed record.
+
+    Args:
+        finding_id (str): Stable finding identifier within this audit result. Required.
+        code (str): Stable machine-readable diagnostic code; distinct from the human-readable reason.
+            Required.
+        classification (ArchitectureFindingClass): Static finding classification; observations are not
+            measured optimization outcomes. Required.
+        rule_id (str): Identifier of the audit rule that produced this finding. Required.
+        rule_version (int): Version of the applied audit rule. Required.
+        module_id (str | None): Snapshot-local registered module identifier. Required.
+        tensor_id (str | None): Snapshot-local tensor identifier; not a cross-model object identity.
+            Required.
+        path (str): Filesystem location read or written by this explicit operation; output parents must
+            already exist. Required.
+        related_paths (tuple): Other registered module paths contributing to this finding. Required.
+        observations (tuple): Retained static evidence observations used by the rule. Required.
+        expected (AuditDerivedValue | None): Expected value or supported constraint used by the
+            diagnostic. Required.
+        derived (AuditDerivedValue | None): Explicitly derived evidence value with its calculation
+            provenance. Required.
+        evidence_status (str): Recorded completeness/coverage status for this finding. Required.
+        source_snapshot_sha256 (str): Canonical source structure-snapshot digest, not a model-state
+            digest. Required.
+        limitation (str): Specific scope restriction that prevents a broader conclusion. Required.
+        next_review (str): Manual follow-up suggested by the static finding. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     finding_id: str
     code: str
     classification: ArchitectureFindingClass
@@ -74,6 +152,18 @@ class ArchitectureAuditFinding:
 
 @dataclass(frozen=True)
 class ArchitectureAuditRule:
+    """Store architecture audit rule evidence as an immutable typed record.
+
+    Args:
+        id (str): Stable policy or rule identifier. Required.
+        version (int): Version of this evidence policy or rule. Required.
+        scope (str): Declared evidence coverage; does not authorize execution. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     id: str
     version: int
     scope: str
@@ -81,6 +171,24 @@ class ArchitectureAuditRule:
 
 @dataclass(frozen=True)
 class ArchitectureAuditPolicy:
+    """Store architecture audit policy evidence as an immutable typed record.
+
+    Args:
+        id (str): Stable policy or rule identifier. Required.
+        version (int): Version of this evidence policy or rule. Required.
+        source_format (str): Accepted source evidence format identifier. Required.
+        source_schema_version (int): Accepted source evidence schema version. Required.
+        producer_method (str): Recorded evidence producer identifier. Required.
+        producer_version (int): Recorded evidence producer version. Required.
+        classification_version (int): Version of the exact-type structural classification policy.
+            Required.
+        rules (tuple): Ordered immutable audit rules used by this policy. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     id: str
     version: int
     source_format: str
@@ -93,6 +201,23 @@ class ArchitectureAuditPolicy:
 
 @dataclass(frozen=True)
 class ArchitectureAuditCheck:
+    """Store architecture audit check evidence as an immutable typed record.
+
+    Args:
+        code (str): Stable machine-readable diagnostic code; distinct from the human-readable reason.
+            Required.
+        status (str): Recorded evidence/coverage status; unavailable values must not be interpreted as
+            zero. Required.
+        source_fields (tuple): Exact metadata field paths used to derive or assess this evidence.
+            Required.
+        expected (AuditDerivedValue | None): Expected value or supported constraint used by the
+            diagnostic. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     code: str
     status: str
     source_fields: tuple
@@ -101,6 +226,26 @@ class ArchitectureAuditCheck:
 
 @dataclass(frozen=True)
 class ArchitectureModuleAssessment:
+    """Store architecture module assessment evidence as an immutable typed record.
+
+    Args:
+        module_id (str): Snapshot-local registered module identifier. Required.
+        path (str): Filesystem location read or written by this explicit operation; output parents must
+            already exist. Required.
+        qualified_type (str): Recorded Python module-qualified type name, without semantic-equivalence
+            inference. Required.
+        rule_id (str | None): Identifier of the audit rule that produced this finding. Required.
+        rule_version (int | None): Version of the applied audit rule. Required.
+        status (str): Recorded evidence/coverage status; unavailable values must not be interpreted as
+            zero. Required.
+        checks (tuple): Existing model-check or audit observations; no measurement is inferred.
+            Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     module_id: str
     path: str
     qualified_type: str
@@ -112,6 +257,27 @@ class ArchitectureModuleAssessment:
 
 @dataclass(frozen=True)
 class ArchitectureRuleApplicability:
+    """Store architecture rule applicability evidence as an immutable typed record.
+
+    Args:
+        module_id (str): Snapshot-local registered module identifier. Required.
+        path (str): Filesystem location read or written by this explicit operation; output parents must
+            already exist. Required.
+        rule_id (str): Identifier of the audit rule that produced this finding. Required.
+        rule_version (int): Version of the applied audit rule. Required.
+        status (ArchitectureCoverageStatus): Recorded evidence/coverage status; unavailable values must
+            not be interpreted as zero. Required.
+        reason (str): Recorded explanation for rejection, absence or incomplete evidence; None only
+            where the schema allows it. Required.
+        observations (tuple): Retained static evidence observations used by the rule. Required.
+        source_snapshot_sha256 (str): Canonical source structure-snapshot digest, not a model-state
+            digest. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     module_id: str
     path: str
     rule_id: str
@@ -124,6 +290,27 @@ class ArchitectureRuleApplicability:
 
 @dataclass(frozen=True)
 class ArchitectureUnassessedArea:
+    """Store architecture unassessed area evidence as an immutable typed record.
+
+    Args:
+        module_id (str): Snapshot-local registered module identifier. Required.
+        path (str): Filesystem location read or written by this explicit operation; output parents must
+            already exist. Required.
+        area (str): Static structure area left unassessed or unsupported. Required.
+        status (ArchitectureCoverageStatus): Recorded evidence/coverage status; unavailable values must
+            not be interpreted as zero. Required.
+        reason (str): Recorded explanation for rejection, absence or incomplete evidence; None only
+            where the schema allows it. Required.
+        observations (tuple): Retained static evidence observations used by the rule. Required.
+        source_snapshot_sha256 (str): Canonical source structure-snapshot digest, not a model-state
+            digest. Required.
+        limitation (str): Specific scope restriction that prevents a broader conclusion. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     module_id: str
     path: str
     area: str
@@ -136,6 +323,24 @@ class ArchitectureUnassessedArea:
 
 @dataclass(frozen=True)
 class ArchitectureEvidenceGap:
+    """Store architecture evidence gap evidence as an immutable typed record.
+
+    Args:
+        finding_id (str): Stable finding identifier within this audit result. Required.
+        status (ArchitectureCoverageStatus): Recorded evidence/coverage status; unavailable values must
+            not be interpreted as zero. Required.
+        code (str): Stable machine-readable diagnostic code; distinct from the human-readable reason.
+            Required.
+        required_by_rule_id (str): Rule requiring the missing source fields. Required.
+        module_ids (tuple): Snapshot-local modules implicated by the rule or gap. Required.
+        source_fields (tuple): Exact metadata field paths used to derive or assess this evidence.
+            Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     finding_id: str
     status: ArchitectureCoverageStatus
     code: str
@@ -153,15 +358,17 @@ class ModelArchitectureAudit:
     """Inspect rule findings, coverage and evidence gaps from a retained architecture audit.
 
     Args:
-        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+            version/schema validator. Required.
 
     Returns:
         An instance of ModelArchitectureAudit with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ModelArchitectureAudit(data)
 
@@ -176,16 +383,18 @@ class ModelArchitectureAudit:
         """Initialize ModelArchitectureAudit with the supplied settings.
 
         Args:
-            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+                version/schema validator. Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ModelArchitectureAudit(data)
 
@@ -216,12 +425,14 @@ class ModelArchitectureAudit:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -241,7 +452,7 @@ class ModelArchitectureAudit:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.source_snapshot
 
@@ -261,7 +472,7 @@ class ModelArchitectureAudit:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.audit_policy
 
@@ -282,7 +493,7 @@ class ModelArchitectureAudit:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.findings
 
@@ -305,7 +516,7 @@ class ModelArchitectureAudit:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.module_assessments
 
@@ -332,7 +543,7 @@ class ModelArchitectureAudit:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.rule_applicability
 
@@ -354,7 +565,7 @@ class ModelArchitectureAudit:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.unassessed_areas
 
@@ -376,7 +587,7 @@ class ModelArchitectureAudit:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.evidence_gaps
 
@@ -398,7 +609,7 @@ class ModelArchitectureAudit:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.schema_version
 
@@ -418,7 +629,7 @@ class ModelArchitectureAudit:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.summary
 
@@ -438,7 +649,7 @@ class ModelArchitectureAudit:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.coverage
 
@@ -458,7 +669,7 @@ class ModelArchitectureAudit:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.limitations
 
@@ -478,7 +689,7 @@ class ModelArchitectureAudit:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.content_sha256
 
@@ -492,7 +703,8 @@ class ModelArchitectureAudit:
         """Serialize this object using its native JSON format and overwrite policy.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Default: None.
 
         Returns:
             A JSON string when path is None, otherwise None after writing the file.
@@ -501,7 +713,7 @@ class ModelArchitectureAudit:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_json()
 
@@ -517,16 +729,18 @@ class ModelArchitectureAudit:
         """Validate plain retained data and reconstruct the typed result.
 
         Args:
-            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+                version/schema validator. Required.
 
         Returns:
             A validated ModelArchitectureAudit instance reconstructed from the supplied data.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ModelArchitectureAudit.from_dict(data)
 
@@ -541,7 +755,8 @@ class ModelArchitectureAudit:
         """Read and validate this type from a local JSON file.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
 
         Returns:
             A validated ModelArchitectureAudit instance reconstructed from the supplied data.
@@ -550,7 +765,7 @@ class ModelArchitectureAudit:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ModelArchitectureAudit.from_json(path)
 
@@ -574,17 +789,19 @@ def audit_model_architecture(snapshot: '_typing.Any', *, policy_version: 'int'=2
     Args:
         snapshot (_typing.Any): Validated retained model-structure snapshot. Required.
         policy_version (int): Exact supported audit policy version. Default: 2.
-        max_entries (_typing.Any): Upper bound on entries retained/accepted by this operation. Default: _MAX_ENTRIES.
+        max_entries (_typing.Any): Upper bound on entries retained/accepted by this operation. Default:
+            _MAX_ENTRIES.
         max_bytes (_typing.Any): Maximum accepted or retained byte count. Default: _MAX_BYTES.
 
     Returns:
         The retained audit model architecture value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         audit_model_architecture(snapshot)
 

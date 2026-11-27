@@ -46,6 +46,23 @@ class ModelStructureError(ValueError):
 
 @dataclass(frozen=True)
 class StructureQuantity:
+    """Store structure quantity evidence as an immutable typed record.
+
+    Args:
+        status (str): Recorded evidence/coverage status; unavailable values must not be interpreted as
+            zero. Required.
+        value (int | None): Observed or derived value; None records unavailable evidence where allowed
+            by the schema. Required.
+        known_subtotal (int): Sum over supported observed entries only; not a complete total when
+            coverage is partial. Required.
+        unsupported_tensor_ids (tuple): Local tensor identifiers omitted from a complete quantity
+            because metadata is unsupported. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     status: str
     value: int | None
     known_subtotal: int
@@ -54,6 +71,25 @@ class StructureQuantity:
 
 @dataclass(frozen=True)
 class StructureField:
+    """Store structure field evidence as an immutable typed record.
+
+    Args:
+        name (str): Exact registered component identifier; names outside the active distribution profile
+            are rejected. Required.
+        status (str): Recorded evidence/coverage status; unavailable values must not be interpreted as
+            zero. Required.
+        value (object): Observed or derived value; None records unavailable evidence where allowed by
+            the schema. Required.
+        reason (str | None): Recorded explanation for rejection, absence or incomplete evidence; None
+            only where the schema allows it. Required.
+        source (str): Existing source evidence/artifact; verification is separate from execution.
+            Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     name: str
     status: str
     value: object
@@ -63,6 +99,21 @@ class StructureField:
 
 @dataclass(frozen=True)
 class TensorSlot:
+    """Store tensor slot evidence as an immutable typed record.
+
+    Args:
+        name (str): Exact registered component identifier; names outside the active distribution profile
+            are rejected. Required.
+        tensor_id (str | None): Snapshot-local tensor identifier; not a cross-model object identity.
+            Required.
+        persistent (bool | None): Whether this buffer registration is retained in state_dict; None for
+            unknown/non-buffer entries. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     name: str
     tensor_id: str | None
     persistent: bool | None
@@ -70,12 +121,41 @@ class TensorSlot:
 
 @dataclass(frozen=True)
 class ModuleEdge:
+    """Store module edge evidence as an immutable typed record.
+
+    Args:
+        name (str): Exact registered component identifier; names outside the active distribution profile
+            are rejected. Required.
+        module_id (str | None): Snapshot-local registered module identifier. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     name: str
     module_id: str | None
 
 
 @dataclass(frozen=True)
 class ModulePath:
+    """Store module path evidence as an immutable typed record.
+
+    Args:
+        path (str): Filesystem location read or written by this explicit operation; output parents must
+            already exist. Required.
+        parent_path (str | None): Parent registered module path; None for the root. Required.
+        module_id (str): Snapshot-local registered module identifier. Required.
+        depth (int): Number of registered path edges from the root. Required.
+        shared (bool): Whether this registered path refers to an already observed module object.
+            Required.
+        cycle (bool): Whether expanding this registered edge would revisit an ancestor module. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     path: str
     parent_path: str | None
     module_id: str
@@ -86,6 +166,43 @@ class ModulePath:
 
 @dataclass(frozen=True)
 class TensorStructure:
+    """Store tensor structure evidence as an immutable typed record.
+
+    Args:
+        tensor_id (str): Snapshot-local tensor identifier; not a cross-model object identity. Required.
+        qualified_type (str): Recorded Python module-qualified type name, without semantic-equivalence
+            inference. Required.
+        status (str): Recorded evidence/coverage status; unavailable values must not be interpreted as
+            zero. Required.
+        reason (str | None): Recorded explanation for rejection, absence or incomplete evidence; None
+            only where the schema allows it. Required.
+        shape (tuple | None): Target per-sample CHW dimensions; reshape must preserve the number of
+            sample elements and every dimension is 1..8192. Required.
+        dtype (str | None): Recorded tensor dtype; no tensor conversion is performed. Required.
+        device (str | None): Explicit execution device selector; passing a CUDA selector does not
+            authorize or validate native execution. Required.
+        layout (str | None): Recorded tensor memory/layout kind; unsupported layouts retain explicit
+            coverage gaps. Required.
+        requires_grad (bool | None): Recorded autograd flag; not proof that a training update occurred.
+            Required.
+        elements (int | None): Number of logical tensor elements, if supported. Required.
+        element_size (int | None): Bytes per logical tensor element for the recorded dtype. Required.
+        logical_bytes (int | None): Logical element count times element size; not allocator use, RSS or
+            checkpoint file size. Required.
+        stride (tuple | None): Spatial sampling step on each axis; larger values reduce ordinary
+            convolution/pooling resolution. Required.
+        storage_offset (int | None): Tensor starting element offset within its storage. Required.
+        storage_id (str | None): Snapshot-local identifier for observed shared storage, not a physical
+            address contract. Required.
+        storage_status (str): Coverage status for storage alias observations. Required.
+        storage_reason (str | None): Explanation for unavailable or unsupported storage alias evidence.
+            Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     tensor_id: str
     qualified_type: str
     status: str
@@ -107,6 +224,35 @@ class TensorStructure:
 
 @dataclass(frozen=True)
 class ModuleStructure:
+    """Store module structure evidence as an immutable typed record.
+
+    Args:
+        module_id (str): Snapshot-local registered module identifier. Required.
+        primary_path (str): First deterministic registered path identifying the module in this snapshot.
+            Required.
+        qualified_type (str): Recorded Python module-qualified type name, without semantic-equivalence
+            inference. Required.
+        category (str): Closed structural classification or registry category, according to the record.
+            Required.
+        configuration_status (str): Coverage status for exact-type static module configuration.
+            Required.
+        configuration (tuple): Recorded module settings; does not contain weights or executable source.
+            Required.
+        children (tuple): Ordered registered child-module edges, including explicit absent
+            registrations. Required.
+        parameters (tuple): Registered parameter slots or immutable component parameter specifications,
+            as declared by the record type. Required.
+        buffers (tuple): Registered buffer slots with persistence metadata. Required.
+        direct_parameter_elements (StructureQuantity): Quantity of unique parameters directly registered
+            on this module, excluding descendants. Required.
+        direct_buffer_elements (StructureQuantity): Quantity of buffers directly registered on this
+            module, excluding descendants. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     module_id: str
     primary_path: str
     qualified_type: str
@@ -120,16 +266,34 @@ class ModuleStructure:
     direct_buffer_elements: StructureQuantity
 
     @property
-    def direct_parameter_tensor_count(self):
+    def direct_parameter_tensor_count(self) -> 'int':
+        """Direct parameter tensor count using the explicitly supplied evidence.
+        """
         return len({s.tensor_id for s in self.parameters if s.tensor_id is not None})
 
     @property
-    def direct_buffer_tensor_count(self):
+    def direct_buffer_tensor_count(self) -> 'int':
+        """Direct buffer tensor count using the explicitly supplied evidence.
+        """
         return len({s.tensor_id for s in self.buffers if s.tensor_id is not None})
 
 
 @dataclass(frozen=True)
 class StructureTypeCount:
+    """Store structure type count evidence as an immutable typed record.
+
+    Args:
+        name (str): Exact registered component identifier; names outside the active distribution profile
+            are rejected. Required.
+        unique_modules (int): Count/difference of distinct registered module objects, not executed
+            operations. Required.
+        registered_paths (int): Count/difference of registered paths, including aliases. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     name: str
     unique_modules: int
     registered_paths: int
@@ -137,6 +301,20 @@ class StructureTypeCount:
 
 @dataclass(frozen=True)
 class StructureDtypeCount:
+    """Store structure dtype count evidence as an immutable typed record.
+
+    Args:
+        dtype (str | None): Recorded tensor dtype; no tensor conversion is performed. Required.
+        tensor_count (int): Count/difference of unique tensors in this dtype group. Required.
+        elements (StructureQuantity): Number of logical tensor elements, if supported. Required.
+        logical_bytes (StructureQuantity): Logical element count times element size; not allocator use,
+            RSS or checkpoint file size. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     dtype: str | None
     tensor_count: int
     elements: StructureQuantity
@@ -145,16 +323,66 @@ class StructureDtypeCount:
 
 @dataclass(frozen=True)
 class StorageGroup:
+    """Store storage group evidence as an immutable typed record.
+
+    Args:
+        storage_id (str): Snapshot-local identifier for observed shared storage, not a physical address
+            contract. Required.
+        tensor_ids (tuple): Snapshot-local tensors belonging to this shared-storage group. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     storage_id: str
     tensor_ids: tuple
 
     @property
-    def distinct_objects_share_storage(self):
+    def distinct_objects_share_storage(self) -> 'bool':
+        """Distinct objects share storage using the explicitly supplied evidence.
+        """
         return len(self.tensor_ids) > 1
 
 
 @dataclass(frozen=True)
 class StructureSummary:
+    """Store structure summary evidence as an immutable typed record.
+
+    Args:
+        unique_modules (int): Count/difference of distinct registered module objects, not executed
+            operations. Required.
+        registered_module_paths (int): Total registered module paths, distinct from unique module count.
+            Required.
+        unique_parameter_tensors (int): Count of distinct registered parameter objects. Required.
+        unique_buffer_tensors (int): Count of distinct registered buffer objects. Required.
+        cross_category_tensors (int): Count of tensor objects registered in both parameter and buffer
+            roles. Required.
+        parameter_elements (StructureQuantity): Logical elements in unique registered parameter objects.
+            Required.
+        trainable_elements (StructureQuantity): Parameter elements with requires_grad=True; does not
+            imply measured training work. Required.
+        frozen_elements (StructureQuantity): Parameter elements with requires_grad=False. Required.
+        parameter_logical_bytes (StructureQuantity): Logical bytes in unique parameter objects, without
+            storage deduplication. Required.
+        buffer_elements (StructureQuantity): Logical elements in unique registered buffer objects.
+            Required.
+        buffer_logical_bytes (StructureQuantity): Logical bytes in unique buffer objects. Required.
+        tensor_union_logical_bytes (StructureQuantity): Logical bytes over the unique parameter/buffer
+            tensor union. Required.
+        module_types (tuple): Per-qualified-type unique module and registered-path counts. Required.
+        categories (tuple): Per-structural-category module counts. Required.
+        parameter_dtypes (tuple): Per-dtype unique parameter tensor quantities. Required.
+        buffer_dtypes (tuple): Per-dtype unique buffer tensor quantities. Required.
+        storage_groups (tuple): Observed groups of tensors sharing a storage handle. Required.
+        storage_alias_coverage (str): Coverage status for shared-storage observations; not byte-range
+            overlap proof. Required.
+
+    Notes:
+        These fields retain source evidence; constructing a record does not validate a live model,
+        execute a workload or certify complete coverage. Use the domain producer/reader for schema
+        validation.
+    """
     unique_modules: int
     registered_module_paths: int
     unique_parameter_tensors: int
@@ -385,15 +613,17 @@ class ModelStructureSnapshot:
     """Inspect a retained module/tensor structure snapshot without reconstructing or running a model.
 
     Args:
-        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+            version/schema validator. Required.
 
     Returns:
         An instance of ModelStructureSnapshot with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ModelStructureSnapshot(data)
 
@@ -408,16 +638,18 @@ class ModelStructureSnapshot:
         """Initialize ModelStructureSnapshot with the supplied settings.
 
         Args:
-            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+                version/schema validator. Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ModelStructureSnapshot(data)
 
@@ -441,12 +673,14 @@ class ModelStructureSnapshot:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -466,7 +700,7 @@ class ModelStructureSnapshot:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.content_sha256
 
@@ -486,7 +720,7 @@ class ModelStructureSnapshot:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.modules
 
@@ -506,7 +740,7 @@ class ModelStructureSnapshot:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.tensors
 
@@ -526,7 +760,7 @@ class ModelStructureSnapshot:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.paths
 
@@ -546,7 +780,7 @@ class ModelStructureSnapshot:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.summary
 
@@ -566,7 +800,7 @@ class ModelStructureSnapshot:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.limitations
 
@@ -580,7 +814,8 @@ class ModelStructureSnapshot:
         """Serialize this object using its native JSON format and overwrite policy.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Default: None.
 
         Returns:
             A JSON string when path is None, otherwise None after writing the file.
@@ -589,7 +824,7 @@ class ModelStructureSnapshot:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_json()
 
@@ -605,7 +840,8 @@ class ModelStructureSnapshot:
         """Read and validate this type from a local JSON file.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
 
         Returns:
             A validated ModelStructureSnapshot instance reconstructed from the supplied data.
@@ -614,7 +850,7 @@ class ModelStructureSnapshot:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ModelStructureSnapshot.from_json(path)
 
@@ -635,22 +871,25 @@ def capture_model_structure(model: '_typing.Any', *, max_modules: 'int'=10000, m
     Limits fail explicitly; shared/cyclic module paths are never silently pruned.
 
     Args:
-        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation.
+            Required.
         max_modules (int): Upper bound on modules retained/accepted by this operation. Default: 10000.
         max_paths (int): Upper bound on paths retained/accepted by this operation. Default: 50000.
         max_tensors (int): Upper bound on tensors retained/accepted by this operation. Default: 100000.
         max_depth (int): Upper bound on depth retained/accepted by this operation. Default: 128.
-        max_registrations (int): Upper bound on registrations retained/accepted by this operation. Default: 500000.
+        max_registrations (int): Upper bound on registrations retained/accepted by this operation.
+            Default: 500000.
         max_bytes (_typing.Any): Maximum accepted or retained byte count. Default: 16 * 1024 ** 2.
 
     Returns:
         The retained capture model structure value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         capture_model_structure(model)
 

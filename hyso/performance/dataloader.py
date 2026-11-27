@@ -34,9 +34,10 @@ class DataLoaderAnalysisProtocol:
         An instance of DataLoaderAnalysisProtocol with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         DataLoaderAnalysisProtocol()
 
@@ -414,15 +415,17 @@ class DataLoaderAnalysisResult:
     """Immutable P21 raw host waits plus validated P19/P20 source association.
 
     Args:
-        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+            version/schema validator. Required.
 
     Returns:
         An instance of DataLoaderAnalysisResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         DataLoaderAnalysisResult(data)
 
@@ -437,16 +440,18 @@ class DataLoaderAnalysisResult:
         """Initialize DataLoaderAnalysisResult with the supplied settings.
 
         Args:
-            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+                version/schema validator. Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             DataLoaderAnalysisResult(data)
 
@@ -469,12 +474,14 @@ class DataLoaderAnalysisResult:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -496,10 +503,11 @@ class DataLoaderAnalysisResult:
             The retained core metrics value, without recomputing measurements.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.core_metrics()
 
@@ -558,10 +566,11 @@ class DataLoaderAnalysisResult:
             The retained diagnostics value, without recomputing measurements.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.diagnostics()
 
@@ -576,8 +585,10 @@ class DataLoaderAnalysisResult:
         """Serialize this object using its native JSON format and overwrite policy.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             None after the native file export succeeds.
@@ -586,7 +597,7 @@ class DataLoaderAnalysisResult:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_json(path)
 
@@ -600,8 +611,10 @@ class DataLoaderAnalysisResult:
         """Export this object using its native CSV format and overwrite policy.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             None after the native file export succeeds.
@@ -610,7 +623,7 @@ class DataLoaderAnalysisResult:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_csv(path)
 
@@ -625,21 +638,26 @@ class DataLoaderAnalysisResult:
 
 @dataclass(frozen=True)
 class LoaderTrainingResult:
-    """Read and export validated P21 — DataLoader waiting results; unavailable measurements retain their native status.
+    """Read and export validated P21 — DataLoader waiting results; unavailable measurements retain their
+    native status.
 
     Args:
         timing (TrainingPerformanceResult): Native timing protocol/settings. Required.
-        loader (DataLoaderAnalysisResult): Caller-owned finite DataLoader with the required input/target batch format. Required.
-        stages (TrainingStageResult | None): Explicit ordered pipeline stages and their timing boundaries. Required.
-        throughput (TrainingThroughputResult): Native continuous-window throughput protocol/settings. Required.
+        loader (DataLoaderAnalysisResult): Caller-owned finite DataLoader with the required input/target
+            batch format. Required.
+        stages (TrainingStageResult | None): Explicit ordered pipeline stages and their timing
+            boundaries. Required.
+        throughput (TrainingThroughputResult): Native continuous-window throughput protocol/settings.
+            Required.
 
     Returns:
         An instance of LoaderTrainingResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         LoaderTrainingResult(timing=timing, loader=loader, stages=stages, throughput=throughput)
 
@@ -663,25 +681,35 @@ def measure_training_with_loader(trainer: '_typing.Any', train_loader: '_typing.
     Explicit WorkerTaskDataLoader receipts can be analyzed as a v2 companion.
 
     Args:
-        trainer (_typing.Any): Caller-owned standard Trainer; a measurement may execute its fit lifecycle only when called explicitly. Required.
-        train_loader (_typing.Any): Finite training loader; batches must follow the task/model input contract. Required.
-        val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
-        epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after resume. Default: 5.
-        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: None.
-        loader_protocol (_typing.Any): Typed loader measurement settings; boundaries and device guards remain explicit. Default: None.
+        trainer (_typing.Any): Caller-owned standard Trainer; a measurement may execute its fit
+            lifecycle only when called explicitly. Required.
+        train_loader (_typing.Any): Finite training loader; batches must follow the task/model input
+            contract. Required.
+        val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit
+            validation setting. Default: None.
+        epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after
+            resume. Default: 5.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards
+            remain unchanged. Default: None.
+        loader_protocol (_typing.Any): Typed loader measurement settings; boundaries and device guards
+            remain explicit. Default: None.
         stages (bool): Explicit ordered pipeline stages and their timing boundaries. Default: True.
-        stage_protocol (_typing.Any): Typed stage measurement settings; boundaries and device guards remain explicit. Default: None.
-        save_last_to (_typing.Any): Explicit checkpoint destination; writing occurs only during the requested fit. Default: None.
-        resume_from (_typing.Any): Existing compatible checkpoint; model/data/settings and total budget must match. Default: None.
+        stage_protocol (_typing.Any): Typed stage measurement settings; boundaries and device guards
+            remain explicit. Default: None.
+        save_last_to (_typing.Any): Explicit checkpoint destination; writing occurs only during the
+            requested fit. Default: None.
+        resume_from (_typing.Any): Existing compatible checkpoint; model/data/settings and total budget
+            must match. Default: None.
 
     Returns:
         The retained measure training with loader value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         measure_training_with_loader(trainer, train_loader)
 

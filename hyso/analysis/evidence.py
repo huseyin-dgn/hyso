@@ -22,10 +22,13 @@ class EvidenceScope:
         checkpoint_sha256 (str | None): Exact SHA-256 digest of the checkpoint. Default: None.
         dataset_id (str | None): Exact dataset identity used for evidence alignment. Default: None.
         split (str | None): Explicit dataset split label used in evaluation identity. Default: None.
-        preprocessing_id (str | None): Identity of the preprocessing used to produce this fixed cohort. Default: None.
-        device (str | None): Optional device selector following this API's native placement/default rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
+        preprocessing_id (str | None): Identity of the preprocessing used to produce this fixed cohort.
+            Default: None.
+        device (str | None): Optional device selector following this API's native placement/default
+            rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
         backend (str | None): Explicit runtime/backend identity. Default: None.
-        precision (str | None): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: None.
+        precision (str | None): Supported numerical format; runtime/task/device restrictions remain
+            authoritative. Default: None.
         batch (int | None): Batch dimension of the measured input. Default: None.
         input_shape (tuple | None): Per-sample (C, H, W) dimensions; batch is excluded. Default: None.
         workload_id (str | None): Exact workload identity for scope alignment. Default: None.
@@ -40,9 +43,10 @@ class EvidenceScope:
         An instance of EvidenceScope with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         EvidenceScope()
 
@@ -89,12 +93,14 @@ class EvidenceScope:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -177,15 +183,17 @@ class EvidenceRecord:
     """Validate and retain one measurement record with identity, scope, protocol and limitations.
 
     Args:
-        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+            version/schema validator. Required.
 
     Returns:
         An instance of EvidenceRecord with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         EvidenceRecord(data)
 
@@ -199,16 +207,18 @@ class EvidenceRecord:
         """Initialize EvidenceRecord with the supplied settings.
 
         Args:
-            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+                version/schema validator. Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             EvidenceRecord(data)
 
@@ -247,17 +257,19 @@ class EvidenceRecord:
         Args:
             payload (dict): Plain retained evidence payload. Required.
             feature_id (str): Exact P01-P35 feature identifier. Required.
-            scope (EvidenceScope | None): Exact measurement boundary/meaning; different scopes are not interchangeable. Default: None.
+            scope (EvidenceScope | None): Exact measurement boundary/meaning; different scopes are not
+                interchangeable. Default: None.
             origin (str): Explicit evidence origin/provenance. Default: 'new'.
 
         Returns:
             A validated EvidenceRecord instance reconstructed from the supplied data.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             EvidenceRecord.from_native(payload, feature_id=feature_id)
 
@@ -284,10 +296,12 @@ class EvidenceRecord:
         """Read and validate this type from a local JSON file.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
             feature_id (_typing.Any): Exact P01-P35 feature identifier. Required.
             expected_sha256 (_typing.Any): Exact expected artifact/content digest. Required.
-            scope (_typing.Any): Exact measurement boundary/meaning; different scopes are not interchangeable. Default: None.
+            scope (_typing.Any): Exact measurement boundary/meaning; different scopes are not
+                interchangeable. Default: None.
             origin (str): Explicit evidence origin/provenance. Default: 'new'.
             max_bytes (_typing.Any): Maximum accepted or retained byte count. Default: 64 * 1024 ** 2.
 
@@ -298,7 +312,7 @@ class EvidenceRecord:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             EvidenceRecord.from_json(path, feature_id=feature_id, expected_sha256=expected_sha256)
 
@@ -320,18 +334,21 @@ class EvidenceRecord:
 
         Args:
             feature_id (_typing.Any): Exact P01-P35 feature identifier. Required.
-            reason (_typing.Any): Explicit human-readable lifecycle reason; not an automatic workload diagnosis. Required.
+            reason (_typing.Any): Explicit human-readable lifecycle reason; not an automatic workload
+                diagnosis. Required.
             status (str): Exact lifecycle/status filter accepted by this API. Default: 'not_run'.
-            scope (_typing.Any): Exact measurement boundary/meaning; different scopes are not interchangeable. Default: None.
+            scope (_typing.Any): Exact measurement boundary/meaning; different scopes are not
+                interchangeable. Default: None.
 
         Returns:
             An EvidenceRecord with the explicit unavailable status, reason and scope.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             EvidenceRecord.unavailable(feature_id, reason=reason)
 
@@ -356,12 +373,14 @@ class EvidenceRecord:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -381,7 +400,7 @@ class EvidenceRecord:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.record_id
 
@@ -401,13 +420,15 @@ def compare_evidence(left: '_typing.Any', right: '_typing.Any', *, domain: '_typ
         domain (_typing.Any): Feature/metric domain, separate from runtime support. Required.
 
     Returns:
-        A plain comparison of the retained records, including compatibility and missing-evidence reasons.
+        A plain comparison of the retained records, including compatibility and missing-evidence
+        reasons.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         compare_evidence(left, right, domain=domain)
 
@@ -446,9 +467,10 @@ class EvidenceIndex:
         An instance of EvidenceIndex with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         EvidenceIndex()
 
@@ -462,16 +484,18 @@ class EvidenceIndex:
         """Initialize EvidenceIndex with the supplied settings.
 
         Args:
-            records (_typing.Sequence[EvidenceRecord]): Bounded sequence of plain observation records. Default: ().
+            records (_typing.Sequence[EvidenceRecord]): Bounded sequence of plain observation records.
+                Default: ().
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             EvidenceIndex()
 
@@ -493,12 +517,14 @@ class EvidenceIndex:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -518,7 +544,7 @@ class EvidenceIndex:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.records
 
@@ -538,10 +564,11 @@ class EvidenceIndex:
             A new EvidenceIndex containing the previous records and this record; this index is unchanged.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.add(record)
 
@@ -555,8 +582,10 @@ class EvidenceIndex:
         """Serialize this object using its native JSON format and overwrite policy.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             None after the native file export succeeds.
@@ -565,7 +594,7 @@ class EvidenceIndex:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_json(path)
 
@@ -580,7 +609,8 @@ class EvidenceIndex:
         """Read and validate this type from a local JSON file.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
 
         Returns:
             A validated EvidenceIndex instance reconstructed from the supplied data.
@@ -589,7 +619,7 @@ class EvidenceIndex:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             EvidenceIndex.from_json(path)
 
@@ -606,18 +636,21 @@ class EvidenceIndex:
         """Summarize retained evidence availability and limitations without executing missing analyses.
 
         Args:
-            context (_typing.Any): Explicit analysis/evaluation context; caller declarations are not producer attestation. Required.
+            context (_typing.Any): Explicit analysis/evaluation context; caller declarations are not
+                producer attestation. Required.
             title (str): Human-readable report title. Default: 'HYSo unified analysis'.
             risks (_typing.Sequence[str]): Known limitations/risks attached to the proposal. Default: ().
 
         Returns:
-            A UnifiedAnalysisReport describing supplied evidence, coverage, missing features and limitations.
+            A UnifiedAnalysisReport describing supplied evidence, coverage, missing features and
+            limitations.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.analyze(context=context)
 

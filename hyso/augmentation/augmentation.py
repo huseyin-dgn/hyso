@@ -10,12 +10,27 @@ import os
 
 # Transform builder
 
-def build_transforms(img_size=(224,224), augment: _typing.Literal['basic', 'advanced', None]="basic", extra_ops=None, channels=3):
-    """
-    img_size: tuple (H, W)
-    augment: 'basic' veya 'advanced'
-    extra_ops: Liste şeklinde ekstra augment işlemleri
-    channels: 1 veya 3 (default 3)
+def build_transforms(img_size: int | tuple[int, int]=(224,224), augment: _typing.Literal['basic', 'advanced']="basic", extra_ops: _typing.Iterable[_typing.Callable] | None=None, channels: int=3) -> 'transforms.Compose':
+    """Compose the legacy image-training transforms without loading any images.
+
+    Args:
+        img_size: Positive resize H/W, or one integer for a square. Default: (224,224).
+        augment: basic applies resize, horizontal flip, rotation, color jitter and
+            tensor conversion. advanced also adds vertical flip, random crop,
+            blur, perspective and erasing. None is rejected. Default: 'basic'.
+        extra_ops: Optional iterable of transforms applied to the tensor after
+            augmentation and before normalization. Default: None.
+        channels: Supported image profile, 1 (grayscale) or 3 (RGB). Default: 3.
+
+    Returns:
+        torchvision.transforms.Compose; applying it performs random augmentation.
+
+    Raises:
+        ValueError: augment is not basic/advanced or native transform settings fail.
+
+    Notes:
+        RGB uses ImageNet mean/std; grayscale uses mean=std=0.5. Callers control
+        RNG seeding. This helper does not download data or change model weights.
     """
     if isinstance(img_size, int):
         img_size = (img_size, img_size)
@@ -88,17 +103,35 @@ def _validation_transform(img_size, channels):
     return transforms.Compose(ops)
 
 
-def get_loaders(train_path, val_path=None, batch_size=32, img_size=(224,224), augment: _typing.Literal['basic', 'advanced', None]="basic", extra_ops=None, num_workers=0, channels=3):
+def get_loaders(train_path: str | os.PathLike[str], val_path: str | os.PathLike[str] | None=None, batch_size: int=32, img_size: int | tuple[int, int]=(224,224), augment: _typing.Literal['basic', 'advanced']="basic", extra_ops: _typing.Iterable[_typing.Callable] | None=None, num_workers: int=0, channels: int=3) -> 'tuple[torch.utils.data.DataLoader, torch.utils.data.DataLoader]':
+    """Create ImageFolder train/validation loaders with a shared class vocabulary.
+
+    Args:
+        train_path: Existing image directory with one subdirectory per class. Required.
+        val_path: Optional separate validation directory. None splits training images
+            using a random 20% validation subset, with at least one sample. Default: None.
+        batch_size: Positive native DataLoader batch size. Default: 32.
+        img_size: Resize H/W or one integer for a square. Default: (224,224).
+        augment: basic or advanced training transforms; validation has only resize,
+            tensor conversion and normalization. None is rejected. Default: 'basic'.
+        extra_ops: Tensor transforms added to training only, before normalization.
+            Validation never applies them. Default: None.
+        num_workers: Native loader worker count; zero runs in process. Default: 0.
+        channels: Supported image profile, 1 (grayscale) or 3 (RGB). Default: 3.
+
+    Returns:
+        (train_loader, val_loader). Training shuffles; validation does not.
+
+    Raises:
+        ValueError: Validation contains unknown classes, an automatic split has
+            fewer than two source samples, or native loader/transform settings fail.
+        OSError: An image directory cannot be read.
+
+    Notes:
+        Separate validation labels are remapped to the training vocabulary. Split
+        indices use the current torch RNG; callers must set their seed explicitly.
+        No data download or training is performed.
     """
-    train_path: training klasörü (class subfolders olmalı)
-    val_path: validation/test klasörü (opsiyonel, yoksa train içerisinden split yapılır)
-    batch_size: batch size
-    img_size: tuple (H,W) veya int
-    augment: 'basic' veya 'advanced'
-    extra_ops: list, kullanıcı ek opsiyonları
-    num_workers: DataLoader için
-    channels: 1 veya 3
-    """  
 
     # ---- transform ----
     train_transform = build_transforms(img_size=img_size, augment=augment, extra_ops=extra_ops, channels=channels)

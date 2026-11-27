@@ -33,25 +33,30 @@ from .devices import _launch, _valid_run
 
 @dataclass(frozen=True)
 class ProviderProtocol:
-    """Configure P35 — ONNX node/provider placement measurement boundaries and resource limits; construction does not run the analysis.
+    """Configure P35 — ONNX node/provider placement measurement boundaries and resource limits;
+    construction does not run the analysis.
 
     Args:
         warmup (int): Warmup settings/count outside reported samples. Default: 0.
         runs (int): Explicit retained run results to compare. Default: 1.
-        startup_timeout_seconds (float): Startup timeout in seconds under the native protocol. Default: 45.0.
+        startup_timeout_seconds (float): Startup timeout in seconds under the native protocol. Default:
+            45.0.
         step_timeout_seconds (float): Step timeout in seconds under the native protocol. Default: 15.0.
         max_runtime_seconds (float): Max runtime in seconds under the native protocol. Default: 60.0.
-        process_memory_bytes (int | None): Per-process committed host-memory limit in bytes. Default: None.
-        job_memory_bytes (int | None): Aggregate Job committed host-memory limit in bytes; not a GPU VRAM quota. Default: None.
+        process_memory_bytes (int | None): Per-process committed host-memory limit in bytes. Default:
+            None.
+        job_memory_bytes (int | None): Aggregate Job committed host-memory limit in bytes; not a GPU
+            VRAM quota. Default: None.
         max_processes (int | None): Maximum contained process count. Default: None.
 
     Returns:
         An instance of ProviderProtocol with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ProviderProtocol()
 
@@ -96,23 +101,28 @@ def profile_execution_providers(recipe: '_typing.Any', directory: '_typing.Any',
     ``disable_fallback`` prevents automatic run-error session recreation.
 
     Args:
-        recipe (_typing.Any): Trusted construction recipe; factory import/execution is governed by the existing operation contract. Required.
-        directory (_typing.Any): Dedicated output/owned-run directory; existing overwrite and ownership rules apply. Required.
+        recipe (_typing.Any): Trusted construction recipe; factory import/execution is governed by the
+            existing operation contract. Required.
+        directory (_typing.Any): Dedicated output/owned-run directory; existing overwrite and ownership
+            rules apply. Required.
         providers (_typing.Any): Explicit supported execution-provider configurations. Default: None.
         expected (_typing.Any): Expected native value/identity for validation. Default: None.
         optimization (str): Explicit supported provider optimization setting. Default: 'all'.
-        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: ProviderProtocol().
-        runtime_search_path (_typing.Any): Explicit trusted runtime/provider search directory. Default: None.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards
+            remain unchanged. Default: ProviderProtocol().
+        runtime_search_path (_typing.Any): Explicit trusted runtime/provider search directory. Default:
+            None.
         provider_options (_typing.Any): Closed supported provider options. Default: None.
 
     Returns:
         The retained profile execution providers value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         profile_execution_providers(recipe, directory)
 

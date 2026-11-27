@@ -157,18 +157,21 @@ class WorkerTaskDataLoader(DataLoader):
     are rejected rather than silently changing their behavior.
 
     Args:
-        dataset (_typing.Any): Caller-owned finite Dataset used by the loader or trace wrapper. Required.
+        dataset (_typing.Any): Caller-owned finite Dataset used by the loader or trace wrapper.
+            Required.
         channel (_typing.Any): Explicit worker-trace evidence channel. Default: None.
-        kwargs (_typing.Any): Keyword options forwarded only to the native target documented by this API. Required.
+        kwargs (_typing.Any): Keyword options forwarded only to the native target documented by this
+            API. Required.
 
     Returns:
         An instance of WorkerTaskDataLoader with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         WorkerTaskDataLoader(dataset)
 
@@ -180,18 +183,21 @@ class WorkerTaskDataLoader(DataLoader):
         """Initialize WorkerTaskDataLoader with the supplied settings.
 
         Args:
-            dataset (_typing.Any): Caller-owned finite Dataset used by the loader or trace wrapper. Required.
+            dataset (_typing.Any): Caller-owned finite Dataset used by the loader or trace wrapper.
+                Required.
             channel (_typing.Any): Explicit worker-trace evidence channel. Default: None.
-            kwargs (_typing.Any): Keyword options forwarded only to the native target documented by this API. Required.
+            kwargs (_typing.Any): Keyword options forwarded only to the native target documented by this
+                API. Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             WorkerTaskDataLoader(dataset)
 
@@ -231,10 +237,11 @@ class WorkerTaskDataLoader(DataLoader):
             None after the operation succeeds.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.begin_trace_run(execution_id)
 
@@ -259,10 +266,11 @@ class WorkerTaskDataLoader(DataLoader):
             None after the operation succeeds.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.begin_trace_epoch(epoch_id, phase)
 
@@ -289,10 +297,11 @@ class WorkerTaskDataLoader(DataLoader):
             None after the operation succeeds.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.bind_trace_delivery(observation)
 

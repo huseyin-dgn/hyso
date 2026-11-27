@@ -397,7 +397,8 @@ class _Result:
 
 @dataclass(frozen=True, init=False)
 class LatencyAnalysis(_Result):
-    """Read and export validated P01 — Inference latency results; unavailable measurements retain their native status.
+    """Read and export validated P01 — Inference latency results; unavailable measurements retain their
+    native status.
 
     Args:
         data: Plain validated native schema payload. Required.
@@ -406,10 +407,11 @@ class LatencyAnalysis(_Result):
         An instance of LatencyAnalysis with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         LatencyAnalysis(data)
 
@@ -423,7 +425,8 @@ class LatencyAnalysis(_Result):
 
 @dataclass(frozen=True, init=False)
 class ThroughputResult(_Result):
-    """Read and export validated P02 — Completed inference throughput results; unavailable measurements retain their native status.
+    """Read and export validated P02 — Completed inference throughput results; unavailable measurements
+    retain their native status.
 
     Args:
         data: Plain validated native schema payload. Required.
@@ -432,9 +435,10 @@ class ThroughputResult(_Result):
         An instance of ThroughputResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ThroughputResult(data)
 
@@ -448,7 +452,8 @@ class ThroughputResult(_Result):
 
 @dataclass(frozen=True, init=False)
 class MemoryResult(_Result):
-    """Read and export validated P10 — Process RAM results; unavailable measurements retain their native status.
+    """Read and export validated P10 — Process RAM results; unavailable measurements retain their native
+    status.
 
     Args:
         data: Plain validated native schema payload. Required.
@@ -457,9 +462,10 @@ class MemoryResult(_Result):
         An instance of MemoryResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         MemoryResult(data)
 
@@ -473,7 +479,8 @@ class MemoryResult(_Result):
 
 @dataclass(frozen=True, init=False)
 class FootprintResult(_Result):
-    """Read and export validated P11 — Tensor and artifact footprint results; unavailable measurements retain their native status.
+    """Read and export validated P11 — Tensor and artifact footprint results; unavailable measurements
+    retain their native status.
 
     Args:
         data: Plain validated native schema payload. Required.
@@ -482,9 +489,10 @@ class FootprintResult(_Result):
         An instance of FootprintResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         FootprintResult(data)
 
@@ -498,7 +506,8 @@ class FootprintResult(_Result):
 
 @dataclass(frozen=True, init=False)
 class PipelineResult(_Result):
-    """Read and export validated P03 — End-to-end latency results; unavailable measurements retain their native status.
+    """Read and export validated P03 — End-to-end latency results; unavailable measurements retain their
+    native status.
 
     Args:
         data: Plain validated native schema payload. Required.
@@ -507,9 +516,10 @@ class PipelineResult(_Result):
         An instance of PipelineResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         PipelineResult(data)
 
@@ -523,7 +533,8 @@ class PipelineResult(_Result):
 
 @dataclass(frozen=True, init=False)
 class StageTimingResult(_Result):
-    """Read and export validated P04 — Preprocessing and postprocessing results; unavailable measurements retain their native status.
+    """Read and export validated P04 — Preprocessing and postprocessing results; unavailable measurements
+    retain their native status.
 
     Args:
         data: Plain validated native schema payload. Required.
@@ -532,9 +543,10 @@ class StageTimingResult(_Result):
         An instance of StageTimingResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         StageTimingResult(data)
 
@@ -548,7 +560,8 @@ class StageTimingResult(_Result):
 
 @dataclass(frozen=True, init=False)
 class ColdStartResult(_Result):
-    """Read and export validated P05 — Cold start and loading results; unavailable measurements retain their native status.
+    """Read and export validated P05 — Cold start and loading results; unavailable measurements retain
+    their native status.
 
     Args:
         data: Plain validated native schema payload. Required.
@@ -557,9 +570,10 @@ class ColdStartResult(_Result):
         An instance of ColdStartResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ColdStartResult(data)
 
@@ -573,7 +587,8 @@ class ColdStartResult(_Result):
 
 @dataclass(frozen=True, init=False)
 class SweepResult(_Result):
-    """Read and export validated P06 — Batch-size sweep results; unavailable measurements retain their native status.
+    """Read and export validated P06 — Batch-size sweep results; unavailable measurements retain their
+    native status.
 
     Args:
         data: Plain validated native schema payload. Required.
@@ -582,9 +597,10 @@ class SweepResult(_Result):
         An instance of SweepResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         SweepResult(data)
 
@@ -598,7 +614,8 @@ class SweepResult(_Result):
 
 @dataclass(frozen=True, init=False)
 class PrecisionResult(_Result):
-    """Read and export validated P08 — Numerical-precision performance results; unavailable measurements retain their native status.
+    """Read and export validated P08 — Numerical-precision performance results; unavailable measurements
+    retain their native status.
 
     Args:
         data: Plain validated native schema payload. Required.
@@ -607,9 +624,10 @@ class PrecisionResult(_Result):
         An instance of PrecisionResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         PrecisionResult(data)
 
@@ -623,7 +641,8 @@ class PrecisionResult(_Result):
 
 @dataclass(frozen=True, init=False)
 class CapacityResult(_Result):
-    """Read and export validated P17 — Feasible batch search results; unavailable measurements retain their native status.
+    """Read and export validated P17 — Feasible batch search results; unavailable measurements retain their
+    native status.
 
     Args:
         data: Plain validated native schema payload. Required.
@@ -632,9 +651,10 @@ class CapacityResult(_Result):
         An instance of CapacityResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         CapacityResult(data)
 
@@ -648,7 +668,8 @@ class CapacityResult(_Result):
 
 @dataclass(frozen=True, init=False)
 class OperatorProfileResult(_Result):
-    """Read and export validated P14 — Operator/kernel profiling results; unavailable measurements retain their native status.
+    """Read and export validated P14 — Operator/kernel profiling results; unavailable measurements retain
+    their native status.
 
     Args:
         data: Plain validated native schema payload. Required.
@@ -657,9 +678,10 @@ class OperatorProfileResult(_Result):
         An instance of OperatorProfileResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         OperatorProfileResult(data)
 
@@ -673,7 +695,8 @@ class OperatorProfileResult(_Result):
 
 @dataclass(frozen=True, init=False)
 class LayerProfileResult(_Result):
-    """Read and export validated P13 — Module/layer profiling results; unavailable measurements retain their native status.
+    """Read and export validated P13 — Module/layer profiling results; unavailable measurements retain
+    their native status.
 
     Args:
         data: Plain validated native schema payload. Required.
@@ -682,9 +705,10 @@ class LayerProfileResult(_Result):
         An instance of LayerProfileResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         LayerProfileResult(data)
 
@@ -698,7 +722,8 @@ class LayerProfileResult(_Result):
 
 @dataclass(frozen=True, init=False)
 class OperationCountResult(_Result):
-    """Read and export validated P12 — FLOPs and MACs results; unavailable measurements retain their native status.
+    """Read and export validated P12 — FLOPs and MACs results; unavailable measurements retain their native
+    status.
 
     Args:
         data: Plain validated native schema payload. Required.
@@ -707,9 +732,10 @@ class OperationCountResult(_Result):
         An instance of OperationCountResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         OperationCountResult(data)
 
@@ -860,7 +886,8 @@ class _CanonicalEnvelopeExports:
 
 @dataclass(frozen=True, init=False)
 class RooflineResult(_CanonicalEnvelopeExports,_Result):
-    """Read and export validated P18 — Roofline and arithmetic intensity results; unavailable measurements retain their native status.
+    """Read and export validated P18 — Roofline and arithmetic intensity results; unavailable measurements
+    retain their native status.
 
     Args:
         data: Plain validated native schema payload. Required.
@@ -869,9 +896,10 @@ class RooflineResult(_CanonicalEnvelopeExports,_Result):
         An instance of RooflineResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         RooflineResult(data)
 
@@ -894,9 +922,10 @@ class LayerOverheadResult(_CanonicalEnvelopeExports,_Result):
         An instance of LayerOverheadResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         LayerOverheadResult(data)
 
@@ -910,7 +939,8 @@ class LayerOverheadResult(_CanonicalEnvelopeExports,_Result):
 
 @dataclass(frozen=True, init=False)
 class TransferResult(_Result):
-    """Read and export validated P15 — CPU–GPU transfers results; unavailable measurements retain their native status.
+    """Read and export validated P15 — CPU–GPU transfers results; unavailable measurements retain their
+    native status.
 
     Args:
         data: Plain validated native schema payload. Required.
@@ -919,9 +949,10 @@ class TransferResult(_Result):
         An instance of TransferResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         TransferResult(data)
 
@@ -947,10 +978,11 @@ class TransferResult(_Result):
             The retained nsys activity timeline value, without recomputing measurements.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.nsys_activity_timeline(sqlite_path)
 
@@ -964,7 +996,8 @@ class TransferResult(_Result):
 
 @dataclass(frozen=True, init=False)
 class UtilizationResult(_Result):
-    """Read and export validated P16 — Hardware utilization results; unavailable measurements retain their native status.
+    """Read and export validated P16 — Hardware utilization results; unavailable measurements retain their
+    native status.
 
     Args:
         data: Plain validated native schema payload. Required.
@@ -973,9 +1006,10 @@ class UtilizationResult(_Result):
         An instance of UtilizationResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         UtilizationResult(data)
 

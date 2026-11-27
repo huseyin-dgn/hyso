@@ -69,7 +69,21 @@ def _body(result):
 
 
 def advise(result: ExportResult | dict, *, language: str='en') -> dict[str,Any]:
-    """Manual evidence-bound suggestions; never edit a model or run a workload."""
+    """Manual evidence-bound suggestions; never edit a model or run a workload.
+
+    Args:
+        result (ExportResult | dict): Retained HYSo result/evidence record; rendering/advice does not
+            run measurements. Required.
+        language (str): Presentation language: tr, en, de or es. Technical keys/status codes remain
+            stable. Default: 'en'.
+
+    Returns:
+        Detached manual recommendations with model_modified=False and measurements_executed=False.
+
+    Raises:
+        ExportError: Unsupported input, dependency, integrity, resource or evidence requirements fail.
+        OSError: Explicit artifact or report file access fails.
+    """
     if language not in _TEXT:raise ExportError('LANGUAGE','tr/en/de/es required')
     row=_body(result);keys=['precision','memory','shapes']
     if row.get('format')=='hyso.export.comparison':
@@ -87,7 +101,23 @@ def advise(result: ExportResult | dict, *, language: str='en') -> dict[str,Any]:
 
 
 def render(result: ExportResult | dict, *, format: Literal['json','markdown','html']='markdown', language: str='en') -> str:
-    """Render detached records. Technical field names/status codes remain stable."""
+    """Render detached records. Technical field names/status codes remain stable.
+
+    Args:
+        result (ExportResult | dict): Retained HYSo result/evidence record; rendering/advice does not
+            run measurements. Required.
+        format (Literal['json', 'markdown', 'html']): Output representation; use the choices declared
+            for this renderer. Default: 'markdown'.
+        language (str): Presentation language: tr, en, de or es. Technical keys/status codes remain
+            stable. Default: 'en'.
+
+    Returns:
+        UTF-8-compatible report text; this function does not write a file.
+
+    Raises:
+        ExportError: Unsupported input, dependency, integrity, resource or evidence requirements fail.
+        OSError: Explicit artifact or report file access fails.
+    """
     if language not in _TEXT:raise ExportError('LANGUAGE','tr/en/de/es required')
     row=_body(result);advice=advise(row,language=language);text=_TEXT[language]
     if format=='json':return json.dumps(dict(language=language,title=text['title'],evidence=row,advice=advice),ensure_ascii=False,allow_nan=False,indent=2)+'\n'
@@ -99,7 +129,23 @@ def render(result: ExportResult | dict, *, format: Literal['json','markdown','ht
     raise ExportError('REPORT_FORMAT','json/markdown/html required')
 
 def save(result: ExportResult | dict, path: str, *, overwrite: bool=False) -> str:
-    """Save a detached, digested deployment record with no-clobber publication."""
+    """Save a detached, digested deployment record with no-clobber publication.
+
+    Args:
+        result (ExportResult | dict): Retained HYSo result/evidence record; rendering/advice does not
+            run measurements. Required.
+        path (str): Filesystem location read or written by this explicit operation; output parents must
+            already exist. Required.
+        overwrite (bool): Permit replacement of an existing destination when True; False retains
+            no-clobber publication. Default: False.
+
+    Returns:
+        The serialized record text written to path with a canonical evidence digest.
+
+    Raises:
+        ExportError: Unsupported input, dependency, integrity, resource or evidence requirements fail.
+        OSError: Explicit artifact or report file access fails.
+    """
     from ..analysis._codec import digest
     from ..benchmark.result import _write_export
     row=_body(result)
@@ -109,7 +155,19 @@ def save(result: ExportResult | dict, path: str, *, overwrite: bool=False) -> st
     _write_export(path,text,overwrite);return text
 
 def load(path: str) -> dict[str,Any]:
-    """Read a digested record; never load/execute its runtime artifact."""
+    """Read a digested record; never load/execute its runtime artifact.
+
+    Args:
+        path (str): Filesystem location read or written by this explicit operation; output parents must
+            already exist. Required.
+
+    Returns:
+        Detached validated evidence dictionary; loading metadata never executes a model.
+
+    Raises:
+        ExportError: Unsupported input, dependency, integrity, resource or evidence requirements fail.
+        OSError: Explicit artifact or report file access fails.
+    """
     from pathlib import Path
     from ..analysis._codec import digest
     p=Path(path)

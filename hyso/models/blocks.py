@@ -29,30 +29,47 @@ def _pair(value, name, minimum=1):
 class ConvNormAct(nn.Module):
     """Conv2d -> normalization -> activation, with explicit spatial settings.
 
-    kernel_size/stride accept positive integers or pairs; padding accepts
-    nonnegative integers or pairs (no implicit 'same' padding). Norm is 'batch',
-    'group' or None. GroupNorm uses the largest divisor of out_channels <= 8.
-    Conv bias is enabled only when norm=None. Activation is 'silu', 'relu' or
-    None; no in-place activation is used. Device/dtype follow normal Module.to().
-
     Args:
-        in_channels (_typing.Any): Expected input feature-channel count. Required.
-        out_channels (_typing.Any): Number of output feature channels. Required.
-        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
-        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
-        padding (int): Spatial padding under the closed registered component contract. Default: 1.
-        groups (int): Convolution/group count; divisibility requirements remain unchanged. Default: 1.
-        norm (str): Supported normalization choice; native training-statistics requirements still apply. Default: 'batch'.
-        activation (str): Supported activation family. Default: 'silu'.
+        in_channels (int): Input feature channels; must match the incoming tensor C dimension. Positive
+            integer; the Registry/Builder profile additionally caps it at 8192. Required.
+        out_channels (int): Output feature channels after this convolution or block. Positive integer;
+            the Registry/Builder profile additionally caps it at 8192. Required.
+        kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+            integer uses the same extent on both axes. Positive integer or H/W pair; Registry/Builder
+            dimensions are additionally capped at 8192. Default: 3.
+        stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+            reduce ordinary convolution/pooling resolution. Positive integer or H/W pair;
+            Registry/Builder dimensions are additionally capped at 8192. Default: 1.
+        padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+            output geometry without changing channel count. Nonnegative integer or H/W pair;
+            Registry/Builder padding is additionally capped at 8192. Default: 1.
+        groups (int): Channel partitions; must divide both convolution channel counts. ChannelShuffle
+            requires channels % groups == 0. Positive integer; the Registry/Builder profile additionally
+            caps it at 8192. Default: 1.
+        norm (_typing.Literal['batch', 'group', None]): Optional post-convolution normalization: batch,
+            group or None. Group normalization chooses the largest channel divisor <=8; convolution bias
+            is enabled only without normalization. Choices: 'batch', 'group', None. Default: 'batch'.
+        activation (_typing.Literal['silu', 'relu', None]): Nonlinearity applied inside this block; only
+            the declared registry choices are accepted. Choices: 'silu', 'relu', None. Default: 'silu'.
 
     Returns:
-        An instance of ConvNormAct with the documented native validation and defaults.
+        A ConvNormAct module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ValueError, TypeError: Constructor channel, shape or option validation fails; native PyTorch
+        errors propagate.
 
-    Example:
+    Notes:
+        Floating [N,in_channels,H,W]; groups divides both channel counts.
+        Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+        parameter_dependencies and preflight.
+        groups divides both channel counts
+        normalization determines convolution bias
+        Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+        transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+        Multi-stage blocks validate every intermediate shape.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ConvNormAct(in_channels, out_channels)
 
@@ -66,23 +83,46 @@ class ConvNormAct(nn.Module):
         """Initialize ConvNormAct with the supplied settings.
 
         Args:
-            in_channels (int): Expected input feature-channel count. Required.
-            out_channels (int): Number of output feature channels. Required.
-            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 3.
-            stride (int | tuple[int, int] | list[int]): Spatial sampling step; must produce a valid output shape. Default: 1.
-            padding (int | tuple[int, int] | list[int]): Spatial padding under the closed registered component contract. Default: 1.
-            groups (int): Convolution/group count; divisibility requirements remain unchanged. Default: 1.
-            norm (str): Supported normalization choice; native training-statistics requirements still apply. Default: 'batch'.
-            activation (str): activation Default: 'silu'.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Positive
+                integer; the Registry/Builder profile additionally caps it at 8192. Required.
+            out_channels (int): Output feature channels after this convolution or block. Positive integer;
+                the Registry/Builder profile additionally caps it at 8192. Required.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Positive integer or H/W pair; Registry/Builder
+                dimensions are additionally capped at 8192. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Positive integer or H/W pair;
+                Registry/Builder dimensions are additionally capped at 8192. Default: 1.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Nonnegative integer or H/W pair;
+                Registry/Builder padding is additionally capped at 8192. Default: 1.
+            groups (int): Channel partitions; must divide both convolution channel counts. ChannelShuffle
+                requires channels % groups == 0. Positive integer; the Registry/Builder profile additionally
+                caps it at 8192. Default: 1.
+            norm (_typing.Literal['batch', 'group', None]): Optional post-convolution normalization: batch,
+                group or None. Group normalization chooses the largest channel divisor <=8; convolution bias
+                is enabled only without normalization. Choices: 'batch', 'group', None. Default: 'batch'.
+            activation (_typing.Literal['silu', 'relu', None]): Nonlinearity applied inside this block; only
+                the declared registry choices are accepted. Choices: 'silu', 'relu', None. Default: 'silu'.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ValueError, TypeError: Constructor channel, shape or option validation fails; native PyTorch
+            errors propagate.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            groups divides both channel counts
+            normalization determines convolution bias
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ConvNormAct(in_channels, out_channels)
 
@@ -122,7 +162,8 @@ class ConvNormAct(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -131,7 +172,7 @@ class ConvNormAct(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -145,31 +186,34 @@ class ConvNormAct(nn.Module):
 class ResidualBlock(nn.Module):
     """Two 3x3 convolutions, optional attention, then SiLU(main + shortcut).
 
-    The second convolution has no activation. A 1x1 normalized projection is
-    used when channels change or either stride differs from 1. Spatial output
-    is ceil(H/stride_h), ceil(W/stride_w) on both paths.
-
-    attention accepts None, nn.Identity, SEBlock, CBAMBlock, ECAAttention or
-    CoordinateAttention, SimAM, TripletAttention or SelectiveKernelAttention with out_channels channels. The supplied instance is registered, never
-    copied or recreated in forward. Sharing that instance between blocks shares
-    weights and is the caller's responsibility; use separate instances for
-    independent attention. No stochastic depth or training API is included.
-
     Args:
-        in_channels (_typing.Any): Expected input feature-channel count. Required.
-        out_channels (_typing.Any): Number of output feature channels. Required.
-        stride (int): Spatial sampling step; must produce a valid output shape. Default: 1.
-        norm (str): Supported normalization choice; native training-statistics requirements still apply. Default: 'batch'.
-        attention (_typing.Any): Supported attention object/configuration for this constructor; no external plugin is inferred. Default: None.
+        in_channels (int): Input feature channels; must match the incoming tensor C dimension. Positive
+            integer; the Registry/Builder profile additionally caps it at 8192. Required.
+        out_channels (int): Output feature channels after this convolution or block. Positive integer;
+            the Registry/Builder profile additionally caps it at 8192. Required.
+        stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+            reduce ordinary convolution/pooling resolution. Positive integer or H/W pair;
+            Registry/Builder dimensions are additionally capped at 8192. Default: 1.
+        norm (_typing.Literal['batch', 'group', None]): Optional post-convolution normalization: batch,
+            group or None. Group normalization chooses the largest channel divisor <=8; convolution bias
+            is enabled only without normalization. Choices: 'batch', 'group', None. Default: 'batch'.
+        attention (_typing.Any): Optional attention applied after the residual branch; nested legacy
+            attention must use matching out_channels. Default: None.
 
     Returns:
-        An instance of ResidualBlock with the documented native validation and defaults.
+        A ResidualBlock module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ValueError, TypeError: Constructor channel, shape or option validation fails; native PyTorch
+        errors propagate.
 
-    Example:
+    Notes:
+        Floating [N,in_channels,H,W]; attention channels equal out_channels.
+        [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+        Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+        projection shortcut; intermediate channels remain bounded to 8192.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ResidualBlock(in_channels, out_channels)
 
@@ -183,20 +227,33 @@ class ResidualBlock(nn.Module):
         """Initialize ResidualBlock with the supplied settings.
 
         Args:
-            in_channels (int): Expected input feature-channel count. Required.
-            out_channels (int): Number of output feature channels. Required.
-            stride (int | tuple[int, int] | list[int]): Spatial sampling step; must produce a valid output shape. Default: 1.
-            norm (str): Supported normalization choice; native training-statistics requirements still apply. Default: 'batch'.
-            attention (_typing.Any): Supported attention object/configuration for this constructor; no external plugin is inferred. Default: None.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Positive
+                integer; the Registry/Builder profile additionally caps it at 8192. Required.
+            out_channels (int): Output feature channels after this convolution or block. Positive integer;
+                the Registry/Builder profile additionally caps it at 8192. Required.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Positive integer or H/W pair;
+                Registry/Builder dimensions are additionally capped at 8192. Default: 1.
+            norm (_typing.Literal['batch', 'group', None]): Optional post-convolution normalization: batch,
+                group or None. Group normalization chooses the largest channel divisor <=8; convolution bias
+                is enabled only without normalization. Choices: 'batch', 'group', None. Default: 'batch'.
+            attention (_typing.Any): Optional attention applied after the residual branch; nested legacy
+                attention must use matching out_channels. Default: None.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ValueError, TypeError: Constructor channel, shape or option validation fails; native PyTorch
+            errors propagate.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; attention channels equal out_channels.
+            [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+            Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+            projection shortcut; intermediate channels remain bounded to 8192.
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ResidualBlock(in_channels, out_channels)
 
@@ -238,7 +295,8 @@ class ResidualBlock(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -247,7 +305,7 @@ class ResidualBlock(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 

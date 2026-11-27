@@ -182,7 +182,8 @@ def test_three_examples_only_build_and_prepare(monkeypatch):
 def test_new_methods_have_real_guide_topics_and_unchanged_four_language_registry():
     from hyso_guide import topic_for_api,guide_uri
     topics=json.loads((ROOT/'hyso/data/user-guide-topics.json').read_text(encoding='utf-8'))
-    assert len(topics['topics'])==70 and topics['languages']==['tr','en','de','es']
+    content=json.loads((ROOT/'docs/user-guide/content.json').read_text(encoding='utf-8'))
+    assert len(topics['topics'])==len(content['topics']) and topics['languages']==['tr','en','de','es']
     for cls in (ModelBuilder,GraphModelBuilder):
         for name in NAMES:
             symbol='hyso.'+cls.__name__+'.'+name;topic=topic_for_api(symbol)

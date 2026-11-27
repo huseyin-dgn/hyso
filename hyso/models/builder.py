@@ -151,8 +151,10 @@ class BuiltClassifier(nn.Module):
     class. Configuration JSON contains no weights or executable source.
 
     Args:
-        features (list[nn.Module]): Explicit feature IDs to compare/plan; prerequisites are never silently executed. Required.
-        config (dict[str, Any]): Plain versioned configuration; never executable code or trained state. Required.
+        features (list[nn.Module]): Explicit feature IDs to compare/plan; prerequisites are never
+            silently executed. Required.
+        config (dict[str, Any]): Plain versioned configuration; never executable code or trained state.
+            Required.
         output_channels (int): Number of output feature channels. Required.
 
     Returns:
@@ -162,7 +164,7 @@ class BuiltClassifier(nn.Module):
         ValueError, TypeError: Native configuration, shape or input validation rejects the request.
         RuntimeError: A requested native construction/forward operation fails.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         BuiltClassifier(features, config, output_channels)
 
@@ -174,8 +176,10 @@ class BuiltClassifier(nn.Module):
         """Initialize BuiltClassifier with the supplied settings.
 
         Args:
-            features (list[nn.Module]): Explicit feature IDs to compare/plan; prerequisites are never silently executed. Required.
-            config (dict[str, Any]): Plain versioned configuration; never executable code or trained state. Required.
+            features (list[nn.Module]): Explicit feature IDs to compare/plan; prerequisites are never
+                silently executed. Required.
+            config (dict[str, Any]): Plain versioned configuration; never executable code or trained state.
+                Required.
             output_channels (int): Number of output feature channels. Required.
 
         Returns:
@@ -185,7 +189,7 @@ class BuiltClassifier(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             BuiltClassifier(features, config, output_channels)
 
@@ -207,9 +211,10 @@ class BuiltClassifier(nn.Module):
             Detached JSON-compatible architecture metadata including normalized defaults; no weights.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_config()
 
@@ -227,7 +232,8 @@ class BuiltClassifier(nn.Module):
         """Return [N, num_classes] logits; reject incompatible input before work.
 
         Args:
-            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -236,7 +242,7 @@ class BuiltClassifier(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -272,9 +278,12 @@ class BuiltSequential(BuiltClassifier):
     """Opt-in schema2 features and explicit prediction head.
 
     Args:
-        features (_typing.Any): Explicit feature IDs to compare/plan; prerequisites are never silently executed. Required.
-        config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained state. Required.
-        head (_typing.Any): Explicit prediction-head kind, such as classification, regression or embedding. Required.
+        features (_typing.Any): Explicit feature IDs to compare/plan; prerequisites are never silently
+            executed. Required.
+        config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained
+            state. Required.
+        head (_typing.Any): Explicit prediction-head kind, such as classification, regression or
+            embedding. Required.
 
     Returns:
         An instance of BuiltSequential with the documented native validation and defaults.
@@ -283,7 +292,7 @@ class BuiltSequential(BuiltClassifier):
         ValueError, TypeError: Native configuration, shape or input validation rejects the request.
         RuntimeError: A requested native construction/forward operation fails.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         BuiltSequential(features, config, head)
 
@@ -295,9 +304,12 @@ class BuiltSequential(BuiltClassifier):
         """Initialize BuiltSequential with the supplied settings.
 
         Args:
-            features (_typing.Any): Explicit feature IDs to compare/plan; prerequisites are never silently executed. Required.
-            config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained state. Required.
-            head (_typing.Any): Explicit prediction-head kind, such as classification, regression or embedding. Required.
+            features (_typing.Any): Explicit feature IDs to compare/plan; prerequisites are never silently
+                executed. Required.
+            config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained
+                state. Required.
+            head (_typing.Any): Explicit prediction-head kind, such as classification, regression or
+                embedding. Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
@@ -306,7 +318,7 @@ class BuiltSequential(BuiltClassifier):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             BuiltSequential(features, config, head)
 
@@ -325,12 +337,13 @@ class BuiltSequential(BuiltClassifier):
         """Return the built classifier module.
 
         Returns:
-            The existing Linear classification projection. Heads without a linear attribute do not support this accessor.
+            The existing Linear classification projection. Heads without a linear attribute do not support
+            this accessor.
 
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.classifier
 
@@ -344,7 +357,8 @@ class BuiltSequential(BuiltClassifier):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -353,7 +367,7 @@ class BuiltSequential(BuiltClassifier):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -386,7 +400,7 @@ class ModelBuilder:
         ValueError, TypeError: Native configuration, shape or input validation rejects the request.
         RuntimeError: A requested native construction/forward operation fails.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         builder = ModelBuilder((1, 4, 4), 2)
 
@@ -398,8 +412,10 @@ class ModelBuilder:
         """Initialize ModelBuilder with the supplied settings.
 
         Args:
-            input_shape (tuple[int, int, int]): Per-sample (C, H, W) dimensions; batch is excluded. Required.
-            num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Required.
+            input_shape (tuple[int, int, int]): Per-sample (C, H, W) dimensions; batch is excluded.
+                Required.
+            num_classes (int): Classifier output width; binary/multiclass loss requirements must match.
+                Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
@@ -408,7 +424,7 @@ class ModelBuilder:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ModelBuilder(input_shape, num_classes)
 
@@ -501,24 +517,80 @@ class ModelBuilder:
         return c, tuple(shape)
 
     @classmethod
+    @_typing.overload
+    def sequential(cls, input_shape: _typing.Sequence[int], *, head: _typing.Literal['classification']='classification', num_classes: int, pooling: _typing.Literal['avg','max','none']='avg', dropout: float=0) -> ModelBuilder:
+        """Keyword contract for classification_head; execution uses the validated implementation.
+
+        Args:
+            input_shape: Per-sample (C,H,W), excluding batch; each dimension must be an integer in 1..8192.
+            head: Terminal prediction head selected by this overload.
+            num_classes: Number of output class logits. Outputs are unnormalized scores, not probabilities.
+            pooling: avg/max globally pool NCHW before flattening; none flattens NCHW or consumes flat NF.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @classmethod
+    @_typing.overload
+    def sequential(cls, input_shape: _typing.Sequence[int], *, head: _typing.Literal['regression'], output_features: int, pooling: _typing.Literal['avg','max','none']='avg') -> ModelBuilder:
+        """Keyword contract for regression_head; execution uses the validated implementation.
+
+        Args:
+            input_shape: Per-sample (C,H,W), excluding batch; each dimension must be an integer in 1..8192.
+            head: Terminal prediction head selected by this overload.
+            output_features: Width of the unrestricted numeric regression output; no classification objective is inferred.
+            pooling: avg/max globally pool NCHW before flattening; none flattens NCHW or consumes flat NF.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @classmethod
+    @_typing.overload
+    def sequential(cls, input_shape: _typing.Sequence[int], *, head: _typing.Literal['embedding'], embedding_dim: int, pooling: _typing.Literal['avg','max','none']='avg', normalize: bool=False, eps: float=1e-12) -> ModelBuilder:
+        """Keyword contract for embedding_head; execution uses the validated implementation.
+
+        Args:
+            input_shape: Per-sample (C,H,W), excluding batch; each dimension must be an integer in 1..8192.
+            head: Terminal prediction head selected by this overload.
+            embedding_dim: Attention projection width or output embedding width, according to the component. None in self-attention uses C; QKV requires 3*embedding_dim<=8192.
+            pooling: avg/max globally pool NCHW before flattening; none flattens NCHW or consumes flat NF.
+            normalize: Apply safe per-sample L2 normalization to output embeddings.
+            eps: Positive numerical stabilizer used in normalization. Embedding normalization also floors it at the dtype tiny value.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @classmethod
     def sequential(cls, input_shape: '_typing.Sequence[int]', *, head: _typing.Literal['classification', 'regression', 'embedding']='classification', **head_params: '_typing.Any') -> 'ModelBuilder':
         """Create an opt-in schema2 chain with an explicit terminal head.
 
         Args:
-            input_shape (_typing.Sequence[int]): Per-sample (C, H, W) dimensions; batch is excluded. Required.
-            head (str): Explicit prediction-head kind, such as classification, regression or embedding. Default: 'classification'.
-            head_params (_typing.Any): Parameters for the explicit prediction head; schema2 rules remain unchanged. Required.
+            input_shape (_typing.Sequence[int]): Per-sample (C, H, W) dimensions; batch is excluded.
+                Required.
+            head (str): Explicit prediction-head kind, such as classification, regression or embedding.
+                Default: 'classification'.
+            head_params (_typing.Any): Closed head keywords: classification requires num_classes, regression
+                requires output_features, embedding requires embedding_dim. pooling defaults to avg;
+                classification also supports dropout=0 and embedding normalize=False, eps=1e-12. in_features
+                is inferred.
 
         Returns:
-            The retained sequential value, without recomputing measurements.
+            A validated architecture-only ModelBuilder; build() allocates a fresh model.
 
         Raises:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
-            ModelBuilder.sequential(input_shape)
+            ModelBuilder.sequential((1, 8, 8), num_classes=2)
 
         HYSo Guide: models.model-builder
         Offline: hyso docs show models.model-builder --lang en
@@ -542,7 +614,7 @@ class ModelBuilder:
             An architecture-only builder; model construction and training are explicit.
         Raises:
             ModelConfigError: The existing schema2 head/shape validator rejects options.
-        Example:
+        Examples:
             builder = ModelBuilder.classification((1, 8, 8), num_classes=2)
 
         HYSo Guide: components.heads
@@ -565,7 +637,7 @@ class ModelBuilder:
             An architecture-only builder with inferred head input features.
         Raises:
             ModelConfigError: The existing schema2 head/shape validator rejects options.
-        Example:
+        Examples:
             builder = ModelBuilder.regression((1, 8, 8), output_features=1)
 
         HYSo Guide: components.heads
@@ -590,7 +662,7 @@ class ModelBuilder:
             An architecture-only builder with inferred head input features.
         Raises:
             ModelConfigError: The existing schema2 head/shape validator rejects options.
-        Example:
+        Examples:
             builder = ModelBuilder.embedding((1, 8, 8), embedding_dim=4, normalize=True)
 
         HYSo Guide: components.heads
@@ -605,19 +677,21 @@ class ModelBuilder:
         """Describe a closed model family; validation allocates no model or weights.
 
         Args:
-            name (str): Registered component name, exact metric label, or stored entity name in this API. Required.
-            params (Any): Closed registered keyword parameters; inspect ModelRegistry.get(name) for supported kinds/defaults. Required.
+            name (str): Registered component name, exact metric label, or stored entity name in this API.
+                Required.
+            params (Any): Closed registered keyword parameters; inspect ModelRegistry.get(name) for
+                supported kinds/defaults. Required.
 
         Returns:
-            The retained named value, without recomputing measurements.
+            A validated architecture-only ModelBuilder; build() allocates a fresh model.
 
         Raises:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
-            ModelBuilder.named(name)
+            ModelBuilder.named("modular_cnn", input_channels=1, num_classes=2)
 
         HYSo Guide: models.model-builder
         Offline: hyso docs show models.model-builder --lang en
@@ -630,16 +704,17 @@ class ModelBuilder:
         """Describe the original ModularCNN; build() returns exactly that class.
 
         Args:
-            params (Any): Closed registered keyword parameters; inspect ModelRegistry.get(name) for supported kinds/defaults. Required.
+            params (Any): Closed registered keyword parameters; inspect ModelRegistry.get(name) for
+                supported kinds/defaults. Required.
 
         Returns:
-            The retained modular value, without recomputing measurements.
+            A validated architecture-only ModelBuilder; build() allocates a fresh model.
 
         Raises:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ModelBuilder.modular()
 
@@ -654,7 +729,8 @@ class ModelBuilder:
         """Validate/copy plain architecture data; never imports configuration names.
 
         Args:
-            config (dict[str, Any]): Plain versioned configuration; never executable code or trained state. Required.
+            config (dict[str, Any]): Plain versioned configuration; never executable code or trained state.
+                Required.
 
         Returns:
             A validated builder/configuration object; no executable names are imported.
@@ -663,7 +739,7 @@ class ModelBuilder:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ModelBuilder.from_config(config)
 
@@ -683,9 +759,10 @@ class ModelBuilder:
             Detached JSON-compatible architecture metadata including normalized defaults; no weights.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_config()
 
@@ -710,9 +787,12 @@ class ModelBuilder:
         element threshold and preserves acceptance of existing configurations.
 
         Args:
-            config (dict[str, Any]): Plain versioned configuration; never executable code or trained state. Required.
-            batch_size (int): Positive batch-size setting or metadata assumption; no implicit batch search. Default: 1.
-            activation_limit (int): Advisory per-tensor element threshold used by metadata preflight, not a physical-memory quota. Default: 16777216.
+            config (dict[str, Any]): Plain versioned configuration; never executable code or trained state.
+                Required.
+            batch_size (int): Positive batch-size setting or metadata assumption; no implicit batch search.
+                Default: 1.
+            activation_limit (int): Advisory per-tensor element threshold used by metadata preflight, not a
+                physical-memory quota. Default: 16777216.
 
         Returns:
             Metadata validation, shapes, diagnostics and advisory resource estimates; no model is built.
@@ -721,7 +801,7 @@ class ModelBuilder:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ModelBuilder.preflight(config)
 
@@ -874,27 +954,46 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append a registered 2D convolution.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a block without building or training a model.
-
         Args:
-            in_channels: Expected input channel count. Required.
-            out_channels: Output channel count. Required.
-            kernel_size: Positive spatial filter/window size, as an integer or H/W pair. Default: 3.
-            stride: Positive spatial sampling step. Default: 1.
-            padding: Nonnegative spatial padding. Default: 1.
-            groups: Group count; input and output channels must be divisible by it. Default: 1.
-            bias: Include the convolution bias. Default: True.
-            dilation: Positive spacing between filter/window taps. Default: 1.
+            in_channels (int | None): Input feature channels; must match the incoming tensor C dimension.
+                Integer in 1..8192; bool is rejected. None infers C from the current validated feature
+                shape; ambiguous/non-NCHW shapes are rejected. Default: None.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 1.
+            groups (int): Channel partitions; must divide both convolution channel counts. ChannelShuffle
+                requires channels % groups == 0. Integer in 1..8192; bool is rejected. Default: 1.
+            bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+                Default: True.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            groups divides in_channels and out_channels
+            dilation changes the effective kernel
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.conv2d(in_channels=1, out_channels=4)
 
         HYSo Guide: components.convolution
@@ -929,27 +1028,46 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append convolution, optional normalization and activation.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a block without building or training a model.
-
         Args:
-            in_channels: Expected input channel count. Required.
-            out_channels: Output channel count. Required.
-            kernel_size: Positive spatial filter/window size, as an integer or H/W pair. Default: 3.
-            stride: Positive spatial sampling step. Default: 1.
-            padding: Nonnegative spatial padding. Default: 1.
-            groups: Group count; input and output channels must be divisible by it. Default: 1.
-            norm: Convolution normalization: batch, group, or None. Default: 'batch'.
-            activation: Convolution activation: silu, relu, or None. Default: 'silu'.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 1.
+            groups (int): Channel partitions; must divide both convolution channel counts. ChannelShuffle
+                requires channels % groups == 0. Integer in 1..8192; bool is rejected. Default: 1.
+            norm (_typing.Literal['batch', 'group', None]): Optional post-convolution normalization: batch,
+                group or None. Group normalization chooses the largest channel divisor <=8; convolution bias
+                is enabled only without normalization. Choices: 'batch', 'group', None. Default: 'batch'.
+            activation (_typing.Literal['silu', 'relu', None]): Nonlinearity applied inside this block; only
+                the declared registry choices are accepted. Choices: 'silu', 'relu', None. Default: 'silu'.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            groups divides both channel counts
+            normalization determines convolution bias
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.conv_norm_act(in_channels=1, out_channels=4)
 
         HYSo Guide: components.convolution
@@ -971,17 +1089,21 @@ class ModelBuilder:
     def relu(self) -> ModelBuilder:
         """Append out-of-place ReLU activation.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a block without building or training a model.
+        Args:
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW in Builder v1.
+            Same NCHW shape; out-of-place activation.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.relu()
 
         HYSo Guide: components.activation
@@ -993,17 +1115,21 @@ class ModelBuilder:
     def silu(self) -> ModelBuilder:
         """Append out-of-place SiLU activation.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a block without building or training a model.
+        Args:
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW in Builder v1.
+            Same NCHW shape; out-of-place activation.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.silu()
 
         HYSo Guide: components.activation
@@ -1015,20 +1141,23 @@ class ModelBuilder:
     def gelu(self, *, approximate: _typing.Literal['none', 'tanh'] = 'none') -> ModelBuilder:
         """Append GELU activation with the selected approximation.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a block without building or training a model.
-
         Args:
-            approximate: GELU approximation: none (exact) or tanh. Default: 'none'.
+            approximate (_typing.Literal['none', 'tanh']): GELU calculation: none uses the exact error
+                function; tanh uses the approximation. Choices: 'none', 'tanh'. Default: 'none'.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW in Builder v1.
+            Same NCHW shape; out-of-place activation.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.gelu()
 
         HYSo Guide: components.activation
@@ -1048,24 +1177,32 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append registered 2D batch normalization.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a block without building or training a model.
-
         Args:
-            num_features: Expected feature-channel count. Required.
-            eps: Positive normalization stabilizer. Default: 1e-05.
-            momentum: Running-statistic factor in [0, 1]; None uses the cumulative average. Default: 0.1.
-            affine: Learn normalization scale and offset. Default: True.
-            track_running_stats: Keep running mean/variance for evaluation. Default: True.
+            num_features (int | None): Normalization channel count; must match input C. Integer in 1..8192;
+                bool is rejected. Default: None.
+            eps (float): Positive numerical stabilizer used in normalization. Embedding normalization also
+                floors it at the dtype tiny value. Finite positive number. Default: 1e-05.
+            momentum (float | None): Running-statistic update factor; None selects cumulative averaging for
+                BatchNorm. None or number in [0,1]. Default: 0.1.
+            affine (bool): Learn per-channel scale and bias when True; otherwise use normalization without
+                learned affine parameters. Boolean only. Default: True.
+            track_running_stats (bool): Track running mean/variance for evaluation. Without tracking,
+                input-statistic sample requirements also apply in eval. Boolean only. Default: True.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW; C matches num_features, num_channels or channels. GroupNorm groups divide C.
+            Same NCHW shape; channel LayerNorm normalizes C per spatial position. Native statistics
+            constraints apply.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.batch_norm(num_features=4)
 
         HYSo Guide: components.normalization
@@ -1093,23 +1230,31 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append normalization across explicit channel groups.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a block without building or training a model.
-
         Args:
-            num_groups: Positive normalization group count dividing num_channels. Required.
-            num_channels: Expected channel count for group normalization. Required.
-            eps: Positive normalization stabilizer. Default: 1e-05.
-            affine: Learn normalization scale and offset. Default: True.
+            num_groups (int): GroupNorm channel partitions; must divide num_channels. Integer in 1..8192;
+                bool is rejected. Required.
+            num_channels (int): Total GroupNorm channels C; must be divisible by num_groups. Integer in
+                1..8192; bool is rejected. Required.
+            eps (float): Positive numerical stabilizer used in normalization. Embedding normalization also
+                floors it at the dtype tiny value. Finite positive number. Default: 1e-05.
+            affine (bool): Learn per-channel scale and bias when True; otherwise use normalization without
+                learned affine parameters. Boolean only. Default: True.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW; C matches num_features, num_channels or channels. GroupNorm groups divide C.
+            Same NCHW shape; channel LayerNorm normalizes C per spatial position. Native statistics
+            constraints apply.
+            num_groups divides num_channels
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.group_norm(num_groups=1, num_channels=4)
 
         HYSo Guide: components.normalization
@@ -1129,24 +1274,35 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append spatial maximum pooling.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a block without building or training a model.
-
         Args:
-            kernel_size: Positive spatial filter/window size, as an integer or H/W pair. Required.
-            stride: Spatial sampling step; None in pooling uses the kernel size. Default: None.
-            padding: Nonnegative spatial padding; pooling limits still apply. Default: 0.
-            dilation: Positive spacing between filter/window taps. Default: 1.
-            ceil_mode: Use the native ceil-window pooling rule instead of floor. Default: False.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Required.
+            stride (int | tuple[int, int] | list[int] | None): Spatial sampling step on each axis; larger
+                values reduce ordinary convolution/pooling resolution. None or integer/HW pair, each in
+                1..8192. Default: None.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 0.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            ceil_mode (bool): Round pooling output sizes upward, then discard windows beginning wholly in
+                right/bottom padding. Boolean only. Default: False.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW; legal window/padding or positive adaptive output_size.
+            Floating NCHW with unchanged channels; global average returns [N,C,1,1].
+            stride=None uses kernel_size
+            padding[i] <= floor(kernel_size[i]/2)
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.max_pool2d(kernel_size=2)
 
         HYSo Guide: components.pooling
@@ -1173,24 +1329,36 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append spatial average pooling.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a block without building or training a model.
-
         Args:
-            kernel_size: Positive spatial filter/window size, as an integer or H/W pair. Required.
-            stride: Spatial sampling step; None in pooling uses the kernel size. Default: None.
-            padding: Nonnegative spatial padding; pooling limits still apply. Default: 0.
-            ceil_mode: Use the native ceil-window pooling rule instead of floor. Default: False.
-            count_include_pad: Include padded positions in the average divisor. Default: True.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Required.
+            stride (int | tuple[int, int] | list[int] | None): Spatial sampling step on each axis; larger
+                values reduce ordinary convolution/pooling resolution. None or integer/HW pair, each in
+                1..8192. Default: None.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 0.
+            ceil_mode (bool): Round pooling output sizes upward, then discard windows beginning wholly in
+                right/bottom padding. Boolean only. Default: False.
+            count_include_pad (bool): Include zero-padded elements in the average-pooling divisor. Boolean
+                only. Default: True.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW; legal window/padding or positive adaptive output_size.
+            Floating NCHW with unchanged channels; global average returns [N,C,1,1].
+            stride=None uses kernel_size
+            padding[i] <= floor(kernel_size[i]/2)
+            count_include_pad controls the mean divisor
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.avg_pool2d(kernel_size=2)
 
         HYSo Guide: components.pooling
@@ -1209,20 +1377,24 @@ class ModelBuilder:
     def adaptive_avg_pool2d(self, *, output_size: int | tuple[int, int] | list[int]) -> ModelBuilder:
         """Append average pooling to a fixed spatial size.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a block without building or training a model.
-
         Args:
-            output_size: Positive target spatial H/W size. Required.
+            output_size (int | tuple[int, int] | list[int]): Target H/W grid; integer means a square. Resize
+                requires exactly one of output_size and scale_factor. Integer or H/W pair, each in 1..8192.
+                Required.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW; legal window/padding or positive adaptive output_size.
+            Floating NCHW with unchanged channels; global average returns [N,C,1,1].
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.adaptive_avg_pool2d(output_size=2)
 
         HYSo Guide: components.pooling
@@ -1234,20 +1406,23 @@ class ModelBuilder:
     def dropout(self, *, p: float = 0.5) -> ModelBuilder:
         """Append elementwise dropout; evaluation leaves values unchanged.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a block without building or training a model.
-
         Args:
-            p: Element drop probability in [0, 1]; active only during training. Default: 0.5.
+            p (float): Probability of dropping elements, channels or paths during training; evaluation
+                disables masking. Number in [0,1]. Default: 0.5.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Nonempty floating NCHW.
+            Same shape and dtype; explicit training-only masking.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.dropout()
 
         HYSo Guide: components.regularization
@@ -1267,24 +1442,35 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append the registered residual block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            stride: stride Default: 1.
-            norm: Convolution normalization; group uses largest divisor <=8. Default: 'batch'.
-            attention: None or {name, params} for a registered attention with matching output channels. Default: None.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            norm (_typing.Literal['batch', 'group', None]): Optional post-convolution normalization: batch,
+                group or None. Group normalization chooses the largest channel divisor <=8; convolution bias
+                is enabled only without normalization. Choices: 'batch', 'group', None. Default: 'batch'.
+            attention (dict[str, _typing.Any] | None): Optional attention applied after the residual branch;
+                nested legacy attention must use matching out_channels. Default: None.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; attention channels equal out_channels.
+            [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+            Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+            projection shortcut; intermediate channels remain bounded to 8192.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.residual(in_channels=in_channels, out_channels=out_channels)
 
         HYSo Guide: components.residual
@@ -1303,21 +1489,26 @@ class ModelBuilder:
     def se(self, *, channels: int, reduction: int = 8) -> ModelBuilder:
         """Append the registered se block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            channels: channels Required.
-            reduction: reduction Default: 8.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            reduction (int): Channel-gate reduction divisor; hidden width is max(1,C//reduction), or
+                max(8,C//reduction) for coordinate attention. Integer in 1..8192; bool is rejected. Default:
+                8.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.se(channels=channels)
 
         HYSo Guide: components.attention
@@ -1329,22 +1520,28 @@ class ModelBuilder:
     def cbam(self, *, channels: int, reduction: int = 16, kernel_size: int = 7) -> ModelBuilder:
         """Append the registered cbam block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            channels: channels Required.
-            reduction: reduction Default: 16.
-            kernel_size: kernel size Default: 7.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            reduction (int): Channel-gate reduction divisor; hidden width is max(1,C//reduction), or
+                max(8,C//reduction) for coordinate attention. Integer in 1..8192; bool is rejected. Default:
+                16.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 7.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.cbam(channels=channels)
 
         HYSo Guide: components.attention
@@ -1356,21 +1553,25 @@ class ModelBuilder:
     def eca(self, *, channels: int, kernel_size: int = 3) -> ModelBuilder:
         """Append the registered eca block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            channels: channels Required.
-            kernel_size: kernel size Default: 3.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.eca(channels=channels)
 
         HYSo Guide: components.attention
@@ -1382,21 +1583,26 @@ class ModelBuilder:
     def coordinate(self, *, channels: int, reduction: int = 32) -> ModelBuilder:
         """Append the registered coordinate block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            channels: channels Required.
-            reduction: reduction Default: 32.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            reduction (int): Channel-gate reduction divisor; hidden width is max(1,C//reduction), or
+                max(8,C//reduction) for coordinate attention. Integer in 1..8192; bool is rejected. Default:
+                32.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.coordinate(channels=channels)
 
         HYSo Guide: components.attention
@@ -1408,17 +1614,21 @@ class ModelBuilder:
     def hardswish(self) -> ModelBuilder:
         """Append the registered hardswish block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
+        Args:
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW in Builder v1.
+            Same NCHW shape; out-of-place activation.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.hardswish()
 
         HYSo Guide: components.activation
@@ -1430,17 +1640,21 @@ class ModelBuilder:
     def identity(self) -> ModelBuilder:
         """Append the registered identity block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
+        Args:
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW in Builder v1.
+            Same tensor/shape; no parameters.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.identity()
 
         HYSo Guide: components.activation
@@ -1463,26 +1677,38 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Configure the complete modular_cnn model via the existing modular factory.
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            input_channels: Number of input image/feature channels. Default: 3.
-            num_classes: num classes Default: 10.
-            widths: Ordered feature widths for the architecture stages. Default: (32, 64, 128).
-            repeats: Number of independently recorded measurement windows/repeats. Default: (1, 1, 1).
-            strides: Ordered spatial sampling steps for the architecture stages. Default: (1, 2, 2).
-            attention: attention Default: 'none'.
-            norm: Convolution normalization; group uses largest divisor <=8. Default: 'batch'.
+            input_channels (int): Input image channels C; must match the first model stage. Integer in
+                1..8192; bool is rejected. Default: 3.
+            num_classes (int): Number of output class logits. Outputs are unnormalized scores, not
+                probabilities. Integer in 1..8192; bool is rejected. Default: 10.
+            widths (tuple[int, ...] | list[int]): Per-stage output channels; length must match repeats and
+                strides. Sequence of 1..16 integers, each in 1..8192. Default: (32, 64, 128).
+            repeats (tuple[int, ...] | list[int]): Number of blocks per stage; same length as
+                widths/strides, with at most 64 blocks in total. Sequence of 1..16 integers, each in
+                1..8192. Default: (1, 1, 1).
+            strides (tuple[int, ...] | list[int]): First-block spatial stride for each stage; remaining
+                blocks use stride 1. Sequence of 1..16 integers, each in 1..8192. Default: (1, 2, 2).
+            attention (_typing.Literal['none', 'se', 'cbam', 'eca', 'coordinate']): Attention selector
+                inside the block; applies channel/spatial gates without resizing. Choices: 'none', 'se',
+                'cbam', 'eca', 'coordinate'. Default: 'none'.
+            norm (_typing.Literal['batch', 'group', None]): Optional post-convolution normalization: batch,
+                group or None. Group normalization chooses the largest channel divisor <=8; convolution bias
+                is enabled only without normalization. Choices: 'batch', 'group', None. Default: 'batch'.
 
         Returns:
-            A fresh ModelBuilder configuration.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty [N,input_channels,H,W]; normal model.to(device/dtype) semantics.
+            [N,num_classes] unnormalized classification logits.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             ModelBuilder.modular_cnn()
 
         HYSo Guide: models.support
@@ -1502,21 +1728,25 @@ class ModelBuilder:
     def channel_shuffle(self, *, channels: int, groups: int = 2) -> ModelBuilder:
         """Append the registered channel_shuffle block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            channels: channels Required.
-            groups: groups Default: 2.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            groups (int): Channel partitions; must divide both convolution channel counts. ChannelShuffle
+                requires channels % groups == 0. Integer in 1..8192; bool is rejected. Default: 2.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW with matching channels.
+            Same NCHW shape; validated channel partition.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.channel_shuffle(channels=channels)
 
         HYSo Guide: components.sampling
@@ -1528,21 +1758,25 @@ class ModelBuilder:
     def dropblock2d(self, *, p: float = 0.1, block_size: int = 3) -> ModelBuilder:
         """Append the registered dropblock2d block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            p: Probability of dropping an element/path during training. Default: 0.1.
-            block_size: Spatial side length of the dropped block. Default: 3.
+            p (float): Probability of dropping elements, channels or paths during training; evaluation
+                disables masking. Number in [0,1]. Default: 0.1.
+            block_size (int): Requested spatial square side for contiguous DropBlock masks; runtime clips it
+                to min(block_size,H,W). Integer in 1..8192; bool is rejected. Default: 3.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Nonempty floating NCHW.
+            Same shape and dtype; explicit training-only masking.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.dropblock2d()
 
         HYSo Guide: components.regularization
@@ -1561,23 +1795,34 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append the registered pointwise_conv2d block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            stride: stride Default: 1.
-            bias: bias Default: True.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+                Default: True.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.pointwise_conv2d(in_channels=in_channels, out_channels=out_channels)
 
         HYSo Guide: components.convolution
@@ -1605,26 +1850,44 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append the registered depthwise_conv2d block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            in_channels: in channels Required.
-            depth_multiplier: Depthwise filters per input channel. Default: 1.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            padding: padding Default: 1.
-            dilation: dilation Default: 1.
-            bias: bias Default: True.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            depth_multiplier (int): Independent filters per input channel; depthwise output/intermediate C
+                equals in_channels*depth_multiplier and must not exceed 8192. Integer in 1..8192; bool is
+                rejected. Default: 1.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+                Default: True.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            groups=in_channels
+            out_channels=in_channels*depth_multiplier
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.depthwise_conv2d(in_channels=in_channels)
 
         HYSo Guide: components.convolution
@@ -1656,27 +1919,45 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append the registered depthwise_separable_conv2d block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            depth_multiplier: Depthwise filters per input channel. Default: 1.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            padding: padding Default: 1.
-            dilation: dilation Default: 1.
-            bias: bias Default: True.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            depth_multiplier (int): Independent filters per input channel; depthwise output/intermediate C
+                equals in_channels*depth_multiplier and must not exceed 8192. Integer in 1..8192; bool is
+                rejected. Default: 1.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+                Default: True.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            intermediate_channels=in_channels*depth_multiplier
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.depthwise_separable_conv2d(in_channels=in_channels, out_channels=out_channels)
 
         HYSo Guide: components.convolution
@@ -1709,27 +1990,45 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append the registered spatial_separable_conv2d block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            intermediate_channels: Internal feature width between projections. Required.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            padding: padding Default: 1.
-            dilation: dilation Default: 1.
-            bias: bias Default: True.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+                min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+                1..8192; bool is rejected. Required.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+                Default: True.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            H settings apply to the vertical stage, W settings to the horizontal stage
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.spatial_separable_conv2d(in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
 
         HYSo Guide: components.convolution
@@ -1762,27 +2061,46 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append the registered factorized_conv2d block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            intermediate_channels: Internal feature width between projections. Required.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            padding: padding Default: 1.
-            dilation: dilation Default: 1.
-            bias: bias Default: True.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+                min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+                1..8192; bool is rejected. Required.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+                Default: True.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            intermediate_channels <= min(in_channels,out_channels)
+            1x1 reduction then KxK convolution
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.factorized_conv2d(in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
 
         HYSo Guide: components.convolution
@@ -1816,28 +2134,48 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append the registered conv_transpose2d block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            padding: padding Default: 1.
-            dilation: dilation Default: 1.
-            bias: bias Default: True.
-            groups: groups Default: 1.
-            output_padding: Extra output size on one side of each transposed-convolution axis. Default: 0.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+                Default: True.
+            groups (int): Channel partitions; must divide both convolution channel counts. ChannelShuffle
+                requires channels % groups == 0. Integer in 1..8192; bool is rejected. Default: 1.
+            output_padding (int | tuple[int, int] | list[int]): Additional output extent for transposed
+                convolution, not input padding; each axis must be less than stride or dilation on that axis.
+                Integer or H/W pair, each in 0..8192. Default: 0.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            groups divides both channel counts
+            output_padding[i] < stride[i] or dilation[i]
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.conv_transpose2d(in_channels=in_channels, out_channels=out_channels)
 
         HYSo Guide: components.convolution
@@ -1860,22 +2198,29 @@ class ModelBuilder:
     def channel_layer_norm(self, *, channels: int, eps: float = 1e-05, affine: bool = True) -> ModelBuilder:
         """Append the registered channel_layer_norm block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            channels: channels Required.
-            eps: Small numerical stabilizer for normalization. Default: 1e-05.
-            affine: Learn a normalization scale and offset. Default: True.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            eps (float): Positive numerical stabilizer used in normalization. Embedding normalization also
+                floors it at the dtype tiny value. Finite positive number. Default: 1e-05.
+            affine (bool): Learn per-channel scale and bias when True; otherwise use normalization without
+                learned affine parameters. Boolean only. Default: True.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW; C matches num_features, num_channels or channels. GroupNorm groups divide C.
+            Same NCHW shape; channel LayerNorm normalizes C per spatial position. Native statistics
+            constraints apply.
+            normalizes C at each N,H,W position, external layout stays NCHW
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.channel_layer_norm(channels=channels)
 
         HYSo Guide: components.normalization
@@ -1895,24 +2240,33 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append the registered instance_norm block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            num_features: num features Required.
-            eps: Small numerical stabilizer for normalization. Default: 1e-05.
-            momentum: Running-statistic update factor in normalization. Default: 0.1.
-            affine: Learn a normalization scale and offset. Default: False.
-            track_running_stats: Maintain running mean/variance for evaluation. Default: False.
+            num_features (int): Normalization channel count; must match input C. Integer in 1..8192; bool is
+                rejected. Required.
+            eps (float): Positive numerical stabilizer used in normalization. Embedding normalization also
+                floors it at the dtype tiny value. Finite positive number. Default: 1e-05.
+            momentum (float): Running-statistic update factor; None selects cumulative averaging for
+                BatchNorm. Number in [0,1]. Default: 0.1.
+            affine (bool): Learn per-channel scale and bias when True; otherwise use normalization without
+                learned affine parameters. Boolean only. Default: False.
+            track_running_stats (bool): Track running mean/variance for evaluation. Without tracking,
+                input-statistic sample requirements also apply in eval. Boolean only. Default: False.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW; C matches num_features, num_channels or channels. GroupNorm groups divide C.
+            Same NCHW shape; channel LayerNorm normalizes C per spatial position. Native statistics
+            constraints apply.
+            spatial sample count H*W > 1 when using input statistics
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.instance_norm(num_features=num_features)
 
         HYSo Guide: components.normalization
@@ -1931,20 +2285,23 @@ class ModelBuilder:
     def leaky_relu(self, *, negative_slope: float = 0.01) -> ModelBuilder:
         """Append the registered leaky_relu block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            negative_slope: negative slope Default: 0.01.
+            negative_slope (float): Nonnegative multiplier for negative LeakyReLU inputs. Finite nonnegative
+                number. Default: 0.01.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW in Builder v1.
+            Same NCHW shape; out-of-place activation.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.leaky_relu()
 
         HYSo Guide: components.activation
@@ -1956,21 +2313,26 @@ class ModelBuilder:
     def prelu(self, *, num_parameters: int = 1, init: float = 0.25) -> ModelBuilder:
         """Append the registered prelu block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            num_parameters: num parameters Default: 1.
-            init: init Default: 0.25.
+            num_parameters (int): PReLU slope count; must be 1 (shared) or equal to incoming C. Integer in
+                1..8192; bool is rejected. Default: 1.
+            init (float): Initial learned PReLU negative slope; finite and representable as float32. Finite
+                number. Default: 0.25.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW in Builder v1.
+            Same NCHW shape; out-of-place activation.
+            num_parameters is 1 or the incoming channel count
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.prelu()
 
         HYSo Guide: components.activation
@@ -1982,17 +2344,21 @@ class ModelBuilder:
     def mish(self) -> ModelBuilder:
         """Append the registered mish block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
+        Args:
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW in Builder v1.
+            Same NCHW shape; out-of-place activation.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.mish()
 
         HYSo Guide: components.activation
@@ -2004,17 +2370,21 @@ class ModelBuilder:
     def hardsigmoid(self) -> ModelBuilder:
         """Append the registered hardsigmoid block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
+        Args:
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW in Builder v1.
+            Same NCHW shape; out-of-place activation.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.hardsigmoid()
 
         HYSo Guide: components.activation
@@ -2026,20 +2396,24 @@ class ModelBuilder:
     def adaptive_max_pool2d(self, *, output_size: int | tuple[int, int] | list[int]) -> ModelBuilder:
         """Append the registered adaptive_max_pool2d block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            output_size: output size Required.
+            output_size (int | tuple[int, int] | list[int]): Target H/W grid; integer means a square. Resize
+                requires exactly one of output_size and scale_factor. Integer or H/W pair, each in 1..8192.
+                Required.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW; legal window/padding or positive adaptive output_size.
+            Floating NCHW with unchanged channels; global average returns [N,C,1,1].
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.adaptive_max_pool2d(output_size=output_size)
 
         HYSo Guide: components.pooling
@@ -2051,17 +2425,21 @@ class ModelBuilder:
     def global_avg_pool2d(self) -> ModelBuilder:
         """Append the registered global_avg_pool2d block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
+        Args:
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW; legal window/padding or positive adaptive output_size.
+            Floating NCHW with unchanged channels; global average returns [N,C,1,1].
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.global_avg_pool2d()
 
         HYSo Guide: components.pooling
@@ -2087,30 +2465,49 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append the registered bottleneck_residual block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            intermediate_channels: Internal feature width between projections. Required.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            dilation: dilation Default: 1.
-            normalization: Closed normalization choice for the residual path. Default: 'batch'.
-            activation: Supported activation family. Default: 'silu'.
-            attention: attention Default: 'none'.
-            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
-            drop_path: drop path Default: 0.0.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+                min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+                1..8192; bool is rejected. Required.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+                features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+            activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+                only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+                'silu'.
+            attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+                selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+                'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
+            drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+                Finite number in [0,1). Default: 0.0.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; attention channels equal out_channels.
+            [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+            Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+            projection shortcut; intermediate channels remain bounded to 8192.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.bottleneck_residual(in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
 
         HYSo Guide: components.residual
@@ -2149,30 +2546,49 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append the registered preactivation_residual block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            intermediate_channels: Internal feature width between projections. Required.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            dilation: dilation Default: 1.
-            normalization: Closed normalization choice for the residual path. Default: 'batch'.
-            activation: Supported activation family. Default: 'silu'.
-            attention: attention Default: 'none'.
-            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
-            drop_path: drop path Default: 0.0.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+                min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+                1..8192; bool is rejected. Required.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+                features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+            activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+                only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+                'silu'.
+            attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+                selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+                'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
+            drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+                Finite number in [0,1). Default: 0.0.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; attention channels equal out_channels.
+            [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+            Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+            projection shortcut; intermediate channels remain bounded to 8192.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.preactivation_residual(in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
 
         HYSo Guide: components.residual
@@ -2211,30 +2627,49 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append the registered wide_residual_block block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            intermediate_channels: Internal feature width between projections. Required.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            dilation: dilation Default: 1.
-            normalization: Closed normalization choice for the residual path. Default: 'batch'.
-            activation: Supported activation family. Default: 'silu'.
-            attention: attention Default: 'none'.
-            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
-            drop_path: drop path Default: 0.0.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+                min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+                1..8192; bool is rejected. Required.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+                features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+            activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+                only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+                'silu'.
+            attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+                selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+                'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
+            drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+                Finite number in [0,1). Default: 0.0.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; attention channels equal out_channels.
+            [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+            Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+            projection shortcut; intermediate channels remain bounded to 8192.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.wide_residual_block(in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
 
         HYSo Guide: components.residual
@@ -2274,31 +2709,51 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append the registered grouped_bottleneck block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            intermediate_channels: Internal feature width between projections. Required.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            dilation: dilation Default: 1.
-            normalization: Closed normalization choice for the residual path. Default: 'batch'.
-            activation: Supported activation family. Default: 'silu'.
-            attention: attention Default: 'none'.
-            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
-            drop_path: drop path Default: 0.0.
-            groups: groups Default: 1.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+                min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+                1..8192; bool is rejected. Required.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+                features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+            activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+                only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+                'silu'.
+            attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+                selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+                'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
+            drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+                Finite number in [0,1). Default: 0.0.
+            groups (int): Channel partitions; must divide both convolution channel counts. ChannelShuffle
+                requires channels % groups == 0. Integer in 1..8192; bool is rejected. Default: 1.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; attention channels equal out_channels.
+            [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+            Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+            projection shortcut; intermediate channels remain bounded to 8192.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.grouped_bottleneck(in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
 
         HYSo Guide: components.residual
@@ -2338,30 +2793,49 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append the registered inverted_bottleneck block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            expansion_ratio: Internal positive integer channel expansion factor. Default: 2.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            dilation: dilation Default: 1.
-            normalization: Closed normalization choice for the residual path. Default: 'batch'.
-            activation: Supported activation family. Default: 'silu'.
-            attention: attention Default: 'none'.
-            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
-            drop_path: drop path Default: 0.0.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            expansion_ratio (int): Inverted-bottleneck channel multiplier; intermediate
+                C=in_channels*expansion_ratio must not exceed 8192. Integer in 1..8192; bool is rejected.
+                Default: 2.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+                features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+            activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+                only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+                'silu'.
+            attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+                selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+                'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
+            drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+                Finite number in [0,1). Default: 0.0.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; attention channels equal out_channels.
+            [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+            Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+            projection shortcut; intermediate channels remain bounded to 8192.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.inverted_bottleneck(in_channels=in_channels, out_channels=out_channels)
 
         HYSo Guide: components.residual
@@ -2402,32 +2876,53 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append the registered gated_residual block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            intermediate_channels: Internal feature width between projections. Required.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            dilation: dilation Default: 1.
-            normalization: Closed normalization choice for the residual path. Default: 'batch'.
-            activation: Supported activation family. Default: 'silu'.
-            attention: attention Default: 'none'.
-            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
-            drop_path: drop path Default: 0.0.
-            gate_init: Initial residual gate value in [0, 1]. Default: 1.0.
-            learnable_gate: Make the residual gate trainable. Default: True.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+                min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+                1..8192; bool is rejected. Required.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+                features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+            activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+                only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+                'silu'.
+            attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+                selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+                'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
+            drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+                Finite number in [0,1). Default: 0.0.
+            gate_init (float): Initial scalar residual contribution in [0,1]; zero suppresses the residual
+                main branch initially. Number in [0,1]. Default: 1.0.
+            learnable_gate (bool): Store the residual gate as a learned scalar when True, otherwise a fixed
+                scalar. Boolean only. Default: True.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; attention channels equal out_channels.
+            [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+            Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+            projection shortcut; intermediate channels remain bounded to 8192.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.gated_residual(in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
 
         HYSo Guide: components.residual
@@ -2454,21 +2949,25 @@ class ModelBuilder:
     def spatial_attention(self, *, channels: int, kernel_size: int = 7) -> ModelBuilder:
         """Append the registered spatial_attention block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            channels: channels Required.
-            kernel_size: kernel size Default: 7.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 7.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.spatial_attention(channels=channels)
 
         HYSo Guide: components.attention
@@ -2480,21 +2979,26 @@ class ModelBuilder:
     def channel_attention(self, *, channels: int, reduction: int = 8) -> ModelBuilder:
         """Append the registered channel_attention block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            channels: channels Required.
-            reduction: reduction Default: 8.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            reduction (int): Channel-gate reduction divisor; hidden width is max(1,C//reduction), or
+                max(8,C//reduction) for coordinate attention. Integer in 1..8192; bool is rejected. Default:
+                8.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.channel_attention(channels=channels)
 
         HYSo Guide: components.attention
@@ -2512,22 +3016,29 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append the registered spatial_self_attention block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            channels: channels Required.
-            embedding_dim: embedding dim Default: None.
-            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            embedding_dim (int | None): Attention projection width or output embedding width, according to
+                the component. None in self-attention uses C; QKV requires 3*embedding_dim<=8192. None or
+                integer in 1..8192. Default: None.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+            QKV channels <=8192, H*W<=1024 and N*heads*(H*W)^2<=4194304 are mandatory resource bounds.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.spatial_self_attention(channels=channels)
 
         HYSo Guide: components.attention
@@ -2551,23 +3062,32 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append the registered multihead_spatial_attention block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            channels: channels Required.
-            embedding_dim: embedding dim Default: None.
-            num_heads: num heads Default: 4.
-            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            embedding_dim (int | None): Attention projection width or output embedding width, according to
+                the component. None in self-attention uses C; QKV requires 3*embedding_dim<=8192. None or
+                integer in 1..8192. Default: None.
+            num_heads (int): Parallel attention heads; must divide embedding_dim. Spatial attention is
+                limited to 1024 tokens and N*heads*tokens^2<=4194304. Integer in 1..8192; bool is rejected.
+                Default: 4.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+            QKV channels <=8192, H*W<=1024 and N*heads*(H*W)^2<=4194304 are mandatory resource bounds.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.multihead_spatial_attention(channels=channels)
 
         HYSo Guide: components.attention
@@ -2585,20 +3105,23 @@ class ModelBuilder:
     def dropout2d(self, *, p: float = 0.5) -> ModelBuilder:
         """Append the registered dropout2d block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            p: Probability of dropping an element/path during training. Default: 0.5.
+            p (float): Probability of dropping elements, channels or paths during training; evaluation
+                disables masking. Number in [0,1]. Default: 0.5.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Nonempty floating NCHW.
+            Same shape and dtype; explicit training-only masking.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.dropout2d()
 
         HYSo Guide: components.regularization
@@ -2610,20 +3133,23 @@ class ModelBuilder:
     def drop_path(self, *, p: float = 0.0) -> ModelBuilder:
         """Append the registered drop_path block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            p: Probability of dropping an element/path during training. Default: 0.0.
+            p (float): Probability of dropping elements, channels or paths during training; evaluation
+                disables masking. Finite number in [0,1). Default: 0.0.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Nonempty floating NCHW.
+            Same shape and dtype; explicit training-only masking.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.drop_path()
 
         HYSo Guide: components.regularization
@@ -2635,20 +3161,23 @@ class ModelBuilder:
     def gaussian_noise(self, *, std: float = 0.1) -> ModelBuilder:
         """Append the registered gaussian_noise block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            std: Standard deviation of sampled noise. Default: 0.1.
+            std (float): Standard deviation of training-only zero-mean Gaussian noise; finite, nonnegative
+                and at most 1e6. Finite nonnegative number. Default: 0.1.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Nonempty floating NCHW.
+            Same shape and dtype; explicit training-only masking.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.gaussian_noise()
 
         HYSo Guide: components.regularization
@@ -2667,23 +3196,36 @@ class ModelBuilder:
     ) -> ModelBuilder:
         """Append the registered resize block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            output_size: output size Default: None.
-            scale_factor: scale factor Default: None.
-            mode: mode Default: 'nearest'.
-            align_corners: align corners Default: None.
+            output_size (int | tuple[int, int] | list[int] | None): Target H/W grid; integer means a square.
+                Resize requires exactly one of output_size and scale_factor. None or integer/HW pair, each
+                in 1..8192. Default: None.
+            scale_factor (float | tuple[float, float] | list[float] | None): Positive H/W resize
+                multipliers, each <=8192. Exactly one of this and output_size must be provided. None or
+                positive scalar/HW factors, each <=8192. Default: None.
+            mode (_typing.Literal['nearest', 'bilinear', 'bicubic', 'area']): Resize interpolation method;
+                nearest/area require align_corners=None. Choices: 'nearest', 'bilinear', 'bicubic', 'area'.
+                Default: 'nearest'.
+            align_corners (bool | None): Align endpoint pixel centers for bilinear/bicubic resizing; must be
+                None for nearest/area. Boolean or None. Default: None.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW.
+            Floating NCHW with explicit resize or pixel rearrangement geometry.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.resize(output_size=(4, 4))
 
         HYSo Guide: components.sampling
@@ -2701,20 +3243,27 @@ class ModelBuilder:
     def pixel_shuffle(self, *, upscale_factor: int) -> ModelBuilder:
         """Append the registered pixel_shuffle block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            upscale_factor: Positive spatial upscaling factor; channels must be divisible by its square. Required.
+            upscale_factor (int): PixelShuffle factor r: C must be divisible by r^2; output is
+                (C/r^2,H*r,W*r). Integer in 1..8192; bool is rejected. Required.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW.
+            Floating NCHW with explicit resize or pixel rearrangement geometry.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.pixel_shuffle(upscale_factor=upscale_factor)
 
         HYSo Guide: components.sampling
@@ -2726,20 +3275,27 @@ class ModelBuilder:
     def pixel_unshuffle(self, *, downscale_factor: int) -> ModelBuilder:
         """Append the registered pixel_unshuffle block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            downscale_factor: Positive spatial downscaling factor dividing both spatial dimensions. Required.
+            downscale_factor (int): PixelUnshuffle factor r: H and W must be divisible by r; output is
+                (C*r^2,H/r,W/r). Integer in 1..8192; bool is rejected. Required.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW.
+            Floating NCHW with explicit resize or pixel rearrangement geometry.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.pixel_unshuffle(downscale_factor=downscale_factor)
 
         HYSo Guide: components.sampling
@@ -2751,18 +3307,25 @@ class ModelBuilder:
     def flatten(self) -> ModelBuilder:
         """Append the registered flatten block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-        Requires schema2 and must remain the final feature block before its explicit head.
+        Args:
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW with preserved batch axis.
+            NCHW or terminal NF for flatten, see shape_contract.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.flatten()
 
         HYSo Guide: components.sampling
@@ -2774,20 +3337,28 @@ class ModelBuilder:
     def permute(self, *, dims: tuple[int, ...] | list[int] = (0, 1, 3, 2)) -> ModelBuilder:
         """Append the registered permute block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            dims: Explicit axis permutation/order. Default: (0, 1, 3, 2).
+            dims (tuple[int, ...] | list[int]): Permutation of NCHW axes; only (0,1,2,3) and (0,1,3,2) are
+                accepted, preserving batch/channel axes. Only identity or spatial-axis swap is supported.
+                Default: (0, 1, 3, 2).
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW with preserved batch axis.
+            NCHW or terminal NF for flatten, see shape_contract.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.permute()
 
         HYSo Guide: components.sampling
@@ -2799,20 +3370,28 @@ class ModelBuilder:
     def reshape(self, *, shape: tuple[int, ...] | list[int]) -> ModelBuilder:
         """Append the registered reshape block via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            shape: shape Required.
+            shape (tuple[int, ...] | list[int]): Target per-sample CHW dimensions; reshape must preserve the
+                number of sample elements and every dimension is 1..8192. Three integers in 1..8192.
+                Required.
 
         Returns:
-            This ModelBuilder for chaining.
+            This ModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW with preserved batch axis.
+            NCHW or terminal NF for flatten, see shape_contract.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.reshape(shape=shape)
 
         HYSo Guide: components.sampling
@@ -4019,12 +4598,854 @@ class ModelBuilder:
             )
     # END DEVELOPMENT REGISTRY WRAPPERS
 
+    # Static keyword contracts mirror the closed runtime registry.
+    @_typing.overload
+    def add(self, name: _typing.Literal['conv_norm_act'], *, in_channels: int, out_channels: int, kernel_size: int | tuple[int, int] | list[int] = 3, stride: int | tuple[int, int] | list[int] = 1, padding: int | tuple[int, int] | list[int] = 1, groups: int = 1, norm: _typing.Literal['batch', 'group', None] = 'batch', activation: _typing.Literal['silu', 'relu', None] = 'silu') -> ModelBuilder:
+        """Keyword contract for conv_norm_act; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'conv_norm_act'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            groups: Channel partitions; must divide both convolution channel counts. ChannelShuffle requires channels % groups == 0.
+            norm: Optional post-convolution normalization: batch, group or None. Group normalization chooses the largest channel divisor <=8; convolution bias is enabled only without normalization.
+            activation: Nonlinearity applied inside this block; only the declared registry choices are accepted.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['conv2d'], *, in_channels: int, out_channels: int, kernel_size: int | tuple[int, int] | list[int] = 3, stride: int | tuple[int, int] | list[int] = 1, padding: int | tuple[int, int] | list[int] = 1, groups: int = 1, bias: bool = True, dilation: int | tuple[int, int] | list[int] = 1) -> ModelBuilder:
+        """Keyword contract for conv2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'conv2d'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            groups: Channel partitions; must divide both convolution channel counts. ChannelShuffle requires channels % groups == 0.
+            bias: Include a learned additive convolution bias for each output channel.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['residual'], *, in_channels: int, out_channels: int, stride: int | tuple[int, int] | list[int] = 1, norm: _typing.Literal['batch', 'group', None] = 'batch', attention: dict[str, _typing.Any] | None = None) -> ModelBuilder:
+        """Keyword contract for residual; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'residual'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            norm: Optional post-convolution normalization: batch, group or None. Group normalization chooses the largest channel divisor <=8; convolution bias is enabled only without normalization.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['se'], *, channels: int, reduction: int = 8) -> ModelBuilder:
+        """Keyword contract for se; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'se'.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            reduction: Channel-gate reduction divisor; hidden width is max(1,C//reduction), or max(8,C//reduction) for coordinate attention.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['cbam'], *, channels: int, reduction: int = 16, kernel_size: int = 7) -> ModelBuilder:
+        """Keyword contract for cbam; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'cbam'.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            reduction: Channel-gate reduction divisor; hidden width is max(1,C//reduction), or max(8,C//reduction) for coordinate attention.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['eca'], *, channels: int, kernel_size: int = 3) -> ModelBuilder:
+        """Keyword contract for eca; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'eca'.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['coordinate'], *, channels: int, reduction: int = 32) -> ModelBuilder:
+        """Keyword contract for coordinate; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'coordinate'.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            reduction: Channel-gate reduction divisor; hidden width is max(1,C//reduction), or max(8,C//reduction) for coordinate attention.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['batch_norm'], *, num_features: int, eps: float = 1e-05, momentum: float | None = 0.1, affine: bool = True, track_running_stats: bool = True) -> ModelBuilder:
+        """Keyword contract for batch_norm; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'batch_norm'.
+            num_features: Normalization channel count; must match input C.
+            eps: Positive numerical stabilizer used in normalization. Embedding normalization also floors it at the dtype tiny value.
+            momentum: Running-statistic update factor; None selects cumulative averaging for BatchNorm.
+            affine: Learn per-channel scale and bias when True; otherwise use normalization without learned affine parameters.
+            track_running_stats: Track running mean/variance for evaluation. Without tracking, input-statistic sample requirements also apply in eval.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['group_norm'], *, num_groups: int, num_channels: int, eps: float = 1e-05, affine: bool = True) -> ModelBuilder:
+        """Keyword contract for group_norm; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'group_norm'.
+            num_groups: GroupNorm channel partitions; must divide num_channels.
+            num_channels: Total GroupNorm channels C; must be divisible by num_groups.
+            eps: Positive numerical stabilizer used in normalization. Embedding normalization also floors it at the dtype tiny value.
+            affine: Learn per-channel scale and bias when True; otherwise use normalization without learned affine parameters.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['relu']) -> ModelBuilder:
+        """Keyword contract for relu; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'relu'.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['silu']) -> ModelBuilder:
+        """Keyword contract for silu; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'silu'.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['hardswish']) -> ModelBuilder:
+        """Keyword contract for hardswish; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'hardswish'.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['identity']) -> ModelBuilder:
+        """Keyword contract for identity; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'identity'.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['channel_shuffle'], *, channels: int, groups: int = 2) -> ModelBuilder:
+        """Keyword contract for channel_shuffle; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'channel_shuffle'.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            groups: Channel partitions; must divide both convolution channel counts. ChannelShuffle requires channels % groups == 0.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['dropblock2d'], *, p: float = 0.1, block_size: int = 3) -> ModelBuilder:
+        """Keyword contract for dropblock2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'dropblock2d'.
+            p: Probability of dropping elements, channels or paths during training; evaluation disables masking.
+            block_size: Requested mask side, clipped at runtime to min(block_size,H,W).
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['pointwise_conv2d'], *, in_channels: int, out_channels: int, stride: int | tuple[int, int] | list[int] = 1, bias: bool = True) -> ModelBuilder:
+        """Keyword contract for pointwise_conv2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'pointwise_conv2d'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            bias: Include a learned additive convolution bias for each output channel.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['depthwise_conv2d'], *, in_channels: int, depth_multiplier: int = 1, kernel_size: int | tuple[int, int] | list[int] = 3, stride: int | tuple[int, int] | list[int] = 1, padding: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, bias: bool = True) -> ModelBuilder:
+        """Keyword contract for depthwise_conv2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'depthwise_conv2d'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            depth_multiplier: Independent filters per input channel; depthwise output/intermediate C equals in_channels*depth_multiplier and must not exceed 8192.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            bias: Include a learned additive convolution bias for each output channel.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['depthwise_separable_conv2d'], *, in_channels: int, out_channels: int, depth_multiplier: int = 1, kernel_size: int | tuple[int, int] | list[int] = 3, stride: int | tuple[int, int] | list[int] = 1, padding: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, bias: bool = True) -> ModelBuilder:
+        """Keyword contract for depthwise_separable_conv2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'depthwise_separable_conv2d'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            depth_multiplier: Independent filters per input channel; depthwise output/intermediate C equals in_channels*depth_multiplier and must not exceed 8192.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            bias: Include a learned additive convolution bias for each output channel.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['spatial_separable_conv2d'], *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int | tuple[int, int] | list[int] = 3, stride: int | tuple[int, int] | list[int] = 1, padding: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, bias: bool = True) -> ModelBuilder:
+        """Keyword contract for spatial_separable_conv2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'spatial_separable_conv2d'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            intermediate_channels: Internal feature width. Factorized convolution requires this <= min(in_channels,out_channels); grouped residuals require divisibility by groups.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            bias: Include a learned additive convolution bias for each output channel.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['factorized_conv2d'], *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int | tuple[int, int] | list[int] = 3, stride: int | tuple[int, int] | list[int] = 1, padding: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, bias: bool = True) -> ModelBuilder:
+        """Keyword contract for factorized_conv2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'factorized_conv2d'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            intermediate_channels: Internal feature width. Factorized convolution requires this <= min(in_channels,out_channels); grouped residuals require divisibility by groups.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            bias: Include a learned additive convolution bias for each output channel.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['conv_transpose2d'], *, in_channels: int, out_channels: int, kernel_size: int | tuple[int, int] | list[int] = 3, stride: int | tuple[int, int] | list[int] = 1, padding: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, bias: bool = True, groups: int = 1, output_padding: int | tuple[int, int] | list[int] = 0) -> ModelBuilder:
+        """Keyword contract for conv_transpose2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'conv_transpose2d'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            bias: Include a learned additive convolution bias for each output channel.
+            groups: Channel partitions; must divide both convolution channel counts. ChannelShuffle requires channels % groups == 0.
+            output_padding: Additional output extent for transposed convolution, not input padding; each axis must be less than stride or dilation on that axis.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['channel_layer_norm'], *, channels: int, eps: float = 1e-05, affine: bool = True) -> ModelBuilder:
+        """Keyword contract for channel_layer_norm; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'channel_layer_norm'.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            eps: Positive numerical stabilizer used in normalization. Embedding normalization also floors it at the dtype tiny value.
+            affine: Learn per-channel scale and bias when True; otherwise use normalization without learned affine parameters.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['instance_norm'], *, num_features: int, eps: float = 1e-05, momentum: float = 0.1, affine: bool = False, track_running_stats: bool = False) -> ModelBuilder:
+        """Keyword contract for instance_norm; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'instance_norm'.
+            num_features: Normalization channel count; must match input C.
+            eps: Positive numerical stabilizer used in normalization. Embedding normalization also floors it at the dtype tiny value.
+            momentum: Running-statistic update factor; None selects cumulative averaging for BatchNorm.
+            affine: Learn per-channel scale and bias when True; otherwise use normalization without learned affine parameters.
+            track_running_stats: Track running mean/variance for evaluation. Without tracking, input-statistic sample requirements also apply in eval.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['leaky_relu'], *, negative_slope: float = 0.01) -> ModelBuilder:
+        """Keyword contract for leaky_relu; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'leaky_relu'.
+            negative_slope: Nonnegative multiplier for negative LeakyReLU inputs.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['prelu'], *, num_parameters: int = 1, init: float = 0.25) -> ModelBuilder:
+        """Keyword contract for prelu; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'prelu'.
+            num_parameters: PReLU slope count; must be 1 (shared) or equal to incoming C.
+            init: Initial learned PReLU negative slope; finite and representable as float32.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['gelu'], *, approximate: _typing.Literal['none', 'tanh'] = 'none') -> ModelBuilder:
+        """Keyword contract for gelu; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'gelu'.
+            approximate: GELU calculation: none uses the exact error function; tanh uses the approximation.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['mish']) -> ModelBuilder:
+        """Keyword contract for mish; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'mish'.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['hardsigmoid']) -> ModelBuilder:
+        """Keyword contract for hardsigmoid; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'hardsigmoid'.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['max_pool2d'], *, kernel_size: int | tuple[int, int] | list[int], stride: int | tuple[int, int] | list[int] | None = None, padding: int | tuple[int, int] | list[int] = 0, dilation: int | tuple[int, int] | list[int] = 1, ceil_mode: bool = False) -> ModelBuilder:
+        """Keyword contract for max_pool2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'max_pool2d'.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            ceil_mode: Round pooling output sizes upward, then discard windows beginning wholly in right/bottom padding.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['avg_pool2d'], *, kernel_size: int | tuple[int, int] | list[int], stride: int | tuple[int, int] | list[int] | None = None, padding: int | tuple[int, int] | list[int] = 0, ceil_mode: bool = False, count_include_pad: bool = True) -> ModelBuilder:
+        """Keyword contract for avg_pool2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'avg_pool2d'.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            ceil_mode: Round pooling output sizes upward, then discard windows beginning wholly in right/bottom padding.
+            count_include_pad: Include zero-padded elements in the average-pooling divisor.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['adaptive_avg_pool2d'], *, output_size: int | tuple[int, int] | list[int]) -> ModelBuilder:
+        """Keyword contract for adaptive_avg_pool2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'adaptive_avg_pool2d'.
+            output_size: Target H/W grid; integer means a square. Resize requires exactly one of output_size and scale_factor.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['adaptive_max_pool2d'], *, output_size: int | tuple[int, int] | list[int]) -> ModelBuilder:
+        """Keyword contract for adaptive_max_pool2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'adaptive_max_pool2d'.
+            output_size: Target H/W grid; integer means a square. Resize requires exactly one of output_size and scale_factor.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['global_avg_pool2d']) -> ModelBuilder:
+        """Keyword contract for global_avg_pool2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'global_avg_pool2d'.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['bottleneck_residual'], *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int = 3, stride: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, normalization: _typing.Literal['batch', 'group', None] = 'batch', activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none', dropout: float = 0.0, drop_path: float = 0.0) -> ModelBuilder:
+        """Keyword contract for bottleneck_residual; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'bottleneck_residual'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            intermediate_channels: Internal feature width. Factorized convolution requires this <= min(in_channels,out_channels); grouped residuals require divisibility by groups.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            normalization: Normalization of residual main-branch features; batch, group or None.
+            activation: Nonlinearity applied inside this block; only the declared registry choices are accepted.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+            drop_path: Training-only per-sample residual path drop probability; disabled in eval.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['preactivation_residual'], *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int = 3, stride: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, normalization: _typing.Literal['batch', 'group', None] = 'batch', activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none', dropout: float = 0.0, drop_path: float = 0.0) -> ModelBuilder:
+        """Keyword contract for preactivation_residual; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'preactivation_residual'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            intermediate_channels: Internal feature width. Factorized convolution requires this <= min(in_channels,out_channels); grouped residuals require divisibility by groups.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            normalization: Normalization of residual main-branch features; batch, group or None.
+            activation: Nonlinearity applied inside this block; only the declared registry choices are accepted.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+            drop_path: Training-only per-sample residual path drop probability; disabled in eval.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['wide_residual_block'], *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int = 3, stride: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, normalization: _typing.Literal['batch', 'group', None] = 'batch', activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none', dropout: float = 0.0, drop_path: float = 0.0) -> ModelBuilder:
+        """Keyword contract for wide_residual_block; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'wide_residual_block'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            intermediate_channels: Internal feature width. Factorized convolution requires this <= min(in_channels,out_channels); grouped residuals require divisibility by groups.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            normalization: Normalization of residual main-branch features; batch, group or None.
+            activation: Nonlinearity applied inside this block; only the declared registry choices are accepted.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+            drop_path: Training-only per-sample residual path drop probability; disabled in eval.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['grouped_bottleneck'], *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int = 3, stride: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, normalization: _typing.Literal['batch', 'group', None] = 'batch', activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none', dropout: float = 0.0, drop_path: float = 0.0, groups: int = 1) -> ModelBuilder:
+        """Keyword contract for grouped_bottleneck; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'grouped_bottleneck'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            intermediate_channels: Internal feature width. Factorized convolution requires this <= min(in_channels,out_channels); grouped residuals require divisibility by groups.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            normalization: Normalization of residual main-branch features; batch, group or None.
+            activation: Nonlinearity applied inside this block; only the declared registry choices are accepted.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+            drop_path: Training-only per-sample residual path drop probability; disabled in eval.
+            groups: Channel partitions; must divide both convolution channel counts. ChannelShuffle requires channels % groups == 0.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['inverted_bottleneck'], *, in_channels: int, out_channels: int, expansion_ratio: int = 2, kernel_size: int = 3, stride: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, normalization: _typing.Literal['batch', 'group', None] = 'batch', activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none', dropout: float = 0.0, drop_path: float = 0.0) -> ModelBuilder:
+        """Keyword contract for inverted_bottleneck; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'inverted_bottleneck'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            expansion_ratio: Inverted-bottleneck channel multiplier; intermediate C=in_channels*expansion_ratio must not exceed 8192.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            normalization: Normalization of residual main-branch features; batch, group or None.
+            activation: Nonlinearity applied inside this block; only the declared registry choices are accepted.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+            drop_path: Training-only per-sample residual path drop probability; disabled in eval.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['gated_residual'], *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int = 3, stride: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, normalization: _typing.Literal['batch', 'group', None] = 'batch', activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none', dropout: float = 0.0, drop_path: float = 0.0, gate_init: float = 1.0, learnable_gate: bool = True) -> ModelBuilder:
+        """Keyword contract for gated_residual; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'gated_residual'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            intermediate_channels: Internal feature width. Factorized convolution requires this <= min(in_channels,out_channels); grouped residuals require divisibility by groups.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            normalization: Normalization of residual main-branch features; batch, group or None.
+            activation: Nonlinearity applied inside this block; only the declared registry choices are accepted.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+            drop_path: Training-only per-sample residual path drop probability; disabled in eval.
+            gate_init: Initial scalar residual contribution in [0,1]; zero suppresses the residual main branch initially.
+            learnable_gate: Store the residual gate as a learned scalar when True, otherwise a fixed scalar.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['spatial_attention'], *, channels: int, kernel_size: int = 7) -> ModelBuilder:
+        """Keyword contract for spatial_attention; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'spatial_attention'.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['channel_attention'], *, channels: int, reduction: int = 8) -> ModelBuilder:
+        """Keyword contract for channel_attention; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'channel_attention'.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            reduction: Channel-gate reduction divisor; hidden width is max(1,C//reduction), or max(8,C//reduction) for coordinate attention.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['spatial_self_attention'], *, channels: int, embedding_dim: int | None = None, dropout: float = 0.0) -> ModelBuilder:
+        """Keyword contract for spatial_self_attention; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'spatial_self_attention'.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            embedding_dim: Attention projection width or output embedding width, according to the component. None in self-attention uses C; QKV requires 3*embedding_dim<=8192.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['multihead_spatial_attention'], *, channels: int, embedding_dim: int | None = None, num_heads: int = 4, dropout: float = 0.0) -> ModelBuilder:
+        """Keyword contract for multihead_spatial_attention; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'multihead_spatial_attention'.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            embedding_dim: Attention projection width or output embedding width, according to the component. None in self-attention uses C; QKV requires 3*embedding_dim<=8192.
+            num_heads: Parallel attention heads; must divide embedding_dim. Spatial attention is limited to 1024 tokens and N*heads*tokens^2<=4194304.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['dropout'], *, p: float = 0.5) -> ModelBuilder:
+        """Keyword contract for dropout; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'dropout'.
+            p: Probability of dropping elements, channels or paths during training; evaluation disables masking.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['dropout2d'], *, p: float = 0.5) -> ModelBuilder:
+        """Keyword contract for dropout2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'dropout2d'.
+            p: Probability of dropping elements, channels or paths during training; evaluation disables masking.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['drop_path'], *, p: float = 0.0) -> ModelBuilder:
+        """Keyword contract for drop_path; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'drop_path'.
+            p: Probability of dropping elements, channels or paths during training; evaluation disables masking.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['gaussian_noise'], *, std: float = 0.1) -> ModelBuilder:
+        """Keyword contract for gaussian_noise; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'gaussian_noise'.
+            std: Standard deviation of training-only zero-mean Gaussian noise; finite, nonnegative and at most 1e6.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['resize'], *, output_size: int | tuple[int, int] | list[int] | None = None, scale_factor: float | tuple[float, float] | list[float] | None = None, mode: _typing.Literal['nearest', 'bilinear', 'bicubic', 'area'] = 'nearest', align_corners: bool | None = None) -> ModelBuilder:
+        """Keyword contract for resize; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'resize'.
+            output_size: Target H/W grid; integer means a square. Resize requires exactly one of output_size and scale_factor.
+            scale_factor: Positive H/W resize multipliers, each <=8192. Exactly one of this and output_size must be provided.
+            mode: Interpolation or transformation strategy; the closed choices are specific to this operation.
+            align_corners: Align endpoint pixel centers for bilinear/bicubic resizing; must be None for nearest/area.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['pixel_shuffle'], *, upscale_factor: int) -> ModelBuilder:
+        """Keyword contract for pixel_shuffle; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'pixel_shuffle'.
+            upscale_factor: PixelShuffle factor r: C must be divisible by r^2; output is (C/r^2,H*r,W*r).
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['pixel_unshuffle'], *, downscale_factor: int) -> ModelBuilder:
+        """Keyword contract for pixel_unshuffle; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'pixel_unshuffle'.
+            downscale_factor: PixelUnshuffle factor r: H and W must be divisible by r; output is (C*r^2,H/r,W/r).
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['flatten']) -> ModelBuilder:
+        """Keyword contract for flatten; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'flatten'.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['permute'], *, dims: tuple[int, ...] | list[int] = [0, 1, 3, 2]) -> ModelBuilder:
+        """Keyword contract for permute; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'permute'.
+            dims: Permutation of NCHW axes; only (0,1,2,3) and (0,1,3,2) are accepted, preserving batch/channel axes.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, name: _typing.Literal['reshape'], *, shape: tuple[int, int, int] | list[int]) -> ModelBuilder:
+        """Keyword contract for reshape; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'reshape'.
+            shape: Target per-sample CHW dimensions; reshape must preserve the number of sample elements and every dimension is 1..8192.
+
+        Returns:
+            This ModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
     def add(self, name: str, **params: Any) -> ModelBuilder:
         """Append a registered block transactionally; return self for chaining.
 
         Args:
-            name (str): Registered component name, exact metric label, or stored entity name in this API. Required.
-            params (Any): Closed registered keyword parameters; inspect ModelRegistry.get(name) for supported kinds/defaults. Required.
+            name (str): Registered component name, exact metric label, or stored entity name in this API.
+                Required.
+            params (Any): Closed registered keyword parameters; inspect ModelRegistry.get(name) for
+                supported kinds/defaults. Required.
 
         Returns:
             This builder after the existing component/reference validation.
@@ -4033,7 +5454,7 @@ class ModelBuilder:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.add(name)
 
@@ -4058,7 +5479,7 @@ class ModelBuilder:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.build()
 
@@ -4084,8 +5505,10 @@ class ModelBuilder:
         """Save architecture only, UTF-8 JSON; refuse to overwrite by default.
 
         Args:
-            path (str | Path): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (str | Path): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             None after the native file export succeeds.
@@ -4094,7 +5517,7 @@ class ModelBuilder:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_json(path)
 
@@ -4112,7 +5535,8 @@ class ModelBuilder:
         """Read bounded UTF-8 JSON; reject duplicates, NaN and unsupported names.
 
         Args:
-            path (str | Path): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            path (str | Path): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
 
         Returns:
             A validated ModelBuilder instance reconstructed from the supplied data.
@@ -4121,7 +5545,7 @@ class ModelBuilder:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ModelBuilder.from_json(path)
 

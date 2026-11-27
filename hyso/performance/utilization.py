@@ -14,7 +14,8 @@ from .result import UtilizationResult,_integer,_positive
 
 @dataclass(frozen=True)
 class UtilizationProtocol:
-    """Configure P16 — Hardware utilization measurement boundaries and resource limits; construction does not run the analysis.
+    """Configure P16 — Hardware utilization measurement boundaries and resource limits; construction does
+    not run the analysis.
 
     Args:
         duration_seconds (float): Duration in seconds under the native protocol. Default: 1.0.
@@ -23,16 +24,19 @@ class UtilizationProtocol:
         min_valid_intervals (int): Minimum valid sensor intervals for reporting. Default: 2.
         gpu (bool): Explicit selected GPU context/identity in this API. Default: False.
         gpu_selector (str): Exact supported GPU selection identity. Default: '0'.
-        sensor_timeout_seconds (float): Sensor timeout in seconds under the native protocol. Default: 1.0.
-        workload_label (str | None): Human-readable label bound to this workload evidence. Default: None.
+        sensor_timeout_seconds (float): Sensor timeout in seconds under the native protocol. Default:
+            1.0.
+        workload_label (str | None): Human-readable label bound to this workload evidence. Default:
+            None.
 
     Returns:
         An instance of UtilizationProtocol with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         UtilizationProtocol()
 
@@ -124,16 +128,18 @@ def measure_utilization(*,protocol: '_typing.Any'=UtilizationProtocol()) -> 'Uti
     one bounded subprocess per query; no Python NVML dependency is required.
 
     Args:
-        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: UtilizationProtocol().
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards
+            remain unchanged. Default: UtilizationProtocol().
 
     Returns:
         The retained measure utilization value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         measure_utilization()
 

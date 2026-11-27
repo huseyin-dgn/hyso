@@ -5,6 +5,7 @@ the resident input and registered model state. It is an integrity record, not a
 signature, dataset-origin attestation or guarantee of statistical independence.
 """
 from __future__ import annotations
+import typing as _typing
 
 import hashlib
 import json
@@ -205,7 +206,7 @@ def _validate_comparison_capture(data):
 
 def capture_cpu_comparison(model, example_input, *, features=('P01','P02','P11'),
         latency_iterations=1000, warmup_iterations=2, repeats=1, throughput_protocol=None,
-        footprint_artifact_path=None):
+        footprint_artifact_path=None) -> 'dict[str, _typing.Any]':
     """Execute new bounded CPU observations and return typed results by feature.
 
     Existing BenchmarkRunner/measure_throughput/measure_footprint defaults and
@@ -223,6 +224,21 @@ def capture_cpu_comparison(model, example_input, *, features=('P01','P02','P11')
     footprint_artifact_path measures an existing file;
     artifact-size comparison additionally needs that matching load receipt.
     P11's bound input is context only: no forward is run to count its bytes.
+
+    Args:
+        model: Caller-owned torch.nn.Module; must meet the operation device, dtype and input contract.
+            Required.
+        example_input: Representative input tensor or ordered tensor collection for this explicit
+            operation; source model/device must match. Required.
+        features: Explicit requested P01–P35 feature identifiers; selection does not run acceptance
+            tests. Default: ('P01', 'P02', 'P11').
+        latency_iterations: Resident latency samples per repeat for this CPU capture. Default: 1000.
+        warmup_iterations: Untimed warmup calls before measured inference. Default: 2.
+        repeats: Number of blocks per stage; same length as widths/strides, with at most 64 blocks in
+            total. Default: 1.
+        throughput_protocol: Explicit throughput sampling conditions for this capture. Default: None.
+        footprint_artifact_path: Existing file to measure under P11; requires P11 selection and never
+            saves a new checkpoint. Default: None.
 
     HYSo Guide: comparison.models
     """

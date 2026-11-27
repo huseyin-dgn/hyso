@@ -28,24 +28,32 @@ class ProfilingProtocol:
         warmup_iterations (int): Unreported warmup iteration count before measured samples. Default: 1.
         measure_iterations (int): Measured iteration count per repeat. Default: 3.
         timeout_seconds (float): Timeout in seconds under the native protocol. Default: 60.0.
-        cpu_memory_limit_bytes (int | None): Cpu memory limit in bytes; this does not imply a GPU hardware quota. Default: None.
-        input_limit_bytes (int | None): Input limit in bytes; this does not imply a GPU hardware quota. Default: None.
-        cuda_memory_fraction (float | None): Requested CUDA allocator fraction; not a hardware VRAM quota or admission grant. Default: None.
+        cpu_memory_limit_bytes (int | None): Cpu memory limit in bytes; this does not imply a GPU
+            hardware quota. Default: None.
+        input_limit_bytes (int | None): Input limit in bytes; this does not imply a GPU hardware quota.
+            Default: None.
+        cuda_memory_fraction (float | None): Requested CUDA allocator fraction; not a hardware VRAM
+            quota or admission grant. Default: None.
         max_events (int): Upper bound on events retained/accepted by this operation. Default: 20000.
-        max_cpu_witness_items (int): Upper bound on cpu witness items retained/accepted by this operation. Default: 250000.
-        max_cpu_result_bytes (int): Max cpu result in bytes; this does not imply a GPU hardware quota. Default: 128 * 1024 ** 2.
-        max_trace_bytes (int): Max trace in bytes; this does not imply a GPU hardware quota. Default: 16 * 1024 ** 2.
+        max_cpu_witness_items (int): Upper bound on cpu witness items retained/accepted by this
+            operation. Default: 250000.
+        max_cpu_result_bytes (int): Max cpu result in bytes; this does not imply a GPU hardware quota.
+            Default: 128 * 1024 ** 2.
+        max_trace_bytes (int): Max trace in bytes; this does not imply a GPU hardware quota. Default: 16
+            * 1024 ** 2.
         profile_memory (bool): Enable supported profiler memory observations. Default: False.
         allocation_lifetimes (bool): Request supported allocation-lifetime observations. Default: False.
-        cpu_memory_ownership (bool): Request supported CPU allocation-ownership evidence. Default: False.
+        cpu_memory_ownership (bool): Request supported CPU allocation-ownership evidence. Default:
+            False.
 
     Returns:
         An instance of ProfilingProtocol with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ProfilingProtocol()
 
@@ -97,10 +105,11 @@ class ProfilingError(RuntimeError):
         An instance of ProfilingError with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ProfilingError(diagnostics)
 
@@ -118,10 +127,11 @@ class ProfilingError(RuntimeError):
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ProfilingError(diagnostics)
 
@@ -197,18 +207,21 @@ def profile_operators(recipe: '_typing.Any',*,protocol: '_typing.Any'=ProfilingP
     activities qualify as kernel evidence; legacy event.kernels is not used.
 
     Args:
-        recipe (_typing.Any): Trusted construction recipe; factory import/execution is governed by the existing operation contract. Required.
-        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: ProfilingProtocol().
+        recipe (_typing.Any): Trusted construction recipe; factory import/execution is governed by the
+            existing operation contract. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards
+            remain unchanged. Default: ProfilingProtocol().
         trace_path (_typing.Any): Local retained trace path. Default: None.
 
     Returns:
         The retained profile operators value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         profile_operators(recipe)
 
@@ -230,10 +243,11 @@ def analyze_nsys_modules(configuration: '_typing.Any', *, max_rows: 'int'=20000)
         The retained analyze nsys modules value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         analyze_nsys_modules(configuration)
 
@@ -259,10 +273,11 @@ def analyze_nsys_operators(sqlite_path: '_typing.Any',*,capture_path: '_typing.A
         The retained analyze nsys operators value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         analyze_nsys_operators(sqlite_path, capture_path=capture_path)
 
@@ -370,17 +385,20 @@ def analyze_flops(source: '_typing.Any',*,protocol: '_typing.Any'=ProfilingProto
     """Analytic observed-ATen operation models. No timing or hardware FLOP counter.
 
     Args:
-        source (_typing.Any): Typed native/retained source required by this API, not a declaration of producer authority. Required.
-        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: ProfilingProtocol().
+        source (_typing.Any): Typed native/retained source required by this API, not a declaration of
+            producer authority. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards
+            remain unchanged. Default: ProfilingProtocol().
 
     Returns:
         The retained analyze flops value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         analyze_flops(source)
 
@@ -466,18 +484,22 @@ def profile_layers(source: '_typing.Any',*,protocol: '_typing.Any'=ProfilingProt
     and samples RSS at call boundaries. It does not claim global heap coverage.
 
     Args:
-        source (_typing.Any): Typed native/retained source required by this API, not a declaration of producer authority. Required.
-        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: ProfilingProtocol().
-        memory_analysis_version (_typing.Any): Exact supported memory-analysis schema/profile. Default: None.
+        source (_typing.Any): Typed native/retained source required by this API, not a declaration of
+            producer authority. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards
+            remain unchanged. Default: ProfilingProtocol().
+        memory_analysis_version (_typing.Any): Exact supported memory-analysis schema/profile. Default:
+            None.
 
     Returns:
         The retained profile layers value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         profile_layers(source)
 
@@ -734,10 +756,11 @@ def layer_profiling_capabilities() -> '_typing.Any':
         The retained layer profiling capabilities value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         layer_profiling_capabilities()
 

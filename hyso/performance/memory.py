@@ -32,7 +32,8 @@ class _BackendUnavailable(RuntimeError):
 
 @dataclass(frozen=True)
 class MemoryProtocol:
-    """Configure P10 — Process RAM measurement boundaries and resource limits; construction does not run the analysis.
+    """Configure P10 — Process RAM measurement boundaries and resource limits; construction does not run
+    the analysis.
 
     Args:
         interval_seconds (float): Interval in seconds under the native protocol. Default: 0.01.
@@ -42,9 +43,10 @@ class MemoryProtocol:
         An instance of MemoryProtocol with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         MemoryProtocol()
 
@@ -160,17 +162,20 @@ def measure_memory(workload: '_typing.Any'=None, *, protocol: '_typing.Any'=Memo
     Unsupported backend returns null/status/reason without executing the workload.
 
     Args:
-        workload (_typing.Any): Explicit workload callable/recipe; execution occurs only when the measurement is called. Default: None.
-        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: MemoryProtocol().
+        workload (_typing.Any): Explicit workload callable/recipe; execution occurs only when the
+            measurement is called. Default: None.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards
+            remain unchanged. Default: MemoryProtocol().
 
     Returns:
         The retained measure memory value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         measure_memory()
 
@@ -360,22 +365,27 @@ def measure_footprint(model: '_typing.Any', *, artifact_path: '_typing.Any'=None
     with weights_only=True. Future formats can associate bytes without conversion.
 
     Args:
-        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
-        artifact_path (_typing.Any): Explicit local artifact path; native ownership and overwrite rules apply. Default: None.
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation.
+            Required.
+        artifact_path (_typing.Any): Explicit local artifact path; native ownership and overwrite rules
+            apply. Default: None.
         serialize_to (_typing.Any): Explicit artifact output path. Default: None.
         artifact_format (_typing.Any): Supported serialized artifact format. Default: None.
-        verify_roundtrip (bool): Verify the exported artifact using the native roundtrip contract. Default: False.
+        verify_roundtrip (bool): Verify the exported artifact using the native roundtrip contract.
+            Default: False.
         expected_sha256 (_typing.Any): Exact expected artifact/content digest. Default: None.
-        overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+        overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+            protected. Default: False.
 
     Returns:
         The retained measure footprint value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         measure_footprint(model)
 

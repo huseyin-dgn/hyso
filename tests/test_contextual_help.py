@@ -90,6 +90,9 @@ def test_index_version_all_topics_and_source_docstrings():
         body=trees[entry['path']].body
         def declarations(nodes):
             for declaration in nodes:
+                if isinstance(declaration,ast.FunctionDef) and any(
+                    isinstance(d,ast.Attribute) and d.attr=='overload' for d in declaration.decorator_list):
+                    continue
                 if isinstance(declaration,(ast.ClassDef,ast.FunctionDef)):yield declaration
                 elif isinstance(declaration,ast.If):
                     yield from declarations(declaration.body)
@@ -187,7 +190,8 @@ def test_generated_class_examples_bind_to_real_signatures():
         doc=inspect.getdoc(obj) or ''
         marker='# Caller-supplied values; explicitly requested operations only.'
         if marker not in doc:continue
-        line=doc.split(marker,1)[1].strip().splitlines()[0]
+        import textwrap
+        line=textwrap.dedent(doc.split(marker,1)[1].split('\n\n',1)[0]).strip()
         sample=ast.parse(line).body[0]
         call=sample.value if isinstance(sample,(ast.Expr,ast.Assign)) else None
         if isinstance(call,ast.Call) and isinstance(call.func,ast.Name) and call.func.id==obj.__name__:

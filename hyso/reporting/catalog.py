@@ -126,16 +126,18 @@ def feature_explanations(*, language: _typing.Literal['tr', 'en', 'de', 'es'] = 
     """Return detached metadata in four languages for every feature, without execution.
 
     Args:
-        language (str): Presentation language: tr/en/de/es; guide languages do not expand other report APIs. Default: 'tr'.
+        language (str): Presentation language: tr/en/de/es; guide languages do not expand other report
+            APIs. Default: 'tr'.
 
     Returns:
         The retained feature explanations value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         feature_explanations()
 

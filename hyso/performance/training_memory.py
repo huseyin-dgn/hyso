@@ -29,10 +29,11 @@ class TrainingMemoryError(RuntimeError):
         An instance of TrainingMemoryError with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         TrainingMemoryError()
 
@@ -44,24 +45,30 @@ class TrainingMemoryError(RuntimeError):
 
 @dataclass(frozen=True)
 class TrainingMemoryProtocol:
-    """Configure P23 — Training memory measurement boundaries and resource limits; construction does not run the analysis.
+    """Configure P23 — Training memory measurement boundaries and resource limits; construction does not
+    run the analysis.
 
     Args:
-        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
-        scope (str): Exact measurement boundary/meaning; different scopes are not interchangeable. Default: 'in_process_fit'.
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default:
+            'cpu'.
+        scope (str): Exact measurement boundary/meaning; different scopes are not interchangeable.
+            Default: 'in_process_fit'.
         peak_reset_policy (str): Explicit native policy for peak memory-counter reset. Default: 'never'.
         interval_seconds (float): Interval in seconds under the native protocol. Default: 0.01.
         max_samples (int): Upper bound on collected samples. Default: 10000.
-        max_boundaries (int): Upper bound on boundaries retained/accepted by this operation. Default: 10000.
-        max_tensor_records (int): Upper bound on tensor records retained/accepted by this operation. Default: 100000.
+        max_boundaries (int): Upper bound on boundaries retained/accepted by this operation. Default:
+            10000.
+        max_tensor_records (int): Upper bound on tensor records retained/accepted by this operation.
+            Default: 100000.
 
     Returns:
         An instance of TrainingMemoryProtocol with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         TrainingMemoryProtocol()
 
@@ -714,15 +721,17 @@ class TrainingMemoryResult:
     """Immutable canonical evidence; constructors and exports validate integrity.
 
     Args:
-        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+            version/schema validator. Required.
 
     Returns:
         An instance of TrainingMemoryResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         TrainingMemoryResult(data)
 
@@ -737,16 +746,18 @@ class TrainingMemoryResult:
         """Initialize TrainingMemoryResult with the supplied settings.
 
         Args:
-            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+                version/schema validator. Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             TrainingMemoryResult(data)
 
@@ -762,12 +773,14 @@ class TrainingMemoryResult:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -789,10 +802,11 @@ class TrainingMemoryResult:
             The retained diagnostics value, without recomputing measurements.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.diagnostics()
 
@@ -814,10 +828,11 @@ class TrainingMemoryResult:
             The retained basic metrics value, without recomputing measurements.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.basic_metrics()
 
@@ -832,8 +847,10 @@ class TrainingMemoryResult:
         """Serialize this object using its native JSON format and overwrite policy.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             None after the native file export succeeds.
@@ -842,7 +859,7 @@ class TrainingMemoryResult:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_json(path)
 
@@ -857,8 +874,10 @@ class TrainingMemoryResult:
         """Export this object using its native CSV format and overwrite policy.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             None after the native file export succeeds.
@@ -867,7 +886,7 @@ class TrainingMemoryResult:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_csv(path)
 
@@ -900,23 +919,32 @@ def measure_training_memory(trainer: '_typing.Any', train_loader: '_typing.Any',
     P19 timing retains its narrower epoch scope and unchanged schema.
 
     Args:
-        trainer (_typing.Any): Caller-owned standard Trainer; a measurement may execute its fit lifecycle only when called explicitly. Required.
-        train_loader (_typing.Any): Finite training loader; batches must follow the task/model input contract. Required.
-        val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
-        epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after resume. Default: 5.
-        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: None.
-        timing_protocol (_typing.Any): Typed timing measurement settings; boundaries and device guards remain explicit. Default: None.
-        save_last_to (_typing.Any): Explicit checkpoint destination; writing occurs only during the requested fit. Default: None.
-        resume_from (_typing.Any): Existing compatible checkpoint; model/data/settings and total budget must match. Default: None.
+        trainer (_typing.Any): Caller-owned standard Trainer; a measurement may execute its fit
+            lifecycle only when called explicitly. Required.
+        train_loader (_typing.Any): Finite training loader; batches must follow the task/model input
+            contract. Required.
+        val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit
+            validation setting. Default: None.
+        epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after
+            resume. Default: 5.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards
+            remain unchanged. Default: None.
+        timing_protocol (_typing.Any): Typed timing measurement settings; boundaries and device guards
+            remain explicit. Default: None.
+        save_last_to (_typing.Any): Explicit checkpoint destination; writing occurs only during the
+            requested fit. Default: None.
+        resume_from (_typing.Any): Existing compatible checkpoint; model/data/settings and total budget
+            must match. Default: None.
 
     Returns:
         The retained measure training memory value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         measure_training_memory(trainer, train_loader)
 

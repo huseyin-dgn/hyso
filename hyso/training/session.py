@@ -60,15 +60,17 @@ class TrainingResult:
     timings exist only for observer-enabled, non-checkpoint runs.
 
     Args:
-        _payload: Canonical serialized payload required by this existing low-level constructor; prefer the public parser/factory. Required.
+        _payload: Canonical serialized payload required by this existing low-level constructor; prefer
+            the public parser/factory. Required.
 
     Returns:
         An instance of TrainingResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         result = session.fit()  # Only when training is explicitly requested.
 
@@ -82,12 +84,14 @@ class TrainingResult:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -107,7 +111,7 @@ class TrainingResult:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.history
 
@@ -131,10 +135,11 @@ class TrainingResult:
             The retained log to value, without recomputing measurements.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.log_to(run)
 
@@ -170,23 +175,32 @@ class TrainingSession:
     once and never retries; an exception can leave training state advanced.
 
     Args:
-        config (TrainingConfig): Plain versioned configuration; never executable code or trained state. Required.
-        model (nn.Module): Caller-owned model; device, dtype and task must match the native operation. Required.
-        train_loader (DataLoader): Finite training loader; batches must follow the task/model input contract. Required.
-        val_loader (DataLoader | None): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
-        model_config (dict[str, Any] | None): Separate exact architecture metadata for supported checkpoint/restore contracts. Default: None.
-        loss_fn (_typing.Any): Classification loss object, or the explicitly supported two-Graph-head loss mapping. Default: None.
-        loss_weights (dict[str, float] | None): Positive weights matching the explicit named classification losses. Default: None.
-        on_epoch (Callable[[dict[str, Any]], None] | None): Optional synchronous observer receiving an independent epoch-log dictionary. Default: None.
+        config (TrainingConfig): Plain versioned configuration; never executable code or trained state.
+            Required.
+        model (nn.Module): Caller-owned model; device, dtype and task must match the native operation.
+            Required.
+        train_loader (DataLoader): Finite training loader; batches must follow the task/model input
+            contract. Required.
+        val_loader (DataLoader | None): Optional finite validation loader; must agree with the explicit
+            validation setting. Default: None.
+        model_config (dict[str, Any] | None): Separate exact architecture metadata for supported
+            checkpoint/restore contracts. Default: None.
+        loss_fn (_typing.Any): Classification loss object, or the explicitly supported two-Graph-head
+            loss mapping. Default: None.
+        loss_weights (dict[str, float] | None): Positive weights matching the explicit named
+            classification losses. Default: None.
+        on_epoch (Callable[[dict[str, Any]], None] | None): Optional synchronous observer receiving an
+            independent epoch-log dictionary. Default: None.
 
     Returns:
         An instance of TrainingSession with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         session = config.prepare_datasets(model, train_dataset)
 
@@ -201,23 +215,32 @@ class TrainingSession:
         """Initialize TrainingSession with the supplied settings.
 
         Args:
-            config (TrainingConfig): Plain versioned configuration; never executable code or trained state. Required.
-            model (nn.Module): Caller-owned model; device, dtype and task must match the native operation. Required.
-            train_loader (DataLoader): Finite training loader; batches must follow the task/model input contract. Required.
-            val_loader (DataLoader | None): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
-            model_config (dict[str, Any] | None): Separate exact architecture metadata for supported checkpoint/restore contracts. Default: None.
-            loss_fn (_typing.Any): Classification loss object, or the explicitly supported two-Graph-head loss mapping. Default: None.
-            loss_weights (dict[str, float] | None): Positive weights matching the explicit named classification losses. Default: None.
-            on_epoch (Callable[[dict[str, Any]], None] | None): Optional synchronous observer receiving an independent epoch-log dictionary. Default: None.
+            config (TrainingConfig): Plain versioned configuration; never executable code or trained state.
+                Required.
+            model (nn.Module): Caller-owned model; device, dtype and task must match the native operation.
+                Required.
+            train_loader (DataLoader): Finite training loader; batches must follow the task/model input
+                contract. Required.
+            val_loader (DataLoader | None): Optional finite validation loader; must agree with the explicit
+                validation setting. Default: None.
+            model_config (dict[str, Any] | None): Separate exact architecture metadata for supported
+                checkpoint/restore contracts. Default: None.
+            loss_fn (_typing.Any): Classification loss object, or the explicitly supported two-Graph-head
+                loss mapping. Default: None.
+            loss_weights (dict[str, float] | None): Positive weights matching the explicit named
+                classification losses. Default: None.
+            on_epoch (Callable[[dict[str, Any]], None] | None): Optional synchronous observer receiving an
+                independent epoch-log dictionary. Default: None.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             TrainingSession(config, model, train_loader)
 
@@ -302,7 +325,7 @@ class TrainingSession:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.evaluation_model
 
@@ -350,9 +373,10 @@ class TrainingSession:
             Requested, resolved and effective training settings plus the current one-shot session state.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.settings()
 
@@ -382,10 +406,11 @@ class TrainingSession:
             The existing native history/result for this explicit training call; no automatic retry.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.fit()
 

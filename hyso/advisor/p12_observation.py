@@ -115,10 +115,20 @@ class P12Observation:
     Identity availability and operation coverage are separate. Source locators
     are retained as data and never opened. Raw native payload values are exact;
     observation JSON is not a recreation of original artifact whitespace.
+
+    Args:
+        data (dict[str, Any]): Detached schema-compatible result mapping, including recorded status and
+            integrity fields. Required.
     """
     _payload: str
 
     def __init__(self, data: dict[str, Any]) -> None:
+        """Initialize P12Observation from the supplied settings or evidence.
+
+        Args:
+            data (dict[str, Any]): Detached schema-compatible result mapping, including recorded status and
+                integrity fields. Required.
+        """
         try:
             data = plain(data)
             if (type(data) is not dict or data.get('format') != _FORMAT
@@ -137,9 +147,19 @@ class P12Observation:
         object.__setattr__(self, '_payload', canonical(expected))
 
     def to_dict(self) -> dict[str, Any]:
+        """Return detached JSON-compatible evidence without rerunning the source workload.
+        """
         return json.loads(self._payload)
 
     def to_json(self, path=None, *, overwrite: bool = False) -> str:
+        """To json using the explicitly supplied evidence.
+
+        Args:
+            path: Filesystem location read or written by this explicit operation; output parents must
+                already exist. Default: None.
+            overwrite (bool): Permit replacement of an existing destination when True; False retains
+                no-clobber publication. Default: False.
+        """
         raw = self._payload + '\n'
         if path is not None:
             export(path, raw, overwrite)
@@ -147,10 +167,22 @@ class P12Observation:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> 'P12Observation':
+        """From dict using the explicitly supplied evidence.
+
+        Args:
+            data (dict[str, Any]): Detached schema-compatible result mapping, including recorded status and
+                integrity fields. Required.
+        """
         return cls(data)
 
     @classmethod
     def from_json(cls, path) -> 'P12Observation':
+        """From json using the explicitly supplied evidence.
+
+        Args:
+            path: Filesystem location read or written by this explicit operation; output parents must
+                already exist. Required.
+        """
         data, _, _ = read_json(path, max_bytes=_MAX_BYTES)
         return cls(data)
 
@@ -162,5 +194,10 @@ def observe_p12(record: EvidenceRecord, *, version: int) -> P12Observation:
     eligibility belongs to compare_models, not this standalone observation.
     Partial operator coverage yields null model totals, never zero-filled costs.
     This is not a ResolvedMetric or a general comparison-contract input.
+
+    Args:
+        record (EvidenceRecord): Validated retained evidence record to inspect without rerunning its
+            source workload. Required.
+        version (int): Version of this evidence policy or rule. Required.
     """
     return P12Observation(_derive(record, version))

@@ -87,12 +87,45 @@ if DEVELOPMENT:
 
 
 class ModelConfigError(ValueError):
-    """Backward-compatible English exception with JSON-safe bilingual diagnostics."""
+    """Backward-compatible English exception with JSON-safe bilingual diagnostics.
+
+    Args:
+        code (str): Stable machine-readable diagnostic code; distinct from the human-readable reason.
+            Default: 'INVALID_PARAMETER'.
+        layer_index (int | None): Optional zero-based sequential block index associated with the
+            diagnostic. Default: None.
+        layer_id (str | None): Optional graph node identifier associated with the diagnostic. Default:
+            None.
+        expected (Any): Expected value or supported constraint used by the diagnostic. Default: None.
+        actual (Any): Observed candidate output or diagnostic value to compare against the
+            reference/expected value. Default: None.
+        suggestion (str | None): Optional manual corrective action; it does not trigger retries or
+            modify user state. Default: None.
+        messages: Positional exception messages passed unchanged to the base exception. Variable
+            positional arguments.
+    """
 
     def __init__(self, *messages: Any, code: str = 'INVALID_PARAMETER',
                  layer_index: int | None = None, layer_id: str | None = None,
                  expected: Any = None, actual: Any = None,
                  suggestion: str | None = None) -> None:
+        """Initialize ModelConfigError from the supplied settings or evidence.
+
+        Args:
+            code (str): Stable machine-readable diagnostic code; distinct from the human-readable reason.
+                Default: 'INVALID_PARAMETER'.
+            layer_index (int | None): Optional zero-based sequential block index associated with the
+                diagnostic. Default: None.
+            layer_id (str | None): Optional graph node identifier associated with the diagnostic. Default:
+                None.
+            expected (Any): Expected value or supported constraint used by the diagnostic. Default: None.
+            actual (Any): Observed candidate output or diagnostic value to compare against the
+                reference/expected value. Default: None.
+            suggestion (str | None): Optional manual corrective action; it does not trigger retries or
+                modify user state. Default: None.
+            messages: Positional exception messages passed unchanged to the base exception. Variable
+                positional arguments.
+        """
         super().__init__(*messages)
         self.code = code
         self.layer_index = layer_index
@@ -103,7 +136,11 @@ class ModelConfigError(ValueError):
         self.suggestion = suggestion or default_suggestion
 
     def at_layer(self, index: int) -> ModelConfigError:
-        """Attach zero-based chain context while retaining the English detail."""
+        """Attach zero-based chain context while retaining the English detail.
+
+        Args:
+            index (int): Zero-based layer index attached to the returned diagnostic. Required.
+        """
         if self.layer_index is None:
             self.layer_index = index
             self.args = (f'block {index}: {self}',)
@@ -138,7 +175,8 @@ class ParameterSpec:
     """Serializable parameter contract; defaults never contain Python objects.
 
     Args:
-        name (str): Registered component name, exact metric label, or stored entity name in this API. Required.
+        name (str): Registered component name, exact metric label, or stored entity name in this API.
+            Required.
         kind (str): Existing run or artifact kind accepted by this operation. Required.
         description (str): Human-readable specification description. Required.
         required (bool): Whether callers must provide this parameter. Default: True.
@@ -152,7 +190,7 @@ class ParameterSpec:
         ValueError, TypeError: Native configuration, shape or input validation rejects the request.
         RuntimeError: A requested native construction/forward operation fails.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ParameterSpec(name=name, kind=kind, description=description)
 
@@ -176,10 +214,12 @@ class ComponentSpec:
     filters and parameter contracts support menus/help without building a model.
 
     Args:
-        name (str): Registered component name, exact metric label, or stored entity name in this API. Required.
+        name (str): Registered component name, exact metric label, or stored entity name in this API.
+            Required.
         category (str): Registered component-category filter. Required.
         description (str): Human-readable specification description. Required.
-        constructor (Callable[..., nn.Module]): Registered constructor identity; the registry remains closed to arbitrary names. Required.
+        constructor (Callable[..., nn.Module]): Registered constructor identity; the registry remains
+            closed to arbitrary names. Required.
         parameters (tuple[ParameterSpec, ...]): Immutable supported parameter specifications. Required.
         input_condition (str): Human-readable accepted input contract. Required.
         output_condition (str): Human-readable output contract. Required.
@@ -192,9 +232,11 @@ class ComponentSpec:
         ValueError, TypeError: Native configuration, shape or input validation rejects the request.
         RuntimeError: A requested native construction/forward operation fails.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
-        ComponentSpec(name=name, category=category, description=description, constructor=constructor, parameters=parameters, input_condition=input_condition, output_condition=output_condition, compatibility=compatibility)
+        ComponentSpec(name=name, category=category, description=description, constructor=constructor,
+        parameters=parameters, input_condition=input_condition, output_condition=output_condition,
+        compatibility=compatibility)
 
     HYSo Guide: models.support
     Offline: hyso docs show models.support --lang en
@@ -213,12 +255,14 @@ class ComponentSpec:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -418,7 +462,7 @@ class ModelRegistry:
         ValueError, TypeError: Native configuration, shape or input validation rejects the request.
         RuntimeError: A requested native construction/forward operation fails.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ModelRegistry()
 
@@ -437,7 +481,7 @@ class ModelRegistry:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ModelRegistry()
 
@@ -468,7 +512,7 @@ class ModelRegistry:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.list()
 
@@ -484,7 +528,8 @@ class ModelRegistry:
         """Return schema, constructor, shape conditions and compatibility notes.
 
         Args:
-            name (str): Registered component name, exact metric label, or stored entity name in this API. Required.
+            name (str): Registered component name, exact metric label, or stored entity name in this API.
+                Required.
 
         Returns:
             Existing immutable metadata/entity for the exact requested name/identity.
@@ -493,7 +538,7 @@ class ModelRegistry:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.get(name)
 
@@ -510,8 +555,10 @@ class ModelRegistry:
         """Validate plain parameters without constructing a module; return a copy.
 
         Args:
-            name (str): Registered component name, exact metric label, or stored entity name in this API. Required.
-            params (dict[str, Any]): Closed registered keyword parameters; inspect ModelRegistry.get(name) for supported kinds/defaults. Required.
+            name (str): Registered component name, exact metric label, or stored entity name in this API.
+                Required.
+            params (dict[str, Any]): Closed registered keyword parameters; inspect ModelRegistry.get(name)
+                for supported kinds/defaults. Required.
 
         Returns:
             A detached normalized parameter dictionary, with registered defaults included.
@@ -520,7 +567,7 @@ class ModelRegistry:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.validate(name, params)
 
@@ -628,6 +675,913 @@ class ModelRegistry:
             raise ModelConfigError(str(exc)) from exc
         return result
 
+    # Static keyword contracts mirror the closed runtime registry.
+    @_typing.overload
+    def create(self, name: _typing.Literal['conv_norm_act'], *, in_channels: int, out_channels: int, kernel_size: int | tuple[int, int] | list[int] = 3, stride: int | tuple[int, int] | list[int] = 1, padding: int | tuple[int, int] | list[int] = 1, groups: int = 1, norm: _typing.Literal['batch', 'group', None] = 'batch', activation: _typing.Literal['silu', 'relu', None] = 'silu') -> nn.Module:
+        """Keyword contract for conv_norm_act; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'conv_norm_act'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            groups: Channel partitions; must divide both convolution channel counts. ChannelShuffle requires channels % groups == 0.
+            norm: Optional post-convolution normalization: batch, group or None. Group normalization chooses the largest channel divisor <=8; convolution bias is enabled only without normalization.
+            activation: Nonlinearity applied inside this block; only the declared registry choices are accepted.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['conv2d'], *, in_channels: int, out_channels: int, kernel_size: int | tuple[int, int] | list[int] = 3, stride: int | tuple[int, int] | list[int] = 1, padding: int | tuple[int, int] | list[int] = 1, groups: int = 1, bias: bool = True, dilation: int | tuple[int, int] | list[int] = 1) -> nn.Module:
+        """Keyword contract for conv2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'conv2d'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            groups: Channel partitions; must divide both convolution channel counts. ChannelShuffle requires channels % groups == 0.
+            bias: Include a learned additive convolution bias for each output channel.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['residual'], *, in_channels: int, out_channels: int, stride: int | tuple[int, int] | list[int] = 1, norm: _typing.Literal['batch', 'group', None] = 'batch', attention: dict[str, _typing.Any] | None = None) -> nn.Module:
+        """Keyword contract for residual; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'residual'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            norm: Optional post-convolution normalization: batch, group or None. Group normalization chooses the largest channel divisor <=8; convolution bias is enabled only without normalization.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['se'], *, channels: int, reduction: int = 8) -> nn.Module:
+        """Keyword contract for se; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'se'.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            reduction: Channel-gate reduction divisor; hidden width is max(1,C//reduction), or max(8,C//reduction) for coordinate attention.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['cbam'], *, channels: int, reduction: int = 16, kernel_size: int = 7) -> nn.Module:
+        """Keyword contract for cbam; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'cbam'.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            reduction: Channel-gate reduction divisor; hidden width is max(1,C//reduction), or max(8,C//reduction) for coordinate attention.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['eca'], *, channels: int, kernel_size: int = 3) -> nn.Module:
+        """Keyword contract for eca; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'eca'.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['coordinate'], *, channels: int, reduction: int = 32) -> nn.Module:
+        """Keyword contract for coordinate; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'coordinate'.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            reduction: Channel-gate reduction divisor; hidden width is max(1,C//reduction), or max(8,C//reduction) for coordinate attention.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['batch_norm'], *, num_features: int, eps: float = 1e-05, momentum: float | None = 0.1, affine: bool = True, track_running_stats: bool = True) -> nn.Module:
+        """Keyword contract for batch_norm; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'batch_norm'.
+            num_features: Normalization channel count; must match input C.
+            eps: Positive numerical stabilizer used in normalization. Embedding normalization also floors it at the dtype tiny value.
+            momentum: Running-statistic update factor; None selects cumulative averaging for BatchNorm.
+            affine: Learn per-channel scale and bias when True; otherwise use normalization without learned affine parameters.
+            track_running_stats: Track running mean/variance for evaluation. Without tracking, input-statistic sample requirements also apply in eval.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['group_norm'], *, num_groups: int, num_channels: int, eps: float = 1e-05, affine: bool = True) -> nn.Module:
+        """Keyword contract for group_norm; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'group_norm'.
+            num_groups: GroupNorm channel partitions; must divide num_channels.
+            num_channels: Total GroupNorm channels C; must be divisible by num_groups.
+            eps: Positive numerical stabilizer used in normalization. Embedding normalization also floors it at the dtype tiny value.
+            affine: Learn per-channel scale and bias when True; otherwise use normalization without learned affine parameters.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['relu']) -> nn.Module:
+        """Keyword contract for relu; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'relu'.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['silu']) -> nn.Module:
+        """Keyword contract for silu; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'silu'.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['hardswish']) -> nn.Module:
+        """Keyword contract for hardswish; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'hardswish'.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['identity']) -> nn.Module:
+        """Keyword contract for identity; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'identity'.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['modular_cnn'], *, input_channels: int = 3, num_classes: int = 10, widths: tuple[int, ...] | list[int] = [32, 64, 128], repeats: tuple[int, ...] | list[int] = [1, 1, 1], strides: tuple[int, ...] | list[int] = [1, 2, 2], attention: _typing.Literal['none', 'se', 'cbam', 'eca', 'coordinate'] = 'none', norm: _typing.Literal['batch', 'group', None] = 'batch') -> nn.Module:
+        """Keyword contract for modular_cnn; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'modular_cnn'.
+            input_channels: Input image channels C; must match the first model stage.
+            num_classes: Number of output class logits. Outputs are unnormalized scores, not probabilities.
+            widths: Per-stage output channels; length must match repeats and strides.
+            repeats: Number of blocks per stage; same length as widths/strides, with at most 64 blocks in total.
+            strides: First-block spatial stride for each stage; remaining blocks use stride 1.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+            norm: Optional post-convolution normalization: batch, group or None. Group normalization chooses the largest channel divisor <=8; convolution bias is enabled only without normalization.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['channel_shuffle'], *, channels: int, groups: int = 2) -> nn.Module:
+        """Keyword contract for channel_shuffle; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'channel_shuffle'.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            groups: Channel partitions; must divide both convolution channel counts. ChannelShuffle requires channels % groups == 0.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['dropblock2d'], *, p: float = 0.1, block_size: int = 3) -> nn.Module:
+        """Keyword contract for dropblock2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'dropblock2d'.
+            p: Probability of dropping elements, channels or paths during training; evaluation disables masking.
+            block_size: Requested mask side, clipped at runtime to min(block_size,H,W).
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['pointwise_conv2d'], *, in_channels: int, out_channels: int, stride: int | tuple[int, int] | list[int] = 1, bias: bool = True) -> nn.Module:
+        """Keyword contract for pointwise_conv2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'pointwise_conv2d'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            bias: Include a learned additive convolution bias for each output channel.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['depthwise_conv2d'], *, in_channels: int, depth_multiplier: int = 1, kernel_size: int | tuple[int, int] | list[int] = 3, stride: int | tuple[int, int] | list[int] = 1, padding: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, bias: bool = True) -> nn.Module:
+        """Keyword contract for depthwise_conv2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'depthwise_conv2d'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            depth_multiplier: Independent filters per input channel; depthwise output/intermediate C equals in_channels*depth_multiplier and must not exceed 8192.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            bias: Include a learned additive convolution bias for each output channel.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['depthwise_separable_conv2d'], *, in_channels: int, out_channels: int, depth_multiplier: int = 1, kernel_size: int | tuple[int, int] | list[int] = 3, stride: int | tuple[int, int] | list[int] = 1, padding: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, bias: bool = True) -> nn.Module:
+        """Keyword contract for depthwise_separable_conv2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'depthwise_separable_conv2d'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            depth_multiplier: Independent filters per input channel; depthwise output/intermediate C equals in_channels*depth_multiplier and must not exceed 8192.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            bias: Include a learned additive convolution bias for each output channel.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['spatial_separable_conv2d'], *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int | tuple[int, int] | list[int] = 3, stride: int | tuple[int, int] | list[int] = 1, padding: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, bias: bool = True) -> nn.Module:
+        """Keyword contract for spatial_separable_conv2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'spatial_separable_conv2d'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            intermediate_channels: Internal feature width. Factorized convolution requires this <= min(in_channels,out_channels); grouped residuals require divisibility by groups.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            bias: Include a learned additive convolution bias for each output channel.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['factorized_conv2d'], *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int | tuple[int, int] | list[int] = 3, stride: int | tuple[int, int] | list[int] = 1, padding: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, bias: bool = True) -> nn.Module:
+        """Keyword contract for factorized_conv2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'factorized_conv2d'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            intermediate_channels: Internal feature width. Factorized convolution requires this <= min(in_channels,out_channels); grouped residuals require divisibility by groups.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            bias: Include a learned additive convolution bias for each output channel.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['conv_transpose2d'], *, in_channels: int, out_channels: int, kernel_size: int | tuple[int, int] | list[int] = 3, stride: int | tuple[int, int] | list[int] = 1, padding: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, bias: bool = True, groups: int = 1, output_padding: int | tuple[int, int] | list[int] = 0) -> nn.Module:
+        """Keyword contract for conv_transpose2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'conv_transpose2d'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            bias: Include a learned additive convolution bias for each output channel.
+            groups: Channel partitions; must divide both convolution channel counts. ChannelShuffle requires channels % groups == 0.
+            output_padding: Additional output extent for transposed convolution, not input padding; each axis must be less than stride or dilation on that axis.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['channel_layer_norm'], *, channels: int, eps: float = 1e-05, affine: bool = True) -> nn.Module:
+        """Keyword contract for channel_layer_norm; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'channel_layer_norm'.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            eps: Positive numerical stabilizer used in normalization. Embedding normalization also floors it at the dtype tiny value.
+            affine: Learn per-channel scale and bias when True; otherwise use normalization without learned affine parameters.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['instance_norm'], *, num_features: int, eps: float = 1e-05, momentum: float = 0.1, affine: bool = False, track_running_stats: bool = False) -> nn.Module:
+        """Keyword contract for instance_norm; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'instance_norm'.
+            num_features: Normalization channel count; must match input C.
+            eps: Positive numerical stabilizer used in normalization. Embedding normalization also floors it at the dtype tiny value.
+            momentum: Running-statistic update factor; None selects cumulative averaging for BatchNorm.
+            affine: Learn per-channel scale and bias when True; otherwise use normalization without learned affine parameters.
+            track_running_stats: Track running mean/variance for evaluation. Without tracking, input-statistic sample requirements also apply in eval.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['leaky_relu'], *, negative_slope: float = 0.01) -> nn.Module:
+        """Keyword contract for leaky_relu; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'leaky_relu'.
+            negative_slope: Nonnegative multiplier for negative LeakyReLU inputs.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['prelu'], *, num_parameters: int = 1, init: float = 0.25) -> nn.Module:
+        """Keyword contract for prelu; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'prelu'.
+            num_parameters: PReLU slope count; must be 1 (shared) or equal to incoming C.
+            init: Initial learned PReLU negative slope; finite and representable as float32.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['gelu'], *, approximate: _typing.Literal['none', 'tanh'] = 'none') -> nn.Module:
+        """Keyword contract for gelu; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'gelu'.
+            approximate: GELU calculation: none uses the exact error function; tanh uses the approximation.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['mish']) -> nn.Module:
+        """Keyword contract for mish; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'mish'.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['hardsigmoid']) -> nn.Module:
+        """Keyword contract for hardsigmoid; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'hardsigmoid'.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['max_pool2d'], *, kernel_size: int | tuple[int, int] | list[int], stride: int | tuple[int, int] | list[int] | None = None, padding: int | tuple[int, int] | list[int] = 0, dilation: int | tuple[int, int] | list[int] = 1, ceil_mode: bool = False) -> nn.Module:
+        """Keyword contract for max_pool2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'max_pool2d'.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            ceil_mode: Round pooling output sizes upward, then discard windows beginning wholly in right/bottom padding.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['avg_pool2d'], *, kernel_size: int | tuple[int, int] | list[int], stride: int | tuple[int, int] | list[int] | None = None, padding: int | tuple[int, int] | list[int] = 0, ceil_mode: bool = False, count_include_pad: bool = True) -> nn.Module:
+        """Keyword contract for avg_pool2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'avg_pool2d'.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            ceil_mode: Round pooling output sizes upward, then discard windows beginning wholly in right/bottom padding.
+            count_include_pad: Include zero-padded elements in the average-pooling divisor.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['adaptive_avg_pool2d'], *, output_size: int | tuple[int, int] | list[int]) -> nn.Module:
+        """Keyword contract for adaptive_avg_pool2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'adaptive_avg_pool2d'.
+            output_size: Target H/W grid; integer means a square. Resize requires exactly one of output_size and scale_factor.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['adaptive_max_pool2d'], *, output_size: int | tuple[int, int] | list[int]) -> nn.Module:
+        """Keyword contract for adaptive_max_pool2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'adaptive_max_pool2d'.
+            output_size: Target H/W grid; integer means a square. Resize requires exactly one of output_size and scale_factor.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['global_avg_pool2d']) -> nn.Module:
+        """Keyword contract for global_avg_pool2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'global_avg_pool2d'.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['bottleneck_residual'], *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int = 3, stride: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, normalization: _typing.Literal['batch', 'group', None] = 'batch', activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none', dropout: float = 0.0, drop_path: float = 0.0) -> nn.Module:
+        """Keyword contract for bottleneck_residual; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'bottleneck_residual'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            intermediate_channels: Internal feature width. Factorized convolution requires this <= min(in_channels,out_channels); grouped residuals require divisibility by groups.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            normalization: Normalization of residual main-branch features; batch, group or None.
+            activation: Nonlinearity applied inside this block; only the declared registry choices are accepted.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+            drop_path: Training-only per-sample residual path drop probability; disabled in eval.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['preactivation_residual'], *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int = 3, stride: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, normalization: _typing.Literal['batch', 'group', None] = 'batch', activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none', dropout: float = 0.0, drop_path: float = 0.0) -> nn.Module:
+        """Keyword contract for preactivation_residual; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'preactivation_residual'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            intermediate_channels: Internal feature width. Factorized convolution requires this <= min(in_channels,out_channels); grouped residuals require divisibility by groups.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            normalization: Normalization of residual main-branch features; batch, group or None.
+            activation: Nonlinearity applied inside this block; only the declared registry choices are accepted.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+            drop_path: Training-only per-sample residual path drop probability; disabled in eval.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['wide_residual_block'], *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int = 3, stride: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, normalization: _typing.Literal['batch', 'group', None] = 'batch', activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none', dropout: float = 0.0, drop_path: float = 0.0) -> nn.Module:
+        """Keyword contract for wide_residual_block; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'wide_residual_block'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            intermediate_channels: Internal feature width. Factorized convolution requires this <= min(in_channels,out_channels); grouped residuals require divisibility by groups.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            normalization: Normalization of residual main-branch features; batch, group or None.
+            activation: Nonlinearity applied inside this block; only the declared registry choices are accepted.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+            drop_path: Training-only per-sample residual path drop probability; disabled in eval.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['grouped_bottleneck'], *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int = 3, stride: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, normalization: _typing.Literal['batch', 'group', None] = 'batch', activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none', dropout: float = 0.0, drop_path: float = 0.0, groups: int = 1) -> nn.Module:
+        """Keyword contract for grouped_bottleneck; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'grouped_bottleneck'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            intermediate_channels: Internal feature width. Factorized convolution requires this <= min(in_channels,out_channels); grouped residuals require divisibility by groups.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            normalization: Normalization of residual main-branch features; batch, group or None.
+            activation: Nonlinearity applied inside this block; only the declared registry choices are accepted.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+            drop_path: Training-only per-sample residual path drop probability; disabled in eval.
+            groups: Channel partitions; must divide both convolution channel counts. ChannelShuffle requires channels % groups == 0.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['inverted_bottleneck'], *, in_channels: int, out_channels: int, expansion_ratio: int = 2, kernel_size: int = 3, stride: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, normalization: _typing.Literal['batch', 'group', None] = 'batch', activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none', dropout: float = 0.0, drop_path: float = 0.0) -> nn.Module:
+        """Keyword contract for inverted_bottleneck; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'inverted_bottleneck'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            expansion_ratio: Inverted-bottleneck channel multiplier; intermediate C=in_channels*expansion_ratio must not exceed 8192.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            normalization: Normalization of residual main-branch features; batch, group or None.
+            activation: Nonlinearity applied inside this block; only the declared registry choices are accepted.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+            drop_path: Training-only per-sample residual path drop probability; disabled in eval.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['gated_residual'], *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int = 3, stride: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, normalization: _typing.Literal['batch', 'group', None] = 'batch', activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none', dropout: float = 0.0, drop_path: float = 0.0, gate_init: float = 1.0, learnable_gate: bool = True) -> nn.Module:
+        """Keyword contract for gated_residual; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'gated_residual'.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            intermediate_channels: Internal feature width. Factorized convolution requires this <= min(in_channels,out_channels); grouped residuals require divisibility by groups.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            normalization: Normalization of residual main-branch features; batch, group or None.
+            activation: Nonlinearity applied inside this block; only the declared registry choices are accepted.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+            drop_path: Training-only per-sample residual path drop probability; disabled in eval.
+            gate_init: Initial scalar residual contribution in [0,1]; zero suppresses the residual main branch initially.
+            learnable_gate: Store the residual gate as a learned scalar when True, otherwise a fixed scalar.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['spatial_attention'], *, channels: int, kernel_size: int = 7) -> nn.Module:
+        """Keyword contract for spatial_attention; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'spatial_attention'.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['channel_attention'], *, channels: int, reduction: int = 8) -> nn.Module:
+        """Keyword contract for channel_attention; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'channel_attention'.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            reduction: Channel-gate reduction divisor; hidden width is max(1,C//reduction), or max(8,C//reduction) for coordinate attention.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['spatial_self_attention'], *, channels: int, embedding_dim: int | None = None, dropout: float = 0.0) -> nn.Module:
+        """Keyword contract for spatial_self_attention; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'spatial_self_attention'.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            embedding_dim: Attention projection width or output embedding width, according to the component. None in self-attention uses C; QKV requires 3*embedding_dim<=8192.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['multihead_spatial_attention'], *, channels: int, embedding_dim: int | None = None, num_heads: int = 4, dropout: float = 0.0) -> nn.Module:
+        """Keyword contract for multihead_spatial_attention; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'multihead_spatial_attention'.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            embedding_dim: Attention projection width or output embedding width, according to the component. None in self-attention uses C; QKV requires 3*embedding_dim<=8192.
+            num_heads: Parallel attention heads; must divide embedding_dim. Spatial attention is limited to 1024 tokens and N*heads*tokens^2<=4194304.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['dropout'], *, p: float = 0.5) -> nn.Module:
+        """Keyword contract for dropout; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'dropout'.
+            p: Probability of dropping elements, channels or paths during training; evaluation disables masking.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['dropout2d'], *, p: float = 0.5) -> nn.Module:
+        """Keyword contract for dropout2d; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'dropout2d'.
+            p: Probability of dropping elements, channels or paths during training; evaluation disables masking.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['drop_path'], *, p: float = 0.0) -> nn.Module:
+        """Keyword contract for drop_path; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'drop_path'.
+            p: Probability of dropping elements, channels or paths during training; evaluation disables masking.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['gaussian_noise'], *, std: float = 0.1) -> nn.Module:
+        """Keyword contract for gaussian_noise; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'gaussian_noise'.
+            std: Standard deviation of training-only zero-mean Gaussian noise; finite, nonnegative and at most 1e6.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['resize'], *, output_size: int | tuple[int, int] | list[int] | None = None, scale_factor: float | tuple[float, float] | list[float] | None = None, mode: _typing.Literal['nearest', 'bilinear', 'bicubic', 'area'] = 'nearest', align_corners: bool | None = None) -> nn.Module:
+        """Keyword contract for resize; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'resize'.
+            output_size: Target H/W grid; integer means a square. Resize requires exactly one of output_size and scale_factor.
+            scale_factor: Positive H/W resize multipliers, each <=8192. Exactly one of this and output_size must be provided.
+            mode: Interpolation or transformation strategy; the closed choices are specific to this operation.
+            align_corners: Align endpoint pixel centers for bilinear/bicubic resizing; must be None for nearest/area.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['pixel_shuffle'], *, upscale_factor: int) -> nn.Module:
+        """Keyword contract for pixel_shuffle; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'pixel_shuffle'.
+            upscale_factor: PixelShuffle factor r: C must be divisible by r^2; output is (C/r^2,H*r,W*r).
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['pixel_unshuffle'], *, downscale_factor: int) -> nn.Module:
+        """Keyword contract for pixel_unshuffle; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'pixel_unshuffle'.
+            downscale_factor: PixelUnshuffle factor r: H and W must be divisible by r; output is (C*r^2,H/r,W/r).
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['flatten']) -> nn.Module:
+        """Keyword contract for flatten; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'flatten'.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['permute'], *, dims: tuple[int, ...] | list[int] = [0, 1, 3, 2]) -> nn.Module:
+        """Keyword contract for permute; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'permute'.
+            dims: Permutation of NCHW axes; only (0,1,2,3) and (0,1,3,2) are accepted, preserving batch/channel axes.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['reshape'], *, shape: tuple[int, int, int] | list[int]) -> nn.Module:
+        """Keyword contract for reshape; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'reshape'.
+            shape: Target per-sample CHW dimensions; reshape must preserve the number of sample elements and every dimension is 1..8192.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['classification_head'], *, in_features: int, pooling: _typing.Literal['avg', 'max', 'none'] = 'avg', num_classes: int, dropout: float = 0.0) -> nn.Module:
+        """Keyword contract for classification_head; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'classification_head'.
+            in_features: Linear-head input width after pooling/flattening; must match the inferred feature width.
+            pooling: avg/max globally pool NCHW before flattening; none flattens NCHW or consumes flat NF.
+            num_classes: Number of output class logits. Outputs are unnormalized scores, not probabilities.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['regression_head'], *, in_features: int, pooling: _typing.Literal['avg', 'max', 'none'] = 'avg', output_features: int) -> nn.Module:
+        """Keyword contract for regression_head; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'regression_head'.
+            in_features: Linear-head input width after pooling/flattening; must match the inferred feature width.
+            pooling: avg/max globally pool NCHW before flattening; none flattens NCHW or consumes flat NF.
+            output_features: Width of the unrestricted numeric regression output; no classification objective is inferred.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
+    @_typing.overload
+    def create(self, name: _typing.Literal['embedding_head'], *, in_features: int, pooling: _typing.Literal['avg', 'max', 'none'] = 'avg', embedding_dim: int, normalize: bool = False, eps: float = 1e-12) -> nn.Module:
+        """Keyword contract for embedding_head; execution uses the validated implementation.
+
+        Args:
+            name: Exact component identifier 'embedding_head'.
+            in_features: Linear-head input width after pooling/flattening; must match the inferred feature width.
+            pooling: avg/max globally pool NCHW before flattening; none flattens NCHW or consumes flat NF.
+            embedding_dim: Attention projection width or output embedding width, according to the component. None in self-attention uses C; QKV requires 3*embedding_dim<=8192.
+            normalize: Apply safe per-sample L2 normalization to output embeddings.
+            eps: Positive numerical stabilizer used in normalization. Embedding normalization also floors it at the dtype tiny value.
+
+        Returns:
+            A fresh CPU nn.Module.
+        """
+        ...
+
     def create(self, name: _ComponentName, **params: Any) -> nn.Module:
         """Construct a whitelisted existing module on CPU after full validation.
 
@@ -635,8 +1589,10 @@ class ModelRegistry:
         use ModelBuilder. Direct construction has original PyTorch allocation cost.
 
         Args:
-            name (str): Registered component name, exact metric label, or stored entity name in this API. Required.
-            params (Any): Closed registered keyword parameters; inspect ModelRegistry.get(name) for supported kinds/defaults. Required.
+            name (str): Registered component name, exact metric label, or stored entity name in this API.
+                Required.
+            params (Any): Closed registered keyword parameters; inspect ModelRegistry.get(name) for
+                supported kinds/defaults. Required.
 
         Returns:
             A fresh CPU nn.Module constructed from the validated registered parameters; no forward is run.
@@ -645,7 +1601,7 @@ class ModelRegistry:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.create(name)
 

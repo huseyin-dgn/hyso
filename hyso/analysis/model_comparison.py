@@ -47,9 +47,10 @@ class ModelComparisonError(ValueError):
         An instance of ModelComparisonError with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ModelComparisonError()
 
@@ -81,9 +82,10 @@ class ModelComparisonSource:
         An instance of ModelComparisonSource with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ModelComparisonSource(model_id, report)
 
@@ -102,18 +104,22 @@ class ModelComparisonSource:
         Args:
             model_id (str): Stable model label bound to this result/context. Required.
             report (UnifiedAnalysisReport): Validated retained analysis/advisory report. Required.
-            records (Mapping[str, str] | None): Bounded sequence of plain observation records. Default: None.
-            structure (ModelStructureSnapshot | None): Validated retained structural evidence. Default: None.
-            benchmark (BenchmarkResult | None): Validated retained benchmark source; no benchmark is started by merely supplying it. Default: None.
+            records (Mapping[str, str] | None): Bounded sequence of plain observation records. Default:
+                None.
+            structure (ModelStructureSnapshot | None): Validated retained structural evidence. Default:
+                None.
+            benchmark (BenchmarkResult | None): Validated retained benchmark source; no benchmark is started
+                by merely supplying it. Default: None.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ModelComparisonSource(model_id, report)
 
@@ -162,7 +168,7 @@ class ModelComparisonSource:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.model_id
 
@@ -176,12 +182,14 @@ class ModelComparisonSource:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -203,10 +211,11 @@ class ModelComparisonSource:
             A validated ModelComparisonSource instance reconstructed from the supplied data.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ModelComparisonSource.from_execution(result, model_id)
 
@@ -438,15 +447,17 @@ class ModelComparisonResult:
     """Immutable, rederived JSON result. Differences are candidate minus baseline.
 
     Args:
-        data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+        data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema
+            validator. Required.
 
     Returns:
         An instance of ModelComparisonResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ModelComparisonResult(data)
 
@@ -461,16 +472,18 @@ class ModelComparisonResult:
         """Initialize ModelComparisonResult with the supplied settings.
 
         Args:
-            data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            data (dict[str, Any]): Detached plain-data payload accepted by the existing version/schema
+                validator. Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ModelComparisonResult(data)
 
@@ -500,12 +513,14 @@ class ModelComparisonResult:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -525,7 +540,7 @@ class ModelComparisonResult:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.structure_comparison
 
@@ -539,8 +554,10 @@ class ModelComparisonResult:
         """Serialize this object using its native JSON format and overwrite policy.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Default: None.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             A JSON string when path is None, otherwise None after writing the file.
@@ -549,7 +566,7 @@ class ModelComparisonResult:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_json()
 
@@ -566,7 +583,8 @@ class ModelComparisonResult:
         """Read and validate this type from a local JSON file.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
 
         Returns:
             A validated ModelComparisonResult instance reconstructed from the supplied data.
@@ -575,7 +593,7 @@ class ModelComparisonResult:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ModelComparisonResult.from_json(path)
 
@@ -590,16 +608,18 @@ class ModelComparisonResult:
         """Return localized display text while preserving canonical comparison data.
 
         Args:
-            language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'en'.
+            language (str): Presentation language supported by this API, normally tr/en; guide languages do
+                not expand report APIs. Default: 'en'.
 
         Returns:
             Localized presentation data; canonical comparison values and units are retained.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_display_dict()
 
@@ -614,9 +634,12 @@ class ModelComparisonResult:
         """Format retained comparison findings as Markdown without rerunning models.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
-            language (str): Presentation language supported by this API, normally tr/en; guide languages do not expand report APIs. Default: 'en'.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Default: None.
+            language (str): Presentation language supported by this API, normally tr/en; guide languages do
+                not expand report APIs. Default: 'en'.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             The localized Markdown report string.
@@ -625,7 +648,7 @@ class ModelComparisonResult:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_markdown()
 
@@ -643,9 +666,10 @@ class ModelComparisonResult:
             The retained tracking config value, without recomputing measurements.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.tracking_config()
 
@@ -678,20 +702,26 @@ def compare_models(baseline: ModelComparisonSource, candidate: ModelComparisonSo
     P12 counts describe observed logical work, never runtime or energy savings.
 
     Args:
-        baseline (ModelComparisonSource): Validated retained baseline source or predictions required by this comparison. Required.
-        candidate (ModelComparisonSource): Validated retained candidate source or predictions required by this comparison. Required.
-        features (str | Sequence[str]): Explicit feature IDs to compare/plan; prerequisites are never silently executed. Required.
-        include_structure (bool): Whether to include supported retained structure comparisons. Default: False.
-        context_policy (str): Existing legacy or strict declared-context policy; strict P26 prerequisites still apply. Default: 'legacy'.
+        baseline (ModelComparisonSource): Validated retained baseline source or predictions required by
+            this comparison. Required.
+        candidate (ModelComparisonSource): Validated retained candidate source or predictions required
+            by this comparison. Required.
+        features (str | Sequence[str]): Explicit feature IDs to compare/plan; prerequisites are never
+            silently executed. Required.
+        include_structure (bool): Whether to include supported retained structure comparisons. Default:
+            False.
+        context_policy (str): Existing legacy or strict declared-context policy; strict P26
+            prerequisites still apply. Default: 'legacy'.
 
     Returns:
         The retained compare models value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         compare_models(baseline, candidate, features=features)
 

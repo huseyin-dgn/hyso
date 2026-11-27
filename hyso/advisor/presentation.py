@@ -90,10 +90,11 @@ def build_display_model(report: '_typing.Any') -> 'dict[str, _typing.Any]':
         The retained build display model value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         build_display_model(report)
 
@@ -235,17 +236,19 @@ def to_display_dict(report: '_typing.Any', *, language: _typing.Literal['tr', 'e
 
     Args:
         report (_typing.Any): Validated retained analysis/advisory report. Required.
-        language (str): Presentation language supported by this API, tr/en/de/es; source records are not translated. Default: 'en'.
+        language (str): Presentation language supported by this API, tr/en/de/es; source records are not
+            translated. Default: 'en'.
         audience (str): Supported presentation audience/detail level. Default: 'summary'.
 
     Returns:
         A localized plain display dictionary derived from the retained report.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         to_display_dict(report)
 
@@ -279,18 +282,21 @@ def to_display_json(report: '_typing.Any',path: '_typing.Any'=None,*,language: _
 
     Args:
         report (_typing.Any): Validated retained analysis/advisory report. Required.
-        path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
-        language (str): Presentation language supported by this API, tr/en/de/es; source records are not translated. Default: 'en'.
+        path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+            executed. Default: None.
+        language (str): Presentation language supported by this API, tr/en/de/es; source records are not
+            translated. Default: 'en'.
         audience (str): Supported presentation audience/detail level. Default: 'summary'.
 
     Returns:
         The localized JSON string, also written to path when supplied.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         to_display_json(report)
 
@@ -311,8 +317,10 @@ def to_markdown(report: '_typing.Any',path: '_typing.Any'=None,*,language: _typi
 
     Args:
         report (_typing.Any): Validated retained analysis/advisory report. Required.
-        path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
-        language (str): Presentation language supported by this API, tr/en/de/es; source records are not translated. Default: 'en'.
+        path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+            executed. Default: None.
+        language (str): Presentation language supported by this API, tr/en/de/es; source records are not
+            translated. Default: 'en'.
         audience (str): Supported presentation audience/detail level. Default: 'summary'.
 
     Returns:
@@ -322,7 +330,7 @@ def to_markdown(report: '_typing.Any',path: '_typing.Any'=None,*,language: _typi
         OSError: Filesystem access fails.
         ValueError: The native format, version or overwrite contract is rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         to_markdown(report)
 

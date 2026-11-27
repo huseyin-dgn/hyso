@@ -76,3 +76,11 @@ commit and tag. Artifacts and checksums are prepared locally; commit, push, tag
 and publication are separate owner actions. No prerelease or version change is
 applied. Experimental TensorRT native validation stays outside the validated CPU
 release scope, with its existing BLOCKED/NOT_TESTED results retained.
+
+The final API usability pass expands the earlier 26-entry inspection to the
+shipped public surface. Builder component help includes actual defaults, scalar
+bounds, channel/group relationships and output geometry. Literal overloads expose
+registered keyword names; training option maps have static key definitions.
+See [the API/IDE report](docs/reports/public-api-ide-20261128.md) for the final
+installed-package and actual IDE verification results; the earlier NOT_TESTED
+entry above describes the previous F01 snapshot, not an implied new IDE result.

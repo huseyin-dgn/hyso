@@ -16,21 +16,26 @@ from .result import LayerOverheadResult,OperatorProfileResult,_integer,_positive
 
 @dataclass(frozen=True)
 class LayerOverheadProtocol:
-    """Configure P13 — Module/layer profiling measurement boundaries and resource limits; construction does not run the analysis.
+    """Configure P13 — Module/layer profiling measurement boundaries and resource limits; construction does
+    not run the analysis.
 
     Args:
         trials (int): Explicit bounded trial configurations. Default: 3.
-        max_coefficient_of_variation (float): Maximum variability threshold used by the native acceptance rule. Default: 0.25.
-        priming_iterations (int): Priming iterations before the protocol's measured boundary. Default: 2.
-        max_relative_half_width (float): Maximum relative confidence-interval half width accepted by the protocol. Default: 0.5.
+        max_coefficient_of_variation (float): Maximum variability threshold used by the native
+            acceptance rule. Default: 0.25.
+        priming_iterations (int): Priming iterations before the protocol's measured boundary. Default:
+            2.
+        max_relative_half_width (float): Maximum relative confidence-interval half width accepted by the
+            protocol. Default: 0.5.
 
     Returns:
         An instance of LayerOverheadProtocol with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         LayerOverheadProtocol()
 
@@ -183,18 +188,22 @@ def measure_layer_overhead(recipe: '_typing.Any',*,protocol: '_typing.Any'=Layer
     Small-sample paired-worker uncertainty and variance can reject the estimate.
 
     Args:
-        recipe (_typing.Any): Trusted construction recipe; factory import/execution is governed by the existing operation contract. Required.
-        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: LayerOverheadProtocol().
-        capture_protocol (_typing.Any): Typed capture measurement settings; boundaries and device guards remain explicit. Default: None.
+        recipe (_typing.Any): Trusted construction recipe; factory import/execution is governed by the
+            existing operation contract. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards
+            remain unchanged. Default: LayerOverheadProtocol().
+        capture_protocol (_typing.Any): Typed capture measurement settings; boundaries and device guards
+            remain explicit. Default: None.
 
     Returns:
         The retained measure layer overhead value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         measure_layer_overhead(recipe)
 

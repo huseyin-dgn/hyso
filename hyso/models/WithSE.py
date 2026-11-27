@@ -19,12 +19,15 @@ from hyso.callbacks.callbacks import EarlyStopping, ModelCheckpoint, LRScheduler
 __all__ = ["CNNSENormalWithFit", "EMA"]
 
 class EMA:
-    """Keep an exponential moving average of a model for evaluation; this is not a separate training algorithm.
+    """Keep an exponential moving average of a model for evaluation; this is not a separate training
+    algorithm.
 
     Args:
-        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation.
+            Required.
         decay (float): EMA decay factor in its accepted interval. Default: 0.999.
-        device (str | None): Optional device selector following this API's native placement/default rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
+        device (str | None): Optional device selector following this API's native placement/default
+            rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
 
     Returns:
         An instance of EMA with the documented native validation and defaults.
@@ -33,7 +36,7 @@ class EMA:
         ValueError, TypeError: Native configuration, shape or input validation rejects the request.
         RuntimeError: A requested native construction/forward operation fails.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         EMA(model)
 
@@ -47,9 +50,11 @@ class EMA:
         """Initialize EMA with the supplied settings.
 
         Args:
-            model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+            model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation.
+                Required.
             decay (float): EMA decay factor in its accepted interval. Default: 0.999.
-            device (str | None): Optional device selector following this API's native placement/default rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
+            device (str | None): Optional device selector following this API's native placement/default
+                rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
@@ -58,7 +63,7 @@ class EMA:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             EMA(model)
 
@@ -86,7 +91,7 @@ class EMA:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to(device)
 
@@ -105,7 +110,8 @@ class EMA:
         """Update the EMA shadow from the supplied live model weights.
 
         Args:
-            model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+            model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation.
+                Required.
 
         Returns:
             None after the operation succeeds.
@@ -114,7 +120,7 @@ class EMA:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.update(model)
 
@@ -139,17 +145,24 @@ class SEBlock(nn.Module):
     """Reweight feature channels using pooled context and a compact gating network.
 
     Args:
-        channels (int): Feature-channel count required by this block. Required.
-        reduction (int): Channel reduction ratio used by the attention bottleneck. Default: 8.
+        channels (int): Feature channels C; gates and normalization preserve this channel count.
+            Positive integer; the Registry/Builder profile additionally caps it at 8192. Required.
+        reduction (int): Channel-gate reduction divisor; hidden width is max(1,C//reduction), or
+            max(8,C//reduction) for coordinate attention. Positive integer; the Registry/Builder profile
+            additionally caps it at 8192. Default: 8.
 
     Returns:
-        An instance of SEBlock with the documented native validation and defaults.
+        A SEBlock module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ValueError, TypeError: Constructor channel, shape or option validation fails; native PyTorch
+        errors propagate.
 
-    Example:
+    Notes:
+        Floating [N,channels,H,W], all dimensions positive.
+        Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         SEBlock(channels)
 
@@ -161,17 +174,24 @@ class SEBlock(nn.Module):
         """Initialize SEBlock with the supplied settings.
 
         Args:
-            channels (int): Feature-channel count required by this block. Required.
-            reduction (int): Channel reduction ratio used by the attention bottleneck. Default: 8.
+            channels (int): Feature channels C; gates and normalization preserve this channel count.
+                Positive integer; the Registry/Builder profile additionally caps it at 8192. Required.
+            reduction (int): Channel-gate reduction divisor; hidden width is max(1,C//reduction), or
+                max(8,C//reduction) for coordinate attention. Positive integer; the Registry/Builder profile
+                additionally caps it at 8192. Default: 8.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ValueError, TypeError: Constructor channel, shape or option validation fails; native PyTorch
+            errors propagate.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             SEBlock(channels)
 
@@ -189,7 +209,8 @@ class SEBlock(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -198,7 +219,7 @@ class SEBlock(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -216,6 +237,25 @@ class SEBlock(nn.Module):
 # Bottleneck + Depthwise + SE + StochasticDepth
 
 class BottleneckSEBlock(nn.Module):
+    """Construct the legacy squeeze/excitation bottleneck with an explicit shortcut.
+
+    Args:
+        in_channels (int): Input feature channels; must match the incoming tensor C dimension. Required.
+        out_channels (int): Output feature channels after this convolution or block. Required.
+        stride (int): Spatial sampling step on each axis; larger values reduce ordinary
+            convolution/pooling resolution. Default: 1.
+        bottleneck_ratio (float): Ratio controlling the legacy residual branch hidden width. Default:
+            0.25.
+        norm_layer: Normalization factory accepted by this legacy module; caller controls construction.
+            Default: nn.BatchNorm2d.
+        activation: Zero-argument activation factory instantiated separately at each activation site.
+            Default: nn.SiLU.
+        drop_prob (float): Training-only stochastic-depth drop probability. Default: 0.0.
+        se_reduction (int): Squeeze/excitation hidden-width reduction factor. Default: 8.
+
+    Returns:
+        A trainable NCHW module; construction allocates weights.
+    """
     def __init__(
         self,
         in_channels: int,
@@ -226,7 +266,23 @@ class BottleneckSEBlock(nn.Module):
         activation=nn.SiLU,
         drop_prob: float = 0.0,
         se_reduction: int = 8,
-    ):
+    ) -> 'None':
+        """Initialize BottleneckSEBlock from the supplied settings or evidence.
+
+        Args:
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Required.
+            out_channels (int): Output feature channels after this convolution or block. Required.
+            stride (int): Spatial sampling step on each axis; larger values reduce ordinary
+                convolution/pooling resolution. Default: 1.
+            bottleneck_ratio (float): Ratio controlling the legacy residual branch hidden width. Default:
+                0.25.
+            norm_layer: Normalization factory accepted by this legacy module; caller controls construction.
+                Default: nn.BatchNorm2d.
+            activation: Zero-argument activation factory instantiated separately at each activation site.
+                Default: nn.SiLU.
+            drop_prob (float): Training-only stochastic-depth drop probability. Default: 0.0.
+            se_reduction (int): Squeeze/excitation hidden-width reduction factor. Default: 8.
+        """
         super().__init__()
         mid_channels = max(1, int(out_channels * bottleneck_ratio))
         self.drop_prob = drop_prob
@@ -255,8 +311,15 @@ class BottleneckSEBlock(nn.Module):
 
         self.final_act = activation()
 
-    def stochastic_depth(self, x, residual):
+    def stochastic_depth(self, x, residual) -> 'torch.Tensor':
         # x = main path, residual = shortcut
+        """Stochastic depth using the explicitly supplied evidence.
+
+        Args:
+            x: Input tensor with the module shape, dtype and device contract; forward performs the
+                computation. Required.
+            residual: Shortcut tensor; returned unchanged when the main path is dropped. Required.
+        """
         if not self.training or self.drop_prob == 0.0:
             return x + residual
         if torch.rand(1).item() < self.drop_prob:
@@ -265,6 +328,12 @@ class BottleneckSEBlock(nn.Module):
         return x + residual
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute the module output from explicit caller-supplied tensors.
+
+        Args:
+            x (torch.Tensor): Input tensor with the module shape, dtype and device contract; forward
+                performs the computation. Required.
+        """
         identity = self.shortcut(x)
         out = self.act1(self.bn1(self.conv1(x)))
         out = self.act2(self.bn2(self.dwconv(out)))
@@ -282,15 +351,18 @@ class CEMO(nn.Module):
 
     Args:
         input_channels (int): Number of input image/feature channels. Default: 3.
-        num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 10.
-        conv_channels (_typing.Sequence[int]): Ordered channel widths for the convolutional stages. Default: [64, 128, 256].
+        num_classes (int): Classifier output width; binary/multiclass loss requirements must match.
+            Default: 10.
+        conv_channels (_typing.Sequence[int]): Ordered channel widths for the convolutional stages.
+            Default: [64, 128, 256].
         residuals_per_stage (int): Ordered residual-unit counts per stage. Default: 2.
         se_reduction (int): Squeeze-and-excitation bottleneck reduction ratio. Default: 8.
         p_drop (float): Drop probability used by this component. Default: 0.1.
         dropout_fc (float): Classifier-head dropout probability. Default: 0.3.
         use_ema (bool): Enable the supported EMA evaluation shadow. Default: False.
         ema_decay (float): Optional decay for the smoothed evaluation model. Default: 0.999.
-        device (str): Optional device selector following this API's native placement/default rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
+        device (str): Optional device selector following this API's native placement/default rules;
+            legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
 
     Returns:
         An instance of CEMO with the documented native validation and defaults.
@@ -299,7 +371,7 @@ class CEMO(nn.Module):
         ValueError, TypeError: Native configuration, shape or input validation rejects the request.
         RuntimeError: A requested native construction/forward operation fails.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         CEMO()
 
@@ -324,15 +396,18 @@ class CEMO(nn.Module):
 
         Args:
             input_channels (int): Number of input image/feature channels. Default: 3.
-            num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 10.
-            conv_channels (_typing.Sequence[int]): Ordered channel widths for the convolutional stages. Default: [64, 128, 256].
+            num_classes (int): Classifier output width; binary/multiclass loss requirements must match.
+                Default: 10.
+            conv_channels (_typing.Sequence[int]): Ordered channel widths for the convolutional stages.
+                Default: [64, 128, 256].
             residuals_per_stage (int): Ordered residual-unit counts per stage. Default: 2.
             se_reduction (int): Squeeze-and-excitation bottleneck reduction ratio. Default: 8.
             p_drop (float): Drop probability used by this component. Default: 0.1.
             dropout_fc (float): Classifier-head dropout probability. Default: 0.3.
             use_ema (bool): Enable the supported EMA evaluation shadow. Default: False.
             ema_decay (float): Optional decay for the smoothed evaluation model. Default: 0.999.
-            device (str): Optional device selector following this API's native placement/default rules; legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
+            device (str): Optional device selector following this API's native placement/default rules;
+                legacy EBO may choose CUDA. Pass cpu explicitly for CPU use. Default: None.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
@@ -341,7 +416,7 @@ class CEMO(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             CEMO()
 
@@ -401,7 +476,8 @@ class CEMO(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -410,7 +486,7 @@ class CEMO(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -435,13 +511,16 @@ class CEMO(nn.Module):
         """Install the supported callback configuration for subsequent fit calls.
 
         Args:
-            optimizer (str): Existing supported optimizer or a closed optimizer name, according to this API. Default: 'Adam'.
+            optimizer (str): Existing supported optimizer or a closed optimizer name, according to this API.
+                Default: 'Adam'.
             lr (float): Optimizer learning rate. Default: 0.001.
             weight_decay (float): Optimizer weight-decay coefficient. Default: 0.0001.
             model_checkpoint (bool): Legacy checkpoint callback configuration. Default: False.
             earlystop (_typing.Any): Legacy early-stopping callback configuration. Default: None.
-            scheduler (_typing.Any): Supported native scheduler or closed scheduler name; stepping remains owned by Trainer. Default: None.
-            scheduler_params (dict[str, _typing.Any] | None): Closed scheduler settings; required scheduler-specific options remain mandatory. Default: None.
+            scheduler (_typing.Any): Supported native scheduler or closed scheduler name; stepping remains
+                owned by Trainer. Default: None.
+            scheduler_params (dict[str, _typing.Any] | None): Closed scheduler settings; required
+                scheduler-specific options remain mandatory. Default: None.
 
         Returns:
             None after the operation succeeds.
@@ -450,7 +529,7 @@ class CEMO(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.callbacks()
 
@@ -510,9 +589,12 @@ class CEMO(nn.Module):
         """Train this legacy model using its native loader and optimizer contract.
 
         Args:
-            train_loader (_typing.Any): Finite training loader; batches must follow the task/model input contract. Required.
-            val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
-            epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after resume. Default: 5.
+            train_loader (_typing.Any): Finite training loader; batches must follow the task/model input
+                contract. Required.
+            val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit
+                validation setting. Default: None.
+            epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after
+                resume. Default: 5.
             lr (float): Optimizer learning rate. Default: 0.001.
             weight_decay (float): Optimizer weight-decay coefficient. Default: 0.0001.
             use_ema (bool): Enable the supported EMA evaluation shadow. Default: False.
@@ -524,7 +606,7 @@ class CEMO(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.fit(train_loader)
 

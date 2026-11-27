@@ -130,10 +130,21 @@ class _Export:
 
 @dataclass(frozen=True, init=False)
 class GraphEvaluationResult(_Export):
-    """Versioned statement; construction/JSON import never mints native trust."""
+    """Versioned statement; construction/JSON import never mints native trust.
+
+    Args:
+        data: Detached schema-compatible result mapping, including recorded status and integrity fields.
+            Required.
+    """
     _payload: str
 
-    def __init__(self, data):
+    def __init__(self, data) -> 'None':
+        """Initialize GraphEvaluationResult from the supplied settings or evidence.
+
+        Args:
+            data: Detached schema-compatible result mapping, including recorded status and integrity fields.
+                Required.
+        """
         version = data.get("schema_version") if type(data) is dict else None
         fields = {"evaluation", "source_receipt", "record", "context"}
         if version == 2:
@@ -158,7 +169,9 @@ class GraphEvaluationResult(_Export):
         object.__setattr__(self, "_payload", canonical(d))
 
     @property
-    def evaluation(self):
+    def evaluation(self) -> 'EvaluationResult':
+        """Evaluation using the explicitly supplied evidence.
+        """
         return EvaluationResult(json.loads(self._payload)["evaluation"])
 
     def _verification(self, d):
@@ -176,7 +189,9 @@ class GraphEvaluationResult(_Export):
         return dict(v, graph_v2="verified" if trusted else "missing",
                     reason="original_source_receipt_revalidated" if trusted else "source_receipt_missing_or_changed")
 
-    def to_dict(self):
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return detached JSON-compatible evidence without rerunning the source workload.
+        """
         d = json.loads(self._payload)
         v = self._verification(d)
         d["verification"] = v
@@ -195,7 +210,12 @@ class GraphEvaluationResult(_Export):
         return d
 
     def analysis_source(self, model_id) -> 'ModelComparisonSource':
-        """Existing retained P26 source; never backfills checkpoint bindings."""
+        """Existing retained P26 source; never backfills checkpoint bindings.
+
+        Args:
+            model_id: Caller label identifying a model within this evidence context; not a weight or
+                hardware identity. Required.
+        """
         d = json.loads(self._payload)
         record = EvidenceRecord(d["record"])
         report = EvidenceIndex([record]).analyze(context=AnalysisContext(workload_id="graph-evidence-association",
@@ -211,6 +231,33 @@ def evaluate_graph_classification(model, loader, *, class_names, split, source_i
     Explicit capture_receiver_runtime=True creates association v2 from Core's
     observations on the actual isolated receiver, without transferring a receipt.
     Expected identities constrain an existing source receipt, never create one.
+
+    Args:
+        model: Caller-owned torch.nn.Module; must meet the operation device, dtype and input contract.
+            Required.
+        loader: Finite explicit data loader matching the evaluation or training task. Required.
+        class_names: Ordered unique names for the complete class vocabulary; order must match score
+            columns. Required.
+        split: Explicit evaluation split label recorded in evidence; it does not select or partition
+            data. Required.
+        source_id: Caller-supplied stable source identifier retained in analysis provenance. Default:
+            None.
+        context: Explicit analysis provenance and workload scope; labels do not establish native
+            identity. Default: None.
+        task (_typing.Literal['multiclass', 'binary']): Explicit classification task selector; graph
+            evaluation does not infer detection or segmentation semantics. Default: 'multiclass'.
+        zero_division: Value used for undefined precision/recall; use the evaluator-supported choices.
+            Default: 0.
+        max_samples: Declared evaluation sample bound; oversized inputs fail rather than silently
+            truncating. Default: 1000000.
+        capture_structure: Capture registered model structure as separate metadata; no performance
+            conclusion follows from structure. Default: False.
+        expected_checkpoint_sha256: Expected recorded checkpoint digest to bind evaluation evidence; not
+            a structure hash. Default: None.
+        expected_model_state_sha256: Expected model-state digest for evidence binding; not a
+            model-architecture hash. Default: None.
+        capture_receiver_runtime: Explicitly capture bounded CPU receiver-runtime association evidence
+            when True; otherwise retain the static association scope. Default: False.
     """
     declared = _context(context, source_id, split)
     if type(capture_receiver_runtime) is not bool:
@@ -281,9 +328,24 @@ def _compare(a, b, context_policy='legacy'):
 
 @dataclass(frozen=True, init=False)
 class GraphComparisonResult(_Export):
+    """Retain and validate a detached comparison of graph evaluation evidence.
+
+    Args:
+        data: Detached schema-compatible result mapping, including recorded status and integrity fields.
+            Required.
+
+    Returns:
+        An immutable JSON-backed comparison result.
+    """
     _payload: str
 
-    def __init__(self, data):
+    def __init__(self, data) -> 'None':
+        """Initialize GraphComparisonResult from the supplied settings or evidence.
+
+        Args:
+            data: Detached schema-compatible result mapping, including recorded status and integrity fields.
+                Required.
+        """
         version = data.get('schema_version') if type(data) is dict else None
         fields = {"sources", "legacy", "metrics", "status", "diagnostics"}
         if version == 3:
@@ -301,18 +363,20 @@ class GraphComparisonResult(_Export):
         object.__setattr__(self, "_payload", canonical(d))
 
     @property
-    def legacy_comparison(self):
+    def legacy_comparison(self) -> 'ModelComparisonResult | None':
         """Historical schema1/2 typed artifact; schema3 exports a reference only."""
         data = json.loads(self._payload)
         return None if data['schema_version'] == 3 else ModelComparisonResult(data["legacy"])
 
     @property
-    def effective_comparison(self):
+    def effective_comparison(self) -> 'ModelComparisonResult | None':
         """Validated effective comparison for the selected envelope policy."""
         data = json.loads(self._payload)
         return ModelComparisonResult(data['effective']) if data['schema_version'] == 3 else self.legacy_comparison
 
-    def to_dict(self):
+    def to_dict(self) -> 'dict[str, _typing.Any]':
+        """Return detached JSON-compatible evidence without rerunning the source workload.
+        """
         d = json.loads(self._payload)
         entry = _COMPARISONS.get(id(self))
         original = entry is not None and entry[0]() is self and entry[1] == self._payload
@@ -323,7 +387,16 @@ class GraphComparisonResult(_Export):
 
 
 def compare_graph_evaluations(baseline, candidate, *, context_policy: _typing.Literal['legacy', 'strict']='legacy') -> 'GraphComparisonResult':
-    """Retained P26 comparison plus explicit v2 scope; no architecture/performance inference."""
+    """Retained P26 comparison plus explicit v2 scope; no architecture/performance inference.
+
+    Args:
+        baseline: Reference evidence used as the denominator/origin of candidate differences;
+            missing/incompatible evidence is not inferred. Required.
+        candidate: Evidence or runtime being compared to the reference; measurements remain bound to
+            their recorded conditions. Required.
+        context_policy (_typing.Literal['legacy', 'strict']): Policy for checking recorded context
+            compatibility before comparing results. Default: 'legacy'.
+    """
     if type(baseline) is not GraphEvaluationResult or type(candidate) is not GraphEvaluationResult:
         raise GraphEvidenceError("typed_graph_associations_required")
     if type(context_policy) is not str or context_policy not in ('legacy', 'strict'):
@@ -340,8 +413,17 @@ def compare_graph_evaluations(baseline, candidate, *, context_policy: _typing.Li
     return result
 
 
-def report_section(result, language: _typing.Literal['tr', 'en'], level, catalog):
-    """Use the existing reporting renderer and Advisor; never project v2 as legacy P26."""
+def report_section(result, language: _typing.Literal['tr', 'en'], level, catalog) -> 'dict[str, _typing.Any]':
+    """Use the existing reporting renderer and Advisor; never project v2 as legacy P26.
+
+    Args:
+        result: Retained HYSo result/evidence record; rendering/advice does not run measurements.
+            Required.
+        language (_typing.Literal['tr', 'en']): Presentation language: tr, en, de or es. Technical
+            keys/status codes remain stable. Required.
+        level: Heading level used when embedding a report section. Required.
+        catalog: Translation/metric catalog used to render stable recorded fields. Required.
+    """
     from ..reporting.report import _analysis_section, _comparison_section, _metric
     d = result.to_dict()
     if type(result) is GraphEvaluationResult:

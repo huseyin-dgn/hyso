@@ -41,17 +41,21 @@ class P26ModelProfileComparisonContract(Contract):
     """Declare the P26 evaluation alignment required to compare two model profiles.
 
     Args:
-        allowed_changes (tuple): Explicit model/configuration changes that an advisory proposal may suggest; none are applied automatically. Default: ().
+        allowed_changes (tuple): Explicit model/configuration changes that an advisory proposal may
+            suggest; none are applied automatically. Default: ().
         min_samples (int): Minimum observations required for the statistic. Default: 1.
-        policy (str): Existing protocol/resource policy; defaults do not grant additional consent. Default: 'p26_bound_model_profiles_v1'.
+        policy (str): Existing protocol/resource policy; defaults do not grant additional consent.
+            Default: 'p26_bound_model_profiles_v1'.
 
     Returns:
-        An instance of P26ModelProfileComparisonContract with the documented native validation and defaults.
+        An instance of P26ModelProfileComparisonContract with the documented native validation and
+        defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         P26ModelProfileComparisonContract()
 
@@ -93,17 +97,24 @@ class BoundEvaluationReference:
         checkpoint_sha256 (str | None): Exact SHA-256 digest of the checkpoint. Required.
         binding_method (str): Method used to bind this evidence to its source. Required.
         binding_scope (str): Exact scope within which the binding is valid. Required.
-        snapshot_path (str): Local retained structure-snapshot path. Default: 'native_payload.structure_binding.snapshot'.
+        snapshot_path (str): Local retained structure-snapshot path. Default:
+            'native_payload.structure_binding.snapshot'.
 
     Returns:
         An instance of BoundEvaluationReference with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
-        BoundEvaluationReference(report_id=report_id, report_sha256=report_sha256, record_id=record_id, artifact_sha256=artifact_sha256, payload_sha256=payload_sha256, evaluation_id=evaluation_id, evaluation_source_sha256=evaluation_source_sha256, structure_sha256=structure_sha256, model_state_method=model_state_method, model_state_sha256=model_state_sha256, checkpoint_status=checkpoint_status, checkpoint_sha256=checkpoint_sha256, binding_method=binding_method, binding_scope=binding_scope)
+        BoundEvaluationReference(report_id=report_id, report_sha256=report_sha256, record_id=record_id,
+        artifact_sha256=artifact_sha256, payload_sha256=payload_sha256, evaluation_id=evaluation_id,
+        evaluation_source_sha256=evaluation_source_sha256, structure_sha256=structure_sha256,
+        model_state_method=model_state_method, model_state_sha256=model_state_sha256,
+        checkpoint_status=checkpoint_status, checkpoint_sha256=checkpoint_sha256,
+        binding_method=binding_method, binding_scope=binding_scope)
 
     HYSo Guide: advisor.recommendations
     Offline: hyso docs show advisor.recommendations --lang en
@@ -185,15 +196,17 @@ class UnifiedModelComparison:
     D.2 JSON object; .structure_comparison returns the complete validated object.
 
     Args:
-        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+            version/schema validator. Required.
 
     Returns:
         An instance of UnifiedModelComparison with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         UnifiedModelComparison(data)
 
@@ -212,16 +225,18 @@ class UnifiedModelComparison:
         """Initialize UnifiedModelComparison with the supplied settings.
 
         Args:
-            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+                version/schema validator. Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             UnifiedModelComparison(data)
 
@@ -274,7 +289,7 @@ class UnifiedModelComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.baseline
 
@@ -294,7 +309,7 @@ class UnifiedModelComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.candidate
 
@@ -314,7 +329,7 @@ class UnifiedModelComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.structure_comparison
 
@@ -334,7 +349,7 @@ class UnifiedModelComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.structure_eligibility
 
@@ -354,7 +369,7 @@ class UnifiedModelComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.accuracy_comparison
 
@@ -374,7 +389,7 @@ class UnifiedModelComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.macro_f1_comparison
 
@@ -394,7 +409,7 @@ class UnifiedModelComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.contract
 
@@ -414,7 +429,7 @@ class UnifiedModelComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.limitations
 
@@ -434,7 +449,7 @@ class UnifiedModelComparison:
         Raises:
             No additional input validation; corrupt retained state or native access errors propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.content_sha256
 
@@ -448,12 +463,14 @@ class UnifiedModelComparison:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -467,7 +484,8 @@ class UnifiedModelComparison:
         """Serialize this object using its native JSON format and overwrite policy.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Default: None.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Default: None.
 
         Returns:
             A JSON string when path is None, otherwise None after writing the file.
@@ -476,7 +494,7 @@ class UnifiedModelComparison:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_json()
 
@@ -493,16 +511,18 @@ class UnifiedModelComparison:
         """Validate plain retained data and reconstruct the typed result.
 
         Args:
-            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+                version/schema validator. Required.
 
         Returns:
             A validated UnifiedModelComparison instance reconstructed from the supplied data.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             UnifiedModelComparison.from_dict(data)
 
@@ -517,7 +537,8 @@ class UnifiedModelComparison:
         """Read and validate this type from a local JSON file.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
 
         Returns:
             A validated UnifiedModelComparison instance reconstructed from the supplied data.
@@ -526,7 +547,7 @@ class UnifiedModelComparison:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             UnifiedModelComparison.from_json(path)
 
@@ -551,18 +572,21 @@ def compare_p26_model_profiles(baseline_resolver: '_typing.Any', baseline_record
         baseline_record_id (_typing.Any): Exact baseline evidence-record identity. Required.
         candidate_resolver (_typing.Any): Native metric resolver for candidate evidence. Required.
         candidate_record_id (_typing.Any): Exact candidate evidence-record identity. Required.
-        contract (_typing.Any): Typed comparison/evaluation contract required by the operation. Default: None.
+        contract (_typing.Any): Typed comparison/evaluation contract required by the operation. Default:
+            None.
 
     Returns:
         The retained compare p26 model profiles value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
-        compare_p26_model_profiles(baseline_resolver, baseline_record_id, candidate_resolver, candidate_record_id)
+        compare_p26_model_profiles(baseline_resolver, baseline_record_id, candidate_resolver,
+        candidate_record_id)
 
     HYSo Guide: comparison.models
     Offline: hyso docs show comparison.models --lang en

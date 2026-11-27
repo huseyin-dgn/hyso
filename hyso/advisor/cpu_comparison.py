@@ -6,6 +6,14 @@ from .resolver import NativeMetric
 
 
 def capture_conditions(resolver,record_id,contract,side):
+    """Capture conditions using the explicitly supplied evidence.
+
+    Args:
+        resolver: Explicit resolver for existing compatible native metric evidence. Required.
+        record_id: Stable evidence-record identifier within the resolver. Required.
+        contract: Declared comparison compatibility contract; mismatches remain explicit. Required.
+        side: Evidence side, baseline or candidate. Required.
+    """
     from .comparison import ComparisonReason,_QUANTILES
     reasons=[]
     def reason(code,field):reasons.append(ComparisonReason(code,field,side))

@@ -43,34 +43,38 @@ def _attention(name, channels):
 class ModularCNN(nn.Module):
     """Stem -> residual stages -> global average pool -> linear logits.
 
-    widths/repeats/strides are equally sized, nonempty tuples or lists of
-    positive Python integers. Lists are copied into immutable tuples; values
-    are never coerced. The stem is a stride-1 ConvNormAct. Only each stage's
-    first ResidualBlock uses that stage's stride; all subsequent strides are 1.
-
-    attention is 'none', 'se', 'cbam', 'eca' or 'coordinate', with a fresh instance
-    for every block. norm is 'batch', 'group' or None for convolution blocks;
-    CoordinateAttention retains its own BatchNorm. Attention defaults come from
-    the existing modules. No device selection, fit/optimizer/AMP/checkpoint API,
-    or EBO epoch-boundary resume support is provided. Use normal Module.to().
-
     Args:
-        input_channels (int): Number of input image/feature channels. Default: 3.
-        num_classes (int): Classifier output width; binary/multiclass loss requirements must match. Default: 10.
-        widths (tuple[int, ...] | list[int]): Ordered feature widths for the architecture stages. Default: (32, 64, 128).
-        repeats (tuple[int, ...] | list[int]): Number of independently recorded measurement windows/repeats. Default: (1, 1, 1).
-        strides (tuple[int, ...] | list[int]): Ordered spatial sampling steps for the architecture stages. Default: (1, 2, 2).
-        attention (str): Supported attention object/configuration for this constructor; no external plugin is inferred. Default: 'none'.
-        norm (str | None): Supported normalization choice; native training-statistics requirements still apply. Default: 'batch'.
+        input_channels (int): Input image channels C; must match the first model stage. Positive
+            integer; the Registry/Builder profile additionally caps it at 8192. Default: 3.
+        num_classes (int): Number of output class logits. Outputs are unnormalized scores, not
+            probabilities. Positive integer; the Registry/Builder profile additionally caps it at 8192.
+            Default: 10.
+        widths (tuple[int, ...] | list[int]): Per-stage output channels; length must match repeats and
+            strides. Sequence of 1..16 integers, each in 1..8192. Default: (32, 64, 128).
+        repeats (tuple[int, ...] | list[int]): Number of blocks per stage; same length as
+            widths/strides, with at most 64 blocks in total. Sequence of 1..16 integers, each in
+            1..8192. Default: (1, 1, 1).
+        strides (tuple[int, ...] | list[int]): First-block spatial stride for each stage; remaining
+            blocks use stride 1. Sequence of 1..16 integers, each in 1..8192. Default: (1, 2, 2).
+        attention (_typing.Literal['none', 'se', 'cbam', 'eca', 'coordinate']): Attention selector
+            inside the block; applies channel/spatial gates without resizing. Choices: 'none', 'se',
+            'cbam', 'eca', 'coordinate'. Default: 'none'.
+        norm (_typing.Literal['batch', 'group', None]): Optional post-convolution normalization: batch,
+            group or None. Group normalization chooses the largest channel divisor <=8; convolution bias
+            is enabled only without normalization. Choices: 'batch', 'group', None. Default: 'batch'.
 
     Returns:
-        An instance of ModularCNN with the documented native validation and defaults.
+        A ModularCNN module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ValueError, TypeError: Constructor channel, shape or option validation fails; native PyTorch
+        errors propagate.
 
-    Example:
+    Notes:
+        Floating nonempty [N,input_channels,H,W]; normal model.to(device/dtype) semantics.
+        [N,num_classes] unnormalized classification logits.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ModularCNN()
 
@@ -87,24 +91,37 @@ class ModularCNN(nn.Module):
         """Build a classification CNN without choosing a device or training it.
 
         Args:
-            input_channels: Positive NCHW input channel count.
-            num_classes: Positive number of output logits per example.
-            widths: Positive output channels for each residual stage.
-            repeats: Positive number of blocks per stage; same length as widths.
-            strides: First-block stride per stage; later blocks use stride one.
-            attention: 'none', 'se', 'cbam', 'eca' or 'coordinate'.
-            norm: 'batch', 'group' or None for the convolution blocks.
-
-        Raises:
-            ValueError: Invalid dimensions or unsupported attention/normalization.
-
-        Defaults:
-            input_channels=3; num_classes=10; widths=(32, 64, 128); repeats=(1, 1, 1); strides=(1, 2, 2); attention='none'; norm='batch'.
+            input_channels (int): Input image channels C; must match the first model stage. Positive
+                integer; the Registry/Builder profile additionally caps it at 8192. Default: 3.
+            num_classes (int): Number of output class logits. Outputs are unnormalized scores, not
+                probabilities. Positive integer; the Registry/Builder profile additionally caps it at 8192.
+                Default: 10.
+            widths (tuple[int, ...] | list[int]): Per-stage output channels; length must match repeats and
+                strides. Sequence of 1..16 integers, each in 1..8192. Default: (32, 64, 128).
+            repeats (tuple[int, ...] | list[int]): Number of blocks per stage; same length as
+                widths/strides, with at most 64 blocks in total. Sequence of 1..16 integers, each in
+                1..8192. Default: (1, 1, 1).
+            strides (tuple[int, ...] | list[int]): First-block spatial stride for each stage; remaining
+                blocks use stride 1. Sequence of 1..16 integers, each in 1..8192. Default: (1, 2, 2).
+            attention (_typing.Literal['none', 'se', 'cbam', 'eca', 'coordinate']): Attention selector
+                inside the block; applies channel/spatial gates without resizing. Choices: 'none', 'se',
+                'cbam', 'eca', 'coordinate'. Default: 'none'.
+            norm (_typing.Literal['batch', 'group', None]): Optional post-convolution normalization: batch,
+                group or None. Group normalization chooses the largest channel divisor <=8; convolution bias
+                is enabled only without normalization. Choices: 'batch', 'group', None. Default: 'batch'.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
-        Example:
+        Raises:
+            ValueError, TypeError: Constructor channel, shape or option validation fails; native PyTorch
+            errors propagate.
+
+        Notes:
+            Floating nonempty [N,input_channels,H,W]; normal model.to(device/dtype) semantics.
+            [N,num_classes] unnormalized classification logits.
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ModularCNN()
 
@@ -145,7 +162,8 @@ class ModularCNN(nn.Module):
         """Return the final stage's NCHW feature map, before global pooling.
 
         Args:
-            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             The retained forward features value, without recomputing measurements.
@@ -154,7 +172,7 @@ class ModularCNN(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward_features(x)
 
@@ -175,7 +193,8 @@ class ModularCNN(nn.Module):
         """Map nonempty NCHW inputs to [batch, num_classes] unnormalized logits.
 
         Args:
-            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (torch.Tensor): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -184,7 +203,7 @@ class ModularCNN(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 

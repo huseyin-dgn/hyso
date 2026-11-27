@@ -30,10 +30,11 @@ class PipelineSample:
         An instance of PipelineSample with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         PipelineSample(sample_id=sample_id, payload=payload)
 
@@ -50,18 +51,21 @@ class PipelineStage:
     """Describe one explicit pipeline stage callable and its timing boundary.
 
     Args:
-        name (str): Registered component name, exact metric label, or stored entity name in this API. Required.
+        name (str): Registered component name, exact metric label, or stored entity name in this API.
+            Required.
         function (object): Explicit caller-supplied callable to observe. Required.
-        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default:
+            'cpu'.
 
     Returns:
         An instance of PipelineStage with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         PipelineStage(name=name, function=function)
 
@@ -89,11 +93,14 @@ def _callable(fn):
 
 @dataclass(frozen=True)
 class PipelineProtocol:
-    """Configure P03 — End-to-end latency measurement boundaries and resource limits; construction does not run the analysis.
+    """Configure P03 — End-to-end latency measurement boundaries and resource limits; construction does not
+    run the analysis.
 
     Args:
-        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
-        precision (str): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: 'fp32'.
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default:
+            'cpu'.
+        precision (str): Supported numerical format; runtime/task/device restrictions remain
+            authoritative. Default: 'fp32'.
         samples (int): Explicit observations/sample count required by this API. Default: 10.
         repeats (int): Number of independently recorded measurement windows/repeats. Default: 1.
         warmup_samples (int): Samples discarded as warmup before reporting. Default: 1.
@@ -103,9 +110,10 @@ class PipelineProtocol:
         An instance of PipelineProtocol with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         PipelineProtocol()
 
@@ -184,22 +192,26 @@ def measure_pipeline(model: '_typing.Any', source: '_typing.Any', *, preprocess:
     instrumented analysis, never a BenchmarkRunner latency or sustained FPS run.
 
     Args:
-        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
-        source (_typing.Any): Typed native/retained source required by this API, not a declaration of producer authority. Required.
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation.
+            Required.
+        source (_typing.Any): Typed native/retained source required by this API, not a declaration of
+            producer authority. Required.
         preprocess (_typing.Any): Explicit preprocessing stage callable. Default: None.
         transfer (_typing.Any): Explicit transfer stage callable. Default: None.
         postprocess (_typing.Any): Explicit postprocessing stage callable. Default: None.
         deliver (_typing.Any): Explicit delivery stage callable. Default: None.
-        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: PipelineProtocol().
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards
+            remain unchanged. Default: PipelineProtocol().
 
     Returns:
         The retained measure pipeline value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         measure_pipeline(model, source)
 
@@ -343,16 +355,18 @@ def analyze_stages(pipeline_result: '_typing.Any') -> 'StageTimingResult':
     """Build separate P04 result from measured stage evidence without rerunning.
 
     Args:
-        pipeline_result (_typing.Any): Existing retained pipeline result with its original timing boundaries. Required.
+        pipeline_result (_typing.Any): Existing retained pipeline result with its original timing
+            boundaries. Required.
 
     Returns:
         The retained analyze stages value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         analyze_stages(pipeline_result)
 
@@ -375,8 +389,10 @@ def measure_stages(model: '_typing.Any', source: '_typing.Any', *, preprocess: P
     """Measure caller-declared pipeline stages using the measure_pipeline contract.
 
     Args:
-        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
-        source (_typing.Any): Typed native/retained source required by this API, not a declaration of producer authority. Required.
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation.
+            Required.
+        source (_typing.Any): Typed native/retained source required by this API, not a declaration of
+            producer authority. Required.
         preprocess (PipelineStage | None): Explicit preprocessing stage. Default: None.
         transfer (PipelineStage | None): Explicit transfer stage. Default: None.
         postprocess (PipelineStage | None): Explicit postprocessing stage. Default: None.
@@ -387,10 +403,11 @@ def measure_stages(model: '_typing.Any', source: '_typing.Any', *, preprocess: P
         The retained measure stages value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         measure_stages(model, source)
 

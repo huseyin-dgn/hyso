@@ -25,26 +25,36 @@ _owned_worker_launcher = ContextVar('hyso_owned_worker_launcher', default=None)
 
 @dataclass(frozen=True,init=False)
 class ColdStartRecipe:
-    """Describe the trusted factory and inputs for P05 — Cold start and loading; the recipe alone does not start its worker.
+    """Describe the trusted factory and inputs for P05 — Cold start and loading; the recipe alone does not
+    start its worker.
 
     Args:
-        factory (_typing.Any): Trusted importable factory identity required by the worker recipe. Required.
-        model_kwargs (_typing.Any): Closed constructor options for the trusted model factory. Default: None.
-        input_shape (_typing.Sequence[int]): Per-sample (C, H, W) dimensions; batch is excluded. Default: (1, 1, 5, 7).
-        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
-        precision (str): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: 'fp32'.
-        artifact_path (_typing.Any): Explicit local artifact path; native ownership and overwrite rules apply. Default: None.
+        factory (_typing.Any): Trusted importable factory identity required by the worker recipe.
+            Required.
+        model_kwargs (_typing.Any): Closed constructor options for the trusted model factory. Default:
+            None.
+        input_shape (_typing.Sequence[int]): Per-sample (C, H, W) dimensions; batch is excluded.
+            Default: (1, 1, 5, 7).
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default:
+            'cpu'.
+        precision (str): Supported numerical format; runtime/task/device restrictions remain
+            authoritative. Default: 'fp32'.
+        artifact_path (_typing.Any): Explicit local artifact path; native ownership and overwrite rules
+            apply. Default: None.
         artifact_sha256 (_typing.Any): Exact serialized artifact digest. Default: None.
-        factory_search_path (_typing.Any): Explicit trusted factory import search directory. Default: None.
-        seed (int): Random seed recorded/applied by this operation; reproducibility still depends on the device/backend. Default: 0.
+        factory_search_path (_typing.Any): Explicit trusted factory import search directory. Default:
+            None.
+        seed (int): Random seed recorded/applied by this operation; reproducibility still depends on the
+            device/backend. Default: 0.
 
     Returns:
         An instance of ColdStartRecipe with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ColdStartRecipe(factory)
 
@@ -60,24 +70,33 @@ class ColdStartRecipe:
         """Initialize ColdStartRecipe with the supplied settings.
 
         Args:
-            factory (_typing.Any): Trusted importable factory identity required by the worker recipe. Required.
-            model_kwargs (_typing.Any): Closed constructor options for the trusted model factory. Default: None.
-            input_shape (_typing.Sequence[int]): Per-sample (C, H, W) dimensions; batch is excluded. Default: (1, 1, 5, 7).
-            device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
-            precision (str): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: 'fp32'.
-            artifact_path (_typing.Any): Explicit local artifact path; native ownership and overwrite rules apply. Default: None.
+            factory (_typing.Any): Trusted importable factory identity required by the worker recipe.
+                Required.
+            model_kwargs (_typing.Any): Closed constructor options for the trusted model factory. Default:
+                None.
+            input_shape (_typing.Sequence[int]): Per-sample (C, H, W) dimensions; batch is excluded.
+                Default: (1, 1, 5, 7).
+            device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default:
+                'cpu'.
+            precision (str): Supported numerical format; runtime/task/device restrictions remain
+                authoritative. Default: 'fp32'.
+            artifact_path (_typing.Any): Explicit local artifact path; native ownership and overwrite rules
+                apply. Default: None.
             artifact_sha256 (_typing.Any): Exact serialized artifact digest. Default: None.
-            factory_search_path (_typing.Any): Explicit trusted factory import search directory. Default: None.
-            seed (int): Random seed recorded/applied by this operation; reproducibility still depends on the device/backend. Default: 0.
+            factory_search_path (_typing.Any): Explicit trusted factory import search directory. Default:
+                None.
+            seed (int): Random seed recorded/applied by this operation; reproducibility still depends on the
+                device/backend. Default: 0.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ColdStartRecipe(factory)
 
@@ -106,12 +125,14 @@ class ColdStartRecipe:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -124,7 +145,8 @@ class ColdStartRecipe:
 
 @dataclass(frozen=True)
 class ColdStartProtocol:
-    """Configure P05 — Cold start and loading measurement boundaries and resource limits; construction does not run the analysis.
+    """Configure P05 — Cold start and loading measurement boundaries and resource limits; construction does
+    not run the analysis.
 
     Args:
         trials (int): Explicit bounded trial configurations. Default: 3.
@@ -136,9 +158,10 @@ class ColdStartProtocol:
         An instance of ColdStartProtocol with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ColdStartProtocol()
 
@@ -272,17 +295,20 @@ def measure_cold_start(recipe: '_typing.Any',*,protocol: '_typing.Any'=ColdStart
     Failures/timeouts/crashes are terminal trial evidence, not successful latency.
 
     Args:
-        recipe (_typing.Any): Trusted construction recipe; factory import/execution is governed by the existing operation contract. Required.
-        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: ColdStartProtocol().
+        recipe (_typing.Any): Trusted construction recipe; factory import/execution is governed by the
+            existing operation contract. Required.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards
+            remain unchanged. Default: ColdStartProtocol().
 
     Returns:
         The retained measure cold start value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         measure_cold_start(recipe)
 

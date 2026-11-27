@@ -31,26 +31,33 @@ class _Unsupported(ValueError):
 
 @dataclass(frozen=True)
 class SweepProtocol:
-    """Configure P06 — Batch-size sweep measurement boundaries and resource limits; construction does not run the analysis.
+    """Configure P06 — Batch-size sweep measurement boundaries and resource limits; construction does not
+    run the analysis.
 
     Args:
-        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cpu'.
-        precision (str): Supported numerical format; runtime/task/device restrictions remain authoritative. Default: 'fp32'.
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default:
+            'cpu'.
+        precision (str): Supported numerical format; runtime/task/device restrictions remain
+            authoritative. Default: 'fp32'.
         warmup_iterations (int): Unreported warmup iteration count before measured samples. Default: 2.
         measure_iterations (int): Measured iteration count per repeat. Default: 10.
         repeats (int): Number of independently recorded measurement windows/repeats. Default: 1.
-        sustained_batches (int | None): Consecutive batches required by the native sustained-capacity rule. Default: None.
+        sustained_batches (int | None): Consecutive batches required by the native sustained-capacity
+            rule. Default: None.
         queue_depth (int): Bound on in-flight pipeline work. Default: 4.
-        continue_on_error (bool): Continue only under the native per-point error policy; errors remain in results. Default: True.
-        measure_cuda_memory (bool): Request CUDA memory counters under the existing measurement guard. Default: False.
+        continue_on_error (bool): Continue only under the native per-point error policy; errors remain
+            in results. Default: True.
+        measure_cuda_memory (bool): Request CUDA memory counters under the existing measurement guard.
+            Default: False.
 
     Returns:
         An instance of SweepProtocol with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         SweepProtocol()
 
@@ -270,21 +277,25 @@ def run_sweep(model: '_typing.Any', input_factory: '_typing.Any', *, axis: _typi
     are fatal exceptions. There is no interpolation or automatic compatibility.
 
     Args:
-        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation. Required.
+        model (_typing.Any): Caller-owned model; device, dtype and task must match the native operation.
+            Required.
         input_factory (_typing.Any): Trusted input factory bound to this measurement. Required.
         axis (_typing.Any): Explicit non-batch concatenation axis. Required.
         points (_typing.Any): Explicit bounded sweep/calibration points. Required.
-        input_shape (_typing.Sequence[int]): Per-sample (C, H, W) dimensions; batch is excluded. Default: (1, 1, 5, 7).
-        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: SweepProtocol().
+        input_shape (_typing.Sequence[int]): Per-sample (C, H, W) dimensions; batch is excluded.
+            Default: (1, 1, 5, 7).
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards
+            remain unchanged. Default: SweepProtocol().
 
     Returns:
         The retained run sweep value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         run_sweep(model, input_factory, axis=axis, points=points)
 

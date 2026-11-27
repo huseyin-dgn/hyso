@@ -29,31 +29,39 @@ class TransferProtocol:
     NVTX phase labels for an external nsys capture; no profiler is launched here.
 
     Args:
-        shape (tuple[int, ...]): Explicit target tensor shape; element-count and batch-preservation rules apply. Default: (262144,).
+        shape (tuple[int, ...]): Explicit target tensor shape; element-count and batch-preservation
+            rules apply. Default: (262144,).
         dtype (str): Explicit supported tensor dtype. Default: 'float32'.
         directions (tuple[str, ...]): Explicit host/device transfer directions. Default: ('H2D', 'D2H').
         pinned (bool): Use pinned host memory where supported. Default: False.
-        non_blocking (bool): Request asynchronous copies where supported; completion is still measured explicitly. Default: False.
-        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default: 'cuda:0'.
+        non_blocking (bool): Request asynchronous copies where supported; completion is still measured
+            explicitly. Default: False.
+        device (str): Explicit cpu or cuda:index device; this setting grants no GPU admission. Default:
+            'cuda:0'.
         layout (str): Declared tensor memory layout. Default: 'contiguous_dense'.
         warmup_iterations (int): Unreported warmup iteration count before measured samples. Default: 2.
         measure_iterations (int): Measured iteration count per repeat. Default: 5.
         repeats (int): Number of independently recorded measurement windows/repeats. Default: 2.
         timeout_seconds (float): Timeout in seconds under the native protocol. Default: 45.0.
-        cpu_memory_limit_bytes (int | None): Cpu memory limit in bytes; this does not imply a GPU hardware quota. Default: None.
-        input_limit_bytes (int | None): Input limit in bytes; this does not imply a GPU hardware quota. Default: None.
-        cuda_memory_fraction (float | None): Requested CUDA allocator fraction; not a hardware VRAM quota or admission grant. Default: None.
+        cpu_memory_limit_bytes (int | None): Cpu memory limit in bytes; this does not imply a GPU
+            hardware quota. Default: None.
+        input_limit_bytes (int | None): Input limit in bytes; this does not imply a GPU hardware quota.
+            Default: None.
+        cuda_memory_fraction (float | None): Requested CUDA allocator fraction; not a hardware VRAM
+            quota or admission grant. Default: None.
         probe_overlap (bool): Request a separately reported overlap probe. Default: False.
-        compare_execution (bool): Request the supported execution comparison within this explicit measurement. Default: False.
+        compare_execution (bool): Request the supported execution comparison within this explicit
+            measurement. Default: False.
         profile_capture (bool): Retained profiling capture bound to this identity. Default: False.
 
     Returns:
         An instance of TransferProtocol with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         TransferProtocol()
 
@@ -118,10 +126,11 @@ class TransferError(RuntimeError):
         An instance of TransferError with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         TransferError(diagnostics)
 
@@ -139,10 +148,11 @@ class TransferError(RuntimeError):
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             TransferError(diagnostics)
 
@@ -244,16 +254,18 @@ def measure_transfers(*, protocol: '_typing.Any'=TransferProtocol()) -> 'Transfe
     streams, with paired wall timings, warmup, validation and a scoped decision.
 
     Args:
-        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: TransferProtocol().
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards
+            remain unchanged. Default: TransferProtocol().
 
     Returns:
         The retained measure transfers value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         measure_transfers()
 

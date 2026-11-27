@@ -25,16 +25,20 @@ class DropPath(nn.Module):
     """Sample-wise tensor masking, x*Bernoulli(1-p)/(1-p) in train, identity in eval.
 
     Args:
-        p (float): Probability of dropping an element/path during training. Default: 0.0.
+        p (float): Probability of dropping elements, channels or paths during training; evaluation
+            disables masking. Finite number in [0,1). Default: 0.0.
 
     Returns:
-        An instance of DropPath with the documented native validation and defaults.
+        A DropPath module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Nonempty floating NCHW.
+        Same shape and dtype; explicit training-only masking.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         DropPath()
 
@@ -46,16 +50,20 @@ class DropPath(nn.Module):
         """Initialize DropPath with the supplied settings.
 
         Args:
-            p (float): p Default: 0.0.
+            p (float): Probability of dropping elements, channels or paths during training; evaluation
+                disables masking. Finite number in [0,1). Default: 0.0.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Nonempty floating NCHW.
+            Same shape and dtype; explicit training-only masking.
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             DropPath()
 
@@ -71,7 +79,8 @@ class DropPath(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -80,7 +89,7 @@ class DropPath(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -99,16 +108,20 @@ class GaussianNoise(nn.Module):
     """Add independent zero-mean Gaussian noise in train, identity in eval.
 
     Args:
-        std (float): Standard deviation of sampled noise. Default: 0.1.
+        std (float): Standard deviation of training-only zero-mean Gaussian noise; finite, nonnegative
+            and at most 1e6. Finite nonnegative number. Default: 0.1.
 
     Returns:
-        An instance of GaussianNoise with the documented native validation and defaults.
+        A GaussianNoise module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Nonempty floating NCHW.
+        Same shape and dtype; explicit training-only masking.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         GaussianNoise()
 
@@ -120,16 +133,20 @@ class GaussianNoise(nn.Module):
         """Initialize GaussianNoise with the supplied settings.
 
         Args:
-            std (float): std Default: 0.1.
+            std (float): Standard deviation of training-only zero-mean Gaussian noise; finite, nonnegative
+                and at most 1e6. Finite nonnegative number. Default: 0.1.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Nonempty floating NCHW.
+            Same shape and dtype; explicit training-only masking.
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             GaussianNoise()
 
@@ -145,7 +162,8 @@ class GaussianNoise(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
             generator (_typing.Any): Optional caller-owned torch.Generator. Default: None.
 
         Returns:
@@ -155,7 +173,7 @@ class GaussianNoise(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -173,17 +191,22 @@ class SpatialAttention(nn.Module):
     """Channel mean/max descriptors -> odd spatial convolution -> sigmoid gate.
 
     Args:
-        channels (_typing.Any): Feature-channel count required by this block. Required.
-        kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 7.
+        channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+            in 1..8192; bool is rejected. Required.
+        kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+            both axes. Odd integer in 1..8192; bool is rejected. Default: 7.
 
     Returns:
-        An instance of SpatialAttention with the documented native validation and defaults.
+        A SpatialAttention module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating [N,channels,H,W], all dimensions positive.
+        Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         SpatialAttention(channels)
 
@@ -195,17 +218,22 @@ class SpatialAttention(nn.Module):
         """Initialize SpatialAttention with the supplied settings.
 
         Args:
-            channels (int): Feature-channel count required by this block. Required.
-            kernel_size (int): Spatial filter/window extent; accepted integer/pair and oddness rules depend on the component. Default: 7.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 7.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             SpatialAttention(channels)
 
@@ -222,7 +250,8 @@ class SpatialAttention(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -231,7 +260,7 @@ class SpatialAttention(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -248,17 +277,23 @@ class ChannelAttention(nn.Module):
     """Shared 1x1 MLP of spatial mean/max descriptors, summed sigmoid channel gate.
 
     Args:
-        channels (_typing.Any): Feature-channel count required by this block. Required.
-        reduction (int): Channel reduction ratio used by the attention bottleneck. Default: 8.
+        channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+            in 1..8192; bool is rejected. Required.
+        reduction (int): Channel-gate reduction divisor; hidden width is max(1,C//reduction), or
+            max(8,C//reduction) for coordinate attention. Integer in 1..8192; bool is rejected. Default:
+            8.
 
     Returns:
-        An instance of ChannelAttention with the documented native validation and defaults.
+        A ChannelAttention module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating [N,channels,H,W], all dimensions positive.
+        Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         ChannelAttention(channels)
 
@@ -270,17 +305,23 @@ class ChannelAttention(nn.Module):
         """Initialize ChannelAttention with the supplied settings.
 
         Args:
-            channels (int): Feature-channel count required by this block. Required.
-            reduction (int): Channel reduction ratio used by the attention bottleneck. Default: 8.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            reduction (int): Channel-gate reduction divisor; hidden width is max(1,C//reduction), or
+                max(8,C//reduction) for coordinate attention. Integer in 1..8192; bool is rejected. Default:
+                8.
 
         Returns:
-            None. Initialize this object; use its explicit operation methods to request work.
+            None; initializes the module.
 
         Raises:
-            ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-            RuntimeError: A requested native construction/forward operation fails.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             ChannelAttention(channels)
 
@@ -298,7 +339,8 @@ class ChannelAttention(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -307,7 +349,7 @@ class ChannelAttention(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -337,18 +379,26 @@ class SpatialSelfAttention(nn.Module):
     """NCHW -> H*W tokens -> scaled dot-product attention -> projected NCHW.
 
     Args:
-        channels: channels. Required.
-        embedding_dim: embedding dim. Default: None.
-        dropout: dropout. Default: 0.0.
+        channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+            in 1..8192; bool is rejected. Required.
+        embedding_dim (int | None): Attention projection width or output embedding width, according to
+            the component. None in self-attention uses C; QKV requires 3*embedding_dim<=8192. None or
+            integer in 1..8192. Default: None.
+        dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+            number in [0,1). Default: 0.0.
 
     Returns:
-        An instance of SpatialSelfAttention with the documented native validation and defaults.
+        A SpatialSelfAttention module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating [N,channels,H,W], all dimensions positive.
+        Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+        QKV channels <=8192, H*W<=1024 and N*heads*(H*W)^2<=4194304 are mandatory resource bounds.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         SpatialSelfAttention(channels=4)
 
@@ -362,14 +412,26 @@ class SpatialSelfAttention(nn.Module):
         """Construct SpatialSelfAttention through its existing registry validator.
 
         Args:
-            channels: channels.
-            embedding_dim: embedding dim.
-            dropout: dropout.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            embedding_dim (int | None): Attention projection width or output embedding width, according to
+                the component. None in self-attention uses C; QKV requires 3*embedding_dim<=8192. None or
+                integer in 1..8192. Default: None.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
+
         Returns:
-            None; initializes the existing native module with the supplied options.
+            None; initializes the module.
+
         Raises:
-            ValueError, TypeError: Native component parameter validation fails.
-        Example:
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
+
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+            QKV channels <=8192, H*W<=1024 and N*heads*(H*W)^2<=4194304 are mandatory resource bounds.
+
+        Examples:
             model = SpatialSelfAttention(channels=4)
 
         HYSo Guide: components.attention
@@ -413,7 +475,8 @@ class SpatialSelfAttention(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -422,7 +485,7 @@ class SpatialSelfAttention(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -445,14 +508,30 @@ class SpatialSelfAttention(nn.Module):
 class MultiHeadSpatialAttention(SpatialSelfAttention):
     """Independent spatial attention heads with an explicit embedding projection.
 
+    Args:
+        channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+            in 1..8192; bool is rejected. Required.
+        embedding_dim (int | None): Attention projection width or output embedding width, according to
+            the component. None in self-attention uses C; QKV requires 3*embedding_dim<=8192. None or
+            integer in 1..8192. Default: None.
+        num_heads (int): Parallel attention heads; must divide embedding_dim. Spatial attention is
+            limited to 1024 tokens and N*heads*tokens^2<=4194304. Integer in 1..8192; bool is rejected.
+            Default: 4.
+        dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+            number in [0,1). Default: 0.0.
+
     Returns:
-        An instance of MultiHeadSpatialAttention with the documented native validation and defaults.
+        A MultiHeadSpatialAttention module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating [N,channels,H,W], all dimensions positive.
+        Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+        QKV channels <=8192, H*W<=1024 and N*heads*(H*W)^2<=4194304 are mandatory resource bounds.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         MultiHeadSpatialAttention(channels=4)
 
@@ -466,15 +545,29 @@ class MultiHeadSpatialAttention(SpatialSelfAttention):
         """Construct MultiHeadSpatialAttention through its existing registry validator.
 
         Args:
-            channels: channels.
-            embedding_dim: embedding dim.
-            num_heads: num heads.
-            dropout: dropout.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            embedding_dim (int | None): Attention projection width or output embedding width, according to
+                the component. None in self-attention uses C; QKV requires 3*embedding_dim<=8192. None or
+                integer in 1..8192. Default: None.
+            num_heads (int): Parallel attention heads; must divide embedding_dim. Spatial attention is
+                limited to 1024 tokens and N*heads*tokens^2<=4194304. Integer in 1..8192; bool is rejected.
+                Default: 4.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
+
         Returns:
-            None; initializes the existing native module with the supplied options.
+            None; initializes the module.
+
         Raises:
-            ValueError, TypeError: Native component parameter validation fails.
-        Example:
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
+
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+            QKV channels <=8192, H*W<=1024 and N*heads*(H*W)^2<=4194304 are mandatory resource bounds.
+
+        Examples:
             model = MultiHeadSpatialAttention(channels=4)
 
         HYSo Guide: components.attention
@@ -521,26 +614,46 @@ class AdvancedResidual(nn.Module):
     """Explicit main branch plus raw-input identity or 1x1 projection shortcut.
 
     Args:
-        in_channels: in channels. Required.
-        out_channels: out channels. Required.
-        intermediate_channels: intermediate channels. Required.
-        kernel_size: kernel size. Default: 3.
-        stride: stride. Default: 1.
-        dilation: dilation. Default: 1.
-        normalization: normalization. Default: 'batch'.
-        activation: activation. Default: 'silu'.
-        attention: attention. Default: 'none'.
-        dropout: dropout. Default: 0.0.
-        drop_path: drop path. Default: 0.0.
+        in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+            in 1..8192; bool is rejected. Required.
+        out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+            bool is rejected. Required.
+        intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+            min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+            1..8192; bool is rejected. Required.
+        kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+            both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+        stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+            reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+            Default: 1.
+        dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+            is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+        normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+            features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+        activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+            only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+            'silu'.
+        attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+            selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+            'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+        dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+            number in [0,1). Default: 0.0.
+        drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+            Finite number in [0,1). Default: 0.0.
 
     Returns:
-        An instance of AdvancedResidual with the documented native validation and defaults.
+        A AdvancedResidual module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating [N,in_channels,H,W]; attention channels equal out_channels.
+        [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+        Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+        projection shortcut; intermediate channels remain bounded to 8192.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         AdvancedResidual(in_channels=4, out_channels=4, intermediate_channels=4)
 
@@ -554,22 +667,46 @@ class AdvancedResidual(nn.Module):
         """Construct AdvancedResidual through its existing registry validator.
 
         Args:
-            in_channels: in channels.
-            out_channels: out channels.
-            intermediate_channels: intermediate channels.
-            kernel_size: kernel size.
-            stride: stride.
-            dilation: dilation.
-            normalization: normalization.
-            activation: activation.
-            attention: attention.
-            dropout: dropout.
-            drop_path: drop path.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+                min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+                1..8192; bool is rejected. Required.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+                features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+            activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+                only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+                'silu'.
+            attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+                selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+                'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
+            drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+                Finite number in [0,1). Default: 0.0.
+
         Returns:
-            None; initializes the existing native module with the supplied options.
+            None; initializes the module.
+
         Raises:
-            ValueError, TypeError: Native component parameter validation fails.
-        Example:
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
+
+        Notes:
+            Floating [N,in_channels,H,W]; attention channels equal out_channels.
+            [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+            Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+            projection shortcut; intermediate channels remain bounded to 8192.
+
+        Examples:
             model = AdvancedResidual(in_channels=4, out_channels=4, intermediate_channels=4)
 
         HYSo Guide: components.residual
@@ -623,7 +760,8 @@ class AdvancedResidual(nn.Module):
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract. Required.
+            x (_typing.Any): Input Tensor(s) obeying the model/block shape, dtype and device contract.
+                Required.
 
         Returns:
             Native Tensor output(s) of this model/block; this call performs the forward computation.
@@ -632,7 +770,7 @@ class AdvancedResidual(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(x)
 
@@ -658,14 +796,47 @@ class AdvancedResidual(nn.Module):
 class PreActivationResidual(AdvancedResidual):
     """Apply normalization and activation before the residual convolutions.
 
+    Args:
+        in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+            in 1..8192; bool is rejected. Required.
+        out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+            bool is rejected. Required.
+        intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+            min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+            1..8192; bool is rejected. Required.
+        kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+            both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+        stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+            reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+            Default: 1.
+        dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+            is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+        normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+            features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+        activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+            only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+            'silu'.
+        attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+            selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+            'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+        dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+            number in [0,1). Default: 0.0.
+        drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+            Finite number in [0,1). Default: 0.0.
+
     Returns:
-        An instance of PreActivationResidual with the documented native validation and defaults.
+        A PreActivationResidual module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating [N,in_channels,H,W]; attention channels equal out_channels.
+        [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+        Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+        projection shortcut; intermediate channels remain bounded to 8192.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         PreActivationResidual(in_channels=4, out_channels=4, intermediate_channels=4)
 
@@ -679,22 +850,46 @@ class PreActivationResidual(AdvancedResidual):
         """Construct PreActivationResidual through its existing registry validator.
 
         Args:
-            in_channels: in channels.
-            out_channels: out channels.
-            intermediate_channels: intermediate channels.
-            kernel_size: kernel size.
-            stride: stride.
-            dilation: dilation.
-            normalization: normalization.
-            activation: activation.
-            attention: attention.
-            dropout: dropout.
-            drop_path: drop path.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+                min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+                1..8192; bool is rejected. Required.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+                features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+            activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+                only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+                'silu'.
+            attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+                selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+                'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
+            drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+                Finite number in [0,1). Default: 0.0.
+
         Returns:
-            None; initializes the existing native module with the supplied options.
+            None; initializes the module.
+
         Raises:
-            ValueError, TypeError: Native component parameter validation fails.
-        Example:
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
+
+        Notes:
+            Floating [N,in_channels,H,W]; attention channels equal out_channels.
+            [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+            Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+            projection shortcut; intermediate channels remain bounded to 8192.
+
+        Examples:
             model = PreActivationResidual(in_channels=4, out_channels=4, intermediate_channels=4)
 
         HYSo Guide: components.residual
@@ -707,14 +902,47 @@ class PreActivationResidual(AdvancedResidual):
 class WideResidual(AdvancedResidual):
     """Use a wider residual feature path with the declared channel and stride settings.
 
+    Args:
+        in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+            in 1..8192; bool is rejected. Required.
+        out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+            bool is rejected. Required.
+        intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+            min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+            1..8192; bool is rejected. Required.
+        kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+            both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+        stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+            reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+            Default: 1.
+        dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+            is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+        normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+            features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+        activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+            only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+            'silu'.
+        attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+            selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+            'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+        dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+            number in [0,1). Default: 0.0.
+        drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+            Finite number in [0,1). Default: 0.0.
+
     Returns:
-        An instance of WideResidual with the documented native validation and defaults.
+        A WideResidual module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating [N,in_channels,H,W]; attention channels equal out_channels.
+        [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+        Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+        projection shortcut; intermediate channels remain bounded to 8192.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         WideResidual(in_channels=4, out_channels=4, intermediate_channels=4)
 
@@ -728,22 +956,46 @@ class WideResidual(AdvancedResidual):
         """Construct WideResidual through its existing registry validator.
 
         Args:
-            in_channels: in channels.
-            out_channels: out channels.
-            intermediate_channels: intermediate channels.
-            kernel_size: kernel size.
-            stride: stride.
-            dilation: dilation.
-            normalization: normalization.
-            activation: activation.
-            attention: attention.
-            dropout: dropout.
-            drop_path: drop path.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+                min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+                1..8192; bool is rejected. Required.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+                features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+            activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+                only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+                'silu'.
+            attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+                selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+                'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
+            drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+                Finite number in [0,1). Default: 0.0.
+
         Returns:
-            None; initializes the existing native module with the supplied options.
+            None; initializes the module.
+
         Raises:
-            ValueError, TypeError: Native component parameter validation fails.
-        Example:
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
+
+        Notes:
+            Floating [N,in_channels,H,W]; attention channels equal out_channels.
+            [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+            Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+            projection shortcut; intermediate channels remain bounded to 8192.
+
+        Examples:
             model = WideResidual(in_channels=4, out_channels=4, intermediate_channels=4)
 
         HYSo Guide: components.residual
@@ -756,14 +1008,49 @@ class WideResidual(AdvancedResidual):
 class GroupedBottleneck(AdvancedResidual):
     """Apply a bottleneck residual block with grouped convolutions.
 
+    Args:
+        in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+            in 1..8192; bool is rejected. Required.
+        out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+            bool is rejected. Required.
+        intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+            min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+            1..8192; bool is rejected. Required.
+        kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+            both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+        stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+            reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+            Default: 1.
+        dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+            is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+        normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+            features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+        activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+            only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+            'silu'.
+        attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+            selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+            'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+        dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+            number in [0,1). Default: 0.0.
+        drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+            Finite number in [0,1). Default: 0.0.
+        groups (int): Channel partitions; must divide both convolution channel counts. ChannelShuffle
+            requires channels % groups == 0. Integer in 1..8192; bool is rejected. Default: 1.
+
     Returns:
-        An instance of GroupedBottleneck with the documented native validation and defaults.
+        A GroupedBottleneck module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating [N,in_channels,H,W]; attention channels equal out_channels.
+        [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+        Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+        projection shortcut; intermediate channels remain bounded to 8192.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         GroupedBottleneck(in_channels=4, out_channels=4, intermediate_channels=4)
 
@@ -777,23 +1064,48 @@ class GroupedBottleneck(AdvancedResidual):
         """Construct GroupedBottleneck through its existing registry validator.
 
         Args:
-            in_channels: in channels.
-            out_channels: out channels.
-            intermediate_channels: intermediate channels.
-            kernel_size: kernel size.
-            stride: stride.
-            dilation: dilation.
-            normalization: normalization.
-            activation: activation.
-            attention: attention.
-            dropout: dropout.
-            drop_path: drop path.
-            groups: groups.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+                min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+                1..8192; bool is rejected. Required.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+                features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+            activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+                only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+                'silu'.
+            attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+                selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+                'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
+            drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+                Finite number in [0,1). Default: 0.0.
+            groups (int): Channel partitions; must divide both convolution channel counts. ChannelShuffle
+                requires channels % groups == 0. Integer in 1..8192; bool is rejected. Default: 1.
+
         Returns:
-            None; initializes the existing native module with the supplied options.
+            None; initializes the module.
+
         Raises:
-            ValueError, TypeError: Native component parameter validation fails.
-        Example:
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
+
+        Notes:
+            Floating [N,in_channels,H,W]; attention channels equal out_channels.
+            [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+            Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+            projection shortcut; intermediate channels remain bounded to 8192.
+
+        Examples:
             model = GroupedBottleneck(in_channels=4, out_channels=4, intermediate_channels=4)
 
         HYSo Guide: components.residual
@@ -806,14 +1118,47 @@ class GroupedBottleneck(AdvancedResidual):
 class InvertedBottleneck(AdvancedResidual):
     """Expand channels, apply depthwise spatial filtering and project to the output width.
 
+    Args:
+        in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+            in 1..8192; bool is rejected. Required.
+        out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+            bool is rejected. Required.
+        expansion_ratio (int): Inverted-bottleneck channel multiplier; intermediate
+            C=in_channels*expansion_ratio must not exceed 8192. Integer in 1..8192; bool is rejected.
+            Default: 2.
+        kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+            both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+        stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+            reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+            Default: 1.
+        dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+            is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+        normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+            features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+        activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+            only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+            'silu'.
+        attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+            selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+            'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+        dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+            number in [0,1). Default: 0.0.
+        drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+            Finite number in [0,1). Default: 0.0.
+
     Returns:
-        An instance of InvertedBottleneck with the documented native validation and defaults.
+        A InvertedBottleneck module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating [N,in_channels,H,W]; attention channels equal out_channels.
+        [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+        Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+        projection shortcut; intermediate channels remain bounded to 8192.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         InvertedBottleneck(in_channels=4, out_channels=4)
 
@@ -827,22 +1172,46 @@ class InvertedBottleneck(AdvancedResidual):
         """Construct InvertedBottleneck through its existing registry validator.
 
         Args:
-            in_channels: in channels.
-            out_channels: out channels.
-            expansion_ratio: expansion ratio.
-            kernel_size: kernel size.
-            stride: stride.
-            dilation: dilation.
-            normalization: normalization.
-            activation: activation.
-            attention: attention.
-            dropout: dropout.
-            drop_path: drop path.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            expansion_ratio (int): Inverted-bottleneck channel multiplier; intermediate
+                C=in_channels*expansion_ratio must not exceed 8192. Integer in 1..8192; bool is rejected.
+                Default: 2.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+                features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+            activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+                only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+                'silu'.
+            attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+                selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+                'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
+            drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+                Finite number in [0,1). Default: 0.0.
+
         Returns:
-            None; initializes the existing native module with the supplied options.
+            None; initializes the module.
+
         Raises:
-            ValueError, TypeError: Native component parameter validation fails.
-        Example:
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
+
+        Notes:
+            Floating [N,in_channels,H,W]; attention channels equal out_channels.
+            [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+            Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+            projection shortcut; intermediate channels remain bounded to 8192.
+
+        Examples:
             model = InvertedBottleneck(in_channels=4, out_channels=4)
 
         HYSo Guide: components.residual
@@ -855,14 +1224,51 @@ class InvertedBottleneck(AdvancedResidual):
 class GatedResidual(AdvancedResidual):
     """Scale the residual branch through its trainable gate before combining features.
 
+    Args:
+        in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+            in 1..8192; bool is rejected. Required.
+        out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+            bool is rejected. Required.
+        intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+            min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+            1..8192; bool is rejected. Required.
+        kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+            both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+        stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+            reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+            Default: 1.
+        dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+            is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+        normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+            features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+        activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+            only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+            'silu'.
+        attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+            selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+            'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+        dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+            number in [0,1). Default: 0.0.
+        drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+            Finite number in [0,1). Default: 0.0.
+        gate_init (float): Initial scalar residual contribution in [0,1]; zero suppresses the residual
+            main branch initially. Number in [0,1]. Default: 1.0.
+        learnable_gate (bool): Store the residual gate as a learned scalar when True, otherwise a fixed
+            scalar. Boolean only. Default: True.
+
     Returns:
-        An instance of GatedResidual with the documented native validation and defaults.
+        A GatedResidual module with the declared geometry.
 
     Raises:
-        ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        RuntimeError: A requested native construction/forward operation fails.
+        ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-    Example:
+    Notes:
+        Floating [N,in_channels,H,W]; attention channels equal out_channels.
+        [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+        Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+        projection shortcut; intermediate channels remain bounded to 8192.
+
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         GatedResidual(in_channels=4, out_channels=4, intermediate_channels=4)
 
@@ -876,24 +1282,50 @@ class GatedResidual(AdvancedResidual):
         """Construct GatedResidual through its existing registry validator.
 
         Args:
-            in_channels: in channels.
-            out_channels: out channels.
-            intermediate_channels: intermediate channels.
-            kernel_size: kernel size.
-            stride: stride.
-            dilation: dilation.
-            normalization: normalization.
-            activation: activation.
-            attention: attention.
-            dropout: dropout.
-            drop_path: drop path.
-            gate_init: gate init.
-            learnable_gate: learnable gate.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+                min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+                1..8192; bool is rejected. Required.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+                features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+            activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+                only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+                'silu'.
+            attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+                selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+                'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
+            drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+                Finite number in [0,1). Default: 0.0.
+            gate_init (float): Initial scalar residual contribution in [0,1]; zero suppresses the residual
+                main branch initially. Number in [0,1]. Default: 1.0.
+            learnable_gate (bool): Store the residual gate as a learned scalar when True, otherwise a fixed
+                scalar. Boolean only. Default: True.
+
         Returns:
-            None; initializes the existing native module with the supplied options.
+            None; initializes the module.
+
         Raises:
-            ValueError, TypeError: Native component parameter validation fails.
-        Example:
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
+
+        Notes:
+            Floating [N,in_channels,H,W]; attention channels equal out_channels.
+            [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+            Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+            projection shortcut; intermediate channels remain bounded to 8192.
+
+        Examples:
             model = GatedResidual(in_channels=4, out_channels=4, intermediate_channels=4)
 
         HYSo Guide: components.residual

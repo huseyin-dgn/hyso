@@ -26,10 +26,11 @@ class GradientDiagnosticsError(RuntimeError):
         An instance of GradientDiagnosticsError with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         GradientDiagnosticsError()
 
@@ -41,21 +42,26 @@ class GradientDiagnosticsError(RuntimeError):
 
 @dataclass(frozen=True)
 class GradientDiagnosticsProtocol:
-    """Configure P25 — Gradient and AMP diagnostics measurement boundaries and resource limits; construction does not run the analysis.
+    """Configure P25 — Gradient and AMP diagnostics measurement boundaries and resource limits;
+    construction does not run the analysis.
 
     Args:
-        max_attempts (int): Upper bound on attempts in this native protocol; this does not enable retries elsewhere. Default: 10000.
-        max_tensor_records (int): Upper bound on tensor records retained/accepted by this operation. Default: 100000.
+        max_attempts (int): Upper bound on attempts in this native protocol; this does not enable
+            retries elsewhere. Default: 10000.
+        max_tensor_records (int): Upper bound on tensor records retained/accepted by this operation.
+            Default: 100000.
         chunk_elements (int): Maximum tensor elements per diagnostic processing chunk. Default: 65536.
-        observe_postclip (bool): Also observe gradients after the configured clipping boundary. Default: True.
+        observe_postclip (bool): Also observe gradients after the configured clipping boundary. Default:
+            True.
 
     Returns:
         An instance of GradientDiagnosticsProtocol with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         GradientDiagnosticsProtocol()
 
@@ -423,18 +429,21 @@ def _instrumentation(rows,protocol,source):
 
 @dataclass(frozen=True,init=False)
 class GradientDiagnosticsResult:
-    """Read and export validated P25 — Gradient and AMP diagnostics results; unavailable measurements retain their native status.
+    """Read and export validated P25 — Gradient and AMP diagnostics results; unavailable measurements
+    retain their native status.
 
     Args:
-        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+        data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+            version/schema validator. Required.
 
     Returns:
         An instance of GradientDiagnosticsResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         GradientDiagnosticsResult(data)
 
@@ -449,16 +458,18 @@ class GradientDiagnosticsResult:
         """Initialize GradientDiagnosticsResult with the supplied settings.
 
         Args:
-            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing version/schema validator. Required.
+            data (dict[str, _typing.Any]): Detached plain-data payload accepted by the existing
+                version/schema validator. Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
 
         Raises:
-            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+            ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+            rejected.
             RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             GradientDiagnosticsResult(data)
 
@@ -480,12 +491,14 @@ class GradientDiagnosticsResult:
         """Return a detached plain-data view of the stored state.
 
         Returns:
-            A detached plain-data view of this validated object; native units and unavailable values are retained.
+            A detached plain-data view of this validated object; native units and unavailable values are
+            retained.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_dict()
 
@@ -502,8 +515,10 @@ class GradientDiagnosticsResult:
         """Serialize this object using its native JSON format and overwrite policy.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             None after the native file export succeeds.
@@ -512,7 +527,7 @@ class GradientDiagnosticsResult:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_json(path)
 
@@ -526,8 +541,10 @@ class GradientDiagnosticsResult:
         """Export this object using its native CSV format and overwrite policy.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             None after the native file export succeeds.
@@ -536,7 +553,7 @@ class GradientDiagnosticsResult:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_csv(path)
 
@@ -566,24 +583,34 @@ def measure_gradient_diagnostics(trainer: '_typing.Any',train_loader: '_typing.A
     Non-AMP nonfinite gradients retain Trainer's existing failure, without result.
 
     Args:
-        trainer (_typing.Any): Caller-owned standard Trainer; a measurement may execute its fit lifecycle only when called explicitly. Required.
-        train_loader (_typing.Any): Finite training loader; batches must follow the task/model input contract. Required.
-        val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
-        epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after resume. Default: 5.
-        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: None.
-        timing_protocol (_typing.Any): Typed timing measurement settings; boundaries and device guards remain explicit. Default: None.
-        stage_protocol (_typing.Any): Typed stage measurement settings; boundaries and device guards remain explicit. Default: None.
-        save_last_to (_typing.Any): Explicit checkpoint destination; writing occurs only during the requested fit. Default: None.
-        resume_from (_typing.Any): Existing compatible checkpoint; model/data/settings and total budget must match. Default: None.
+        trainer (_typing.Any): Caller-owned standard Trainer; a measurement may execute its fit
+            lifecycle only when called explicitly. Required.
+        train_loader (_typing.Any): Finite training loader; batches must follow the task/model input
+            contract. Required.
+        val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit
+            validation setting. Default: None.
+        epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after
+            resume. Default: 5.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards
+            remain unchanged. Default: None.
+        timing_protocol (_typing.Any): Typed timing measurement settings; boundaries and device guards
+            remain explicit. Default: None.
+        stage_protocol (_typing.Any): Typed stage measurement settings; boundaries and device guards
+            remain explicit. Default: None.
+        save_last_to (_typing.Any): Explicit checkpoint destination; writing occurs only during the
+            requested fit. Default: None.
+        resume_from (_typing.Any): Existing compatible checkpoint; model/data/settings and total budget
+            must match. Default: None.
 
     Returns:
         The retained measure gradient diagnostics value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         measure_gradient_diagnostics(trainer, train_loader)
 

@@ -28,9 +28,10 @@ class TrainingStageProtocol:
         An instance of TrainingStageProtocol with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         TrainingStageProtocol()
 
@@ -368,9 +369,10 @@ class TrainingStageResult(_Result):
         An instance of TrainingStageResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         TrainingStageResult(data)
 
@@ -391,9 +393,10 @@ class TrainingThroughputResult(_Result):
         An instance of TrainingThroughputResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         TrainingThroughputResult(data)
 
@@ -414,10 +417,11 @@ def analyze_training_throughput(result: '_typing.Any') -> 'TrainingThroughputRes
         The retained analyze training throughput value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         analyze_training_throughput(result)
 
@@ -438,16 +442,19 @@ class DetailedTrainingResult:
 
     Args:
         timing (TrainingPerformanceResult): Native timing protocol/settings. Required.
-        stages (TrainingStageResult): Explicit ordered pipeline stages and their timing boundaries. Required.
-        throughput (TrainingThroughputResult): Native continuous-window throughput protocol/settings. Required.
+        stages (TrainingStageResult): Explicit ordered pipeline stages and their timing boundaries.
+            Required.
+        throughput (TrainingThroughputResult): Native continuous-window throughput protocol/settings.
+            Required.
 
     Returns:
         An instance of DetailedTrainingResult with the documented native validation and defaults.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         DetailedTrainingResult(timing=timing, stages=stages, throughput=throughput)
 
@@ -465,23 +472,32 @@ def measure_training_detailed(trainer: '_typing.Any', train_loader: '_typing.Any
     """Opt-in P19+P20+P22 in a single native fit; ordinary P19 remains unchanged.
 
     Args:
-        trainer (_typing.Any): Caller-owned standard Trainer; a measurement may execute its fit lifecycle only when called explicitly. Required.
-        train_loader (_typing.Any): Finite training loader; batches must follow the task/model input contract. Required.
-        val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit validation setting. Default: None.
-        epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after resume. Default: 5.
-        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards remain unchanged. Default: None.
-        stage_protocol (_typing.Any): Typed stage measurement settings; boundaries and device guards remain explicit. Default: None.
-        save_last_to (_typing.Any): Explicit checkpoint destination; writing occurs only during the requested fit. Default: None.
-        resume_from (_typing.Any): Existing compatible checkpoint; model/data/settings and total budget must match. Default: None.
+        trainer (_typing.Any): Caller-owned standard Trainer; a measurement may execute its fit
+            lifecycle only when called explicitly. Required.
+        train_loader (_typing.Any): Finite training loader; batches must follow the task/model input
+            contract. Required.
+        val_loader (_typing.Any): Optional finite validation loader; must agree with the explicit
+            validation setting. Default: None.
+        epochs (int): Positive total epoch budget, including a restored prefix; not extra epochs after
+            resume. Default: 5.
+        protocol (_typing.Any): Typed native measurement protocol; scope, budgets and device guards
+            remain unchanged. Default: None.
+        stage_protocol (_typing.Any): Typed stage measurement settings; boundaries and device guards
+            remain explicit. Default: None.
+        save_last_to (_typing.Any): Explicit checkpoint destination; writing occurs only during the
+            requested fit. Default: None.
+        resume_from (_typing.Any): Existing compatible checkpoint; model/data/settings and total budget
+            must match. Default: None.
 
     Returns:
         The retained measure training detailed value, without recomputing measurements.
 
     Raises:
-        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is rejected.
+        ValueError, TypeError: The existing typed-source, configuration or compatibility contract is
+        rejected.
         RuntimeError: A requested native workload fails; inspect retained state before retrying.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         measure_training_detailed(trainer, train_loader)
 

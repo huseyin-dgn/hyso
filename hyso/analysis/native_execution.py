@@ -3,7 +3,10 @@ from __future__ import annotations
 
 import os
 from dataclasses import replace
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .execution import AnalysisDryRun, AnalysisExecutionResult
 
 from ._codec import canonical, digest
 from ._native import validate_native, native_outcome
@@ -13,8 +16,14 @@ from .feature_plan import plan_features
 from .sources import NativeBinding, RetainedSource, OperationPolicy
 
 
-def preflight_native(plan, bindings, isolated_policy):
-    """Read binding metadata and file identities without invoking producers."""
+def preflight_native(plan, bindings, isolated_policy) -> 'AnalysisDryRun':
+    """Read binding metadata and file identities without invoking producers.
+
+    Args:
+        plan: Validated explicit feature plan; planning alone runs no workload. Required.
+        bindings: Trusted bindings for the requested model IDs; no implicit factory import. Required.
+        isolated_policy: Explicit bounded isolated CPU execution policy, when supplied. Required.
+    """
     from .execution import AnalysisDryRun, AnalysisExecutionError
     from .native_adapters import admission
 
@@ -96,7 +105,15 @@ def _exception_status(error):
     return 'FAILED'
 
 
-def execute_native(dry_run, authorized):
+def execute_native(dry_run, authorized) -> 'AnalysisExecutionResult':
+    """Execute native using the explicitly supplied evidence.
+
+    Args:
+        dry_run: Return planned/admission information without running the requested workload when True.
+            Required.
+        authorized: Explicit caller execution authorization; additional native admission rules still
+            apply. Required.
+    """
     from .execution import AnalysisExecutionError, AnalysisExecutionResult, STATUSES
     from .native_adapters import invoke_operation, validate_projection
 
@@ -181,8 +198,14 @@ def execute_native(dry_run, authorized):
     return AnalysisExecutionResult(canonical(result))
 
 
-def validate_operation_row(row, data):
-    """Validate saved auxiliary native sources and operation/source associations."""
+def validate_operation_row(row, data) -> 'None':
+    """Validate saved auxiliary native sources and operation/source associations.
+
+    Args:
+        row: Retained structured operation/evidence row to validate. Required.
+        data: Detached schema-compatible result mapping, including recorded status and integrity fields.
+            Required.
+    """
     from .native_adapters import validate_projection
     receipt = row.get('execution_receipt')
     auxiliary = row.get('auxiliary_evidence', {})

@@ -325,7 +325,13 @@ def _experiment_html(experiment, words, language, level):
     return "".join(content)
 
 
-def html_report(data):
+def html_report(data) -> 'str':
+    """Html report using the explicitly supplied evidence.
+
+    Args:
+        data: Detached schema-compatible result mapping, including recorded status and integrity fields.
+            Required.
+    """
     language, level = data["language"], data["level"]
     words = _WORDS[language]
     catalog = {row["feature_id"]: row for row in data["catalog"]}
@@ -404,7 +410,13 @@ def html_report(data):
     return "".join(parts)
 
 
-def markdown(data):
+def markdown(data) -> 'str':
+    """Markdown using the explicitly supplied evidence.
+
+    Args:
+        data: Detached schema-compatible result mapping, including recorded status and integrity fields.
+            Required.
+    """
     language = data["language"]
     words = _WORDS[language]
     catalog = {row["feature_id"]: row for row in data["catalog"]}

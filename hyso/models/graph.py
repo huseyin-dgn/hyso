@@ -22,6 +22,13 @@ MAX_BYTES=2*1024**2
 ID_PATTERN=re.compile(r'[A-Za-z][A-Za-z0-9_]{0,47}\Z')
 
 
+class _GraphInputSpec(_typing.TypedDict):
+    shape: list[int]
+    layout: _typing.Literal['NC', 'NCHW']
+    dtype: _typing.Literal['floating']
+    device: _typing.Literal['model']
+
+
 def _identifier(value):
     return type(value) is str and ID_PATTERN.fullmatch(value) is not None
 
@@ -279,7 +286,8 @@ class GraphModel(nn.Module):
     """Execute each registered node once and return sorted named tensor outputs.
 
     Args:
-        config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained state. Required.
+        config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained
+            state. Required.
         report (_typing.Any): Validated retained analysis/advisory report. Required.
 
     Returns:
@@ -289,7 +297,7 @@ class GraphModel(nn.Module):
         ValueError, TypeError: Native configuration, shape or input validation rejects the request.
         RuntimeError: A requested native construction/forward operation fails.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         GraphModel(config, report)
 
@@ -301,7 +309,8 @@ class GraphModel(nn.Module):
         """Initialize GraphModel with the supplied settings.
 
         Args:
-            config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained state. Required.
+            config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained
+                state. Required.
             report (_typing.Any): Validated retained analysis/advisory report. Required.
 
         Returns:
@@ -311,7 +320,7 @@ class GraphModel(nn.Module):
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             GraphModel(config, report)
 
@@ -336,9 +345,10 @@ class GraphModel(nn.Module):
             Detached JSON-compatible architecture metadata including normalized defaults; no weights.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_config()
 
@@ -348,20 +358,22 @@ class GraphModel(nn.Module):
         """
         return json.loads(self._architecture)
 
-    def forward(self,inputs: '_typing.Any') -> '_typing.Any':
+    def forward(self,inputs: torch.Tensor | dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         """Apply this module to inputs with its declared shape, dtype and device.
 
         Args:
-            inputs (_typing.Any): Named input specifications for the builder, ordered references for add(), or supported runtime inputs for forward(). Required.
+            inputs: Exact named tensor mapping; a single tensor is accepted only
+                for a graph with one input. Shapes exclude the shared batch N and
+                must match the configured per-sample shape, model dtype and device.
 
         Returns:
-            Native Tensor output(s) of this model/block; this call performs the forward computation.
+            Named output tensors following outputs(); this call executes the DAG.
 
         Raises:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.forward(inputs)
 
@@ -417,16 +429,19 @@ class GraphModelBuilder:
     """Closed schema3 DAG builder with allocation-free planning and preview.
 
     Args:
-        inputs (dict[str, list[int] | tuple[int, ...] | dict[str, object]]): Named input shapes without batch, or closed shape/layout/dtype/device specifications. Required.
+        inputs: Mapping of 1..8 safe names to per-sample C or CHW sequences, or dictionaries with
+            exactly shape/layout/dtype/device. Dimensions are integers in 1..8192; layout is NC for C or
+            NCHW for CHW, dtype is floating and device is model. Required.
 
     Returns:
         An instance of GraphModelBuilder with the documented native validation and defaults.
 
     Raises:
         ValueError, TypeError: Native configuration, shape or input validation rejects the request.
-        ModelConfigError: Input names, shapes, layout, dtype or device metadata violate the closed graph contract.
+        ModelConfigError: Input names, shapes, layout, dtype or device metadata violate the closed graph
+            contract.
 
-    Example:
+    Examples:
         # Caller-supplied values; explicitly requested operations only.
         builder = GraphModelBuilder({"image": [1, 4, 4]})
 
@@ -434,11 +449,13 @@ class GraphModelBuilder:
     Offline: hyso docs show models.graph-builder --lang en
     Open: hyso docs open models.graph-builder --lang en
     """
-    def __init__(self,inputs: 'dict[str, _typing.Any]') -> 'None':
+    def __init__(self,inputs: dict[str, tuple[int, ...] | list[int] | _GraphInputSpec]) -> None:
         """Initialize GraphModelBuilder with the supplied settings.
 
         Args:
-            inputs (dict[str, _typing.Any]): Dictionary of named concrete shape sequences or closed input-specification dictionaries. Required.
+            inputs: Mapping of 1..8 safe names to per-sample C or CHW sequences, or dictionaries with
+                exactly shape/layout/dtype/device. Dimensions are integers in 1..8192; layout is NC for C or
+                NCHW for CHW, dtype is floating and device is model. Required.
 
         Returns:
             None. Initialize this object; use its explicit operation methods to request work.
@@ -447,7 +464,7 @@ class GraphModelBuilder:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             GraphModelBuilder(inputs)
 
@@ -542,29 +559,50 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append a registered 2D convolution.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a node without building or training a model.
-
         Args:
-            node_id: Unique stable node name; never generated automatically.
-            inputs: Ordered graph input/node references; topology is explicit.
-            in_channels: Expected input channel count. Required.
-            out_channels: Output channel count. Required.
-            kernel_size: Positive spatial filter/window size, as an integer or H/W pair. Default: 3.
-            stride: Positive spatial sampling step. Default: 1.
-            padding: Nonnegative spatial padding. Default: 1.
-            groups: Group count; input and output channels must be divisible by it. Default: 1.
-            bias: Include the convolution bias. Default: True.
-            dilation: Positive spacing between filter/window taps. Default: 1.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            in_channels (int | None): Input feature channels; must match the incoming tensor C dimension.
+                Integer in 1..8192; bool is rejected. None infers C from the current validated feature
+                shape; ambiguous/non-NCHW shapes are rejected. Default: None.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 1.
+            groups (int): Channel partitions; must divide both convolution channel counts. ChannelShuffle
+                requires channels % groups == 0. Integer in 1..8192; bool is rejected. Default: 1.
+            bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+                Default: True.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            groups divides in_channels and out_channels
+            dilation changes the effective kernel
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.conv2d("node", ["image"], in_channels=1, out_channels=4)
 
         HYSo Guide: components.convolution
@@ -588,29 +626,50 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append convolution, optional normalization and activation.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a node without building or training a model.
-
         Args:
-            node_id: Unique stable node name; never generated automatically.
-            inputs: Ordered graph input/node references; topology is explicit.
-            in_channels: Expected input channel count. Required.
-            out_channels: Output channel count. Required.
-            kernel_size: Positive spatial filter/window size, as an integer or H/W pair. Default: 3.
-            stride: Positive spatial sampling step. Default: 1.
-            padding: Nonnegative spatial padding. Default: 1.
-            groups: Group count; input and output channels must be divisible by it. Default: 1.
-            norm: Convolution normalization: batch, group, or None. Default: 'batch'.
-            activation: Convolution activation: silu, relu, or None. Default: 'silu'.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 1.
+            groups (int): Channel partitions; must divide both convolution channel counts. ChannelShuffle
+                requires channels % groups == 0. Integer in 1..8192; bool is rejected. Default: 1.
+            norm (_typing.Literal['batch', 'group', None]): Optional post-convolution normalization: batch,
+                group or None. Group normalization chooses the largest channel divisor <=8; convolution bias
+                is enabled only without normalization. Choices: 'batch', 'group', None. Default: 'batch'.
+            activation (_typing.Literal['silu', 'relu', None]): Nonlinearity applied inside this block; only
+                the declared registry choices are accepted. Choices: 'silu', 'relu', None. Default: 'silu'.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            groups divides both channel counts
+            normalization determines convolution bias
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.conv_norm_act("node", ["image"], in_channels=1, out_channels=4)
 
         HYSo Guide: components.convolution
@@ -635,21 +694,25 @@ class GraphModelBuilder:
     def relu(self, node_id: str, inputs: list[str]) -> GraphModelBuilder:
         """Append out-of-place ReLU activation.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a node without building or training a model.
-
         Args:
-            node_id: Unique stable node name; never generated automatically.
-            inputs: Ordered graph input/node references; topology is explicit.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW in Builder v1.
+            Same NCHW shape; out-of-place activation.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.relu("node", ["image"])
 
         HYSo Guide: components.activation
@@ -662,21 +725,25 @@ class GraphModelBuilder:
     def silu(self, node_id: str, inputs: list[str]) -> GraphModelBuilder:
         """Append out-of-place SiLU activation.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a node without building or training a model.
-
         Args:
-            node_id: Unique stable node name; never generated automatically.
-            inputs: Ordered graph input/node references; topology is explicit.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW in Builder v1.
+            Same NCHW shape; out-of-place activation.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.silu("node", ["image"])
 
         HYSo Guide: components.activation
@@ -693,22 +760,27 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append GELU activation with the selected approximation.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a node without building or training a model.
-
         Args:
-            node_id: Unique stable node name; never generated automatically.
-            inputs: Ordered graph input/node references; topology is explicit.
-            approximate: GELU approximation: none (exact) or tanh. Default: 'none'.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            approximate (_typing.Literal['none', 'tanh']): GELU calculation: none uses the exact error
+                function; tanh uses the approximation. Choices: 'none', 'tanh'. Default: 'none'.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW in Builder v1.
+            Same NCHW shape; out-of-place activation.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.gelu("node", ["image"])
 
         HYSo Guide: components.activation
@@ -729,26 +801,36 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append registered 2D batch normalization.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a node without building or training a model.
-
         Args:
-            node_id: Unique stable node name; never generated automatically.
-            inputs: Ordered graph input/node references; topology is explicit.
-            num_features: Expected feature-channel count. Required.
-            eps: Positive normalization stabilizer. Default: 1e-05.
-            momentum: Running-statistic factor in [0, 1]; None uses the cumulative average. Default: 0.1.
-            affine: Learn normalization scale and offset. Default: True.
-            track_running_stats: Keep running mean/variance for evaluation. Default: True.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            num_features (int | None): Normalization channel count; must match input C. Integer in 1..8192;
+                bool is rejected. Default: None.
+            eps (float): Positive numerical stabilizer used in normalization. Embedding normalization also
+                floors it at the dtype tiny value. Finite positive number. Default: 1e-05.
+            momentum (float | None): Running-statistic update factor; None selects cumulative averaging for
+                BatchNorm. None or number in [0,1]. Default: 0.1.
+            affine (bool): Learn per-channel scale and bias when True; otherwise use normalization without
+                learned affine parameters. Boolean only. Default: True.
+            track_running_stats (bool): Track running mean/variance for evaluation. Without tracking,
+                input-statistic sample requirements also apply in eval. Boolean only. Default: True.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW; C matches num_features, num_channels or channels. GroupNorm groups divide C.
+            Same NCHW shape; channel LayerNorm normalizes C per spatial position. Native statistics
+            constraints apply.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.batch_norm("node", ["image"], num_features=4)
 
         HYSo Guide: components.normalization
@@ -768,25 +850,35 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append normalization across explicit channel groups.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a node without building or training a model.
-
         Args:
-            node_id: Unique stable node name; never generated automatically.
-            inputs: Ordered graph input/node references; topology is explicit.
-            num_groups: Positive normalization group count dividing num_channels. Required.
-            num_channels: Expected channel count for group normalization. Required.
-            eps: Positive normalization stabilizer. Default: 1e-05.
-            affine: Learn normalization scale and offset. Default: True.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            num_groups (int): GroupNorm channel partitions; must divide num_channels. Integer in 1..8192;
+                bool is rejected. Required.
+            num_channels (int): Total GroupNorm channels C; must be divisible by num_groups. Integer in
+                1..8192; bool is rejected. Required.
+            eps (float): Positive numerical stabilizer used in normalization. Embedding normalization also
+                floors it at the dtype tiny value. Finite positive number. Default: 1e-05.
+            affine (bool): Learn per-channel scale and bias when True; otherwise use normalization without
+                learned affine parameters. Boolean only. Default: True.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW; C matches num_features, num_channels or channels. GroupNorm groups divide C.
+            Same NCHW shape; channel LayerNorm normalizes C per spatial position. Native statistics
+            constraints apply.
+            num_groups divides num_channels
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.group_norm("node", ["image"], num_groups=1, num_channels=4)
 
         HYSo Guide: components.normalization
@@ -815,26 +907,39 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append spatial maximum pooling.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a node without building or training a model.
-
         Args:
-            node_id: Unique stable node name; never generated automatically.
-            inputs: Ordered graph input/node references; topology is explicit.
-            kernel_size: Positive spatial filter/window size, as an integer or H/W pair. Required.
-            stride: Spatial sampling step; None in pooling uses the kernel size. Default: None.
-            padding: Nonnegative spatial padding; pooling limits still apply. Default: 0.
-            dilation: Positive spacing between filter/window taps. Default: 1.
-            ceil_mode: Use the native ceil-window pooling rule instead of floor. Default: False.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Required.
+            stride (int | tuple[int, int] | list[int] | None): Spatial sampling step on each axis; larger
+                values reduce ordinary convolution/pooling resolution. None or integer/HW pair, each in
+                1..8192. Default: None.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 0.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            ceil_mode (bool): Round pooling output sizes upward, then discard windows beginning wholly in
+                right/bottom padding. Boolean only. Default: False.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW; legal window/padding or positive adaptive output_size.
+            Floating NCHW with unchanged channels; global average returns [N,C,1,1].
+            stride=None uses kernel_size
+            padding[i] <= floor(kernel_size[i]/2)
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.max_pool2d("node", ["image"], kernel_size=2)
 
         HYSo Guide: components.pooling
@@ -864,26 +969,40 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append spatial average pooling.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a node without building or training a model.
-
         Args:
-            node_id: Unique stable node name; never generated automatically.
-            inputs: Ordered graph input/node references; topology is explicit.
-            kernel_size: Positive spatial filter/window size, as an integer or H/W pair. Required.
-            stride: Spatial sampling step; None in pooling uses the kernel size. Default: None.
-            padding: Nonnegative spatial padding; pooling limits still apply. Default: 0.
-            ceil_mode: Use the native ceil-window pooling rule instead of floor. Default: False.
-            count_include_pad: Include padded positions in the average divisor. Default: True.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Required.
+            stride (int | tuple[int, int] | list[int] | None): Spatial sampling step on each axis; larger
+                values reduce ordinary convolution/pooling resolution. None or integer/HW pair, each in
+                1..8192. Default: None.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 0.
+            ceil_mode (bool): Round pooling output sizes upward, then discard windows beginning wholly in
+                right/bottom padding. Boolean only. Default: False.
+            count_include_pad (bool): Include zero-padded elements in the average-pooling divisor. Boolean
+                only. Default: True.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW; legal window/padding or positive adaptive output_size.
+            Floating NCHW with unchanged channels; global average returns [N,C,1,1].
+            stride=None uses kernel_size
+            padding[i] <= floor(kernel_size[i]/2)
+            count_include_pad controls the mean divisor
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.avg_pool2d("node", ["image"], kernel_size=2)
 
         HYSo Guide: components.pooling
@@ -909,22 +1028,28 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append average pooling to a fixed spatial size.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a node without building or training a model.
-
         Args:
-            node_id: Unique stable node name; never generated automatically.
-            inputs: Ordered graph input/node references; topology is explicit.
-            output_size: Positive target spatial H/W size. Required.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            output_size (int | tuple[int, int] | list[int]): Target H/W grid; integer means a square. Resize
+                requires exactly one of output_size and scale_factor. Integer or H/W pair, each in 1..8192.
+                Required.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW; legal window/padding or positive adaptive output_size.
+            Floating NCHW with unchanged channels; global average returns [N,C,1,1].
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.adaptive_avg_pool2d("node", ["image"], output_size=2)
 
         HYSo Guide: components.pooling
@@ -937,22 +1062,27 @@ class GraphModelBuilder:
     def dropout(self, node_id: str, inputs: list[str], *, p: float = 0.5) -> GraphModelBuilder:
         """Append elementwise dropout; evaluation leaves values unchanged.
 
-        Delegates to add(); Registry defaults and native validation are unchanged.
-        This configures a node without building or training a model.
-
         Args:
-            node_id: Unique stable node name; never generated automatically.
-            inputs: Ordered graph input/node references; topology is explicit.
-            p: Element drop probability in [0, 1]; active only during training. Default: 0.5.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            p (float): Probability of dropping elements, channels or paths during training; evaluation
+                disables masking. Number in [0,1]. Default: 0.5.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: The existing Registry or builder rejects a value or configuration.
-            TypeError: A required argument is missing or an unsupported keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Nonempty floating NCHW.
+            Same shape and dtype; explicit training-only masking.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.dropout("node", ["image"])
 
         HYSo Guide: components.regularization
@@ -975,26 +1105,39 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered residual node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            stride: stride Default: 1.
-            norm: Convolution normalization; group uses largest divisor <=8. Default: 'batch'.
-            attention: None or {name, params} for a registered attention with matching output channels. Default: None.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            norm (_typing.Literal['batch', 'group', None]): Optional post-convolution normalization: batch,
+                group or None. Group normalization chooses the largest channel divisor <=8; convolution bias
+                is enabled only without normalization. Choices: 'batch', 'group', None. Default: 'batch'.
+            attention (dict[str, _typing.Any] | None): Optional attention applied after the residual branch;
+                nested legacy attention must use matching out_channels. Default: None.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; attention channels equal out_channels.
+            [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+            Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+            projection shortcut; intermediate channels remain bounded to 8192.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.residual("node", ["image"], in_channels=in_channels, out_channels=out_channels)
 
         HYSo Guide: components.residual
@@ -1015,23 +1158,30 @@ class GraphModelBuilder:
     def se(self, node_id: str, inputs: list[str], *, channels: int, reduction: int = 8) -> GraphModelBuilder:
         """Append the registered se node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            channels: channels Required.
-            reduction: reduction Default: 8.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            reduction (int): Channel-gate reduction divisor; hidden width is max(1,C//reduction), or
+                max(8,C//reduction) for coordinate attention. Integer in 1..8192; bool is rejected. Default:
+                8.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.se("node", ["image"], channels=channels)
 
         HYSo Guide: components.attention
@@ -1051,24 +1201,32 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered cbam node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            channels: channels Required.
-            reduction: reduction Default: 16.
-            kernel_size: kernel size Default: 7.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            reduction (int): Channel-gate reduction divisor; hidden width is max(1,C//reduction), or
+                max(8,C//reduction) for coordinate attention. Integer in 1..8192; bool is rejected. Default:
+                16.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 7.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.cbam("node", ["image"], channels=channels)
 
         HYSo Guide: components.attention
@@ -1087,23 +1245,29 @@ class GraphModelBuilder:
     def eca(self, node_id: str, inputs: list[str], *, channels: int, kernel_size: int = 3) -> GraphModelBuilder:
         """Append the registered eca node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            channels: channels Required.
-            kernel_size: kernel size Default: 3.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.eca("node", ["image"], channels=channels)
 
         HYSo Guide: components.attention
@@ -1122,23 +1286,30 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered coordinate node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            channels: channels Required.
-            reduction: reduction Default: 32.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            reduction (int): Channel-gate reduction divisor; hidden width is max(1,C//reduction), or
+                max(8,C//reduction) for coordinate attention. Integer in 1..8192; bool is rejected. Default:
+                32.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.coordinate("node", ["image"], channels=channels)
 
         HYSo Guide: components.attention
@@ -1150,21 +1321,25 @@ class GraphModelBuilder:
     def hardswish(self, node_id: str, inputs: list[str]) -> GraphModelBuilder:
         """Append the registered hardswish node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW in Builder v1.
+            Same NCHW shape; out-of-place activation.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.hardswish("node", ["image"])
 
         HYSo Guide: components.activation
@@ -1176,21 +1351,25 @@ class GraphModelBuilder:
     def identity(self, node_id: str, inputs: list[str]) -> GraphModelBuilder:
         """Append the registered identity node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW in Builder v1.
+            Same tensor/shape; no parameters.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.identity("node", ["image"])
 
         HYSo Guide: components.activation
@@ -1209,23 +1388,29 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered channel_shuffle node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            channels: channels Required.
-            groups: groups Default: 2.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            groups (int): Channel partitions; must divide both convolution channel counts. ChannelShuffle
+                requires channels % groups == 0. Integer in 1..8192; bool is rejected. Default: 2.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW with matching channels.
+            Same NCHW shape; validated channel partition.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.channel_shuffle("node", ["image"], channels=channels)
 
         HYSo Guide: components.sampling
@@ -1244,23 +1429,29 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered dropblock2d node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            p: Probability of dropping an element/path during training. Default: 0.1.
-            block_size: Spatial side length of the dropped block. Default: 3.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            p (float): Probability of dropping elements, channels or paths during training; evaluation
+                disables masking. Number in [0,1]. Default: 0.1.
+            block_size (int): Requested spatial square side for contiguous DropBlock masks; runtime clips it
+                to min(block_size,H,W). Integer in 1..8192; bool is rejected. Default: 3.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Nonempty floating NCHW.
+            Same shape and dtype; explicit training-only masking.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.dropblock2d("node", ["image"])
 
         HYSo Guide: components.regularization
@@ -1281,25 +1472,38 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered pointwise_conv2d node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            stride: stride Default: 1.
-            bias: bias Default: True.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+                Default: True.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.pointwise_conv2d("node", ["image"], in_channels=in_channels, out_channels=out_channels)
 
         HYSo Guide: components.convolution
@@ -1331,28 +1535,48 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered depthwise_conv2d node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            in_channels: in channels Required.
-            depth_multiplier: Depthwise filters per input channel. Default: 1.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            padding: padding Default: 1.
-            dilation: dilation Default: 1.
-            bias: bias Default: True.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            depth_multiplier (int): Independent filters per input channel; depthwise output/intermediate C
+                equals in_channels*depth_multiplier and must not exceed 8192. Integer in 1..8192; bool is
+                rejected. Default: 1.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+                Default: True.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            groups=in_channels
+            out_channels=in_channels*depth_multiplier
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.depthwise_conv2d("node", ["image"], in_channels=in_channels)
 
         HYSo Guide: components.convolution
@@ -1388,29 +1612,49 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered depthwise_separable_conv2d node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            depth_multiplier: Depthwise filters per input channel. Default: 1.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            padding: padding Default: 1.
-            dilation: dilation Default: 1.
-            bias: bias Default: True.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            depth_multiplier (int): Independent filters per input channel; depthwise output/intermediate C
+                equals in_channels*depth_multiplier and must not exceed 8192. Integer in 1..8192; bool is
+                rejected. Default: 1.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+                Default: True.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            intermediate_channels=in_channels*depth_multiplier
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.depthwise_separable_conv2d("node", ["image"], in_channels=in_channels, out_channels=out_channels)
 
         HYSo Guide: components.convolution
@@ -1447,29 +1691,49 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered spatial_separable_conv2d node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            intermediate_channels: Internal feature width between projections. Required.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            padding: padding Default: 1.
-            dilation: dilation Default: 1.
-            bias: bias Default: True.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+                min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+                1..8192; bool is rejected. Required.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+                Default: True.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            H settings apply to the vertical stage, W settings to the horizontal stage
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.spatial_separable_conv2d("node", ["image"], in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
 
         HYSo Guide: components.convolution
@@ -1506,29 +1770,50 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered factorized_conv2d node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            intermediate_channels: Internal feature width between projections. Required.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            padding: padding Default: 1.
-            dilation: dilation Default: 1.
-            bias: bias Default: True.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+                min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+                1..8192; bool is rejected. Required.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+                Default: True.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            intermediate_channels <= min(in_channels,out_channels)
+            1x1 reduction then KxK convolution
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.factorized_conv2d("node", ["image"], in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
 
         HYSo Guide: components.convolution
@@ -1566,30 +1851,52 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered conv_transpose2d node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            padding: padding Default: 1.
-            dilation: dilation Default: 1.
-            bias: bias Default: True.
-            groups: groups Default: 1.
-            output_padding: Extra output size on one side of each transposed-convolution axis. Default: 0.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            kernel_size (int | tuple[int, int] | list[int]): Spatial filter/window extent in H and W; an
+                integer uses the same extent on both axes. Integer or H/W pair, each in 1..8192. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            padding (int | tuple[int, int] | list[int]): Symmetric padding on each spatial axis; changes
+                output geometry without changing channel count. Integer or H/W pair, each in 0..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            bias (bool): Include a learned additive convolution bias for each output channel. Boolean only.
+                Default: True.
+            groups (int): Channel partitions; must divide both convolution channel counts. ChannelShuffle
+                requires channels % groups == 0. Integer in 1..8192; bool is rejected. Default: 1.
+            output_padding (int | tuple[int, int] | list[int]): Additional output extent for transposed
+                convolution, not input padding; each axis must be less than stride or dilation on that axis.
+                Integer or H/W pair, each in 0..8192. Default: 0.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; groups divides both channel counts.
+            Floating NCHW; dilation-aware convolution or explicit transposed/multi-stage geometry. See
+            parameter_dependencies and preflight.
+            groups divides both channel counts
+            output_padding[i] < stride[i] or dilation[i]
+            Ordinary convolution: out=floor((in+2*padding-dilation*(kernel-1)-1)/stride)+1 per axis;
+            transposed convolution: out=(in-1)*stride-2*padding+dilation*(kernel-1)+output_padding+1.
+            Multi-stage blocks validate every intermediate shape.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.conv_transpose2d("node", ["image"], in_channels=in_channels, out_channels=out_channels)
 
         HYSo Guide: components.convolution
@@ -1622,24 +1929,33 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered channel_layer_norm node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            channels: channels Required.
-            eps: Small numerical stabilizer for normalization. Default: 1e-05.
-            affine: Learn a normalization scale and offset. Default: True.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            eps (float): Positive numerical stabilizer used in normalization. Embedding normalization also
+                floors it at the dtype tiny value. Finite positive number. Default: 1e-05.
+            affine (bool): Learn per-channel scale and bias when True; otherwise use normalization without
+                learned affine parameters. Boolean only. Default: True.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW; C matches num_features, num_channels or channels. GroupNorm groups divide C.
+            Same NCHW shape; channel LayerNorm normalizes C per spatial position. Native statistics
+            constraints apply.
+            normalizes C at each N,H,W position, external layout stays NCHW
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.channel_layer_norm("node", ["image"], channels=channels)
 
         HYSo Guide: components.normalization
@@ -1661,26 +1977,37 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered instance_norm node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            num_features: num features Required.
-            eps: Small numerical stabilizer for normalization. Default: 1e-05.
-            momentum: Running-statistic update factor in normalization. Default: 0.1.
-            affine: Learn a normalization scale and offset. Default: False.
-            track_running_stats: Maintain running mean/variance for evaluation. Default: False.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            num_features (int): Normalization channel count; must match input C. Integer in 1..8192; bool is
+                rejected. Required.
+            eps (float): Positive numerical stabilizer used in normalization. Embedding normalization also
+                floors it at the dtype tiny value. Finite positive number. Default: 1e-05.
+            momentum (float): Running-statistic update factor; None selects cumulative averaging for
+                BatchNorm. Number in [0,1]. Default: 0.1.
+            affine (bool): Learn per-channel scale and bias when True; otherwise use normalization without
+                learned affine parameters. Boolean only. Default: False.
+            track_running_stats (bool): Track running mean/variance for evaluation. Without tracking,
+                input-statistic sample requirements also apply in eval. Boolean only. Default: False.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW; C matches num_features, num_channels or channels. GroupNorm groups divide C.
+            Same NCHW shape; channel LayerNorm normalizes C per spatial position. Native statistics
+            constraints apply.
+            spatial sample count H*W > 1 when using input statistics
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.instance_norm("node", ["image"], num_features=num_features)
 
         HYSo Guide: components.normalization
@@ -1701,22 +2028,27 @@ class GraphModelBuilder:
     def leaky_relu(self, node_id: str, inputs: list[str], *, negative_slope: float = 0.01) -> GraphModelBuilder:
         """Append the registered leaky_relu node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            negative_slope: negative slope Default: 0.01.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            negative_slope (float): Nonnegative multiplier for negative LeakyReLU inputs. Finite nonnegative
+                number. Default: 0.01.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW in Builder v1.
+            Same NCHW shape; out-of-place activation.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.leaky_relu("node", ["image"])
 
         HYSo Guide: components.activation
@@ -1735,23 +2067,30 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered prelu node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            num_parameters: num parameters Default: 1.
-            init: init Default: 0.25.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            num_parameters (int): PReLU slope count; must be 1 (shared) or equal to incoming C. Integer in
+                1..8192; bool is rejected. Default: 1.
+            init (float): Initial learned PReLU negative slope; finite and representable as float32. Finite
+                number. Default: 0.25.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW in Builder v1.
+            Same NCHW shape; out-of-place activation.
+            num_parameters is 1 or the incoming channel count
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.prelu("node", ["image"])
 
         HYSo Guide: components.activation
@@ -1763,21 +2102,25 @@ class GraphModelBuilder:
     def mish(self, node_id: str, inputs: list[str]) -> GraphModelBuilder:
         """Append the registered mish node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW in Builder v1.
+            Same NCHW shape; out-of-place activation.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.mish("node", ["image"])
 
         HYSo Guide: components.activation
@@ -1789,21 +2132,25 @@ class GraphModelBuilder:
     def hardsigmoid(self, node_id: str, inputs: list[str]) -> GraphModelBuilder:
         """Append the registered hardsigmoid node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW in Builder v1.
+            Same NCHW shape; out-of-place activation.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.hardsigmoid("node", ["image"])
 
         HYSo Guide: components.activation
@@ -1821,22 +2168,28 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered adaptive_max_pool2d node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            output_size: output size Required.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            output_size (int | tuple[int, int] | list[int]): Target H/W grid; integer means a square. Resize
+                requires exactly one of output_size and scale_factor. Integer or H/W pair, each in 1..8192.
+                Required.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW; legal window/padding or positive adaptive output_size.
+            Floating NCHW with unchanged channels; global average returns [N,C,1,1].
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.adaptive_max_pool2d("node", ["image"], output_size=output_size)
 
         HYSo Guide: components.pooling
@@ -1848,21 +2201,25 @@ class GraphModelBuilder:
     def global_avg_pool2d(self, node_id: str, inputs: list[str]) -> GraphModelBuilder:
         """Append the registered global_avg_pool2d node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW; legal window/padding or positive adaptive output_size.
+            Floating NCHW with unchanged channels; global average returns [N,C,1,1].
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.global_avg_pool2d("node", ["image"])
 
         HYSo Guide: components.pooling
@@ -1890,32 +2247,53 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered bottleneck_residual node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            intermediate_channels: Internal feature width between projections. Required.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            dilation: dilation Default: 1.
-            normalization: Closed normalization choice for the residual path. Default: 'batch'.
-            activation: Supported activation family. Default: 'silu'.
-            attention: attention Default: 'none'.
-            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
-            drop_path: drop path Default: 0.0.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+                min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+                1..8192; bool is rejected. Required.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+                features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+            activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+                only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+                'silu'.
+            attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+                selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+                'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
+            drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+                Finite number in [0,1). Default: 0.0.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; attention channels equal out_channels.
+            [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+            Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+            projection shortcut; intermediate channels remain bounded to 8192.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.bottleneck_residual("node", ["image"], in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
 
         HYSo Guide: components.residual
@@ -1958,32 +2336,53 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered preactivation_residual node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            intermediate_channels: Internal feature width between projections. Required.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            dilation: dilation Default: 1.
-            normalization: Closed normalization choice for the residual path. Default: 'batch'.
-            activation: Supported activation family. Default: 'silu'.
-            attention: attention Default: 'none'.
-            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
-            drop_path: drop path Default: 0.0.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+                min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+                1..8192; bool is rejected. Required.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+                features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+            activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+                only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+                'silu'.
+            attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+                selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+                'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
+            drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+                Finite number in [0,1). Default: 0.0.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; attention channels equal out_channels.
+            [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+            Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+            projection shortcut; intermediate channels remain bounded to 8192.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.preactivation_residual("node", ["image"], in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
 
         HYSo Guide: components.residual
@@ -2026,32 +2425,53 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered wide_residual_block node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            intermediate_channels: Internal feature width between projections. Required.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            dilation: dilation Default: 1.
-            normalization: Closed normalization choice for the residual path. Default: 'batch'.
-            activation: Supported activation family. Default: 'silu'.
-            attention: attention Default: 'none'.
-            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
-            drop_path: drop path Default: 0.0.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+                min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+                1..8192; bool is rejected. Required.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+                features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+            activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+                only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+                'silu'.
+            attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+                selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+                'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
+            drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+                Finite number in [0,1). Default: 0.0.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; attention channels equal out_channels.
+            [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+            Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+            projection shortcut; intermediate channels remain bounded to 8192.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.wide_residual_block("node", ["image"], in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
 
         HYSo Guide: components.residual
@@ -2095,33 +2515,55 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered grouped_bottleneck node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            intermediate_channels: Internal feature width between projections. Required.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            dilation: dilation Default: 1.
-            normalization: Closed normalization choice for the residual path. Default: 'batch'.
-            activation: Supported activation family. Default: 'silu'.
-            attention: attention Default: 'none'.
-            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
-            drop_path: drop path Default: 0.0.
-            groups: groups Default: 1.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+                min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+                1..8192; bool is rejected. Required.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+                features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+            activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+                only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+                'silu'.
+            attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+                selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+                'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
+            drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+                Finite number in [0,1). Default: 0.0.
+            groups (int): Channel partitions; must divide both convolution channel counts. ChannelShuffle
+                requires channels % groups == 0. Integer in 1..8192; bool is rejected. Default: 1.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; attention channels equal out_channels.
+            [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+            Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+            projection shortcut; intermediate channels remain bounded to 8192.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.grouped_bottleneck("node", ["image"], in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
 
         HYSo Guide: components.residual
@@ -2165,32 +2607,53 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered inverted_bottleneck node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            expansion_ratio: Internal positive integer channel expansion factor. Default: 2.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            dilation: dilation Default: 1.
-            normalization: Closed normalization choice for the residual path. Default: 'batch'.
-            activation: Supported activation family. Default: 'silu'.
-            attention: attention Default: 'none'.
-            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
-            drop_path: drop path Default: 0.0.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            expansion_ratio (int): Inverted-bottleneck channel multiplier; intermediate
+                C=in_channels*expansion_ratio must not exceed 8192. Integer in 1..8192; bool is rejected.
+                Default: 2.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+                features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+            activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+                only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+                'silu'.
+            attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+                selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+                'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
+            drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+                Finite number in [0,1). Default: 0.0.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; attention channels equal out_channels.
+            [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+            Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+            projection shortcut; intermediate channels remain bounded to 8192.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.inverted_bottleneck("node", ["image"], in_channels=in_channels, out_channels=out_channels)
 
         HYSo Guide: components.residual
@@ -2235,34 +2698,57 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered gated_residual node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            in_channels: in channels Required.
-            out_channels: out channels Required.
-            intermediate_channels: Internal feature width between projections. Required.
-            kernel_size: kernel size Default: 3.
-            stride: stride Default: 1.
-            dilation: dilation Default: 1.
-            normalization: Closed normalization choice for the residual path. Default: 'batch'.
-            activation: Supported activation family. Default: 'silu'.
-            attention: attention Default: 'none'.
-            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
-            drop_path: drop path Default: 0.0.
-            gate_init: Initial residual gate value in [0, 1]. Default: 1.0.
-            learnable_gate: Make the residual gate trainable. Default: True.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            in_channels (int): Input feature channels; must match the incoming tensor C dimension. Integer
+                in 1..8192; bool is rejected. Required.
+            out_channels (int): Output feature channels after this convolution or block. Integer in 1..8192;
+                bool is rejected. Required.
+            intermediate_channels (int): Internal feature width. Factorized convolution requires this <=
+                min(in_channels,out_channels); grouped residuals require divisibility by groups. Integer in
+                1..8192; bool is rejected. Required.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 3.
+            stride (int | tuple[int, int] | list[int]): Spatial sampling step on each axis; larger values
+                reduce ordinary convolution/pooling resolution. Integer or H/W pair, each in 1..8192.
+                Default: 1.
+            dilation (int | tuple[int, int] | list[int]): Spacing between kernel taps; effective kernel size
+                is dilation*(kernel_size-1)+1 per axis. Integer or H/W pair, each in 1..8192. Default: 1.
+            normalization (_typing.Literal['batch', 'group', None]): Normalization of residual main-branch
+                features; batch, group or None. Choices: 'batch', 'group', None. Default: 'batch'.
+            activation (_typing.Literal['relu', 'silu', 'gelu']): Nonlinearity applied inside this block;
+                only the declared registry choices are accepted. Choices: 'relu', 'silu', 'gelu'. Default:
+                'silu'.
+            attention (_typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention']): Attention
+                selector inside the block; applies channel/spatial gates without resizing. Choices: 'none',
+                'eca', 'spatial_attention', 'channel_attention'. Default: 'none'.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
+            drop_path (float): Training-only per-sample residual path drop probability; disabled in eval.
+                Finite number in [0,1). Default: 0.0.
+            gate_init (float): Initial scalar residual contribution in [0,1]; zero suppresses the residual
+                main branch initially. Number in [0,1]. Default: 1.0.
+            learnable_gate (bool): Store the residual gate as a learned scalar when True, otherwise a fixed
+                scalar. Boolean only. Default: True.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,in_channels,H,W]; attention channels equal out_channels.
+            [N,out_channels,ceil(H/strideH),ceil(W/strideW)]; internal shortcut uses the same output shape.
+            Odd spatial kernels use dilation-aware symmetric padding. Channel/stride changes use an explicit
+            projection shortcut; intermediate channels remain bounded to 8192.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.gated_residual("node", ["image"], in_channels=in_channels, out_channels=out_channels, intermediate_channels=intermediate_channels)
 
         HYSo Guide: components.residual
@@ -2298,23 +2784,29 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered spatial_attention node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            channels: channels Required.
-            kernel_size: kernel size Default: 7.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            kernel_size (int): Spatial filter/window extent in H and W; an integer uses the same extent on
+                both axes. Odd integer in 1..8192; bool is rejected. Default: 7.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.spatial_attention("node", ["image"], channels=channels)
 
         HYSo Guide: components.attention
@@ -2333,23 +2825,30 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered channel_attention node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            channels: channels Required.
-            reduction: reduction Default: 8.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            reduction (int): Channel-gate reduction divisor; hidden width is max(1,C//reduction), or
+                max(8,C//reduction) for coordinate attention. Integer in 1..8192; bool is rejected. Default:
+                8.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.channel_attention("node", ["image"], channels=channels)
 
         HYSo Guide: components.attention
@@ -2369,24 +2868,33 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered spatial_self_attention node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            channels: channels Required.
-            embedding_dim: embedding dim Default: None.
-            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            embedding_dim (int | None): Attention projection width or output embedding width, according to
+                the component. None in self-attention uses C; QKV requires 3*embedding_dim<=8192. None or
+                integer in 1..8192. Default: None.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+            QKV channels <=8192, H*W<=1024 and N*heads*(H*W)^2<=4194304 are mandatory resource bounds.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.spatial_self_attention("node", ["image"], channels=channels)
 
         HYSo Guide: components.attention
@@ -2414,25 +2922,36 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered multihead_spatial_attention node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            channels: channels Required.
-            embedding_dim: embedding dim Default: None.
-            num_heads: num heads Default: 4.
-            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            channels (int): Feature channels C; gates and normalization preserve this channel count. Integer
+                in 1..8192; bool is rejected. Required.
+            embedding_dim (int | None): Attention projection width or output embedding width, according to
+                the component. None in self-attention uses C; QKV requires 3*embedding_dim<=8192. None or
+                integer in 1..8192. Default: None.
+            num_heads (int): Parallel attention heads; must divide embedding_dim. Spatial attention is
+                limited to 1024 tokens and N*heads*tokens^2<=4194304. Integer in 1..8192; bool is rejected.
+                Default: 4.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating [N,channels,H,W], all dimensions positive.
+            Same NCHW shape; multiplicative gates, no channel or spatial resizing.
+            QKV channels <=8192, H*W<=1024 and N*heads*(H*W)^2<=4194304 are mandatory resource bounds.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.multihead_spatial_attention("node", ["image"], channels=channels)
 
         HYSo Guide: components.attention
@@ -2452,22 +2971,27 @@ class GraphModelBuilder:
     def dropout2d(self, node_id: str, inputs: list[str], *, p: float = 0.5) -> GraphModelBuilder:
         """Append the registered dropout2d node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            p: Probability of dropping an element/path during training. Default: 0.5.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            p (float): Probability of dropping elements, channels or paths during training; evaluation
+                disables masking. Number in [0,1]. Default: 0.5.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Nonempty floating NCHW.
+            Same shape and dtype; explicit training-only masking.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.dropout2d("node", ["image"])
 
         HYSo Guide: components.regularization
@@ -2479,22 +3003,27 @@ class GraphModelBuilder:
     def drop_path(self, node_id: str, inputs: list[str], *, p: float = 0.0) -> GraphModelBuilder:
         """Append the registered drop_path node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            p: Probability of dropping an element/path during training. Default: 0.0.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            p (float): Probability of dropping elements, channels or paths during training; evaluation
+                disables masking. Finite number in [0,1). Default: 0.0.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Nonempty floating NCHW.
+            Same shape and dtype; explicit training-only masking.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.drop_path("node", ["image"])
 
         HYSo Guide: components.regularization
@@ -2506,22 +3035,27 @@ class GraphModelBuilder:
     def gaussian_noise(self, node_id: str, inputs: list[str], *, std: float = 0.1) -> GraphModelBuilder:
         """Append the registered gaussian_noise node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            std: Standard deviation of sampled noise. Default: 0.1.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            std (float): Standard deviation of training-only zero-mean Gaussian noise; finite, nonnegative
+                and at most 1e6. Finite nonnegative number. Default: 0.1.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Nonempty floating NCHW.
+            Same shape and dtype; explicit training-only masking.
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.gaussian_noise("node", ["image"])
 
         HYSo Guide: components.regularization
@@ -2542,25 +3076,40 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered resize node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            output_size: output size Default: None.
-            scale_factor: scale factor Default: None.
-            mode: mode Default: 'nearest'.
-            align_corners: align corners Default: None.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            output_size (int | tuple[int, int] | list[int] | None): Target H/W grid; integer means a square.
+                Resize requires exactly one of output_size and scale_factor. None or integer/HW pair, each
+                in 1..8192. Default: None.
+            scale_factor (float | tuple[float, float] | list[float] | None): Positive H/W resize
+                multipliers, each <=8192. Exactly one of this and output_size must be provided. None or
+                positive scalar/HW factors, each <=8192. Default: None.
+            mode (_typing.Literal['nearest', 'bilinear', 'bicubic', 'area']): Resize interpolation method;
+                nearest/area require align_corners=None. Choices: 'nearest', 'bilinear', 'bicubic', 'area'.
+                Default: 'nearest'.
+            align_corners (bool | None): Align endpoint pixel centers for bilinear/bicubic resizing; must be
+                None for nearest/area. Boolean or None. Default: None.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW.
+            Floating NCHW with explicit resize or pixel rearrangement geometry.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.resize("node", ["image"], output_size=(4, 4))
 
         HYSo Guide: components.sampling
@@ -2580,22 +3129,31 @@ class GraphModelBuilder:
     def pixel_shuffle(self, node_id: str, inputs: list[str], *, upscale_factor: int) -> GraphModelBuilder:
         """Append the registered pixel_shuffle node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            upscale_factor: Positive spatial upscaling factor; channels must be divisible by its square. Required.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            upscale_factor (int): PixelShuffle factor r: C must be divisible by r^2; output is
+                (C/r^2,H*r,W*r). Integer in 1..8192; bool is rejected. Required.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW.
+            Floating NCHW with explicit resize or pixel rearrangement geometry.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.pixel_shuffle("node", ["image"], upscale_factor=upscale_factor)
 
         HYSo Guide: components.sampling
@@ -2607,22 +3165,31 @@ class GraphModelBuilder:
     def pixel_unshuffle(self, node_id: str, inputs: list[str], *, downscale_factor: int) -> GraphModelBuilder:
         """Append the registered pixel_unshuffle node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            downscale_factor: Positive spatial downscaling factor dividing both spatial dimensions. Required.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            downscale_factor (int): PixelUnshuffle factor r: H and W must be divisible by r; output is
+                (C*r^2,H/r,W/r). Integer in 1..8192; bool is rejected. Required.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating nonempty NCHW.
+            Floating NCHW with explicit resize or pixel rearrangement geometry.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.pixel_unshuffle("node", ["image"], downscale_factor=downscale_factor)
 
         HYSo Guide: components.sampling
@@ -2634,21 +3201,29 @@ class GraphModelBuilder:
     def flatten(self, node_id: str, inputs: list[str]) -> GraphModelBuilder:
         """Append the registered flatten node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW with preserved batch axis.
+            NCHW or terminal NF for flatten, see shape_contract.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.flatten("node", ["image"])
 
         HYSo Guide: components.sampling
@@ -2666,22 +3241,32 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered permute node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            dims: Explicit axis permutation/order. Default: (0, 1, 3, 2).
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            dims (tuple[int, ...] | list[int]): Permutation of NCHW axes; only (0,1,2,3) and (0,1,3,2) are
+                accepted, preserving batch/channel axes. Only identity or spatial-axis swap is supported.
+                Default: (0, 1, 3, 2).
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW with preserved batch axis.
+            NCHW or terminal NF for flatten, see shape_contract.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.permute("node", ["image"])
 
         HYSo Guide: components.sampling
@@ -2699,22 +3284,32 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered reshape node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            shape: shape Required.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            shape (tuple[int, ...] | list[int]): Target per-sample CHW dimensions; reshape must preserve the
+                number of sample elements and every dimension is 1..8192. Three integers in 1..8192.
+                Required.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW with preserved batch axis.
+            NCHW or terminal NF for flatten, see shape_contract.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.reshape("node", ["image"], shape=shape)
 
         HYSo Guide: components.sampling
@@ -2735,25 +3330,38 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered classification_head node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            in_features: in features Required.
-            pooling: Head pooling: avg, max, or none; none requires compatible flat features. Default: 'avg'.
-            num_classes: num classes Required.
-            dropout: Drop probability; this regularization is active only in training mode. Default: 0.0.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            in_features (int | None): Linear-head input width after pooling/flattening; must match the
+                inferred feature width. Integer in 1..8192; bool is rejected. Default: None.
+            pooling (_typing.Literal['avg', 'max', 'none']): avg/max globally pool NCHW before flattening;
+                none flattens NCHW or consumes flat NF. NF requires none. Choices: 'avg', 'max', 'none'.
+                Default: 'avg'.
+            num_classes (int): Number of output class logits. Outputs are unnormalized scores, not
+                probabilities. Integer in 1..8192; bool is rejected. Required.
+            dropout (float): Training-only activation/head dropout probability; disabled in eval. Finite
+                number in [0,1). Default: 0.0.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW or NF with pooling=none.
+            Floating NF prediction, head type controls output semantics.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.classification_head("node", ["image"], in_features=in_features, num_classes=num_classes)
 
         HYSo Guide: components.heads
@@ -2773,24 +3381,36 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered regression_head node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            in_features: in features Required.
-            pooling: Head pooling: avg, max, or none; none requires compatible flat features. Default: 'avg'.
-            output_features: output features Required.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            in_features (int): Linear-head input width after pooling/flattening; must match the inferred
+                feature width. Integer in 1..8192; bool is rejected. Required.
+            pooling (_typing.Literal['avg', 'max', 'none']): avg/max globally pool NCHW before flattening;
+                none flattens NCHW or consumes flat NF. NF requires none. Choices: 'avg', 'max', 'none'.
+                Default: 'avg'.
+            output_features (int): Width of the unrestricted numeric regression output; no classification
+                objective is inferred. Integer in 1..8192; bool is rejected. Required.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW or NF with pooling=none.
+            Floating NF prediction, head type controls output semantics.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.regression_head("node", ["image"], in_features=in_features, output_features=output_features)
 
         HYSo Guide: components.heads
@@ -2819,26 +3439,40 @@ class GraphModelBuilder:
     ) -> GraphModelBuilder:
         """Append the registered embedding_head node via add().
 
-        Available in commercial and development profiles.
-        No weights, forward pass or training are requested.
-
         Args:
-            node_id: Unique node name.
-            inputs: Ordered explicit graph input/node references.
-            in_features: in features Required.
-            pooling: Head pooling: avg, max, or none; none requires compatible flat features. Default: 'avg'.
-            embedding_dim: embedding dim Required.
-            normalize: Apply the head's supported safe L2 embedding normalization. Default: False.
-            eps: Small numerical stabilizer for normalization. Default: 1e-12.
+            node_id (str): Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ
+                from graph input names. Required.
+            inputs (list[str]): Ordered existing graph input/node references; component nodes require
+                exactly one incoming tensor at preflight. Required.
+            in_features (int): Linear-head input width after pooling/flattening; must match the inferred
+                feature width. Integer in 1..8192; bool is rejected. Required.
+            pooling (_typing.Literal['avg', 'max', 'none']): avg/max globally pool NCHW before flattening;
+                none flattens NCHW or consumes flat NF. NF requires none. Choices: 'avg', 'max', 'none'.
+                Default: 'avg'.
+            embedding_dim (int): Output embedding width for a head, or internal attention projection width
+                as declared by this component. Integer in 1..8192; bool is rejected. Required.
+            normalize (bool): Apply safe per-sample L2 normalization to output embeddings. Boolean only.
+                Default: False.
+            eps (float): Positive numerical stabilizer used in normalization. Embedding normalization also
+                floors it at the dtype tiny value. Finite positive number. Default: 1e-12.
 
         Returns:
-            This GraphModelBuilder for chaining.
+            This GraphModelBuilder for fluent chaining; no model is allocated.
 
         Raises:
-            ModelConfigError: Native Registry, profile, shape or configuration validation fails.
-            TypeError: A required argument is missing or an unknown keyword is supplied.
+            ModelConfigError: Component type/range, channel, shape or cross-parameter validation fails.
 
-        Example:
+        Notes:
+            Floating NCHW or NF with pooling=none.
+            Floating NF prediction, head type controls output semantics.
+            resize requires exactly one target
+            pixel factors require divisibility
+            reshape preserves sample element count
+            heads are terminal, in_features is inferred by Builder
+            Integer/HW options follow the closed registry schema; unknown keywords, invalid groups and
+            nonpositive output geometry raise ModelConfigError. build() allocates the model separately.
+
+        Examples:
             builder.embedding_head("node", ["image"], in_features=in_features, embedding_dim=embedding_dim)
 
         HYSo Guide: components.heads
@@ -2870,7 +3504,7 @@ class GraphModelBuilder:
             ModelConfigError: Native fusion parameters or graph validation reject the configuration.
             TypeError: Missing required arguments or unsupported keywords.
 
-        Example:
+        Examples:
             graph.add_inputs("merge", ["left", "right"])
 
         HYSo Guide: components.fusion
@@ -2894,7 +3528,7 @@ class GraphModelBuilder:
             ModelConfigError: Native fusion parameters or graph validation reject the configuration.
             TypeError: Missing required arguments or unsupported keywords.
 
-        Example:
+        Examples:
             graph.concat("merge", ["left", "right"])
 
         HYSo Guide: components.fusion
@@ -2917,7 +3551,7 @@ class GraphModelBuilder:
             ModelConfigError: Native fusion parameters or graph validation reject the configuration.
             TypeError: Missing required arguments or unsupported keywords.
 
-        Example:
+        Examples:
             graph.multiply("merge", ["left", "right"])
 
         HYSo Guide: components.fusion
@@ -2942,7 +3576,7 @@ class GraphModelBuilder:
             ModelConfigError: Native fusion parameters or graph validation reject the configuration.
             TypeError: Missing required arguments or unsupported keywords.
 
-        Example:
+        Examples:
             graph.weighted_sum("merge", ["left", "right"], weights=[0.5, 0.5])
 
         HYSo Guide: components.fusion
@@ -3732,25 +4366,1087 @@ class GraphModelBuilder:
             )
     # END DEVELOPMENT REGISTRY WRAPPERS
 
+    # Static keyword contracts mirror the closed runtime registry.
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['conv_norm_act'], inputs: list[str], *, in_channels: int, out_channels: int, kernel_size: int | tuple[int, int] | list[int] = 3, stride: int | tuple[int, int] | list[int] = 1, padding: int | tuple[int, int] | list[int] = 1, groups: int = 1, norm: _typing.Literal['batch', 'group', None] = 'batch', activation: _typing.Literal['silu', 'relu', None] = 'silu') -> GraphModelBuilder:
+        """Keyword contract for conv_norm_act; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'conv_norm_act'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            groups: Channel partitions; must divide both convolution channel counts. ChannelShuffle requires channels % groups == 0.
+            norm: Optional post-convolution normalization: batch, group or None. Group normalization chooses the largest channel divisor <=8; convolution bias is enabled only without normalization.
+            activation: Nonlinearity applied inside this block; only the declared registry choices are accepted.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['conv2d'], inputs: list[str], *, in_channels: int, out_channels: int, kernel_size: int | tuple[int, int] | list[int] = 3, stride: int | tuple[int, int] | list[int] = 1, padding: int | tuple[int, int] | list[int] = 1, groups: int = 1, bias: bool = True, dilation: int | tuple[int, int] | list[int] = 1) -> GraphModelBuilder:
+        """Keyword contract for conv2d; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'conv2d'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            groups: Channel partitions; must divide both convolution channel counts. ChannelShuffle requires channels % groups == 0.
+            bias: Include a learned additive convolution bias for each output channel.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['residual'], inputs: list[str], *, in_channels: int, out_channels: int, stride: int | tuple[int, int] | list[int] = 1, norm: _typing.Literal['batch', 'group', None] = 'batch', attention: dict[str, _typing.Any] | None = None) -> GraphModelBuilder:
+        """Keyword contract for residual; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'residual'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            norm: Optional post-convolution normalization: batch, group or None. Group normalization chooses the largest channel divisor <=8; convolution bias is enabled only without normalization.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['se'], inputs: list[str], *, channels: int, reduction: int = 8) -> GraphModelBuilder:
+        """Keyword contract for se; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'se'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            reduction: Channel-gate reduction divisor; hidden width is max(1,C//reduction), or max(8,C//reduction) for coordinate attention.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['cbam'], inputs: list[str], *, channels: int, reduction: int = 16, kernel_size: int = 7) -> GraphModelBuilder:
+        """Keyword contract for cbam; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'cbam'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            reduction: Channel-gate reduction divisor; hidden width is max(1,C//reduction), or max(8,C//reduction) for coordinate attention.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['eca'], inputs: list[str], *, channels: int, kernel_size: int = 3) -> GraphModelBuilder:
+        """Keyword contract for eca; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'eca'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['coordinate'], inputs: list[str], *, channels: int, reduction: int = 32) -> GraphModelBuilder:
+        """Keyword contract for coordinate; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'coordinate'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            reduction: Channel-gate reduction divisor; hidden width is max(1,C//reduction), or max(8,C//reduction) for coordinate attention.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['batch_norm'], inputs: list[str], *, num_features: int, eps: float = 1e-05, momentum: float | None = 0.1, affine: bool = True, track_running_stats: bool = True) -> GraphModelBuilder:
+        """Keyword contract for batch_norm; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'batch_norm'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            num_features: Normalization channel count; must match input C.
+            eps: Positive numerical stabilizer used in normalization. Embedding normalization also floors it at the dtype tiny value.
+            momentum: Running-statistic update factor; None selects cumulative averaging for BatchNorm.
+            affine: Learn per-channel scale and bias when True; otherwise use normalization without learned affine parameters.
+            track_running_stats: Track running mean/variance for evaluation. Without tracking, input-statistic sample requirements also apply in eval.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['group_norm'], inputs: list[str], *, num_groups: int, num_channels: int, eps: float = 1e-05, affine: bool = True) -> GraphModelBuilder:
+        """Keyword contract for group_norm; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'group_norm'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            num_groups: GroupNorm channel partitions; must divide num_channels.
+            num_channels: Total GroupNorm channels C; must be divisible by num_groups.
+            eps: Positive numerical stabilizer used in normalization. Embedding normalization also floors it at the dtype tiny value.
+            affine: Learn per-channel scale and bias when True; otherwise use normalization without learned affine parameters.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['relu'], inputs: list[str]) -> GraphModelBuilder:
+        """Keyword contract for relu; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'relu'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['silu'], inputs: list[str]) -> GraphModelBuilder:
+        """Keyword contract for silu; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'silu'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['hardswish'], inputs: list[str]) -> GraphModelBuilder:
+        """Keyword contract for hardswish; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'hardswish'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['identity'], inputs: list[str]) -> GraphModelBuilder:
+        """Keyword contract for identity; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'identity'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['channel_shuffle'], inputs: list[str], *, channels: int, groups: int = 2) -> GraphModelBuilder:
+        """Keyword contract for channel_shuffle; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'channel_shuffle'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            groups: Channel partitions; must divide both convolution channel counts. ChannelShuffle requires channels % groups == 0.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['dropblock2d'], inputs: list[str], *, p: float = 0.1, block_size: int = 3) -> GraphModelBuilder:
+        """Keyword contract for dropblock2d; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'dropblock2d'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            p: Probability of dropping elements, channels or paths during training; evaluation disables masking.
+            block_size: Requested mask side, clipped at runtime to min(block_size,H,W).
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['pointwise_conv2d'], inputs: list[str], *, in_channels: int, out_channels: int, stride: int | tuple[int, int] | list[int] = 1, bias: bool = True) -> GraphModelBuilder:
+        """Keyword contract for pointwise_conv2d; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'pointwise_conv2d'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            bias: Include a learned additive convolution bias for each output channel.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['depthwise_conv2d'], inputs: list[str], *, in_channels: int, depth_multiplier: int = 1, kernel_size: int | tuple[int, int] | list[int] = 3, stride: int | tuple[int, int] | list[int] = 1, padding: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, bias: bool = True) -> GraphModelBuilder:
+        """Keyword contract for depthwise_conv2d; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'depthwise_conv2d'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            depth_multiplier: Independent filters per input channel; depthwise output/intermediate C equals in_channels*depth_multiplier and must not exceed 8192.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            bias: Include a learned additive convolution bias for each output channel.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['depthwise_separable_conv2d'], inputs: list[str], *, in_channels: int, out_channels: int, depth_multiplier: int = 1, kernel_size: int | tuple[int, int] | list[int] = 3, stride: int | tuple[int, int] | list[int] = 1, padding: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, bias: bool = True) -> GraphModelBuilder:
+        """Keyword contract for depthwise_separable_conv2d; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'depthwise_separable_conv2d'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            depth_multiplier: Independent filters per input channel; depthwise output/intermediate C equals in_channels*depth_multiplier and must not exceed 8192.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            bias: Include a learned additive convolution bias for each output channel.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['spatial_separable_conv2d'], inputs: list[str], *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int | tuple[int, int] | list[int] = 3, stride: int | tuple[int, int] | list[int] = 1, padding: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, bias: bool = True) -> GraphModelBuilder:
+        """Keyword contract for spatial_separable_conv2d; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'spatial_separable_conv2d'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            intermediate_channels: Internal feature width. Factorized convolution requires this <= min(in_channels,out_channels); grouped residuals require divisibility by groups.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            bias: Include a learned additive convolution bias for each output channel.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['factorized_conv2d'], inputs: list[str], *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int | tuple[int, int] | list[int] = 3, stride: int | tuple[int, int] | list[int] = 1, padding: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, bias: bool = True) -> GraphModelBuilder:
+        """Keyword contract for factorized_conv2d; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'factorized_conv2d'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            intermediate_channels: Internal feature width. Factorized convolution requires this <= min(in_channels,out_channels); grouped residuals require divisibility by groups.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            bias: Include a learned additive convolution bias for each output channel.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['conv_transpose2d'], inputs: list[str], *, in_channels: int, out_channels: int, kernel_size: int | tuple[int, int] | list[int] = 3, stride: int | tuple[int, int] | list[int] = 1, padding: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, bias: bool = True, groups: int = 1, output_padding: int | tuple[int, int] | list[int] = 0) -> GraphModelBuilder:
+        """Keyword contract for conv_transpose2d; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'conv_transpose2d'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            bias: Include a learned additive convolution bias for each output channel.
+            groups: Channel partitions; must divide both convolution channel counts. ChannelShuffle requires channels % groups == 0.
+            output_padding: Additional output extent for transposed convolution, not input padding; each axis must be less than stride or dilation on that axis.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['channel_layer_norm'], inputs: list[str], *, channels: int, eps: float = 1e-05, affine: bool = True) -> GraphModelBuilder:
+        """Keyword contract for channel_layer_norm; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'channel_layer_norm'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            eps: Positive numerical stabilizer used in normalization. Embedding normalization also floors it at the dtype tiny value.
+            affine: Learn per-channel scale and bias when True; otherwise use normalization without learned affine parameters.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['instance_norm'], inputs: list[str], *, num_features: int, eps: float = 1e-05, momentum: float = 0.1, affine: bool = False, track_running_stats: bool = False) -> GraphModelBuilder:
+        """Keyword contract for instance_norm; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'instance_norm'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            num_features: Normalization channel count; must match input C.
+            eps: Positive numerical stabilizer used in normalization. Embedding normalization also floors it at the dtype tiny value.
+            momentum: Running-statistic update factor; None selects cumulative averaging for BatchNorm.
+            affine: Learn per-channel scale and bias when True; otherwise use normalization without learned affine parameters.
+            track_running_stats: Track running mean/variance for evaluation. Without tracking, input-statistic sample requirements also apply in eval.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['leaky_relu'], inputs: list[str], *, negative_slope: float = 0.01) -> GraphModelBuilder:
+        """Keyword contract for leaky_relu; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'leaky_relu'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            negative_slope: Nonnegative multiplier for negative LeakyReLU inputs.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['prelu'], inputs: list[str], *, num_parameters: int = 1, init: float = 0.25) -> GraphModelBuilder:
+        """Keyword contract for prelu; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'prelu'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            num_parameters: PReLU slope count; must be 1 (shared) or equal to incoming C.
+            init: Initial learned PReLU negative slope; finite and representable as float32.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['gelu'], inputs: list[str], *, approximate: _typing.Literal['none', 'tanh'] = 'none') -> GraphModelBuilder:
+        """Keyword contract for gelu; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'gelu'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            approximate: GELU calculation: none uses the exact error function; tanh uses the approximation.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['mish'], inputs: list[str]) -> GraphModelBuilder:
+        """Keyword contract for mish; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'mish'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['hardsigmoid'], inputs: list[str]) -> GraphModelBuilder:
+        """Keyword contract for hardsigmoid; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'hardsigmoid'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['max_pool2d'], inputs: list[str], *, kernel_size: int | tuple[int, int] | list[int], stride: int | tuple[int, int] | list[int] | None = None, padding: int | tuple[int, int] | list[int] = 0, dilation: int | tuple[int, int] | list[int] = 1, ceil_mode: bool = False) -> GraphModelBuilder:
+        """Keyword contract for max_pool2d; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'max_pool2d'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            ceil_mode: Round pooling output sizes upward, then discard windows beginning wholly in right/bottom padding.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['avg_pool2d'], inputs: list[str], *, kernel_size: int | tuple[int, int] | list[int], stride: int | tuple[int, int] | list[int] | None = None, padding: int | tuple[int, int] | list[int] = 0, ceil_mode: bool = False, count_include_pad: bool = True) -> GraphModelBuilder:
+        """Keyword contract for avg_pool2d; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'avg_pool2d'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            padding: Symmetric padding on each spatial axis; changes output geometry without changing channel count.
+            ceil_mode: Round pooling output sizes upward, then discard windows beginning wholly in right/bottom padding.
+            count_include_pad: Include zero-padded elements in the average-pooling divisor.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['adaptive_avg_pool2d'], inputs: list[str], *, output_size: int | tuple[int, int] | list[int]) -> GraphModelBuilder:
+        """Keyword contract for adaptive_avg_pool2d; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'adaptive_avg_pool2d'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            output_size: Target H/W grid; integer means a square. Resize requires exactly one of output_size and scale_factor.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['adaptive_max_pool2d'], inputs: list[str], *, output_size: int | tuple[int, int] | list[int]) -> GraphModelBuilder:
+        """Keyword contract for adaptive_max_pool2d; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'adaptive_max_pool2d'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            output_size: Target H/W grid; integer means a square. Resize requires exactly one of output_size and scale_factor.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['global_avg_pool2d'], inputs: list[str]) -> GraphModelBuilder:
+        """Keyword contract for global_avg_pool2d; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'global_avg_pool2d'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['bottleneck_residual'], inputs: list[str], *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int = 3, stride: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, normalization: _typing.Literal['batch', 'group', None] = 'batch', activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none', dropout: float = 0.0, drop_path: float = 0.0) -> GraphModelBuilder:
+        """Keyword contract for bottleneck_residual; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'bottleneck_residual'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            intermediate_channels: Internal feature width. Factorized convolution requires this <= min(in_channels,out_channels); grouped residuals require divisibility by groups.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            normalization: Normalization of residual main-branch features; batch, group or None.
+            activation: Nonlinearity applied inside this block; only the declared registry choices are accepted.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+            drop_path: Training-only per-sample residual path drop probability; disabled in eval.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['preactivation_residual'], inputs: list[str], *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int = 3, stride: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, normalization: _typing.Literal['batch', 'group', None] = 'batch', activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none', dropout: float = 0.0, drop_path: float = 0.0) -> GraphModelBuilder:
+        """Keyword contract for preactivation_residual; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'preactivation_residual'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            intermediate_channels: Internal feature width. Factorized convolution requires this <= min(in_channels,out_channels); grouped residuals require divisibility by groups.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            normalization: Normalization of residual main-branch features; batch, group or None.
+            activation: Nonlinearity applied inside this block; only the declared registry choices are accepted.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+            drop_path: Training-only per-sample residual path drop probability; disabled in eval.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['wide_residual_block'], inputs: list[str], *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int = 3, stride: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, normalization: _typing.Literal['batch', 'group', None] = 'batch', activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none', dropout: float = 0.0, drop_path: float = 0.0) -> GraphModelBuilder:
+        """Keyword contract for wide_residual_block; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'wide_residual_block'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            intermediate_channels: Internal feature width. Factorized convolution requires this <= min(in_channels,out_channels); grouped residuals require divisibility by groups.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            normalization: Normalization of residual main-branch features; batch, group or None.
+            activation: Nonlinearity applied inside this block; only the declared registry choices are accepted.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+            drop_path: Training-only per-sample residual path drop probability; disabled in eval.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['grouped_bottleneck'], inputs: list[str], *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int = 3, stride: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, normalization: _typing.Literal['batch', 'group', None] = 'batch', activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none', dropout: float = 0.0, drop_path: float = 0.0, groups: int = 1) -> GraphModelBuilder:
+        """Keyword contract for grouped_bottleneck; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'grouped_bottleneck'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            intermediate_channels: Internal feature width. Factorized convolution requires this <= min(in_channels,out_channels); grouped residuals require divisibility by groups.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            normalization: Normalization of residual main-branch features; batch, group or None.
+            activation: Nonlinearity applied inside this block; only the declared registry choices are accepted.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+            drop_path: Training-only per-sample residual path drop probability; disabled in eval.
+            groups: Channel partitions; must divide both convolution channel counts. ChannelShuffle requires channels % groups == 0.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['inverted_bottleneck'], inputs: list[str], *, in_channels: int, out_channels: int, expansion_ratio: int = 2, kernel_size: int = 3, stride: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, normalization: _typing.Literal['batch', 'group', None] = 'batch', activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none', dropout: float = 0.0, drop_path: float = 0.0) -> GraphModelBuilder:
+        """Keyword contract for inverted_bottleneck; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'inverted_bottleneck'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            expansion_ratio: Inverted-bottleneck channel multiplier; intermediate C=in_channels*expansion_ratio must not exceed 8192.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            normalization: Normalization of residual main-branch features; batch, group or None.
+            activation: Nonlinearity applied inside this block; only the declared registry choices are accepted.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+            drop_path: Training-only per-sample residual path drop probability; disabled in eval.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['gated_residual'], inputs: list[str], *, in_channels: int, out_channels: int, intermediate_channels: int, kernel_size: int = 3, stride: int | tuple[int, int] | list[int] = 1, dilation: int | tuple[int, int] | list[int] = 1, normalization: _typing.Literal['batch', 'group', None] = 'batch', activation: _typing.Literal['relu', 'silu', 'gelu'] = 'silu', attention: _typing.Literal['none', 'eca', 'spatial_attention', 'channel_attention'] = 'none', dropout: float = 0.0, drop_path: float = 0.0, gate_init: float = 1.0, learnable_gate: bool = True) -> GraphModelBuilder:
+        """Keyword contract for gated_residual; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'gated_residual'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            in_channels: Input feature channels; must match the incoming tensor C dimension.
+            out_channels: Output feature channels after this convolution or block.
+            intermediate_channels: Internal feature width. Factorized convolution requires this <= min(in_channels,out_channels); grouped residuals require divisibility by groups.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+            stride: Spatial sampling step on each axis; larger values reduce ordinary convolution/pooling resolution.
+            dilation: Spacing between kernel taps; effective kernel size is dilation*(kernel_size-1)+1 per axis.
+            normalization: Normalization of residual main-branch features; batch, group or None.
+            activation: Nonlinearity applied inside this block; only the declared registry choices are accepted.
+            attention: Optional attention applied after the residual branch; nested legacy attention must use matching out_channels.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+            drop_path: Training-only per-sample residual path drop probability; disabled in eval.
+            gate_init: Initial scalar residual contribution in [0,1]; zero suppresses the residual main branch initially.
+            learnable_gate: Store the residual gate as a learned scalar when True, otherwise a fixed scalar.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['spatial_attention'], inputs: list[str], *, channels: int, kernel_size: int = 7) -> GraphModelBuilder:
+        """Keyword contract for spatial_attention; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'spatial_attention'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            kernel_size: Spatial filter/window extent in H and W; an integer uses the same extent on both axes.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['channel_attention'], inputs: list[str], *, channels: int, reduction: int = 8) -> GraphModelBuilder:
+        """Keyword contract for channel_attention; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'channel_attention'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            reduction: Channel-gate reduction divisor; hidden width is max(1,C//reduction), or max(8,C//reduction) for coordinate attention.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['spatial_self_attention'], inputs: list[str], *, channels: int, embedding_dim: int | None = None, dropout: float = 0.0) -> GraphModelBuilder:
+        """Keyword contract for spatial_self_attention; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'spatial_self_attention'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            embedding_dim: Attention projection width or output embedding width, according to the component. None in self-attention uses C; QKV requires 3*embedding_dim<=8192.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['multihead_spatial_attention'], inputs: list[str], *, channels: int, embedding_dim: int | None = None, num_heads: int = 4, dropout: float = 0.0) -> GraphModelBuilder:
+        """Keyword contract for multihead_spatial_attention; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'multihead_spatial_attention'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            channels: Feature channels C; gates and normalization preserve this channel count.
+            embedding_dim: Attention projection width or output embedding width, according to the component. None in self-attention uses C; QKV requires 3*embedding_dim<=8192.
+            num_heads: Parallel attention heads; must divide embedding_dim. Spatial attention is limited to 1024 tokens and N*heads*tokens^2<=4194304.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['dropout'], inputs: list[str], *, p: float = 0.5) -> GraphModelBuilder:
+        """Keyword contract for dropout; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'dropout'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            p: Probability of dropping elements, channels or paths during training; evaluation disables masking.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['dropout2d'], inputs: list[str], *, p: float = 0.5) -> GraphModelBuilder:
+        """Keyword contract for dropout2d; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'dropout2d'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            p: Probability of dropping elements, channels or paths during training; evaluation disables masking.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['drop_path'], inputs: list[str], *, p: float = 0.0) -> GraphModelBuilder:
+        """Keyword contract for drop_path; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'drop_path'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            p: Probability of dropping elements, channels or paths during training; evaluation disables masking.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['gaussian_noise'], inputs: list[str], *, std: float = 0.1) -> GraphModelBuilder:
+        """Keyword contract for gaussian_noise; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'gaussian_noise'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            std: Standard deviation of training-only zero-mean Gaussian noise; finite, nonnegative and at most 1e6.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['resize'], inputs: list[str], *, output_size: int | tuple[int, int] | list[int] | None = None, scale_factor: float | tuple[float, float] | list[float] | None = None, mode: _typing.Literal['nearest', 'bilinear', 'bicubic', 'area'] = 'nearest', align_corners: bool | None = None) -> GraphModelBuilder:
+        """Keyword contract for resize; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'resize'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            output_size: Target H/W grid; integer means a square. Resize requires exactly one of output_size and scale_factor.
+            scale_factor: Positive H/W resize multipliers, each <=8192. Exactly one of this and output_size must be provided.
+            mode: Interpolation or transformation strategy; the closed choices are specific to this operation.
+            align_corners: Align endpoint pixel centers for bilinear/bicubic resizing; must be None for nearest/area.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['pixel_shuffle'], inputs: list[str], *, upscale_factor: int) -> GraphModelBuilder:
+        """Keyword contract for pixel_shuffle; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'pixel_shuffle'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            upscale_factor: PixelShuffle factor r: C must be divisible by r^2; output is (C/r^2,H*r,W*r).
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['pixel_unshuffle'], inputs: list[str], *, downscale_factor: int) -> GraphModelBuilder:
+        """Keyword contract for pixel_unshuffle; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'pixel_unshuffle'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            downscale_factor: PixelUnshuffle factor r: H and W must be divisible by r; output is (C*r^2,H/r,W/r).
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['flatten'], inputs: list[str]) -> GraphModelBuilder:
+        """Keyword contract for flatten; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'flatten'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['permute'], inputs: list[str], *, dims: tuple[int, ...] | list[int] = [0, 1, 3, 2]) -> GraphModelBuilder:
+        """Keyword contract for permute; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'permute'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            dims: Permutation of NCHW axes; only (0,1,2,3) and (0,1,3,2) are accepted, preserving batch/channel axes.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['reshape'], inputs: list[str], *, shape: tuple[int, int, int] | list[int]) -> GraphModelBuilder:
+        """Keyword contract for reshape; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'reshape'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            shape: Target per-sample CHW dimensions; reshape must preserve the number of sample elements and every dimension is 1..8192.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['classification_head'], inputs: list[str], *, in_features: int, pooling: _typing.Literal['avg', 'max', 'none'] = 'avg', num_classes: int, dropout: float = 0.0) -> GraphModelBuilder:
+        """Keyword contract for classification_head; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'classification_head'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            in_features: Linear-head input width after pooling/flattening; must match the inferred feature width.
+            pooling: avg/max globally pool NCHW before flattening; none flattens NCHW or consumes flat NF.
+            num_classes: Number of output class logits. Outputs are unnormalized scores, not probabilities.
+            dropout: Training-only activation/head dropout probability; disabled in eval.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['regression_head'], inputs: list[str], *, in_features: int, pooling: _typing.Literal['avg', 'max', 'none'] = 'avg', output_features: int) -> GraphModelBuilder:
+        """Keyword contract for regression_head; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'regression_head'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            in_features: Linear-head input width after pooling/flattening; must match the inferred feature width.
+            pooling: avg/max globally pool NCHW before flattening; none flattens NCHW or consumes flat NF.
+            output_features: Width of the unrestricted numeric regression output; no classification objective is inferred.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['embedding_head'], inputs: list[str], *, in_features: int, pooling: _typing.Literal['avg', 'max', 'none'] = 'avg', embedding_dim: int, normalize: bool = False, eps: float = 1e-12) -> GraphModelBuilder:
+        """Keyword contract for embedding_head; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'embedding_head'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            in_features: Linear-head input width after pooling/flattening; must match the inferred feature width.
+            pooling: avg/max globally pool NCHW before flattening; none flattens NCHW or consumes flat NF.
+            embedding_dim: Attention projection width or output embedding width, according to the component. None in self-attention uses C; QKV requires 3*embedding_dim<=8192.
+            normalize: Apply safe per-sample L2 normalization to output embeddings.
+            eps: Positive numerical stabilizer used in normalization. Embedding normalization also floors it at the dtype tiny value.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['add'], inputs: list[str]) -> GraphModelBuilder:
+        """Keyword contract for add; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'add'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['multiply'], inputs: list[str]) -> GraphModelBuilder:
+        """Keyword contract for multiply; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'multiply'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['concat'], inputs: list[str], *, axis: int = 1) -> GraphModelBuilder:
+        """Keyword contract for concat; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'concat'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            axis: Non-batch concatenation axis 1..3; other dimensions must match.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
+    @_typing.overload
+    def add(self, node_id: str, component: _typing.Literal['weighted_sum'], inputs: list[str], *, weights: list[float] | tuple[float, ...], learnable: bool = False) -> GraphModelBuilder:
+        """Keyword contract for weighted_sum; execution uses the validated implementation.
+
+        Args:
+            node_id: Unique graph node identifier matching [A-Za-z][A-Za-z0-9_]{0,47}; must differ from graph input names.
+            component: Exact component identifier 'weighted_sum'.
+            inputs: Ordered graph input/node references; topology is validated by preflight/build.
+            weights: One finite coefficient per ordered input, 2..8 values in [-1e6,1e6]; tensors must have identical shape.
+            learnable: Register fusion coefficients as trainable parameters when True; otherwise retain fixed buffers.
+
+        Returns:
+            This GraphModelBuilder for chaining; build() allocates separately.
+        """
+        ...
+
     def add(self,node_id: 'str',component: 'str',inputs: 'list[str]',**params: '_typing.Any') -> 'GraphModelBuilder':
         """Append a validated component and its ordered input references to the graph.
 
         Args:
             node_id (str): Unique stable Graph node name, distinct from graph inputs. Required.
             component (str): Closed registered component or supported Graph fusion name. Required.
-            inputs (list[str]): Ordered list of 1..8 existing Graph input/node reference strings. Required.
-            **params (_typing.Any): Component keyword parameters; registered defaults apply to omitted optional keys.
+            inputs (list[str]): Ordered list of 1..8 Graph input/node reference strings. Required.
+            **params (_typing.Any): Component keyword parameters; registered defaults apply to omitted
+            optional keys.
 
         Returns:
-            This builder after the existing component/reference validation.
+            This builder after component parameter and input-list validation.
+            Forward references and graph topology are checked by preflight/build.
 
         Raises:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
-            builder.add("stem", "conv2d", ["image"], in_channels=1, out_channels=4, kernel_size=3, padding=1)
+            builder.add("stem", "conv2d", ["image"], in_channels=1, out_channels=4, kernel_size=3,
+            padding=1)
 
         HYSo Guide: models.graph-builder
         Offline: hyso docs show models.graph-builder --lang en
@@ -3770,7 +5466,8 @@ class GraphModelBuilder:
         """Assign names to 1..8 graph output references; this does not prune nodes.
 
         Args:
-            **references (str): 1..8 output_name=node_id pairs; selecting an output does not prune other nodes.
+            **references (str): 1..8 output_name=node_id pairs; selecting an output does not prune other
+            nodes.
 
         Returns:
             This builder with the explicit named outputs configured; other graph nodes are not pruned.
@@ -3779,7 +5476,7 @@ class GraphModelBuilder:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.outputs(logits="head")  # head is an existing node ID
 
@@ -3798,9 +5495,10 @@ class GraphModelBuilder:
             Detached JSON-compatible architecture metadata including normalized defaults; no weights.
 
         Raises:
-            No additional validation for a valid object; corrupt retained state or native copy/serialization failures propagate.
+            No additional validation for a valid object; corrupt retained state or native copy/serialization
+            failures propagate.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_config()
 
@@ -3815,7 +5513,8 @@ class GraphModelBuilder:
         """Validate a versioned configuration and reconstruct its builder.
 
         Args:
-            config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained state. Required.
+            config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained
+                state. Required.
 
         Returns:
             A validated builder/configuration object; no executable names are imported.
@@ -3824,7 +5523,7 @@ class GraphModelBuilder:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             GraphModelBuilder.from_config(config)
 
@@ -3841,12 +5540,16 @@ class GraphModelBuilder:
 
     @staticmethod
     def preflight(config: 'dict[str, _typing.Any]',*,batch_size: 'int'=1,activation_limit: 'int'=16_777_216) -> 'dict[str, _typing.Any]':
-        """Validate graph structure, infer shapes and estimate bounded resource needs without constructing a model.
+        """Validate graph structure, infer shapes and estimate bounded resource needs without constructing a
+        model.
 
         Args:
-            config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained state. Required.
-            batch_size (int): Positive batch-size setting or metadata assumption; no implicit batch search. Default: 1.
-            activation_limit (int): Advisory per-tensor element threshold used by metadata preflight, not a physical-memory quota. Default: 16777216.
+            config (dict[str, _typing.Any]): Plain versioned configuration; never executable code or trained
+                state. Required.
+            batch_size (int): Positive batch-size setting or metadata assumption; no implicit batch search.
+                Default: 1.
+            activation_limit (int): Advisory per-tensor element threshold used by metadata preflight, not a
+                physical-memory quota. Default: 16777216.
 
         Returns:
             Metadata validation, shapes, diagnostics and advisory resource estimates; no model is built.
@@ -3855,7 +5558,7 @@ class GraphModelBuilder:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.preflight(config)
 
@@ -3879,7 +5582,7 @@ class GraphModelBuilder:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.preview()
 
@@ -3899,7 +5602,7 @@ class GraphModelBuilder:
             ValueError, TypeError: Native configuration, shape or input validation rejects the request.
             RuntimeError: A requested native construction/forward operation fails.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.build()
 
@@ -3914,8 +5617,10 @@ class GraphModelBuilder:
         """Serialize this object using its native JSON format and overwrite policy.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
-            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain protected. Default: False.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
+            overwrite (bool): Whether an existing output file may be replaced explicitly; inputs remain
+                protected. Default: False.
 
         Returns:
             None after the native file export succeeds.
@@ -3924,7 +5629,7 @@ class GraphModelBuilder:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             obj.to_json(path)
 
@@ -3942,7 +5647,8 @@ class GraphModelBuilder:
         """Read and validate this type from a local JSON file.
 
         Args:
-            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is executed. Required.
+            path (_typing.Any): Filesystem path for the specific reader/exporter; no configuration code is
+                executed. Required.
 
         Returns:
             A validated GraphModelBuilder instance reconstructed from the supplied data.
@@ -3951,7 +5657,7 @@ class GraphModelBuilder:
             OSError: Filesystem access fails.
             ValueError: The native format, version or overwrite contract is rejected.
 
-        Example:
+        Examples:
             # Caller-supplied values; explicitly requested operations only.
             GraphModelBuilder.from_json(path)
 
