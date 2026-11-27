@@ -1,6 +1,6 @@
 # HYSo terminal arayüzü
 
-Python 3.10+ ve mevcut HYSo bağımlılıkları yeterlidir; CLI `argparse` kullanır.
+Güncel kurulum profili [ilk sürüm rehberindedir](first-release.md); CLI `argparse` kullanır.
 Uyumlu Torch/torchvision kurulumundan sonra repo kökünde
 `python -m pip install -e .` çalıştırın. Wheel kurulumu da aynı `hyso` girişini
 sağlar. `hyso --help` ve `python -m hyso --help` eşdeğerdir. Yardım ve CLI
@@ -18,7 +18,13 @@ hyso [--json] [--debug | --verbose] [--version]
   compare     BASELINE CANDIDATE
   advisor     recommend FILE
   reports     render FILE | experiment ID
+  export      dependencies | inspect | advise | report | convert | fp16 | quantize | benchmark | validate | compare | tensorrt
 ```
+
+`export tensorrt` deneysel ve doğrulanmamıştır; ilk sürümde native kabulü engellidir.
+Export komutlarının özel trust/execute sözleşmesi için `hyso export --help` ve
+[export rehberini](model-export.md) okuyun. Developer kabul scriptleri normal
+kullanıcı kurulumu için gerekli değildir.
 
 Her yaprak komutta `--help`, `--json`, `--debug`, `--verbose`, `--output FILE`
 ve `--overwrite` bulunur. Tanılama seçenekleri komut grubundan önce veya sonra

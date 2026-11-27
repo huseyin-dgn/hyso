@@ -37,7 +37,7 @@ def no_workloads(monkeypatch):
 @pytest.mark.parametrize('lang',['tr','en','de','es'])
 def test_every_localized_topic_reads_the_same_html_with_exact_fragment(lang):
     rows=hyso_guide.list_topics(lang)
-    assert len(rows)==len(CONTENT['topics'])==70
+    assert len(rows)==len(CONTENT['topics'])>=70
     for row,source in zip(rows,CONTENT['topics']):
         result=hyso_guide.show_topic(row['id'],lang)
         assert result['id']==row['id']==source['id']

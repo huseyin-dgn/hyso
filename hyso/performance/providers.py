@@ -250,6 +250,12 @@ def _analyze_providers_legacy(e):
                 raise ValueError('invalid provider failure category')
             result['failure_kind']=kind
         return result
+    return _analyze_provider_report(e,report,e['controller']['launcher_pid'])
+
+
+def _analyze_provider_report(e,report,process_pid):
+    """Shared graph/trace validation; caller supplies the actual execution PID."""
+    graph_version=e.get('graph_analysis_version',1)
     modern=report.get('observation_schema')==2
     _digest(report['input_sha256'])
     _int(report['completed_runs'],1)
@@ -290,7 +296,7 @@ def _analyze_providers_legacy(e):
         if event.get('cat')!='Node':continue
         if type(event.get('name')) is not str:raise ValueError('malformed Node event identity')
         if not event['name'].endswith('_kernel_time'):continue
-        if event.get('pid')!=e['controller']['launcher_pid']:
+        if event.get('pid')!=process_pid:
             raise ValueError('profiling trace belongs to another worker process')
         args=event.get('args',{})
         if type(args) is not dict:raise ValueError('malformed Node event arguments')
@@ -484,7 +490,7 @@ def _collect_profile(root, request, details):
     model_hash=hashlib.sha256(raw).hexdigest()
     input_after=fingerprints();input_hash=_hash(input_before)
     providers=session.get_providers()
-    return dict(observation_schema=2,requested_provider_options=configured,
+    captured=dict(observation_schema=2,requested_provider_options=configured,
         capture_context=dict(input_fingerprints=input_before,input_unchanged=input_before==input_after,
             profile_clock=dict(name='ORT_JSON_profile_host_relative',unit='us',origin='runtime_private_uncorrelated_with_host_perf_counter'),
             host_clock=dict(name='perf_counter_ns',unit='ns',instance_id=request['token']+':perf_counter_ns'),
@@ -502,3 +508,9 @@ def _collect_profile(root, request, details):
         trace=trace,trace_sha256=trace_hash,profile_binding=_hash(dict(session_id=request['token'],
         model_sha256=model_hash,trace_sha256=trace_hash,input_sha256=input_hash,providers=providers)),
         completed_runs=p.warmup+p.runs)
+    if request.get('_export_capture_outputs') is True:
+        # Export equivalence uses the same completed run that generated this
+        # provider trace. Existing P35 requests and serialized results are unchanged.
+        from ..export.runtime import encode_arrays
+        captured['export_outputs']=encode_arrays(outputs)
+    return captured

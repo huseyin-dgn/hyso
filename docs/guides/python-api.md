@@ -5,7 +5,8 @@
 
 The current [Python-first workflow](python-first-workflow.md) covers graph output
 selection, isolated model checks and architecture comparison. The web product
-is retired; the Python API and seven existing CLI groups are the product interfaces.
+is retired; the Python API and CLI (including export) are the product interfaces.
+Use the [first-release guide](first-release.md) for current dependencies and limits.
 
 Türkçe [kullanım ve kabul rehberi](python-first-acceptance-and-limits.md), strict
 opt-in, state/protocol kimlikleri, evaluation/reporting ve artifact migration
@@ -26,6 +27,7 @@ tarifleriyle Python–CLI destek farklarını tek yerde toplar.
 | Experiments | from hyso import ExperimentManager | hyso.experiments.manager; run/metric/artifact persistence |
 | Experiment history | from hyso.experiments import ExperimentRun | create_workflow_run, list_experiments, get_experiment_history, get_run_details, record_result, open_result |
 | Result reporting | from hyso import reporting | create_report, report_experiment, feature_explanations; PresentationReport.to_json/to_markdown/to_html |
+| Explicit export | from hyso import export | onnx, libtorch, torch_export, fp16, quantize, Runtime, validate, benchmark, compare, render; TensorRT experimental/unvalidated |
 
 Root convenience aliases resolve on access to the original classes, not wrappers.
 Imports do not construct models or request execution. Existing deep imports remain

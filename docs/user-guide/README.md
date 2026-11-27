@@ -2,7 +2,7 @@
 
 The deliverable is one self-contained file:
 [`hyso/data/user-guide.html`](../../hyso/data/user-guide.html).
-All 70 topics and all four languages are physically present in that file.
+All topics and all four languages are physically present in that file.
 It uses no remote assets, fonts, translation service, HTTP server or fetch call.
 Code examples are escaped text, with no execution controls.
 
@@ -20,7 +20,7 @@ The stdlib-only reader also works in a wheel installation made with `--no-deps`
 when Torch is absent. That makes the guide available for installation help;
 it does not make the model/training APIs usable without their dependencies.
 Opening a browser requires the explicit `--open` option. Otherwise a file URI
-or path is printed. The existing seven `hyso` command groups are unchanged.
+or path is printed. The `hyso export` group provides explicit export operations.
 
 `content.json` is the editorial source, with parallel tr/en/de/es fields and
 per-topic source references. Edit it as UTF-8, then run:

@@ -82,7 +82,7 @@ def U16(folder):
         rows=hyso_guide.list_topics(lang);counts[lang]=len(rows)
         for row in rows:
             require(hyso_guide.show_topic(row['id'],lang)['text'], 'empty topic')
-    require(set(counts.values())=={70}, 'guide coverage')
+    require(len(set(counts.values()))==1 and counts['en']>=70, 'complete four-language guide coverage')
     try:
         hyso_guide.show_topic('analysis.p01','fr')
     except ValueError:

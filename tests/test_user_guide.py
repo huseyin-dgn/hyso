@@ -58,7 +58,7 @@ def test_generated_guide_is_current_and_version_matches():
 @pytest.mark.parametrize('language',LANGUAGES)
 def test_complete_physical_language_and_parallel_meaning_fields(language):
     assert CONTENT['languages']==REGISTRY['languages']==list(LANGUAGES)
-    assert len(CONTENT['topics'])==70
+    assert len(CONTENT['topics'])>=70
     for topic in CONTENT['topics']:
         assert set(topic['translations'])==set(LANGUAGES)
         assert set(topic['translations'][language])==set(topic['translations']['tr'])

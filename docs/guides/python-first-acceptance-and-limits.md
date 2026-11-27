@@ -1,6 +1,10 @@
 # Python-first kullanım, kabul ve kanıt sınırları
 
-Current release scope (2026-11-26): see the [single support matrix](release-support.md). Completed safe acceptance is 8536 source PASS, 55 infrastructure PASS, 36 package PASS, 13 risk tests BLOCKED and one historical AST RETIRED. P23/P31 historical PARTIAL remains unchanged; FULL CUDA ACCEPTANCE is not established. Earlier dated observations below remain historical evidence.
+Current first-release installation and separately scoped acceptance are documented
+in [first-release.md](first-release.md). The following 2026-11-26 counts are
+historical: 8536 source PASS, 55 infrastructure PASS, 36 package PASS, 13 risk tests
+BLOCKED and one AST RETIRED. P23/P31 historical PARTIAL remains unchanged;
+FULL CUDA ACCEPTANCE is not established. Dated observations below are historical.
 
 Bu rehber mevcut Python API'lerini bir araya getirir; yeni runtime kabulü veya
 otomatik optimizasyon tanımlamaz. 2026-11-16 tarihli [13.5.16 kabulü](../reports/stage13-5-16-cpu-cuda-performance-acceptance.md)

@@ -36,6 +36,9 @@ def main():
     elif request['mode'] in ('devices','providers'):
         from hyso.performance.devices import _worker_dispatch
         _worker_dispatch(root,request)
+    elif request['mode']=='export':
+        from hyso.export._worker import worker
+        worker(root,request)
     else:raise ValueError('unsupported owned runtime mode')
 
 

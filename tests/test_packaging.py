@@ -14,6 +14,7 @@ import zipfile
 
 import pytest
 from packaging.requirements import Requirement
+from packaging.specifiers import SpecifierSet
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -213,6 +214,13 @@ DEVELOPMENT_MODULES |= {
     "hyso/advisor/cpu_comparison.py",
 }
 PROFILE = json.loads((ROOT / "commercial-profile.json").read_text(encoding="utf-8"))
+DEVELOPMENT_MODULES |= {
+    'hyso/_native_identity.py', 'hyso/cli/export.py',
+    *('hyso/export/'+name+'.py' for name in (
+        '__init__','_common','_dll_identity','_evidence','_model','_worker','artifacts',
+        'contracts','converters','dependencies','deployment','native','precision',
+        'presentation','runtime','validation')),
+}
 MODULES = set(PROFILE["python_files"])
 
 DEPENDENCIES = {
@@ -234,6 +242,9 @@ CONFIG_FILES = (
     "THIRD_PARTY_NOTICES.md",
     "setup.py",
     "commercial-profile.json",
+    "README.md",
+    "CHANGELOG.md",
+    "RELEASE_NOTES.md",
 )
 
 
@@ -302,7 +313,8 @@ def test_canonical_packaging_configuration():
     assert {
         path.relative_to(ROOT).as_posix() for path in (ROOT / "hyso").rglob("*.py")
     } == DEVELOPMENT_MODULES
-    assert len(MODULES) == 172
+    assert len(MODULES) == 190
+    assert 'hyso/_native_identity.py' in MODULES
     assert MODULES.isdisjoint(PROFILE["excluded_python_files"])
     assert (ROOT / "pyproject.toml").is_file()
     assert not (ROOT / "hyso/pyproject.toml").exists()
@@ -312,7 +324,7 @@ def test_canonical_packaging_configuration():
     assert not cfg.has_option("metadata", "author_email")
     assert cfg["metadata"]["name"] == "hyso"
     assert cfg["metadata"]["version"] == "0.2.0"
-    assert cfg["options"]["python_requires"] == ">=3.10"
+    assert SpecifierSet(cfg["options"]["python_requires"]) == SpecifierSet('>=3.10,<3.13')
     assert cfg["options.packages.find"]["where"] == "."
     for name in DEVELOPMENT_MODULES:
         ast.parse(
@@ -389,44 +401,36 @@ def test_wheel_and_sdist_content_and_metadata(distributions):
         )
     for metadata in (wheel_meta, sdist_meta):
         assert metadata["Name"] == "hyso" and metadata["Version"] == "0.2.0"
-        assert metadata["Requires-Python"] == ">=3.10"
+        assert SpecifierSet(metadata["Requires-Python"]) == SpecifierSet('>=3.10,<3.13')
         description = metadata.get_payload(decode=True).decode("utf-8")
         # Email metadata may use CRLF; compare every content line unchanged.
-        assert description.strip() == "HYSo Python library."
+        assert description.strip().splitlines() == (ROOT/'README.md').read_text(encoding='utf-8').strip().splitlines()
     requirements = [Requirement(value) for value in wheel_meta.get_all("Requires-Dist")]
-    section = None
-    sdist_requirements = []
-    for value in sdist_requires:
-        if not value.strip():
-            continue
-        if value.startswith("["):
-            assert value == "[deployment]"
-            section = "deployment"
-            continue
-        sdist_requirements.append(
-            Requirement(value + ('; extra == "deployment"' if section else ""))
-        )
-    assert {str(item) for item in sdist_requirements} == {
+    assert {str(Requirement(value)) for value in sdist_meta.get_all('Requires-Dist')} == {
         str(item) for item in requirements
     }
     assert {item.name for item in requirements if item.marker is None} == DEPENDENCIES
-    optional = {item.name: item for item in requirements if item.marker is not None}
-    assert set(optional) == {"onnx", "onnxruntime"}
-    assert str(optional["onnx"].specifier) == "==1.20.0"
-    assert str(optional["onnxruntime"].specifier) == "==1.23.2"
-    assert all(
-        item.marker.evaluate({"extra": "deployment"})
-        and not item.marker.evaluate({"extra": ""})
-        for item in optional.values()
-    )
+    extras={
+        'deployment':{'onnx':'==1.20.0','onnxruntime':'==1.23.2'},
+        'deployment-cpu':{'onnx':'==1.20.0','onnxruntime':'==1.23.2'},
+        'deployment-gpu':{'onnx':'==1.20.0','onnxruntime-gpu':'==1.23.2'},
+        'precision':{'onnx':'==1.20.0','onnxruntime':'==1.23.2'},
+        'onnx-dynamo':{'onnx':'==1.20.0','onnxscript':'==0.5.6'},
+        'tensorrt':{'onnx':'==1.20.0','tensorrt-cu12':'==10.13.3.9'},
+    }
+    assert set(wheel_meta.get_all('Provides-Extra'))==set(extras)
+    optional=[item for item in requirements if item.marker is not None]
+    assert not any(item.marker.evaluate({'extra':''}) for item in optional)
+    for extra,expected in extras.items():
+        assert {i.name:str(i.specifier) for i in optional if i.marker.evaluate({'extra':extra,'platform_system':'Windows'})}==expected
     assert wheel_meta["Author-email"] is None and sdist_meta["Author-email"] is None
     assert (
         str(next(item.specifier for item in requirements if item.name == "torch"))
-        == ">=2.2.2"
+        == "<2.6,>=2.5.1"
     )
     assert (
         str(next(item.specifier for item in requirements if item.name == "torchvision"))
-        == ">=0.17.2"
+        == "<0.21,>=0.20.1"
     )
     assert not next(item.specifier for item in requirements if item.name == "numpy")
 

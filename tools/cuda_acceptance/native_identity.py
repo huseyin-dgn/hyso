@@ -14,12 +14,13 @@ from .feature_evidence import SafetyViolation
 class DLLIntegrityError(ValueError,SafetyViolation):pass
 
 
-def canonical_path(path):return os.path.normcase(str(Path(path).resolve()))
-
-
-def file_identity(path):
-    value=Path(path).stat()
-    return dict(device=value.st_dev,file_id=value.st_ino,size=value.st_size)
+# Load the installed stdlib primitive by file so preparation never imports
+# hyso/__init__ (and therefore never imports Torch or a native runtime).
+import importlib.util as _util
+_spec=_util.spec_from_file_location('_hyso_native_identity',Path(__file__).resolve().parents[2]/'hyso/_native_identity.py')
+_shared=_util.module_from_spec(_spec);_spec.loader.exec_module(_shared)
+canonical_path=_shared.canonical_path
+file_identity=_shared.file_identity
 
 
 def driver_dependency():
@@ -87,22 +88,9 @@ def ort_inventory(site,torch_site):
         allowed_binaries={canonical_path(p):file_hash(p) for p in sorted(paths)},driver_dependency=dependency)
 
 
-def loaded_binaries():
-    api=c.WinDLL('kernel32',use_last_error=True)
-    api.GetCurrentProcess.restype=c.c_void_p
-    api.K32EnumProcessModules.argtypes=[c.c_void_p,c.c_void_p,c.c_ulong,c.POINTER(c.c_ulong)]
-    api.K32EnumProcessModules.restype=c.c_int
-    api.GetModuleFileNameW.argtypes=[c.c_void_p,c.c_wchar_p,c.c_ulong]
-    handles=(c.c_void_p*2048)();needed=c.c_ulong()
-    if not api.K32EnumProcessModules(api.GetCurrentProcess(),handles,c.sizeof(handles),c.byref(needed)) or needed.value>c.sizeof(handles):
-        raise RuntimeError('loaded module inventory unavailable/oversized')
-    result={}
-    for handle in handles[:needed.value//c.sizeof(c.c_void_p)]:
-        buf=c.create_unicode_buffer(32768)
-        if not api.GetModuleFileNameW(handle,buf,len(buf)):raise OSError('loaded module path unavailable')
-        path=Path(buf.value)
-        if _selected(path.name):result[os.path.normcase(str(path.resolve()))]=file_hash(path)
-    return result
+def loaded_binaries(*, selected=None):
+    # Existing P35/U13 callers retain their exact selection and hash-only schema.
+    return _shared.loaded_binaries(selected=_selected if selected is None else selected)
 
 
 def register_ort_identity(path):

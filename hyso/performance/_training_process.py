@@ -55,6 +55,16 @@ class _Job:
         if not self.api.AssignProcessToJobObject(self.handle,w.HANDLE(int(process._handle))):
             raise OSError(c.get_last_error(),"AssignProcessToJobObject")
 
+    def verify_limits(self, process_bytes, job_bytes, processes):
+        """Read back fixed native export quotas and no-breakaway before admission."""
+        info=self.Extended()
+        if not self.api.QueryInformationJobObject(self.handle,9,c.byref(info),c.sizeof(info),None):raise OSError('Job limit readback failed')
+        if not (info.process_memory==process_bytes and info.job_memory==job_bytes and info.basic.processes==processes
+                and info.basic.flags & 0x2308==0x2308 and not info.basic.flags & 0x1800):
+            raise RuntimeError('owned Job limit/kill-on-close/no-breakaway readback mismatch')
+        return dict(process_memory_bytes=info.process_memory,job_memory_bytes=info.job_memory,max_processes=info.basic.processes,
+                    flags=info.basic.flags,no_breakaway=True,kill_on_close=True,verified=True)
+
     def observation(self):
         accounting=self.Accounting();memory=self.Extended()
         for kind,value in ((1,accounting),(9,memory)):

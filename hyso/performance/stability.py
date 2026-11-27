@@ -189,20 +189,22 @@ def _run_owned(root, mode, request, *, startup_timeout, heartbeat_timeout, max_r
     (root/'request.json').write_text(json.dumps(config,allow_nan=False),encoding='utf-8')
     # P30 observes OS resource pressure; no implicit RAM quota is a hardware limit.
     limits=((request['protocol'].get('process_memory_bytes'),request['protocol'].get('job_memory_bytes'))
-            if mode in ('stability','devices','providers','streaming') else (4*1024**3,6*1024**3))
-    process_limit=(request['protocol'].get('max_processes',4) if mode=='streaming' else request['protocol'].get('max_processes')) if mode in ('stability','devices','providers','streaming') else 4
+            if mode in ('stability','devices','providers','streaming','export') else (4*1024**3,6*1024**3))
+    process_limit=(request['protocol'].get('max_processes',4) if mode=='streaming' else request['protocol'].get('max_processes')) if mode in ('stability','devices','providers','streaming','export') else 4
     job=_Job(*limits,process_limit);process=None;cleanup=None;reason=None;interrupted=None
     started=time.monotonic();ready_seen=None;last_beat=None;last_mtime=None
     controller_start_ns=time.perf_counter_ns();process_started_ns=None
     stdout=root/'stdout.txt';stderr=root/'stderr.txt'
     resources=None
+    export_readback=None
     try:
-        if mode in ('streaming','stability'):
+        if mode=='export':export_readback=job.verify_limits(*limits,process_limit)
+        if mode in ('streaming','stability','export'):
             from ._stream_resources import _StreamResources
             resources=_StreamResources(token)
         with stdout.open('wb') as out,stderr.open('wb') as err:
             env=dict(os.environ,PYTHONDONTWRITEBYTECODE='1',PYTHONIOENCODING='utf-8')
-            if mode in ('streaming','stability') and not request.get('recipe',{}).get('gpu_uuid'):
+            if mode in ('streaming','stability','export') and not request.get('recipe',{}).get('gpu_uuid'):
                 env['CUDA_VISIBLE_DEVICES']='-1'
             gpu=request.get('recipe',{}).get('gpu_uuid')
             if gpu:env['CUDA_VISIBLE_DEVICES']=gpu
@@ -228,7 +230,7 @@ def _run_owned(root, mode, request, *, startup_timeout, heartbeat_timeout, max_r
                         or stdout.stat().st_size+stderr.stat().st_size>65536):reason='resource_limit';break
                 time.sleep(.02)
     except BaseException as error:
-        if mode not in ('stability','streaming'):raise
+        if mode not in ('stability','streaming','export'):raise
         reason='controller_interrupted' if isinstance(error,(KeyboardInterrupt,SystemExit)) else 'controller_error'
         interrupted=error
     finally:
@@ -250,8 +252,9 @@ def _run_owned(root, mode, request, *, startup_timeout, heartbeat_timeout, max_r
     controller=dict(token=token,launcher_pid=process.pid,exit_code=process.returncode,reason=reason,
         elapsed_seconds=time.monotonic()-started,cleanup=cleanup,kill_on_close=True,
         stderr_tail=stderr.read_bytes()[-4096:].decode('utf-8',errors='replace'))
-    if mode in ('stability','devices','providers'):controller['memory_limits']=dict(process_memory_bytes=limits[0],job_memory_bytes=limits[1])
-    if mode in ('stability','devices','providers'):controller['process_limit']=process_limit
+    if mode=='export':controller['limit_readback']=export_readback
+    if mode in ('stability','devices','providers','export'):controller['memory_limits']=dict(process_memory_bytes=limits[0],job_memory_bytes=limits[1])
+    if mode in ('stability','devices','providers','export'):controller['process_limit']=process_limit
     if mode=='streaming':
         controller['memory_limits']=dict(process_memory_bytes=limits[0],job_memory_bytes=limits[1])
         controller['process_limit']=process_limit

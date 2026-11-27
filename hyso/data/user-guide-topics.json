@@ -43,7 +43,7 @@
       ],
       "sources": [
         "setup.cfg",
-        "docs/reports/stage13-5-22-cpu-beta-readiness.md"
+        "docs/guides/first-release.md"
       ],
       "inventory": []
     },
@@ -1522,6 +1522,42 @@
         "docs/guides/performance-providers.md"
       ],
       "inventory": []
+    },
+    {
+      "id": "export.overview",
+      "titles": {
+        "tr": "Model export ve deployment: E01–E12",
+        "en": "Model export and deployment: E01–E12",
+        "de": "Modellexport und Deployment: E01–E12",
+        "es": "Exportación y despliegue: E01–E12"
+      },
+      "related": [
+        "analysis.p35",
+        "api.python-cli",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/export/__init__.py",
+        "hyso/export/contracts.py",
+        "hyso/export/converters.py",
+        "hyso/export/native.py",
+        "docs/guides/model-export.md"
+      ],
+      "inventory": [
+        "hyso.export",
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05",
+        "E06",
+        "E07",
+        "E08",
+        "E09",
+        "E10",
+        "E11",
+        "E12"
+      ]
     }
   ],
   "release_support": {

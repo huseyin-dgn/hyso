@@ -18,17 +18,29 @@ and [short CPU training/evaluation example](examples/models/image_classification
 
 ## Installation and imports
 
-Metadata minimums: Python >=3.10, Torch >=2.2.2, torchvision >=0.17.2. Install a
-matching Torch/torchvision CPU or CUDA pair for your platform; minimum version
-bounds do not guarantee all combinations. For this checkout: `python -m pip install -e .`.
-For a locally built distribution, use a separate virtual environment and
-`python -m pip install C:/local-hyso/dist/hyso-0.2.0-py3-none-any.whl`, then
+The release dependency profile is Python 3.10–3.12, Torch 2.5.1 and torchvision
+0.20.1. Actual release checks cover Windows x64/Python 3.10; other combinations
+are not certified. Choose the CPU or CUDA distribution explicitly in a new environment:
+
+```console
+python -m venv .venv
+.venv\Scripts\python -m pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cpu
+.venv\Scripts\python -m pip install dist/hyso-0.2.0-py3-none-any.whl
+```
+
+For CUDA 12.1, use a separate environment and the `cu121` index in the
+[installation and dependency guide](docs/guides/first-release.md). Developer
+acceptance runners are not part of normal installation. For source development
+only: `python -m pip install -e .`. After installing a built distribution, run
 `python -m hyso --help` from outside the checkout. Wheel/sdist use the commercial
 allowlist; repository examples and other guides are source-checkout files, while
 the central offline guide is installed as package data. Historical CPU acceptance and its exact limits are recorded in the
 [acceptance guide](docs/guides/python-first-acceptance-and-limits.md#cpu-beta-installation).
-Optional `hyso[deployment]` supplies pinned ONNX/ONNX Runtime packages, not a
-general deployment converter or automatic CUDA runtime installation.
+Optional `hyso[deployment-cpu]` supplies ONNX/ONNX Runtime for the explicit
+export API. Choose `deployment-gpu` in a separate environment; never combine the
+CPU and GPU ONNX Runtime distributions. TensorRT is experimental and unvalidated.
+See [model export](docs/guides/model-export.md), [release notes](RELEASE_NOTES.md)
+and [changelog](CHANGELOG.md) for scope and compatibility.
 
 ## Terminal interface
 
@@ -41,7 +53,7 @@ hyso analysis plan --features P01 P02 P11
 ```
 
 Command groups: `models`, `train`, `analysis`, `experiments`, `compare`, `advisor`,
-`reports`. Training and analysis default to dry-run. Execution requires explicit
+`reports`, `export`. Training and analysis default to dry-run. Execution requires explicit
 authorization and separate permissions for training, CUDA, camera, sensors and
 long runs. Retained reports and comparisons never start new measurements.
 See the [CLI guide](docs/guides/cli.md) and [working offline examples](examples/cli/README.md)
@@ -351,10 +363,13 @@ whitelist, parameter/shape contracts, limits and checkpoint compatibility.
 Implemented: ELO/CBAM, CEMO/SE, ModularCNN, ECA/Coordinate Attention, Trainer,
 checkpoint v1, BenchmarkRunner, measurement APIs, pairwise comparisons,
 ExperimentManager, evidence reports and read-only Advisor interpretation.
-ONNX provider observation exists; it is not a general export/deployment pipeline.
+Explicit ONNX, TorchScript and `torch.export` conversion, ONNX FP16/INT8,
+calibration, cohort validation and deployment comparison are available through
+`hyso.export`. Analyzer and Advisor preserve the caller's source code, architecture
+and weights; explicit ModelBuilder, Trainer and Export calls have their own contracts.
 
 GraphModelBuilder implements validated schema3 DAGs, named inputs/outputs,
-branches, skip connections and fusion. The seven-group CLI is implemented.
+branches, skip connections and fusion. The CLI includes the explicit export group.
 For single-Tensor training/evaluation/benchmarking, explicitly select a graph
 output with `hyso.models.output.GraphTensorOutput`; parameters and autograd are
 shared with the original graph. Use `task="multiclass"` or `task="binary"` for
@@ -369,7 +384,9 @@ The existing binary `analysis.compare_models` evidence API is unchanged.
 See the [component reference](docs/guides/component-engineering-reference.md).
 
 Not implemented: arbitrary model plugins, graphical UI,
-TensorRT/OpenVINO/TFLite/CoreML/Edge deployment adapters.
+OpenVINO/TFLite/CoreML/Edge deployment adapters. TensorRT code is retained as an
+experimental, unvalidated optional backend; E03/E04 and dependent native acceptance
+remain BLOCKED/NOT_TESTED. Native C++ and AOTInductor are outside the first release.
 See the [architecture roadmap](docs/roadmap/hyso-architecture-roadmap-v1.md) and
 [performance backlog](docs/roadmap/hyso-performance-backlog-v1.1.md); dated rows are
 historical and should be read alongside current code and reports.

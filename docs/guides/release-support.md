@@ -1,5 +1,11 @@
 # HYSo 0.2.0 - Release support scope
 
+For current first-release installation, export scope and separately reported
+acceptance campaigns, see [first-release.md](first-release.md). The historical
+source/package counts below remain evidence for their original snapshots;
+they are not a combined current-release PASS total. TensorRT is experimental and
+unvalidated; FP16 CPU P35 mapping limits and `full_cuda_acceptance=false` remain.
+
 Canonical source: `docs/user-guide/content.json` ? `release_support`; the packaged registry, public `analysis.feature_catalog(...).to_dict()['release_support']`, CLI `hyso analysis show P23 --json`, and four-language offline guide expose the same policy.
 
 SUPPORTED applies only to the verified scope below. PARTIAL means limited coverage, BLOCKED is a safety/admission refusal, UNSUPPORTED is outside release scope, DEFERRED is intentionally postponed. CPU/CUDA columns describe new measurement where applicable; device-independent/offline support is explicitly identified. Native `supported_devices` lists backend capability, not release acceptance. No FULL CUDA ACCEPTANCE is claimed.

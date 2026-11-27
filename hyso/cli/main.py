@@ -34,8 +34,8 @@ def build_parser():
     common_options(parser, export=False)
     parser.add_argument('--version', action='version', version='hyso 0.2.0')
     sub = parser.add_subparsers(dest='group', required=True)
-    from . import models, train, analysis, experiments, presentation, docs
-    for module in (models, train, analysis, experiments, presentation, docs):
+    from . import models, train, analysis, experiments, presentation, docs, export
+    for module in (models, train, analysis, experiments, presentation, docs, export):
         module.register(sub)
     examples = {
         'models': 'hyso models list\nhyso models show conv2d\nhyso models summary model.json\nhyso models inspect model.json --dry-run',

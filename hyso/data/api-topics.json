@@ -18594,6 +18594,168 @@
       "canonical": "torch.nn.modules.pooling.MaxPool2d",
       "kind": "class",
       "origin": "upstream"
+    },
+    "hyso.export": {
+      "topic": "export.overview",
+      "canonical": "hyso.export",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.ExportConfig": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.ExportConfig",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.NativeConfig": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.NativeConfig",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.ExportResult": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.ExportResult",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.ExportError": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.ExportError",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.availability": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.availability",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.onnx": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.onnx",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.tensorrt": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.tensorrt",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.pytorch_tensorrt": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.pytorch_tensorrt",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.libtorch": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.libtorch",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.torch_export": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.torch_export",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.aotinductor": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.aotinductor",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.fp16": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.fp16",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.quantize": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.quantize",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.Runtime": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.Runtime",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.Tolerance": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.Tolerance",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.output_metrics": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.output_metrics",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.classification_metrics": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.classification_metrics",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.validate": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.validate",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.benchmark": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.benchmark",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.compare": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.compare",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.advise": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.advise",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.render": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.render",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.save": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.save",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.export.load": {
+      "topic": "export.overview",
+      "canonical": "hyso.export.load",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.advisor.export_advice": {
+      "topic": "export.overview",
+      "canonical": "hyso.advisor.export_advice",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
+    },
+    "hyso.reporting.render_export": {
+      "topic": "export.overview",
+      "canonical": "hyso.reporting.render_export",
+      "kind": "export_api",
+      "origin": "E01_E06_explicit_public_namespace"
     }
   },
   "scope": "Public core workflows, registered component constructors, performance facade, model checks and retained-result readers. Private helpers and unexported implementation utilities are outside this hover profile.",

@@ -158,40 +158,40 @@
       ],
       "sources": [
         "setup.cfg",
-        "docs/reports/stage13-5-22-cpu-beta-readiness.md"
+        "docs/guides/first-release.md"
       ],
       "translations": {
         "tr": {
           "title": "Kurulum",
-          "what": "Ayrı bir Python ortamı oluşturun ve HYSo wheel dosyasını bu ortama kurun. Python en az 3.10 olmalıdır. Torch ile torchvision birbiriyle uyumlu olmalıdır.",
+          "what": "İlk sürüm bağımlılık profili Python >=3.10,<3.13, Torch >=2.5.1,<2.6 ve torchvision >=0.20.1,<0.21. Doğrulanan host Windows x64/Python 3.10; diğer Python/platform birleşimleri sertifikalı değildir. ONNX Runtime CPU/GPU paketlerinden yalnız birini ayrı ortama kurun. Developer kabul scriptleri normal kurulum için gerekmez.",
           "when": "Yeni bir proje veya temiz bir kurulum hazırlarken kullanın.",
           "benefit": "Proje bağımlılıklarını başka çalışmalarınızdan ayırırsınız. hyso-guide komutu rehberi Torch import etmeden bulur.",
           "limits": "Normal kurulum eksik bağımlılıkları internetten isteyebilir. Çevrimdışı kurulumda bütün gerekli wheel dosyalarını önceden sağlayın; yalnız --no-deps kullanmak eksik bağımlılıkları kurmaz. Örnek yollar Windows içindir; POSIX sistemlerde .venv/bin/python ve .venv/bin/hyso-guide kullanın. Dosya yollarını kendi yerel dosyalarınıza uyarlayın."
         },
         "en": {
           "title": "Installation",
-          "what": "Create a separate Python environment and install the HYSo wheel there. Python must be at least 3.10. Torch and torchvision must be a compatible pair.",
+          "what": "The first-release dependency profile is Python >=3.10,<3.13, Torch >=2.5.1,<2.6 and torchvision >=0.20.1,<0.21. The verified host is Windows x64/Python 3.10; other Python/platform combinations are not certified. Install exactly one CPU/GPU ONNX Runtime distribution in a separate environment. Developer acceptance scripts are not required for normal installation.",
           "when": "Use a separate environment for a new project or a clean installation.",
           "benefit": "Project dependencies stay separate from other work. The hyso-guide command locates this guide without importing Torch.",
           "limits": "A normal installation may download missing dependencies. For offline installation, provide all required wheels in advance; --no-deps does not install missing dependencies. The example paths are for Windows; on POSIX use .venv/bin/python and .venv/bin/hyso-guide. Replace file paths with your own local files."
         },
         "de": {
           "title": "Installation",
-          "what": "Erstellen Sie eine eigene Python-Umgebung und installieren Sie dort das HYSo-Wheel. Erforderlich ist Python ab 3.10. Torch und torchvision müssen zueinander passen.",
+          "what": "Das Abhängigkeitsprofil ist Python >=3.10,<3.13, Torch >=2.5.1,<2.6 und torchvision >=0.20.1,<0.21. Verifiziert ist Windows x64/Python 3.10; weitere Kombinationen sind nicht zertifiziert. Installieren Sie genau eine CPU/GPU-ONNX-Runtime-Distribution in einer eigenen Umgebung. Entwickler-Abnahmeskripte sind zur normalen Installation nicht erforderlich.",
           "when": "Eine eigene Umgebung empfiehlt sich für neue Projekte und saubere Installationen.",
           "benefit": "Abhängigkeiten bleiben von anderen Projekten getrennt. hyso-guide findet dieses Handbuch, ohne Torch zu importieren.",
           "limits": "Fehlende Abhängigkeiten können bei der Installation Downloads auslösen. Für eine Offline-Installation müssen alle benötigten Wheels vorliegen; --no-deps ergänzt keine fehlenden Pakete. Die Beispielpfade gelten für Windows; unter POSIX verwenden Sie .venv/bin/python und .venv/bin/hyso-guide. Passen Sie die Dateipfade an Ihre lokalen Dateien an."
         },
         "es": {
           "title": "Instalación",
-          "what": "Cree un entorno de Python separado e instale en él el wheel de HYSo. Se requiere Python 3.10 o posterior. Torch y torchvision deben ser compatibles entre sí.",
+          "what": "El perfil de dependencias es Python >=3.10,<3.13, Torch >=2.5.1,<2.6 y torchvision >=0.20.1,<0.21. Se ha verificado Windows x64/Python 3.10; otras combinaciones no están certificadas. Instale solo una distribución CPU/GPU de ONNX Runtime por entorno separado. La instalación normal no requiere scripts de aceptación de desarrollo.",
           "when": "Utilice un entorno separado al comenzar un proyecto o hacer una instalación limpia.",
           "benefit": "Así mantiene las dependencias aisladas de otros trabajos. hyso-guide encuentra esta guía sin importar Torch.",
           "limits": "La instalación normal puede descargar dependencias que falten. Para instalar sin conexión, reúna antes todos los wheels necesarios; --no-deps no instala las dependencias ausentes. Las rutas del ejemplo son para Windows; en POSIX use .venv/bin/python y .venv/bin/hyso-guide. Adapte las rutas a sus archivos locales."
         }
       },
       "inventory": [],
-      "code": "python -m venv .venv\n.venv/Scripts/python -m pip install C:/local-hyso/hyso-0.2.0-py3-none-any.whl\n.venv/Scripts/hyso-guide --open\n\n.venv/Scripts/python -m pip install --no-index --find-links C:/local-hyso/wheels hyso==0.2.0"
+      "code": "python -m venv .venv\n.venv\\Scripts\\python -m pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cpu\n.venv\\Scripts\\python -m pip install dist/hyso-0.2.0-py3-none-any.whl\n.venv\\Scripts\\hyso-guide --language en --topic getting-started.first-run"
     },
     {
       "id": "getting-started.first-run",
@@ -1701,28 +1701,28 @@
           "what": "İlk sürüm, belgelenen CPU iş akışlarını ve 35 analizin doğrulanmış alt kapsamlarını korur. Native backend seçenekleri tam CUDA kabulü değildir.",
           "when": "Çalıştırma aygıtını ve güvenilir kapsamı seçerken bu durumu kontrol edin.",
           "benefit": "CPU üzerinde doğrulanmış akışları, henüz kabul edilmemiş GPU profillerinden ayırırsınız.",
-          "limits": "P23 CPU bellek ve CPU saved-activation desteklenir; CUDA saved-activation UNSUPPORTED olup BLOCKED_B4_UNRESOLVED korumasıyla kapalıdır. P31 CPU kararlılık ve iki tarihsel 7200 saniyelik kanıt korunur; yeni CUDA 7200 saniye ve üzeri koşular DEFERRED durumundadır. Normal CUDA eğitimi ve bağımsız GPU özellikleri kaldırılmamıştır. 13 riskli testin BLOCKED olması otomatik ürün başarısızlığı değildir. Güncel sınırlı CUDA kabulü: kaynak ve artifact hash bağlı kanıtlar support registry current_cuda_acceptance alanındadır. Yalnız kayıtlı model/cihaz/runtime/protokolü kapsar; genel donanım sertifikası değildir. P18 ileri sayaçlar, P23 saved activation/B4, P31 CUDA 7200s ve P33 ileri enerji kapsamı kapalıdır; full_cuda_acceptance=false."
+          "limits": "P23 CPU bellek ve CPU saved-activation desteklenir; CUDA saved-activation UNSUPPORTED olup BLOCKED_B4_UNRESOLVED korumasıyla kapalıdır. P31 CPU kararlılık ve iki tarihsel 7200 saniyelik kanıt korunur; yeni CUDA 7200 saniye ve üzeri koşular DEFERRED durumundadır. Normal CUDA eğitimi ve bağımsız GPU özellikleri kaldırılmamıştır. 13 riskli testin BLOCKED olması otomatik ürün başarısızlığı değildir. Güncel sınırlı CUDA kabulü: kaynak ve artifact hash bağlı kanıtlar support registry current_cuda_acceptance alanındadır. Yalnız kayıtlı model/cihaz/runtime/protokolü kapsar; genel donanım sertifikası değildir. P18 ileri sayaçlar, P23 saved activation/B4, P31 CUDA 7200s ve P33 ileri enerji kapsamı kapalıdır; full_cuda_acceptance=false. TensorRT ilk sürümde deneysel ve doğrulanmamıştır; E03/E04 ve bağlı E13 native senaryoları DLL RECORD bütünlüğü nedeniyle BLOCKED/NOT_TESTED. E13 CpuOnly gerçek kabulü 7/7 PASS; bu TensorRT kabulü değildir. FP16 CPU P35 original-node coverage sınırlaması korunur. Native C++, AOTInductor, OpenVINO ve TFLite ilk sürüm dışında. full_cuda_acceptance=false."
         },
         "en": {
           "title": "CPU/GPU support status",
           "what": "The first release retains documented CPU workflows and the verified subscopes of all 35 analyses. Native backend options are not full CUDA acceptance.",
           "when": "Check this status before choosing a device and a validated scope.",
           "benefit": "It separates CPU-validated workflows from GPU profiles that are not accepted.",
-          "limits": "P23 CPU memory and CPU saved-activation are supported; CUDA saved-activation is UNSUPPORTED and blocked by BLOCKED_B4_UNRESOLVED. P31 CPU stability and both historical 7200-second records remain; new CUDA runs of 7200 seconds or longer are DEFERRED. Normal CUDA training and independent GPU features remain. The 13 BLOCKED risky integrations do not automatically mean product failure. Current bounded CUDA acceptance: source/artifact-hash-bound evidence is in support registry current_cuda_acceptance. It covers only the recorded model/device/runtime/protocol, not general hardware certification. P18 advanced counters, P23 saved activation/B4, P31 CUDA 7200s and P33 advanced energy remain closed; full_cuda_acceptance=false."
+          "limits": "P23 CPU memory and CPU saved-activation are supported; CUDA saved-activation is UNSUPPORTED and blocked by BLOCKED_B4_UNRESOLVED. P31 CPU stability and both historical 7200-second records remain; new CUDA runs of 7200 seconds or longer are DEFERRED. Normal CUDA training and independent GPU features remain. The 13 BLOCKED risky integrations do not automatically mean product failure. Current bounded CUDA acceptance: source/artifact-hash-bound evidence is in support registry current_cuda_acceptance. It covers only the recorded model/device/runtime/protocol, not general hardware certification. P18 advanced counters, P23 saved activation/B4, P31 CUDA 7200s and P33 advanced energy remain closed; full_cuda_acceptance=false. TensorRT is experimental and unvalidated in the first release; E03/E04 and dependent E13 native scenarios are BLOCKED/NOT_TESTED because of DLL RECORD integrity. E13 CpuOnly owned acceptance is 7/7 PASS; this is not TensorRT acceptance. FP16 CPU P35 original-node coverage remains limited. Native C++, AOTInductor, OpenVINO and TFLite are outside the first release. full_cuda_acceptance=false."
         },
         "de": {
           "title": "CPU-/GPU-Unterstützung",
           "what": "Die erste Version behält die dokumentierten CPU-Abläufe und die verifizierten Teilbereiche aller 35 Analysen bei. Native Backend-Optionen bedeuten keine vollständige CUDA-Abnahme.",
           "when": "Prüfen Sie diesen Status vor Gerätewahl und Auswahl eines validierten Profils.",
           "benefit": "So trennen Sie CPU-validierte Abläufe von noch nicht freigegebenen GPU-Profilen.",
-          "limits": "P23 CPU-Speicher und CPU saved-activation werden unterstützt; CUDA saved-activation ist UNSUPPORTED und durch BLOCKED_B4_UNRESOLVED gesperrt. P31 CPU-Stabilität und beide historischen 7200-Sekunden-Nachweise bleiben erhalten; neue CUDA-Läufe ab 7200 Sekunden sind DEFERRED. Normales CUDA-Training und unabhängige GPU-Funktionen bleiben erhalten. Die 13 riskanten BLOCKED-Integrationstests bedeuten nicht automatisch einen Produktfehler. Aktuelle begrenzte CUDA-Abnahme: Nachweise mit Quell- und Artefakt-Hashes stehen im Supportregister unter current_cuda_acceptance. Sie gelten nur für das aufgezeichnete Modell/Gerät/Laufzeit/Protokoll, ohne allgemeine Hardwarezertifizierung. P18 erweiterte Zähler, P23 saved activation/B4, P31 CUDA 7200s und P33 erweiterte Energie bleiben geschlossen; full_cuda_acceptance=false."
+          "limits": "P23 CPU-Speicher und CPU saved-activation werden unterstützt; CUDA saved-activation ist UNSUPPORTED und durch BLOCKED_B4_UNRESOLVED gesperrt. P31 CPU-Stabilität und beide historischen 7200-Sekunden-Nachweise bleiben erhalten; neue CUDA-Läufe ab 7200 Sekunden sind DEFERRED. Normales CUDA-Training und unabhängige GPU-Funktionen bleiben erhalten. Die 13 riskanten BLOCKED-Integrationstests bedeuten nicht automatisch einen Produktfehler. Aktuelle begrenzte CUDA-Abnahme: Nachweise mit Quell- und Artefakt-Hashes stehen im Supportregister unter current_cuda_acceptance. Sie gelten nur für das aufgezeichnete Modell/Gerät/Laufzeit/Protokoll, ohne allgemeine Hardwarezertifizierung. P18 erweiterte Zähler, P23 saved activation/B4, P31 CUDA 7200s und P33 erweiterte Energie bleiben geschlossen; full_cuda_acceptance=false. TensorRT ist in der ersten Version experimentell und nicht validiert; E03/E04 und abhängige native E13-Szenarien sind wegen DLL-RECORD-Integrität BLOCKED/NOT_TESTED. Die kontrollierte E13-CpuOnly-Abnahme ist 7/7 PASS und keine TensorRT-Abnahme. FP16 CPU P35 bleibt bei der Zuordnung ursprünglicher Knoten eingeschränkt. Natives C++, AOTInductor, OpenVINO und TFLite liegen außerhalb der ersten Version. full_cuda_acceptance=false."
         },
         "es": {
           "title": "Estado del soporte CPU/GPU",
           "what": "La primera versión conserva los flujos CPU documentados y los ámbitos verificados de los 35 análisis. Las opciones de backend nativo no equivalen a una aceptación CUDA completa.",
           "when": "Compruebe este estado antes de elegir el dispositivo y el perfil validado.",
           "benefit": "Distingue los flujos validados en CPU de los perfiles GPU todavía no aceptados.",
-          "limits": "Se admiten la memoria CPU y saved-activation CPU de P23; saved-activation CUDA es UNSUPPORTED y está bloqueado por BLOCKED_B4_UNRESOLVED. Se conservan la estabilidad CPU de P31 y los dos registros históricos de 7200 segundos; las nuevas ejecuciones CUDA de 7200 segundos o más son DEFERRED. Se mantienen el entrenamiento CUDA normal y las funciones GPU independientes. Las 13 integraciones de riesgo BLOCKED no implican automáticamente un fallo del producto. Aceptación CUDA acotada actual: las evidencias vinculadas a hashes de fuentes y artefactos están en current_cuda_acceptance del registro de soporte. Solo cubren el modelo/dispositivo/runtime/protocolo registrado, sin certificación general de hardware. P18 contadores avanzados, P23 saved activation/B4, P31 CUDA 7200s y P33 energía avanzada siguen cerrados; full_cuda_acceptance=false."
+          "limits": "Se admiten la memoria CPU y saved-activation CPU de P23; saved-activation CUDA es UNSUPPORTED y está bloqueado por BLOCKED_B4_UNRESOLVED. Se conservan la estabilidad CPU de P31 y los dos registros históricos de 7200 segundos; las nuevas ejecuciones CUDA de 7200 segundos o más son DEFERRED. Se mantienen el entrenamiento CUDA normal y las funciones GPU independientes. Las 13 integraciones de riesgo BLOCKED no implican automáticamente un fallo del producto. Aceptación CUDA acotada actual: las evidencias vinculadas a hashes de fuentes y artefactos están en current_cuda_acceptance del registro de soporte. Solo cubren el modelo/dispositivo/runtime/protocolo registrado, sin certificación general de hardware. P18 contadores avanzados, P23 saved activation/B4, P31 CUDA 7200s y P33 energía avanzada siguen cerrados; full_cuda_acceptance=false. TensorRT es experimental y no está validado en la primera versión; E03/E04 y los casos nativos E13 dependientes están BLOCKED/NOT_TESTED por la integridad DLL RECORD. La aceptación controlada E13 CpuOnly es 7/7 PASS; no valida TensorRT. FP16 CPU P35 conserva su límite de cobertura de nodos originales. C++ nativo, AOTInductor, OpenVINO y TFLite quedan fuera de la primera versión. full_cuda_acceptance=false."
         }
       },
       "inventory": []
@@ -1746,28 +1746,28 @@
           "what": "Bu rehber HYSo 0.2.0 kaynak sözleşmesini anlatır. Metadata alt sınırları Python 3.10, Torch 2.2.2 ve torchvision 0.17.2’dir. Somut CPU beta kaydı Windows x64, Python 3.10.18, Torch 2.5.1+cu121 ve torchvision 0.20.1+cu121 kullanmıştır.",
           "when": "Kurulum, model JSON’u, checkpoint veya rapor taşırken sürümleri kontrol edin.",
           "benefit": "Alt sınır ile gerçekten denenmiş ortamı, kaynak profili ile wheel kapsamını ayırırsınız.",
-          "limits": "Alt sınırlar bütün sürüm/OS kombinasyonlarının test edildiğini göstermez. TrainingConfig schema1 korunur; Graph/model/checkpoint/report şemaları birbirinin yerine geçmez. Dosyalar kendiliğinden migrate edilmez. Teknik raporlar tr/en; bu rehber tr/en/de/es’tir. Sürüm eşleşmesi GPU kabulü değildir."
+          "limits": "Alt sınırlar bütün sürüm/OS kombinasyonlarının test edildiğini göstermez. TrainingConfig schema1 korunur; Graph/model/checkpoint/report şemaları birbirinin yerine geçmez. Dosyalar kendiliğinden migrate edilmez. Teknik raporlar tr/en; bu rehber tr/en/de/es’tir. Sürüm eşleşmesi GPU kabulü değildir. İlk sürüm bağımlılık profili Python >=3.10,<3.13, Torch >=2.5.1,<2.6 ve torchvision >=0.20.1,<0.21. Doğrulanan host Windows x64/Python 3.10; diğer Python/platform birleşimleri sertifikalı değildir. ONNX Runtime CPU/GPU paketlerinden yalnız birini ayrı ortama kurun. Developer kabul scriptleri normal kurulum için gerekmez."
         },
         "en": {
           "title": "Versions and compatibility",
           "what": "This guide describes the HYSo 0.2.0 source contract. Metadata minimums are Python 3.10, Torch 2.2.2 and torchvision 0.17.2. The concrete CPU beta record used Windows x64, Python 3.10.18, Torch 2.5.1+cu121 and torchvision 0.20.1+cu121.",
           "when": "Check versions when installing or moving model JSON, checkpoints and reports.",
           "benefit": "Distinguish minimum requirements from an actually tested environment, and source profiles from wheel contents.",
-          "limits": "Minimums do not certify every version/OS combination. TrainingConfig schema1 remains; Graph/model/checkpoint/report schemas are not interchangeable. Files are not migrated automatically. Technical reports use tr/en; this guide uses tr/en/de/es. Version agreement is not GPU acceptance."
+          "limits": "Minimums do not certify every version/OS combination. TrainingConfig schema1 remains; Graph/model/checkpoint/report schemas are not interchangeable. Files are not migrated automatically. Technical reports use tr/en; this guide uses tr/en/de/es. Version agreement is not GPU acceptance. The first-release dependency profile is Python >=3.10,<3.13, Torch >=2.5.1,<2.6 and torchvision >=0.20.1,<0.21. The verified host is Windows x64/Python 3.10; other Python/platform combinations are not certified. Install exactly one CPU/GPU ONNX Runtime distribution in a separate environment. Developer acceptance scripts are not required for normal installation."
         },
         "de": {
           "title": "Versionen und Kompatibilität",
           "what": "Dieses Handbuch beschreibt den Quellvertrag von HYSo 0.2.0. Die Mindestangaben lauten Python 3.10, Torch 2.2.2 und torchvision 0.17.2. Der konkrete CPU-Beta-Nachweis nutzte Windows x64, Python 3.10.18, Torch 2.5.1+cu121 und torchvision 0.20.1+cu121.",
           "when": "Prüfen Sie Versionen bei Installation und Übertragung von Modell-JSON, Checkpoints oder Berichten.",
           "benefit": "Sie unterscheiden Mindestanforderungen von tatsächlich geprüften Umgebungen sowie Quellprofile von Wheel-Inhalten.",
-          "limits": "Mindestangaben bestätigen nicht jede Versions-/Betriebssystemkombination. TrainingConfig schema1 bleibt erhalten; Graph-, Modell-, Checkpoint- und Berichtsschemata sind nicht austauschbar. Dateien werden nicht automatisch migriert. Technische Berichte nutzen tr/en, dieses Handbuch tr/en/de/es. Passende Versionen sind keine GPU-Freigabe."
+          "limits": "Mindestangaben bestätigen nicht jede Versions-/Betriebssystemkombination. TrainingConfig schema1 bleibt erhalten; Graph-, Modell-, Checkpoint- und Berichtsschemata sind nicht austauschbar. Dateien werden nicht automatisch migriert. Technische Berichte nutzen tr/en, dieses Handbuch tr/en/de/es. Passende Versionen sind keine GPU-Freigabe. Das Abhängigkeitsprofil ist Python >=3.10,<3.13, Torch >=2.5.1,<2.6 und torchvision >=0.20.1,<0.21. Verifiziert ist Windows x64/Python 3.10; weitere Kombinationen sind nicht zertifiziert. Installieren Sie genau eine CPU/GPU-ONNX-Runtime-Distribution in einer eigenen Umgebung. Entwickler-Abnahmeskripte sind zur normalen Installation nicht erforderlich."
         },
         "es": {
           "title": "Versiones y compatibilidad",
           "what": "Esta guía describe el contrato de fuentes de HYSo 0.2.0. Los mínimos de metadata son Python 3.10, Torch 2.2.2 y torchvision 0.17.2. El registro concreto de beta CPU utilizó Windows x64, Python 3.10.18, Torch 2.5.1+cu121 y torchvision 0.20.1+cu121.",
           "when": "Compruebe las versiones al instalar o trasladar JSON de modelos, checkpoints e informes.",
           "benefit": "Permite distinguir requisitos mínimos de entornos probados y perfiles de fuentes de contenidos del wheel.",
-          "limits": "Los mínimos no certifican todas las combinaciones de versión y sistema operativo. Se conserva TrainingConfig schema1; los esquemas de Graph, modelos, checkpoints e informes no son intercambiables. No hay migración automática. Los informes técnicos usan tr/en; esta guía, tr/en/de/es. Coincidir en versión no equivale a aceptación GPU."
+          "limits": "Los mínimos no certifican todas las combinaciones de versión y sistema operativo. Se conserva TrainingConfig schema1; los esquemas de Graph, modelos, checkpoints e informes no son intercambiables. No hay migración automática. Los informes técnicos usan tr/en; esta guía, tr/en/de/es. Coincidir en versión no equivale a aceptación GPU. El perfil de dependencias es Python >=3.10,<3.13, Torch >=2.5.1,<2.6 y torchvision >=0.20.1,<0.21. Se ha verificado Windows x64/Python 3.10; otras combinaciones no están certificadas. Instale solo una distribución CPU/GPU de ONNX Runtime por entorno separado. La instalación normal no requiere scripts de aceptación de desarrollo."
         }
       },
       "inventory": []
@@ -3451,6 +3451,66 @@
         }
       },
       "inventory": []
+    },
+    {
+      "id": "export.overview",
+      "related": [
+        "analysis.p35",
+        "api.python-cli",
+        "support.cpu-gpu"
+      ],
+      "sources": [
+        "hyso/export/__init__.py",
+        "hyso/export/contracts.py",
+        "hyso/export/converters.py",
+        "hyso/export/native.py",
+        "docs/guides/model-export.md"
+      ],
+      "inventory": [
+        "hyso.export",
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05",
+        "E06",
+        "E07",
+        "E08",
+        "E09",
+        "E10",
+        "E11",
+        "E12"
+      ],
+      "translations": {
+        "tr": {
+          "title": "Model export ve deployment: E01–E12",
+          "what": "hyso.export, açık kullanıcı isteğiyle kaynak modeli koruyarak ayrı ONNX, TorchScript, ExportedProgram veya kontrollü TensorRT artifact üretir. Analyzer ve Advisor model değiştirmez.",
+          "when": "Modeli başka bir runtime üzerinde kullanmak istediğinizde onnx, tensorrt, pytorch_tensorrt, libtorch veya torch_export çağrısını açıkça seçin.",
+          "benefit": "Hash manifesti, inference kopyası, gerçek çıktı eşdeğerliği ve dokuz ayrı aşama sonucu kaydedilir. Varsayılan overwrite kapalıdır; çok dosyalı çıktılar commit manifestiyle okunmalıdır. E07–E12: ONNX mixed FP16, dynamic/static INT8 QDQ, cohort sayısal/etiketli kalite doğrulaması, deployment benchmark, uyumlu karşılaştırma, Advisor, CLI ve JSON/Markdown/HTML raporları.",
+          "limits": "TensorRT ilk sürümde deneysel ve doğrulanmamıştır; E03/E04 ve bağlı E13 native senaryoları DLL RECORD bütünlüğü nedeniyle BLOCKED/NOT_TESTED. E13 CpuOnly gerçek kabulü 7/7 PASS; bu TensorRT kabulü değildir. FP16 CPU P35 original-node coverage sınırlaması korunur. Native C++, AOTInductor, OpenVINO ve TFLite ilk sürüm dışında. full_cuda_acceptance=false."
+        },
+        "en": {
+          "title": "Model export and deployment: E01–E12",
+          "what": "hyso.export explicitly creates separate ONNX, TorchScript, ExportedProgram or controlled TensorRT artifacts while preserving the source model. Analyzer and Advisor do not modify models.",
+          "when": "Explicitly choose onnx, tensorrt, pytorch_tensorrt, libtorch or torch_export when deploying a model to another runtime.",
+          "benefit": "Hash manifests, inference copies, real output equivalence and nine separate stage outcomes are retained. Overwrite is off by default; multi-file artifacts require their commit manifest. E07–E12: ONNX mixed FP16, dynamic/static INT8 QDQ, cohort numerical/labelled quality validation, deployment benchmarks, compatible comparisons, Advisor, CLI and JSON/Markdown/HTML reports.",
+          "limits": "TensorRT is experimental and unvalidated in the first release; E03/E04 and dependent E13 native scenarios are BLOCKED/NOT_TESTED because of DLL RECORD integrity. E13 CpuOnly owned acceptance is 7/7 PASS; this is not TensorRT acceptance. FP16 CPU P35 original-node coverage remains limited. Native C++, AOTInductor, OpenVINO and TFLite are outside the first release. full_cuda_acceptance=false."
+        },
+        "de": {
+          "title": "Modellexport und Deployment: E01–E12",
+          "what": "hyso.export erstellt auf ausdrücklichen Wunsch separate ONNX-, TorchScript-, ExportedProgram- oder kontrollierte TensorRT-Artefakte und bewahrt das Quellmodell. Analyzer und Advisor ändern keine Modelle.",
+          "when": "Wählen Sie onnx, tensorrt, pytorch_tensorrt, libtorch oder torch_export ausdrücklich für die Ausführung in einer anderen Laufzeit.",
+          "benefit": "Hash-Manifeste, Inferenzkopien, echte Ausgabeäquivalenz und neun getrennte Stufenergebnisse bleiben erhalten. Überschreiben ist standardmäßig aus; mehrteilige Artefakte benötigen ihr Commit-Manifest. E07–E12: ONNX Mixed-FP16, dynamisches/statisches INT8 QDQ, numerische Kohorten- und Aufgabenqualität, Deployment-Benchmarks, kompatible Vergleiche, Advisor, CLI und Berichte.",
+          "limits": "TensorRT ist in der ersten Version experimentell und nicht validiert; E03/E04 und abhängige native E13-Szenarien sind wegen DLL-RECORD-Integrität BLOCKED/NOT_TESTED. Die kontrollierte E13-CpuOnly-Abnahme ist 7/7 PASS und keine TensorRT-Abnahme. FP16 CPU P35 bleibt bei der Zuordnung ursprünglicher Knoten eingeschränkt. Natives C++, AOTInductor, OpenVINO und TFLite liegen außerhalb der ersten Version. full_cuda_acceptance=false."
+        },
+        "es": {
+          "title": "Exportación y despliegue: E01–E12",
+          "what": "hyso.export crea explícitamente artefactos ONNX, TorchScript, ExportedProgram o TensorRT controlados por separado y conserva el modelo original. Analyzer y Advisor no modifican modelos.",
+          "when": "Seleccione explícitamente onnx, tensorrt, pytorch_tensorrt, libtorch o torch_export para usar otro runtime.",
+          "benefit": "Se conservan manifiestos hash, copias de inferencia, equivalencia real de salidas y nueve resultados de etapa separados. La sobrescritura está desactivada; los artefactos múltiples requieren su manifiesto de commit. E07–E12: ONNX FP16 mixto, INT8 dinámico/estático QDQ, validación numérica y calidad con etiquetas, benchmarks, comparaciones compatibles, Advisor, CLI e informes.",
+          "limits": "TensorRT es experimental y no está validado en la primera versión; E03/E04 y los casos nativos E13 dependientes están BLOCKED/NOT_TESTED por la integridad DLL RECORD. La aceptación controlada E13 CpuOnly es 7/7 PASS; no valida TensorRT. FP16 CPU P35 conserva su límite de cobertura de nodos originales. C++ nativo, AOTInductor, OpenVINO y TFLite quedan fuera de la primera versión. full_cuda_acceptance=false."
+        }
+      }
     }
   ],
   "release_support": {

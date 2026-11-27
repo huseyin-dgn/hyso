@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 3.18)
+project(hyso_libtorch_check LANGUAGES CXX)
+find_package(Torch REQUIRED)
+add_executable(hyso_libtorch_check main.cpp)
+target_link_libraries(hyso_libtorch_check PRIVATE "${TORCH_LIBRARIES}")
+target_compile_features(hyso_libtorch_check PRIVATE cxx_std_17)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+if(MSVC)
+  file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
+  add_custom_command(TARGET hyso_libtorch_check POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${TORCH_DLLS} $<TARGET_FILE_DIR:hyso_libtorch_check>)
+endif()

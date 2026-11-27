@@ -1,5 +1,10 @@
 """Advisor contracts and read-only native observations; no workload execution."""
 from ._json import AdvisorError
+
+def export_advice(result, *, language='en') -> dict:
+    """Read saved deployment evidence; never execute or alter a model."""
+    from ..export.presentation import advise
+    return advise(result,language=language)
 from .contracts import (
     AdvisorReport, AdvisorRequest, Consistency, EvaluationProtocol,
     EvidenceBinding, EvidenceRef, EvidenceSupport, Feasibility, Finding,
@@ -21,6 +26,7 @@ from .profiles import (BoundEvaluationReference, P26ModelProfileComparisonContra
                        UnifiedModelComparison, compare_p26_model_profiles)
 
 __all__ = [
+    'export_advice',
     'AdvisorError', 'AdvisorReport', 'AdvisorRequest', 'Consistency',
     'EvaluationProtocol', 'EvidenceBinding', 'EvidenceRef', 'EvidenceSupport',
     'Feasibility', 'Finding', 'FindingKind', 'GoalEvaluation', 'InputValidity',

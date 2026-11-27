@@ -6,9 +6,13 @@ Türkçe [kullanım ve kabul sınırları](python-first-acceptance-and-limits.md
 akışının destek matrisini, strict seçim ve kanıt kimliklerini, kısa evaluation/
 Reporting/store tariflerini ve güncel CUDA/B4 sınırlarını bir araya getirir.
 
-Install Python >=3.10 and a compatible Torch/torchvision pair, then `python -m pip install -e .`. Use `python -m hyso --help` or `hyso --help`. Existing groups are models, train, analysis, compare, advisor, experiments and reports. Dry-run and explicit workload/resource authorization contracts are unchanged.
+Use the [first-release installation profile](first-release.md): Python 3.10–3.12,
+Torch 2.5.1 and torchvision 0.20.1; Windows x64/Python 3.10 is verified. Editable
+installation is for source development. Use `python -m hyso --help` or `hyso --help`.
+Groups are models, train, analysis, compare, advisor, experiments, reports and export.
+Dry-run and explicit workload/resource authorization contracts are unchanged.
 
-For a built wheel, install `C:/local-hyso/dist/hyso-0.2.0-py3-none-any.whl`
+For a built wheel, install `dist/hyso-0.2.0-py3-none-any.whl`
 with `python -m pip install` in a separate venv. Public `hyso` imports and CLI
 commands work outside the checkout. The `python -m examples...` commands below
 require the source checkout; examples are intentionally absent from the commercial

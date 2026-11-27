@@ -84,6 +84,7 @@ if _TYPE_CHECKING:
     from . import analysis as analysis, advisor as advisor, experiments as experiments
     from . import reporting as reporting
     from . import evaluation as evaluation, quality as quality, checkpoint as checkpoint
+    from . import export as export
 
 _LAZY_EXPORTS = {
     'TrainingConfig': ('.training', 'TrainingConfig'),
@@ -99,7 +100,7 @@ _LAZY_EXPORTS = {
     'BenchmarkRunner': ('.benchmark', 'BenchmarkRunner'),
     'ExperimentManager': ('.experiments', 'ExperimentManager'),
     **{name: ('.' + name, None) for name in
-       ('training', 'benchmark', 'performance', 'analysis', 'advisor', 'experiments', 'reporting')},
+       ('training', 'benchmark', 'performance', 'analysis', 'advisor', 'experiments', 'reporting','export')},
 }
 
 # Existing root names plus the existing lazy aliases. The models namespace keeps
@@ -112,7 +113,7 @@ __all__ = [
     'ModelStructureSnapshot','ModelStructureError','capture_model_structure','ModelStructureComparison',
     'ModelStructureComparisonError','compare_model_structures','ModelArchitectureAudit','ModelArchitectureAuditError','audit_model_architecture',
     'models','callbacks','augmentation','evaluation','quality','checkpoint','benchmark','training','performance',
-    'analysis','advisor','reporting','experiments','structure','structure_comparison','architecture_audit',
+    'analysis','advisor','reporting','experiments','structure','structure_comparison','architecture_audit','export',
 ]
 
 

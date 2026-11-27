@@ -212,6 +212,16 @@ def retain_results(cp,key,values):
 def pending_cases(nodes,results,retry):
     return [n for n in nodes if n in retry or (not retry and n not in results)]
 
+def runtime_sites(runtime):
+    """Preserve the selected Torch site first; explicit reference sites follow."""
+    paths=runtime.get('runtime_paths',[runtime['site']])
+    if type(paths) is not list or not paths or any(type(p) is not str or not Path(p).is_absolute() or not Path(p).is_dir() for p in paths):
+        raise RuntimeError('PREPARED_RUNTIME_SITES_INVALID')
+    normalized=[os.path.normcase(str(Path(p).resolve())) for p in paths]
+    if normalized[0]!=os.path.normcase(str(Path(runtime['site']).resolve())) or len(normalized)!=len(set(normalized)):
+        raise RuntimeError('SELECTED_TORCH_SITE_MUST_BE_FIRST_AND_UNIQUE')
+    return paths
+
 
 def record_cpu(cp,folder,request,receipt,plan):
     # A controller callback may stop the child before it can emit its runtime.
@@ -385,7 +395,8 @@ def main():
             scratch=Path(tempfile.mkdtemp(prefix='hyso-cuda-scope-'));work=scratch/'payload'
             request=request_for(folder,work,group,plan,{n:plan['cpu_inventory'][n] for n in pending} if group=='CPU_REGRESSIONS' else None)
             if group!='CPU_REGRESSIONS':request.update(features=pending,gpu_admission=before)
-            runtime=dict(cpu,python=cpu['cpu_python']) if group=='CPU_REGRESSIONS' else dict(python=gpu['python'],runtime_paths=[gpu['site']])
+            selected_runtime=request.get('gpu_plan',{}).get('runtime',gpu)
+            runtime=dict(cpu,python=cpu['cpu_python']) if group=='CPU_REGRESSIONS' else dict(python=selected_runtime['python'],runtime_paths=runtime_sites(selected_runtime))
             last=[0.]
             def update(*unused):
                 if time.monotonic()-last[0]<1:return
